@@ -1,7 +1,7 @@
 export default function Footer() {
-    return (
-        <footer className="bg-gray-800 text-white p-4 text-center">
-            <p>&copy; 2024 Our Restaurant. All rights reserved.</p>
-        </footer>
-    );
+        return (
+                <footer className="bg-gray-800 text-white p-4 text-center btn">
+                        <p>&copy; 2024 Our Restaurant. All rights reserved.</p>
+                </footer>
+        );
 }

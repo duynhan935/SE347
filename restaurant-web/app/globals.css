@@ -1,1 +1,39 @@
 @import "tailwindcss";
+
+@theme {
+        /* Background color */
+        --color-brand-purple: #572af8;
+        --color-brand-green: #29b067;
+        --color-brand-orange: #f05e36;
+        --color-brand-yellow: #ffcf54;
+        --color-brand-black: #191720;
+        --color-brand-grey: #575363;
+        --color-brand-white: #fff;
+        --color-brand-yellowlight: #fffae3;
+        --color-brand-purplelight: #e8e6ed;
+
+        /* Font-Size */
+        --text-h1: 74px;
+        --text-h2: 44px;
+        --text-h3: 30px;
+        --text-h4: 26px;
+        --text-h5: 20px;
+        --text-h6: 20px;
+        --text-button1: 18px;
+        --text-button2: 16px;
+        --text-button3: 14px;
+        --text-p1: 18px;
+        --text-p2: 16px;
+        --text-p3: 14px;
+}
+
+/* Dark mode */
+@layer dark {
+}
+
+/* Global Class */
+@layer components {
+        .btn {
+                @apply inline-flex py-[35px] px-[15px] items-center justify-center gap-[10px] rounded-[6px] bg-brand-black;
+        }
+}
