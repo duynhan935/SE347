@@ -1,3 +1,3 @@
 export default function HomePage() {
-    return <div>Trang chủ</div>;
+        return <section className="mt-[52px]">Trang chủ Chó huy</section>;
 }
