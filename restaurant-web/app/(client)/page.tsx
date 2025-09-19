@@ -1,5 +1,14 @@
-import Hero from "@/components/client/Hero";
+import Features from "@/components/client/HomePage/Features";
+import Hero from "@/components/client/HomePage/Hero";
 
 export default function HomePage() {
-        return <section className="pt-[52px] bg-brand-yellowlight">{/* Hero section */ <Hero />}</section>;
+        return (
+                <section className=" ">
+                        {/* Hero section */}
+                        <Hero />
+
+                        {/* Features section */}
+                        <Features />
+                </section>
+        );
 }
