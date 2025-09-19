@@ -38,12 +38,54 @@
 @layer dark {
 }
 
+/* Base */
+@layer base {
+        h1 {
+                font-size: var(--text-h1);
+                @media (max-width: 640px) {
+                        font-size: 46px;
+                }
+        }
+        h2 {
+                font-size: var(--text-h2);
+                @media (max-width: 640px) {
+                        font-size: 34px;
+                }
+        }
+        h3 {
+                font-size: var(--text-h3);
+        }
+        h4 {
+                font-size: var(--text-h4);
+        }
+        h5 {
+                font-size: var(--text-h5);
+        }
+        h6 {
+                font-size: var(--text-h6);
+        }
+        p {
+                font-size: var(--text-p1);
+
+                @media (max-width: 640px) {
+                        font-size: var(--text-p2);
+                }
+        }
+        button {
+                font-size: var(--text-button1);
+
+                @media (max-width: 640px) {
+                        font-size: var(--text-button2);
+                }
+        }
+}
+
 /* Global Class */
 @layer components {
         .btn {
-                @apply inline-flex py-[35px] px-[15px] items-center justify-center gap-[10px] rounded-[6px] bg-brand-black;
+                @apply inline-flex py-[15px] px-[35px] items-center justify-center gap-[10px] rounded-[6px] bg-brand-black;
         }
-        .container {
+        .custom-container {
                 @apply 2xl:max-w-[1170px] xl:max-w-[1040px] lg:max-w-[832px] md:max-w-[720px] sm:max-w-[540px] mx-auto;
         }
 }
