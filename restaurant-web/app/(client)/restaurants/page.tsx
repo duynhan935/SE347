@@ -1,3 +1,9 @@
+import RestaurantsContainer from "@/components/client/restaurants/RestaurantsContainer";
+
 export default function RestaurantsPage() {
-    return <div>Trang danh sách nhà hàng</div>;
+        return (
+                <section className="lg:mt-[55px]">
+                        <RestaurantsContainer />
+                </section>
+        );
 }
