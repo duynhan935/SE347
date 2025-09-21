@@ -8,7 +8,6 @@ import RatingStar from "./RatingStar";
 
 export default function Slider() {
         const reviews = [
-                //... dữ liệu reviews của bạn
                 {
                         id: 1,
                         name: "Peter Moor",
@@ -29,38 +28,43 @@ export default function Slider() {
                 },
                 {
                         id: 4,
-                        name: "Peter Moor",
-                        role: "UI/UX Designer",
-                        text: "I’m obsessed with excellent customer service...thanks foodeats for being awesome!",
+                        name: "Jane Doe",
+                        role: "Developer",
+                        text: "A five-star experience from start to finish. Highly recommended!",
                 },
                 {
                         id: 5,
-                        name: "Peter Moor",
-                        role: "UI/UX Designer",
-                        text: "I’m obsessed with excellent customer service...thanks foodeats for being awesome!",
+                        name: "Sam Wilson",
+                        role: "Marketing Head",
+                        text: "The variety of options is incredible. My go-to app for any meal.",
                 },
                 {
                         id: 6,
-                        name: "Peter Moor",
-                        role: "UI/UX Designer",
-                        text: "I’m obsessed with excellent customer service...thanks foodeats for being awesome!",
+                        name: "Emily White",
+                        role: "Student",
+                        text: "Super fast and always reliable. I use it almost every day!",
                 },
         ];
 
         return (
-                <div className="max-w-6xl mx-auto px-4 reviews-slider">
+                <div className="reviews-slider">
                         <Swiper
                                 modules={[Pagination]}
                                 pagination={{
                                         clickable: true,
-                                        // Ra lệnh cho Swiper render pagination vào div có class 'custom-pagination'
                                         el: ".custom-pagination",
                                 }}
                                 spaceBetween={30}
+                                slidesPerView={1} // Mặc định hiển thị 1 slide trên mobile
                                 breakpoints={{
-                                        640: { slidesPerView: 1 },
-                                        768: { slidesPerView: 2 },
-                                        1024: { slidesPerView: 3 },
+                                        // Khi màn hình từ 640px trở lên, hiển thị 2 slide
+                                        640: {
+                                                slidesPerView: 2,
+                                        },
+                                        // Khi màn hình từ 1024px trở lên, hiển thị 3 slide
+                                        1024: {
+                                                slidesPerView: 3,
+                                        },
                                 }}
                         >
                                 {reviews.map((review) => (
@@ -78,7 +82,7 @@ export default function Slider() {
                                 ))}
                         </Swiper>
 
-                        {/* ✨ Thêm thẻ div này để chứa pagination */}
+                        {/* Pagination container */}
                         <div className="custom-pagination text-center mt-8 h-[20px] cursor-pointer"></div>
                 </div>
         );

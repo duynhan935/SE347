@@ -4,31 +4,32 @@ import pizza from "@/assets/HomePage/pizza.png";
 import Button from "@/components/Button";
 import Image from "next/image";
 import Link from "next/link";
+
 const HomePageAbout = () => {
         return (
-                <section className="mt-[260px]  relative bg-brand-yellowlight pb-[100px]">
+                <section className="mt-40 lg:mt-[260px] relative bg-brand-yellowlight  p-5 lg:p-0 lg:pb-[100px] ">
                         <div className="custom-container">
                                 {/* Top about */}
-                                <div className="flex justify-evenly items-center py-10 px-5 bg-brand-black text-brand-white overflow-hidden relative -top-[100px]">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-y-8 text-center md:text-left md:justify-items-center items-center py-10 px-5 bg-brand-black text-brand-white overflow-hidden relative -top-20 lg:-top-[100px] rounded-lg">
                                         <Image
                                                 src={pizza}
                                                 alt="pizza Image"
                                                 width={100}
                                                 height={100}
-                                                className="absolute -top-[50%]  translate-y-[50%] left-0 -translate-x-[50%] object-cover"
+                                                className="absolute -top-[50%] translate-y-[50%] left-0 -translate-x-[50%] object-cover hidden md:block"
                                         />
                                         <Image
                                                 src={leaf}
                                                 alt="leaf Image"
                                                 width={100}
                                                 height={100}
-                                                className="absolute   translate-y-[50%] right-0 translate-x-[50%] object-cover"
+                                                className="absolute translate-y-[50%] right-0 translate-x-[50%] object-cover hidden md:block"
                                         />
 
                                         {/* Order per minute */}
                                         <div className="flex flex-col">
                                                 <h2 className="font-roboto-serif font-semibold leading-[44px]">350+</h2>
-                                                <p className="mt-[18px] font-manrope font-normal leading-[30px]">
+                                                <p className="mt-2 md:mt-[18px] font-manrope font-normal leading-[30px]">
                                                         Order per minute
                                                 </p>
                                         </div>
@@ -36,7 +37,7 @@ const HomePageAbout = () => {
                                         {/* Faster delivery */}
                                         <div className="flex flex-col">
                                                 <h2 className="font-roboto-serif font-semibold leading-[44px]">10x</h2>
-                                                <p className="mt-[18px] font-manrope font-normal leading-[30px]">
+                                                <p className="mt-2 md:mt-[18px] font-manrope font-normal leading-[30px]">
                                                         Faster delivery
                                                 </p>
                                         </div>
@@ -44,7 +45,7 @@ const HomePageAbout = () => {
                                         {/* InCountry */}
                                         <div className="flex flex-col">
                                                 <h2 className="font-roboto-serif font-semibold leading-[44px]">10+</h2>
-                                                <p className="mt-[18px] font-manrope font-normal leading-[30px]">
+                                                <p className="mt-2 md:mt-[18px] font-manrope font-normal leading-[30px]">
                                                         In Country
                                                 </p>
                                         </div>
@@ -54,24 +55,29 @@ const HomePageAbout = () => {
                                                 <h2 className="font-roboto-serif font-semibold leading-[44px]">
                                                         99.9%
                                                 </h2>
-                                                <p className="mt-[18px] font-manrope font-normal leading-[30px]">
+                                                <p className="mt-2 md:mt-[18px] font-manrope font-normal leading-[30px]">
                                                         Order accuracy
                                                 </p>
                                         </div>
                                 </div>
 
                                 {/* Main About */}
-                                <div className=" grid grid-cols-2 gap-[130px] items-center">
-                                        <div className="w-full h-full lg:h-[594px] lg:w-[570px] relative ">
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-[130px] items-center">
+                                        {/* Image container */}
+
+                                        <div className="w-full h-[350px] md:h-[500px] lg:h-[594px] relative">
                                                 <Image
                                                         src={foodeat}
                                                         alt="foodeat Image"
                                                         fill
-                                                        className="object-cover"
+                                                        className="object-cover rounded-lg"
                                                 />
                                         </div>
 
-                                        <div>
+                                        {/* Text content */}
+
+                                        <div className="text-center lg:text-left">
                                                 <h2 className="font-roboto-serif font-semibold leading-[44px]">
                                                         About <strong>Foodeats</strong>
                                                 </h2>
@@ -87,7 +93,7 @@ const HomePageAbout = () => {
                                                         menu item. We&apos;ll filter your results accordingly.
                                                 </p>
 
-                                                <Link href="/restaurants">
+                                                <Link href="/restaurants" className="inline-block">
                                                         <Button className="mt-[38px] bg-brand-purple text-brand-white cursor-pointer hover:bg-brand-purple/80 transition-all duration-300">
                                                                 Learn More
                                                         </Button>

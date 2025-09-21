@@ -4,7 +4,7 @@ import Link from "next/link";
 
 const Explore = () => {
         return (
-                <form className="flex items-center gap-[16px]">
+                <form className="flex items-center gap-[16px] md:flex-row flex-col">
                         <input
                                 type="text"
                                 name="text"

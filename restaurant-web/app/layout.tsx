@@ -1,8 +1,8 @@
+import Footer from "@/components/layout/layout/Footer";
 import Header from "@/components/layout/layout/Header";
 import type { Metadata } from "next";
 import { Manrope, Roboto_Serif } from "next/font/google";
 import "./globals.css";
-
 const robotoSerif = Roboto_Serif({
         subsets: ["latin"],
         variable: "--font-roboto-serif",
@@ -30,7 +30,7 @@ export default function RootLayout({
                         <body className={`${robotoSerif.variable} ${manrope.variable}`}>
                                 <Header />
                                 <main> {children}</main>
-                                {/* <Footer /> */}
+                                <Footer />
                         </body>
                 </html>
         );

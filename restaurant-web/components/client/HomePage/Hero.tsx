@@ -5,13 +5,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaFacebookF, FaInstagram } from "react-icons/fa";
 import Explore from "./Explore";
+
 const Hero = () => {
         return (
-                <section className="bg-brand-yellowlight py-[52px]">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 custom-container ">
+                <section className="p-4 lg:p-0 bg-brand-yellowlight py-12 lg:py-[100px] ">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 custom-container items-center gap-y-8">
                                 {/* Left part */}
-                                <div className="pt-[34px] pb-[100px]">
-                                        <p className=" font-manrope text-brand-purple font-medium leading-[30px] tracking-[3.6px]  ">
+
+                                <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+                                        <p className="font-manrope text-brand-purple font-medium leading-[30px] tracking-[3.6px]">
                                                 #The Best in Town
                                         </p>
 
@@ -31,7 +33,7 @@ const Hero = () => {
                                                         width={54}
                                                         height={54}
                                                         priority
-                                                        className="absolute top-[10px] right-[180px]"
+                                                        className="absolute hidden xl:block 2xl:top-[25px] 2xl:right-[90px] xl:top-[20px] xl:right-[90px]"
                                                 />
                                                 <Image
                                                         src={burger}
@@ -39,18 +41,18 @@ const Hero = () => {
                                                         width={54}
                                                         height={54}
                                                         priority
-                                                        className="absolute bottom-[82px] right-[300px]"
+                                                        className="absolute hidden xl:block 2xl:bottom-[82px] 2xl:right-[220px] xl:bottom-[82px] xl:right-[210px]"
                                                 />
                                         </div>
 
                                         {/* Location and Search */}
-                                        <div className="mt-[38px]">
+                                        <div className="mt-[38px] w-full max-w-md">
                                                 <Explore />
                                         </div>
 
                                         {/* Get the app */}
                                         <div className="mt-[30px] flex items-center gap-x-[16px]">
-                                                <h5 className="font-manrope font-bold leading-[30px] ">
+                                                <h5 className="font-manrope font-bold leading-[30px]">
                                                         Connect with us:{" "}
                                                 </h5>
                                                 <div className="flex items-center gap-x-[16px]">
@@ -69,9 +71,17 @@ const Hero = () => {
                                                 </div>
                                         </div>
                                 </div>
+
                                 {/* Right part */}
-                                <div className="mt-[10px]">
-                                        <Image src={hero} alt="hero" width={662} height={594} priority />
+                                <div className="mt-[10px] hidden lg:block lg:mt-0 flex justify-center">
+                                        <Image
+                                                src={hero}
+                                                alt="hero"
+                                                width={662}
+                                                height={594}
+                                                priority
+                                                className="w-full h-auto"
+                                        />
                                 </div>
                         </div>
                 </section>

@@ -2,7 +2,7 @@ import FeaturesAction from "./FeaturesAction";
 
 const Features = () => {
         return (
-                <section className="custom-container mt-[150px] ">
+                <section className="custom-container lg:mt-[150px] mt-[100px] ">
                         <h2 className="font-roboto-serif font-semibold leading-[100%] text-center">
                                 <em> Everything in one platform.</em>
                         </h2>
