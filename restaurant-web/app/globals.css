@@ -40,6 +40,12 @@
 
 /* Base */
 @layer base {
+        em {
+                font-style: normal;
+        }
+        strong {
+                font-weight: 600;
+        }
         h1 {
                 font-size: var(--text-h1);
                 @media (max-width: 640px) {
@@ -87,6 +93,14 @@
         }
         .custom-container {
                 @apply 2xl:max-w-[1170px] xl:max-w-[1040px] lg:max-w-[832px] md:max-w-[720px] sm:max-w-[540px] mx-auto;
+        }
+
+        .custom-pagination .swiper-pagination-bullet {
+                @apply w-3 h-3 rounded-full mx-1 opacity-70 transition bg-brand-black;
+        }
+
+        .custom-pagination .swiper-pagination-bullet-active {
+                @apply scale-125 opacity-100 bg-brand-black;
         }
 }
 

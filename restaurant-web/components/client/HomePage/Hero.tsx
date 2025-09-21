@@ -1,13 +1,13 @@
-import burger from "@/app/_assets/HomePage/burger.png";
-import hero from "@/app/_assets/HomePage/hero.png";
-import pizza from "@/app/_assets/HomePage/pizza.png";
+import burger from "@/assets/HomePage/burger.png";
+import hero from "@/assets/HomePage/hero.png";
+import pizza from "@/assets/HomePage/pizza.png";
 import Image from "next/image";
 import Link from "next/link";
 import { FaFacebookF, FaInstagram } from "react-icons/fa";
 import Explore from "./Explore";
 const Hero = () => {
         return (
-                <div className="bg-brand-yellowlight py-[52px]">
+                <section className="bg-brand-yellowlight py-[52px]">
                         <div className="grid grid-cols-1 lg:grid-cols-2 custom-container ">
                                 {/* Left part */}
                                 <div className="pt-[34px] pb-[100px]">
@@ -74,7 +74,7 @@ const Hero = () => {
                                         <Image src={hero} alt="hero" width={662} height={594} priority />
                                 </div>
                         </div>
-                </div>
+                </section>
         );
 };
 
