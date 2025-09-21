@@ -3,6 +3,7 @@ import Features from "@/components/client/HomePage/Features";
 import FeedYourEmployee from "@/components/client/HomePage/FeedYourEmployee";
 import Hero from "@/components/client/HomePage/Hero";
 import HomePageReviews from "@/components/client/HomePage/HomePageReviews";
+import NewsLetter from "@/components/client/HomePage/NewsLetter";
 
 export default function HomePage() {
         return (
@@ -21,6 +22,9 @@ export default function HomePage() {
 
                         {/* Review section */}
                         <HomePageReviews />
+
+                        {/* NewsLetter */}
+                        <NewsLetter />
                 </section>
         );
 }

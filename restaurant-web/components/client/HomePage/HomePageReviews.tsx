@@ -6,7 +6,7 @@ const HomePageReviews = () => {
                         <div className="custom-container pt-[100px]">
                                 {/* Title */}
                                 <div>
-                                        <h2 className="font-roboto-serif font-semibold leading-[100%]">
+                                        <h2 className="font-roboto-serif font-semibold leading-[100%] max-w-[480px] tracking-wide">
                                                 What food lovers are saying about us
                                         </h2>
                                 </div>

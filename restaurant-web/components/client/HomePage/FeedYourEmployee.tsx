@@ -10,19 +10,19 @@ const FeedYourEmployee = () => {
                                         <h2 className="font-roboto-serif font-semibold leading-[100%]">
                                                 Start Your Business
                                         </h2>
-                                        <p className="mt-[18px] font-manrope font-normal leading-[30px] text-brand-grey max-w-[500px]">
+                                        <p className="mt-[18px] font-manrope font-light leading-[30px] text-brand-grey max-w-[500px]">
                                                 Start selling food online with <strong>Foodeats</strong>, a modern
                                                 platform designed to help restaurants, cafes, and food vendors reach
                                                 more customers effortlessly.
                                         </p>
-                                        <p className="mt-[18px] font-manrope font-normal leading-[30px] text-brand-grey max-w-[500px]">
+                                        <p className="mt-[18px] font-manrope font-light leading-[30px] text-brand-grey max-w-[500px]">
                                                 <strong>Foodeats</strong> offers a variety of benefits for your
                                                 business: seamless online ordering, secure payments, real-time order
                                                 tracking, and built-in marketing tools to grow your customer base and
                                                 increase sales.
                                         </p>
 
-                                        <Button className="mt-[30px] bg-brand-purple text-brand-white font-manrope font-semibold leading-[30px] hover:bg-brand-purple/80 cursor-pointer">
+                                        <Button className="mt-[70px] bg-brand-purple text-brand-white font-manrope font-semibold leading-[30px] hover:bg-brand-purple/80 cursor-pointer">
                                                 Get Started Now
                                         </Button>
                                 </div>

@@ -61,7 +61,7 @@ const HomePageAbout = () => {
                                 </div>
 
                                 {/* Main About */}
-                                <div className="mt-[100px] grid grid-cols-2 gap-[130px] items-center">
+                                <div className=" grid grid-cols-2 gap-[130px] items-center">
                                         <div className="w-full h-full lg:h-[594px] lg:w-[570px] relative ">
                                                 <Image
                                                         src={foodeat}
