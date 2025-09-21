@@ -1,24 +1,12 @@
 "use client";
 
-import burgerImage from "@/assets/Restaurant/Burger.png";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { StaticImageData } from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useRef } from "react";
+import { type Restaurant } from "../../../app/(client)/restaurants/page";
 import Pagination from "../Pagination";
 import { RestaurantCard } from "./RestaurantCard";
 
-// --- Dữ liệu giả (Fake Data) ---
-type Restaurant = {
-        id: number;
-        name: string;
-        image: StaticImageData;
-        deliveryFee: string;
-        deliveryTime: number;
-        foodType: string;
-        rating: number;
-        reviewCount: number;
-};
 const fakeCategories = [
         { name: "Burger", icon: "🍔" },
         { name: "Pizza", icon: "🍕" },
@@ -31,111 +19,19 @@ const fakeCategories = [
         { name: "Thai", icon: "🍜" },
         { name: "American", icon: "🇺🇸" },
 ];
-const fakeRestaurants: Restaurant[] = [
-        {
-                id: 1,
-                name: "The Burger Cafe",
-                image: burgerImage,
-                deliveryFee: "$0",
-                deliveryTime: 20,
-                foodType: "Burger",
-                rating: 4.6,
-                reviewCount: 2200,
-        },
-        {
-                id: 2,
-                name: "The Pizza Hut",
-                image: burgerImage,
-                deliveryFee: "$0",
-                deliveryTime: 20,
-                foodType: "Pizza",
-                rating: 4.6,
-                reviewCount: 2200,
-        },
-        {
-                id: 3,
-                name: "Caprese Sandwich Hub",
-                image: burgerImage,
-                deliveryFee: "$0",
-                deliveryTime: 20,
-                foodType: "Fast Food",
-                rating: 4.6,
-                reviewCount: 2200,
-        },
-        {
-                id: 4,
-                name: "The Wings Cafe",
-                image: burgerImage,
-                deliveryFee: "$1.99",
-                deliveryTime: 30,
-                foodType: "Fast Food",
-                rating: 4.8,
-                reviewCount: 1800,
-        },
-        {
-                id: 5,
-                name: "The Coffee Express",
-                image: burgerImage,
-                deliveryFee: "$0",
-                deliveryTime: 15,
-                foodType: "Coffee & Tea",
-                rating: 4.9,
-                reviewCount: 3100,
-        },
-        {
-                id: 6,
-                name: "The Biryani House",
-                image: burgerImage,
-                deliveryFee: "$2.49",
-                deliveryTime: 40,
-                foodType: "Indian",
-                rating: 4.5,
-                reviewCount: 980,
-        },
-        {
-                id: 7,
-                name: "Noodle & Co.",
-                image: burgerImage,
-                deliveryFee: "$0",
-                deliveryTime: 25,
-                foodType: "Thai",
-                rating: 4.7,
-                reviewCount: 1500,
-        },
-        {
-                id: 8,
-                name: "Taco Tuesday",
-                image: burgerImage,
-                deliveryFee: "$0",
-                deliveryTime: 20,
-                foodType: "Mexican",
-                rating: 4.6,
-                reviewCount: 1250,
-        },
-        {
-                id: 9,
-                name: "Sushi Central",
-                image: burgerImage,
-                deliveryFee: "$3.00",
-                deliveryTime: 35,
-                foodType: "Japanese",
-                rating: 4.9,
-                reviewCount: 2500,
-        },
-];
 
 type RestaurantListProps = {
-        initialData?: Restaurant[];
+        initialData: Restaurant[];
+        totalResults: number;
 };
 
-export default function RestaurantList({ initialData }: RestaurantListProps) {
-        const restaurants = initialData && initialData.length > 0 ? initialData : fakeRestaurants;
+export default function RestaurantList({ initialData, totalResults }: RestaurantListProps) {
         const searchParams = useSearchParams();
         const pathname = usePathname();
         const router = useRouter();
         const activeCategory = searchParams.get("category") || "";
-
         const scrollContainerRef = useRef<HTMLDivElement>(null);
+        const ITEMS_PER_PAGE = 9;
 
         const handleCategoryClick = (categoryName: string) => {
                 const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
@@ -163,17 +59,21 @@ export default function RestaurantList({ initialData }: RestaurantListProps) {
                                                 View All
                                         </a>
                                 </div>
-                                <div className="relative flex items-center">
-                                        <div
+
+                                <div className="flex items-center gap-2">
+                                        {/* Nút cuộn trái */}
+                                        <button
+                                                title="Scroll left"
                                                 onClick={() => handleScroll(-300)}
-                                                className="absolute left-0 bg-white p-2 rounded-full shadow-md cursor-pointer hidden md:block z-10 -translate-x-1/2"
+                                                className="p-2 rounded-full bg-white shadow-md cursor-pointer hidden md:block hover:bg-gray-100 transition-colors"
                                         >
                                                 <ChevronLeft className="w-6 h-6" />
-                                        </div>
+                                        </button>
 
+                                        {/* Thanh cuộn */}
                                         <div
                                                 ref={scrollContainerRef}
-                                                className="flex items-center gap-4 overflow-x-hidden pb-4 -mb-4 scrollbar-hide"
+                                                className="flex-grow flex items-center gap-4 overflow-x-auto scrollbar-hide"
                                         >
                                                 {fakeCategories.map((category, index) => (
                                                         <button
@@ -193,42 +93,30 @@ export default function RestaurantList({ initialData }: RestaurantListProps) {
                                                 ))}
                                         </div>
 
-                                        <div
+                                        {/* Nút cuộn phải */}
+                                        <button
+                                                title="Scroll right"
                                                 onClick={() => handleScroll(300)}
-                                                className="absolute right-0 bg-white p-2 rounded-full shadow-md cursor-pointer hidden md:block z-10 translate-x-1/2"
+                                                className="p-2 rounded-full bg-white shadow-md cursor-pointer hidden md:block hover:bg-gray-100 transition-colors"
                                         >
                                                 <ChevronRight className="w-6 h-6" />
-                                        </div>
+                                        </button>
                                 </div>
                         </div>
 
-                        {/* --- Restaurant List Header --- */}
+                        {/* --- List Header & Grid --- */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                                <h2 className="text-xl font-bold">{restaurants.length} Restaurants Near Austin, TX</h2>
-                                <div className="flex items-center gap-2">
-                                        <label htmlFor="sort-by" className="text-sm font-semibold">
-                                                Sort By:
-                                        </label>
-                                        <select
-                                                id="sort-by"
-                                                className="border rounded-md px-3 py-2 text-sm focus:ring-brand-purple focus:border-brand-purple"
-                                        >
-                                                <option>Popular</option>
-                                                <option>Recommended</option>
-                                                <option>Distance</option>
-                                        </select>
-                                </div>
+                                <h2 className="text-xl font-bold">{totalResults} Restaurants Found</h2>
+                                {/* Sort By Dropdown */}
                         </div>
-
-                        {/* --- Restaurant Grid --- */}
-                        {restaurants.length > 0 ? (
+                        {initialData && initialData.length > 0 ? (
                                 <>
                                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-10">
-                                                {restaurants.map((restaurant) => (
+                                                {initialData.map((restaurant) => (
                                                         <RestaurantCard key={restaurant.id} restaurant={restaurant} />
                                                 ))}
                                         </div>
-                                        <Pagination totalResults={20} itemsPerPage={2} />
+                                        <Pagination totalResults={totalResults} itemsPerPage={ITEMS_PER_PAGE} />
                                 </>
                         ) : (
                                 <p>No restaurants found. Try adjusting your filters.</p>
