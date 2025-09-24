@@ -14,7 +14,7 @@ type Restaurant = {
 };
 
 export const RestaurantCard = ({ restaurant }: { restaurant: Restaurant }) => (
-        <Link href={"#"} className="group cursor-pointer">
+        <Link href={"/restaurants/212"} className="group cursor-pointer">
                 <div className="relative w-full h-48 overflow-hidden rounded-lg">
                         <Image
                                 src={restaurant.image}
