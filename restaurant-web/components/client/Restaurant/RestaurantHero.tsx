@@ -32,7 +32,7 @@ export default function RestaurantHero({ restaurant }: RestaurantHeroProps) {
                                         />
 
                                         {/* Buttons */}
-                                        <div className="flex justify-end gap-2 pt-2">
+                                        <div className="flex justify-end gap-2 pt-2 mt-5 lg:mt-">
                                                 <button className="flex items-center gap-2 text-sm font-semibold border rounded-full px-4 py-2 hover:bg-gray-100 cursor-pointer">
                                                         <Info className="w-4 h-4" /> Store info
                                                 </button>

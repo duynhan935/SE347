@@ -46,7 +46,7 @@ export default function RestaurantNavTabs() {
         };
 
         return (
-                <nav className="sticky top-0 bg-white shadow-sm z-20">
+                <nav className="sticky top-0 bg-white shadow-sm z-20 p-3  md:p-0">
                         <div className="custom-container">
                                 <div className="max-w-4xl mx-auto">
                                         <div className="flex items-center gap-8 border-b">
