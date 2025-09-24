@@ -1,4 +1,4 @@
-import burgerImage from "@/assets/Restaurant/Burger.png";
+import { Constants } from "@/constants";
 import { StaticImageData } from "next/image";
 import { notFound } from "next/navigation";
 
@@ -51,8 +51,8 @@ async function fetchRestaurantById(id: string): Promise<RestaurantDetail | null>
         const fakeDetailedData: RestaurantDetail = {
                 id: 1,
                 name: "The Burger Cafe",
-                image: burgerImage,
-                bannerImage: burgerImage,
+                image: Constants.Images.Restaurant.Burger,
+                bannerImage: Constants.Images.Restaurant.Burger,
                 deliveryFee: "$0",
                 deliveryTime: 20,
                 foodType: "Burger",
@@ -94,14 +94,14 @@ async function fetchRestaurantById(id: string): Promise<RestaurantDetail | null>
                                                 description:
                                                         "Ground beef, hollandaise sauce mix, stone ground mustard, with a egg it's so much taste...",
                                                 price: 13.99,
-                                                image: burgerImage,
+                                                image: Constants.Images.Restaurant.Burger,
                                         },
                                         {
                                                 id: 102,
                                                 name: "Classic Cheeseburger",
                                                 description: "Beef patty, cheddar cheese, lettuce, tomato, onion.",
                                                 price: 9.99,
-                                                image: burgerImage,
+                                                image: Constants.Images.Restaurant.Burger,
                                         },
                                         {
                                                 id: 103,
@@ -109,14 +109,14 @@ async function fetchRestaurantById(id: string): Promise<RestaurantDetail | null>
                                                 description: "Beef patty, crispy bacon, avocado, swiss cheese.",
                                                 price: 12.99,
 
-                                                image: burgerImage,
+                                                image: Constants.Images.Restaurant.Burger,
                                         },
                                         {
                                                 id: 104,
                                                 name: "Bacon Avocado Burger",
                                                 description: "Beef patty, crispy bacon, avocado, swiss cheese.",
                                                 price: 12.99,
-                                                image: burgerImage,
+                                                image: Constants.Images.Restaurant.Burger,
                                         },
                                 ],
                         },
@@ -128,7 +128,7 @@ async function fetchRestaurantById(id: string): Promise<RestaurantDetail | null>
                                                 name: "Double Cheeseburger",
                                                 description: "Two beef patties, double cheddar cheese.",
                                                 price: 12.99,
-                                                image: burgerImage,
+                                                image: Constants.Images.Restaurant.Burger,
                                         },
                                 ],
                         },
@@ -140,14 +140,14 @@ async function fetchRestaurantById(id: string): Promise<RestaurantDetail | null>
                                                 name: "Crispy Chicken Sandwich",
                                                 description: "Fried chicken breast, pickles, special sauce.",
                                                 price: 10.99,
-                                                image: burgerImage,
+                                                image: Constants.Images.Restaurant.Burger,
                                         },
                                         {
                                                 id: 302,
                                                 name: "Grilled Chicken Club",
                                                 description: "Grilled chicken, bacon, lettuce, tomato, mayo.",
                                                 price: 11.99,
-                                                image: burgerImage,
+                                                image: Constants.Images.Restaurant.Burger,
                                         },
                                 ],
                         },
