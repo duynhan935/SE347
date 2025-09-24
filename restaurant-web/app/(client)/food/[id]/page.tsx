@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 type MenuItem = {
         id: number;
         name: string;
+        ingredients: string;
         description: string;
         price: number;
         image: StaticImageData;

@@ -46,7 +46,7 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                                 Back to {restaurant.name}
                         </Link>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 p-4 lg:p-0">
                                 {/* Cột bên trái: Hình ảnh */}
                                 <div>
                                         <Image
