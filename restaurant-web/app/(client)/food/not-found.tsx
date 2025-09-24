@@ -2,12 +2,12 @@
 
 import { useRouter } from "next/navigation";
 
-const RestaurantNotFound = () => {
+const FoodPageNotFound = () => {
         const router = useRouter();
 
         return (
                 <div className="flex flex-col items-center justify-center h-screen">
-                        <h1 className="text-2xl font-bold mb-4">Restaurant Not Found</h1>
+                        <h1 className="text-2xl font-bold mb-4">Food Page Not Found</h1>
                         <button
                                 onClick={() => router.back()}
                                 className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
@@ -18,4 +18,4 @@ const RestaurantNotFound = () => {
         );
 };
 
-export default RestaurantNotFound;
+export default FoodPageNotFound;
