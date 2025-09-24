@@ -22,29 +22,29 @@ export default function Header() {
 
                     {/* Navigation */}
                     <nav className="hidden md:flex items-center space-x-8">
-                        <Link href="/app" className="text-brand-black hover:text-gray-900">
+                        <Link href="/app" className="text-brand-black ">
                             Get the app
                         </Link>
-                        <Link href="/about" className="text-brand-black hover:text-gray-900">
+                        <Link href="/about" className="text-brand-black ">
                             About
                         </Link>
                         <DropdownMenu>
-                            <DropdownMenuTrigger className="flex items-center text-brand-black hover:text-gray-900">
+                            <DropdownMenuTrigger className="flex items-center text-brand-black  cursor-pointer">
                                 Page
                                 <ChevronDown className="ml-1 h-4 w-4" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                                 <DropdownMenuItem>
-                                    <Link href="/restaurants">Nhà hàng</Link>
+                                    <Link href="/restaurants">Restaurants</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
-                                    <Link href="/cart">Giỏ hàng</Link>
+                                    <Link href="/cart">Cart</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
-                                    <Link href="/checkout">Thanh toán</Link>
+                                    <Link href="/checkout">Checkout</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
-                                    <Link href="/contact">Liên hệ</Link>
+                                    <Link href="/contact">Contact</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
                                     <Link href="/admin">Admin</Link>
@@ -58,13 +58,15 @@ export default function Header() {
 
                     {/* Auth Buttons */}
                     <div className="flex items-center space-x-3">
-                        <Link href="/account">
-                            <Button variant="ghost" className="text-gray-700 hover:text-gray-900">
+                        <Link href="/login">
+                            <Button variant="ghost" className="hover:text-brand-purpledark cursor-pointer">
                                 Sign In
                             </Button>
                         </Link>
-                        <Link href="/login">
-                            <Button className="bg-purple-600 hover:bg-purple-700 text-white px-6">Sign Up</Button>
+                        <Link href="/register">
+                            <Button className="bg-brand-purple hover:bg-brand-purpledark text-brand-white px-6 cursor-pointer">
+                                Sign Up
+                            </Button>
                         </Link>
                     </div>
                 </div>
