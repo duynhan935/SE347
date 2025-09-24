@@ -9,7 +9,6 @@ import RestaurantMenu from "@/components/client/Restaurant/RestaurantMenu";
 import RestaurantNavTabs from "@/components/client/Restaurant/RestaurantNavTabs";
 import RestaurantReviews from "@/components/client/Restaurant/RestaurantReviews";
 
-// --- Kiểu dữ liệu chi tiết ---
 export type RestaurantDetail = {
         id: number;
         name: string;
