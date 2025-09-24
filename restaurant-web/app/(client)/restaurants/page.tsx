@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // File: app/restaurants/page.tsx
 import burgerImage from "@/assets/Restaurant/Burger.png"; // Ví dụ import ảnh
 import RestaurantsContainer from "@/components/client/restaurants/RestaurantsContainer";
