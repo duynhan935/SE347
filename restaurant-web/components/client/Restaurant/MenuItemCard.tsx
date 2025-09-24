@@ -1,6 +1,7 @@
 import { RestaurantDetail } from "@/app/(client)/restaurants/[id]/page";
 import { PlusCircle } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export const MenuItemCard = ({ item }: { item: RestaurantDetail["menu"][0]["items"][0] }) => {
         const handleAddToCart = () => {
@@ -8,7 +9,7 @@ export const MenuItemCard = ({ item }: { item: RestaurantDetail["menu"][0]["item
         };
 
         return (
-                <div className="border rounded-lg overflow-hidden">
+                <Link href={`/food/${item.id}`} className="border rounded-lg overflow-hidden">
                         <Image
                                 src={item.image}
                                 alt={item.name}
@@ -30,6 +31,6 @@ export const MenuItemCard = ({ item }: { item: RestaurantDetail["menu"][0]["item
                                         </button>
                                 </div>
                         </div>
-                </div>
+                </Link>
         );
 };
