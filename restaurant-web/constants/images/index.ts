@@ -14,6 +14,8 @@ import Pizza from "@/assets/HomePage/pizza.png";
 // Restaurant images
 import RestaurantBurger from "@/assets/Restaurant/Burger.png";
 
+
+
 // Export theo category
 export const CommonImages = {
     Logo,
@@ -54,5 +56,7 @@ export {
     Pizza,
     RestaurantBurger,
 };
+
+
 
 export default Images;
