@@ -21,6 +21,18 @@ import {
     Linkedin,
     Twitter,
     Instagram,
+    Gauge,
+    FileText,
+    Calendar,
+    Users,
+    Utensils,
+    Megaphone,
+    Paintbrush,
+    Wrench,
+    Store,
+    MessageCircleQuestionMark,
+    Bell,
+    ChartBar,
 } from "lucide-react";
 
 // Navigation icons
@@ -84,6 +96,18 @@ export {
     Heart,
     Plus,
     Minus,
+    Gauge,
+    FileText,
+    Calendar,
+    Users,
+    Utensils,
+    Megaphone,
+    Paintbrush,
+    Wrench,
+    Store,
+    MessageCircleQuestionMark,
+    Bell,
+    ChartBar,
 };
 
 export const SocialIcons = {
