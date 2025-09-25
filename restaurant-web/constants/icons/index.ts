@@ -17,6 +17,10 @@ import {
     Heart,
     Plus,
     Minus,
+    Facebook,
+    Linkedin,
+    Twitter,
+    Instagram,
 } from "lucide-react";
 
 // Navigation icons
@@ -80,6 +84,13 @@ export {
     Heart,
     Plus,
     Minus,
+};
+
+export const SocialIcons = {
+    Facebook,
+    Linkedin,
+    Twitter,
+    Instagram,
 };
 
 export default Icons;
