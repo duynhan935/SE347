@@ -1,5 +1,5 @@
-import burgerImage from "@/assets/Restaurant/Burger.png";
 import FoodDetail from "@/components/client/Food/FoodDetail";
+import { Constants } from "@/constants";
 import { StaticImageData } from "next/image";
 import { notFound } from "next/navigation";
 
@@ -25,7 +25,7 @@ const ALL_FOODS_DATABASE = [
                         description:
                                 "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.",
                         price: 7.5,
-                        image: burgerImage,
+                        image: Constants.Images.Restaurant.Burger,
                 },
                 restaurant: { id: 1, name: "The Burger Cafe" },
         },
@@ -37,7 +37,7 @@ const ALL_FOODS_DATABASE = [
                         description:
                                 "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.",
                         price: 9.99,
-                        image: burgerImage,
+                        image: Constants.Images.Restaurant.Burger,
                 },
                 restaurant: { id: 1, name: "The Burger Cafe" },
         },
@@ -49,7 +49,7 @@ const ALL_FOODS_DATABASE = [
                         description:
                                 "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.",
                         price: 12.99,
-                        image: burgerImage,
+                        image: Constants.Images.Restaurant.Burger,
                 },
                 restaurant: { id: 1, name: "The Burger Cafe" },
         },
@@ -61,7 +61,7 @@ const ALL_FOODS_DATABASE = [
                         description:
                                 "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.",
                         price: 15.0,
-                        image: burgerImage,
+                        image: Constants.Images.Restaurant.Burger,
                 },
                 restaurant: { id: 2, name: "Pizza Palace" },
         },
