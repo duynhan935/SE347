@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // File: app/restaurants/page.tsx
-import burgerImage from "@/assets/Restaurant/Burger.png"; // Ví dụ import ảnh
 import RestaurantsContainer from "@/components/client/restaurants/RestaurantsContainer";
+import { Images } from "@/constants";
 import { StaticImageData } from "next/image";
 
 // --- Kiểu dữ liệu và Hàm Fetch ---
@@ -23,7 +23,7 @@ async function fetchRestaurants(searchParams: any) {
                 {
                         id: 1,
                         name: "The Burger Cafe",
-                        image: burgerImage,
+                        image: Images.Restaurant.Burger,
                         deliveryFee: "$0",
                         deliveryTime: 20,
                         foodType: "Burger",
@@ -33,7 +33,7 @@ async function fetchRestaurants(searchParams: any) {
                 {
                         id: 2,
                         name: "The Pizza Hut",
-                        image: burgerImage,
+                        image: Images.Restaurant.Burger,
                         deliveryFee: "$0",
                         deliveryTime: 20,
                         foodType: "Pizza",
@@ -43,7 +43,7 @@ async function fetchRestaurants(searchParams: any) {
                 {
                         id: 3,
                         name: "Caprese Sandwich Hub",
-                        image: burgerImage,
+                        image: Images.Restaurant.Burger,
                         deliveryFee: "$0",
                         deliveryTime: 20,
                         foodType: "Fast Food",
@@ -53,7 +53,7 @@ async function fetchRestaurants(searchParams: any) {
                 {
                         id: 4,
                         name: "The Wings Cafe",
-                        image: burgerImage,
+                        image: Images.Restaurant.Burger,
                         deliveryFee: "$1.99",
                         deliveryTime: 30,
                         foodType: "Fast Food",
@@ -63,7 +63,7 @@ async function fetchRestaurants(searchParams: any) {
                 {
                         id: 5,
                         name: "The Coffee Express",
-                        image: burgerImage,
+                        image: Images.Restaurant.Burger,
                         deliveryFee: "$0",
                         deliveryTime: 15,
                         foodType: "Coffee & Tea",
@@ -73,7 +73,7 @@ async function fetchRestaurants(searchParams: any) {
                 {
                         id: 6,
                         name: "The Biryani House",
-                        image: burgerImage,
+                        image: Images.Restaurant.Burger,
                         deliveryFee: "$2.49",
                         deliveryTime: 40,
                         foodType: "Indian",
@@ -83,7 +83,7 @@ async function fetchRestaurants(searchParams: any) {
                 {
                         id: 7,
                         name: "Noodle & Co.",
-                        image: burgerImage,
+                        image: Images.Restaurant.Burger,
                         deliveryFee: "$0",
                         deliveryTime: 25,
                         foodType: "Thai",
@@ -93,7 +93,7 @@ async function fetchRestaurants(searchParams: any) {
                 {
                         id: 8,
                         name: "Taco Tuesday",
-                        image: burgerImage,
+                        image: Images.Restaurant.Burger,
                         deliveryFee: "$0",
                         deliveryTime: 20,
                         foodType: "Mexican",
@@ -103,7 +103,7 @@ async function fetchRestaurants(searchParams: any) {
                 {
                         id: 9,
                         name: "Sushi Central",
-                        image: burgerImage,
+                        image: Images.Restaurant.Burger,
                         deliveryFee: "$3.00",
                         deliveryTime: 35,
                         foodType: "Japanese",
@@ -113,7 +113,7 @@ async function fetchRestaurants(searchParams: any) {
                 {
                         id: 10,
                         name: "Another Burger Place",
-                        image: burgerImage,
+                        image: Images.Restaurant.Burger,
                         deliveryFee: "$1.00",
                         deliveryTime: 22,
                         foodType: "Burger",
@@ -123,7 +123,7 @@ async function fetchRestaurants(searchParams: any) {
                 {
                         id: 11,
                         name: "Extra Pizza",
-                        image: burgerImage,
+                        image: Images.Restaurant.Burger,
                         deliveryFee: "$0",
                         deliveryTime: 25,
                         foodType: "Pizza",
@@ -133,7 +133,7 @@ async function fetchRestaurants(searchParams: any) {
                 {
                         id: 12,
                         name: "Super Sushi",
-                        image: burgerImage,
+                        image: Images.Restaurant.Burger,
                         deliveryFee: "$2.50",
                         deliveryTime: 30,
                         foodType: "Japanese",

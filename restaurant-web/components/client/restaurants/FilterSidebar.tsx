@@ -7,15 +7,7 @@ const foodEatsOptions = [
         { value: "special-deals", label: "Special Deals" },
         { value: "top-eats", label: "Top Eats" },
 ];
-const priceOptions = [
-        { value: "0-10", label: "$0-$10" },
-        { value: "10-20", label: "$10-$20" },
-        { value: "20-30", label: "$20-$30" },
-        { value: "30-40", label: "$30-$40" },
-        { value: "40-50", label: "$40-$50" },
-        { value: "50-100", label: "$50-$100" },
-        { value: "100-plus", label: "$100+" },
-];
+
 const deliveryFeeOptions = [
         { value: "0-2", label: "$0-$2" },
         { value: "3-6", label: "$3-$6" },
@@ -202,7 +194,7 @@ export default function FilterSidebar() {
                         {/* Sort by */}
                         <FilterSection title="Sort by">
                                 {sortOptions.map(({ value, label }) => (
-                                        <div key={value} className="flex items-center">
+                                        <div key={value} className="flex items-center ">
                                                 <input
                                                         id={value}
                                                         name="sortBy"

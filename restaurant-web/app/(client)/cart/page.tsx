@@ -1,3 +1,9 @@
+import CartPageContainer from "@/components/client/Cart/CartPageContainer";
+
 export default function CartPage() {
-    return <div>Trang giỏ hàng</div>;
+        return (
+                <section>
+                        <CartPageContainer />
+                </section>
+        );
 }
