@@ -201,11 +201,11 @@ export default function Footer() {
                     </div>
                 </div>
                 {/* Bottom section */}
-                <div className="border-t border-gray-300 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-600">
-                    <p className="text-p2 text-brand-grey font-manrope">
+                <div className="border-t border-gray-300 mt-12 pt-6 flex flex-col md:flex-row md:justify-between md:items-center text-sm text-gray-600">
+                    <p className="text-p2 text-brand-grey font-manrope md:text-left text-center w-full md:w-auto">
                         Copyright © 2022 UBILUT All rights reserved.
                     </p>
-                    <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-6 mt-4 md:mt-0">
+                    <div className="flex flex-col md:flex-row md:space-x-6 space-y-2 md:space-y-0 md:text-right text-center w-full md:w-auto md:justify-end">
                         <a
                             href="#"
                             className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
