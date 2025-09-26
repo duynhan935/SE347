@@ -9,7 +9,7 @@ type OrderItem = {
         image: StaticImageData;
 };
 
-export const OrderItemRow = ({ item }: { item: OrderItem }) => (
+export const OrderItemRow = ({ item, orderId = 1 }: { item: OrderItem; orderId: number }) => (
         <div className="flex items-center gap-4 py-4 border-b last:border-b-0">
                 <Image src={item.image} alt={item.name} width={64} height={64} className="rounded-md object-cover" />
                 <div className="flex-grow space-y-1">
@@ -22,7 +22,7 @@ export const OrderItemRow = ({ item }: { item: OrderItem }) => (
                                 Buy Again
                         </button>
                         <Link
-                                href={`/orders/${item.id}`}
+                                href={`/orders/${orderId}`}
                                 className="text-sm font-semibold px-4 py-2 rounded-md text-center hover:bg-gray-50 border border-gray-400"
                         >
                                 See Details

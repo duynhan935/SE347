@@ -53,6 +53,7 @@ export default async function OrdersPageContainer({ orders }: { orders: Order[] 
                                                                         {order.items.map((item) => (
                                                                                 <OrderItemRow
                                                                                         key={item.id}
+                                                                                        orderId={order.id}
                                                                                         item={item}
                                                                                 />
                                                                         ))}
