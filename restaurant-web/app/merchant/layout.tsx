@@ -99,7 +99,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
                 {/* Header */}
                 <MerchantHeader />
                 {/* Page content */}
-                <div className="p-8 bg-[#f5f5f7]">{children}</div>
+                <div className="p-3 bg-[#f5f5f7]">{children}</div>
             </main>
         </div>
     );
