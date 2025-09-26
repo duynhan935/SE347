@@ -3,8 +3,8 @@ import CheckoutPageContainer from "@/components/client/Checkout/CheckoutContaine
 
 export default function CheckoutPage() {
         return (
-                <main>
+                <section>
                         <CheckoutPageContainer backgroundImage={burgerImage} />
-                </main>
+                </section>
         );
 }

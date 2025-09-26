@@ -4,8 +4,8 @@ import { Mail, MapPin, Phone, User } from "lucide-react";
 import Image, { StaticImageData } from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { FormInput } from "../FormInput";
-import { FormSelect } from "../FormSelect";
+import { FormInput } from "./FormInput";
+import { FormSelect } from "./FormSelect";
 
 export default function CheckoutPageClient({ backgroundImage }: { backgroundImage: StaticImageData }) {
         const router = useRouter();
