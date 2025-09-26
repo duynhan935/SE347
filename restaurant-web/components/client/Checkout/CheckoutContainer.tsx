@@ -2,11 +2,13 @@
 
 import { Mail, MapPin, Phone, User } from "lucide-react";
 import Image, { StaticImageData } from "next/image";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FormInput } from "../FormInput";
 import { FormSelect } from "../FormSelect";
 
 export default function CheckoutPageClient({ backgroundImage }: { backgroundImage: StaticImageData }) {
+        const router = useRouter();
         const [formData, setFormData] = useState({
                 name: "",
                 phone: "",
@@ -25,6 +27,7 @@ export default function CheckoutPageClient({ backgroundImage }: { backgroundImag
                 e.preventDefault();
                 console.log("Order placed with data:", formData);
                 alert("Your order has been placed!");
+                router.push("/payment");
         };
 
         return (
