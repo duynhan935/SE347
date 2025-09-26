@@ -1,11 +1,20 @@
 import burgerImage from "@/assets/Restaurant/Burger.png";
 import Image, { StaticImageData } from "next/image";
 import { notFound } from "next/navigation";
-import { OrderSummary } from "./OrderSummary";
+import { OrderStatusSidebar } from "./OrderStatusSidebar";
+
+type StatusType = "Pending" | "Success" | "Cancel";
+
+type OrderStatus = {
+        orderValidate: StatusType;
+        orderReceived: StatusType;
+        restaurantStatus: StatusType;
+        deliveryStatus: StatusType;
+        estimatedTime: number;
+};
 
 type OrderItem = {
         id: string;
-        productId: number;
         name: string;
         shopName: string;
         price: number;
@@ -18,6 +27,7 @@ type Order = {
         id: number;
         date: string;
         items: OrderItem[];
+        status: OrderStatus;
 };
 
 const fakeOrders: Order[] = [
@@ -27,7 +37,6 @@ const fakeOrders: Order[] = [
                 items: [
                         {
                                 id: "12345678910",
-                                productId: 101,
                                 name: "Burger",
                                 shopName: "Burger Shop",
                                 price: 30,
@@ -37,7 +46,6 @@ const fakeOrders: Order[] = [
                         },
                         {
                                 id: "12345678911",
-                                productId: 301,
                                 name: "Burger",
                                 shopName: "Burger Shop",
                                 price: 30,
@@ -46,6 +54,14 @@ const fakeOrders: Order[] = [
                                 note: "No Duy Nhan",
                         },
                 ],
+
+                status: {
+                        orderValidate: "Pending",
+                        orderReceived: "Success",
+                        restaurantStatus: "Cancel",
+                        deliveryStatus: "Pending",
+                        estimatedTime: 45,
+                },
         },
 ];
 
@@ -54,7 +70,7 @@ async function fetchOrderById(id: string): Promise<Order | undefined> {
         return fakeOrders.find((order) => order.id === orderId);
 }
 
-export default async function OrderDetailPageContainer({ params }: { params: { id: string } }) {
+export default async function OrderStatusPage({ params }: { params: { id: string } }) {
         const order = await fetchOrderById(params.id);
 
         if (!order) {
@@ -73,10 +89,10 @@ export default async function OrderDetailPageContainer({ params }: { params: { i
         }, {} as Record<string, OrderItem[]>);
 
         return (
-                <div className="custom-container p-3 sm:p-1 md:p-12">
+                <div className="custom-container py-12">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 items-start">
                                 {/* Cột trái: Chi tiết đơn hàng */}
-                                <div className="lg:col-span-2 space-y-6">
+                                <div className="lg:col-span-2 space-y-6 p-3 sm:p-1 md:p-12">
                                         <h1 className="text-3xl font-bold">
                                                 Order Details ({totalItems} {totalItems > 1 ? "items" : "item"})
                                         </h1>
@@ -129,9 +145,9 @@ export default async function OrderDetailPageContainer({ params }: { params: { i
                                         </div>
                                 </div>
 
-                                {/* Cột phải: Tóm tắt đơn hàng */}
+                                {/* Cột phải: Thông tin trạng thái đơn hàng */}
                                 <div className="lg:col-span-1">
-                                        <OrderSummary order={order} />
+                                        <OrderStatusSidebar status={order.status} />
                                 </div>
                         </div>
                 </div>
