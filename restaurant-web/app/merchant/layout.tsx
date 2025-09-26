@@ -1,4 +1,5 @@
 "use client";
+import MerchantHeader from "@/components/layout/merchant/MerchantHeader";
 import {
     Bell,
     Calendar,
@@ -96,16 +97,9 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             {/* Main content */}
             <main className="flex-1">
                 {/* Header */}
-                <header className="flex items-center justify-end gap-5 px-8 py-4 bg-white border-b">
-                    <span className="font-semibold">Select a location</span>
-                    <Store size={24} className="text-gray-700" />
-                    <MessageCircleQuestionMark size={24} className="text-gray-700" />
-                    <Bell size={24} className="text-gray-700" />
-                    <Settings size={24} className="text-gray-700" />
-                    <User size={32} className="text-gray-400 rounded-full bg-gray-200" />
-                </header>
+                <MerchantHeader />
                 {/* Page content */}
-                <div className="p-8">{children}</div>
+                <div className="p-8 bg-[#f5f5f7]">{children}</div>
             </main>
         </div>
     );
