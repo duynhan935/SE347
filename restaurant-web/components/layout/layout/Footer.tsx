@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function Footer() {
     return (
-        <footer className="bg-orange-50 py-12 px-6">
+        <footer className="bg-brand-yellowlight py-12 px-6">
             <div className="custom-container">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12">
                     {/* Left: Logo, Description, Social Icons */}
@@ -202,9 +202,7 @@ export default function Footer() {
                 </div>
                 {/* Bottom section */}
                 <div className="border-t border-gray-300 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-600">
-                    <p className="text-p2 text-brand-grey font-manrope">
-                        Copyright © 2022 UBILUT All rights reserved.
-                    </p>
+                    <p className="text-p2 text-brand-grey font-manrope">Copyright © 2022 UBILUT All rights reserved.</p>
                     <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-6 mt-4 md:mt-0">
                         <a
                             href="#"
