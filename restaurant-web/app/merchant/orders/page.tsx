@@ -1,96 +1,143 @@
-import { Search, Filter, ChevronUp, ChevronDown, Settings, SlidersHorizontal } from "lucide-react";
+"use client";
+import HeaderDropdown from "@/components/layout/merchant/HeaderDropdown";
+import DataTable from "@/components/merchant/common/DataTable";
+import ListSetupModal from "@/components/merchant/common/ListSetupModal";
+import SearchFilter from "@/components/merchant/common/SearchFilter";
+import { SlidersHorizontal } from "lucide-react";
+import { useState } from "react";
+
+const orderColumns = [
+    { label: "ID", checked: true },
+    { label: "Customer Name", checked: true },
+    { label: "Type", checked: true },
+    { label: "Order Time Is Asap", checked: true },
+    { label: "Order Time", checked: true },
+    { label: "Ready Time - Date", checked: true },
+    { label: "Status", checked: true },
+    { label: "Payment", checked: true },
+    { label: "Assigned To", checked: false },
+    { label: "Assigned To Group", checked: false },
+    { label: "Order Total", checked: true },
+    { label: "Telephone", checked: false },
+    { label: "Email", checked: false },
+    { label: "Date Updated", checked: false },
+    { label: "Date Added", checked: false },
+];
+
+const filterOptions = [
+    {
+        label: "View all assignees",
+        options: [
+            { value: "all", label: "View all assignees" },
+            { value: "me", label: "Assigned To Me" },
+            { value: "other", label: "Assigned To Other User" },
+            { value: "unassigned", label: "Yet to be Assigned" },
+        ],
+    },
+    {
+        label: "View all Status",
+        options: [
+            { value: "all", label: "View all Status" },
+            { value: "pending", label: "Pending" },
+            { value: "completed", label: "Completed" },
+            { value: "cancelled", label: "Cancelled" },
+        ],
+    },
+];
 
 export default function OrdersPage() {
+    const [openSetupModal, setOpenSetupModal] = useState(false);
+
+    const orderTableData = [
+        {
+            label: "ID",
+            sortable: true,
+            key: "id",
+        },
+        {
+            label: "Customer Name",
+            sortable: true,
+            key: "customer_name",
+        },
+        {
+            label: "Type",
+            sortable: false,
+        },
+        {
+            label: "Order Time Is Asap",
+            sortable: true,
+            key: "order_time_asap",
+        },
+        {
+            label: "Order Time",
+            sortable: true,
+            key: "order_time",
+        },
+        {
+            label: "Ready Time - Date",
+            sortable: true,
+            key: "ready_time",
+        },
+        {
+            label: "Status",
+            sortable: true,
+            key: "status",
+        },
+        {
+            label: "Payment",
+            sortable: false,
+        },
+        {
+            label: "Order Total",
+            sortable: true,
+            key: "order_total",
+        },
+        {
+            label: "Setup",
+            icon: (
+                <SlidersHorizontal
+                    size={14}
+                    className="text-brand-black cursor-pointer"
+                    onClick={() => setOpenSetupModal(true)}
+                />
+            ),
+            tooltip: "Settings",
+            sortable: false,
+        },
+    ];
+
+    const handleSort = (columnKey: string, direction: "asc" | "desc" | null) => {
+        console.log(`Sorting ${columnKey} in ${direction} order`);
+    };
+
     return (
         <div className="min-h-screen">
             <h1 className="text-h4 font-semibold mb-6 text-gray-900 ">Orders</h1>
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                {/* Search and Filter Section */}
                 <div className="flex justify-between items-center p-4 border-b border-gray-200">
                     <div></div>
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <input
-                                type="text"
-                                className="border border-gray-300 rounded-lg py-2 pl-10 pr-4 w-80 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Search by id, location, statu"
-                            />
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-black" size={16} />
-                        </div>
-                        <button className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-50 flex items-center">
-                            <Filter size={16} className="text-brand-black" />
-                            <ChevronDown size={14} className="ml-1 text-brand-black" />
-                        </button>
-                    </div>
+
+                    {/* Search and Filter */}
+                    <SearchFilter
+                        searchPlaceholder="Search by id, customer name, phone..."
+                        filterOptions={filterOptions}
+                        HeaderDropdown={HeaderDropdown}
+                        onSearch={(value) => console.log("Search:", value)}
+                        onFilterChange={(index, value) => console.log("Filter changed:", index, value)}
+                        onClear={() => console.log("Cleared all filters")}
+                    />
                 </div>
 
+                {/* List Setup Modal */}
+                <ListSetupModal open={openSetupModal} onClose={() => setOpenSetupModal(false)} columns={orderColumns} />
                 {/* Table */}
-                <div className="overflow-x-auto">
-                    <table className="min-w-full">
-                        <thead>
-                            <tr className="border-b border-gray-200 bg-gray-50">
-                                <th className="px-4 py-3 text-left">
-                                    <input type="checkbox" className="rounded" />
-                                </th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                                    <div className="flex items-center gap-1">
-                                        <ChevronUp size={14} className="text-gray-400" />
-                                        ID
-                                    </div>
-                                </th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                                    <div className="flex items-center gap-1">
-                                        <ChevronDown size={14} className="text-gray-400" />
-                                        Customer Name
-                                    </div>
-                                </th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Type</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                                    <div className="flex items-center gap-1">
-                                        <ChevronDown size={14} className="text-gray-400" />
-                                        Order Time Is Asap
-                                    </div>
-                                </th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                                    <div className="flex items-center gap-1">
-                                        <ChevronDown size={14} className="text-gray-400" />
-                                        Order Time
-                                    </div>
-                                </th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                                    <div className="flex items-center gap-1">
-                                        <ChevronDown size={14} className="text-gray-400" />
-                                        Ready Time - Date
-                                    </div>
-                                </th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                                    <div className="flex items-center gap-1">
-                                        <ChevronDown size={14} className="text-gray-400" />
-                                        Status
-                                    </div>
-                                </th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Payment</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                                    <div className="flex items-center gap-1">
-                                        <ChevronDown size={14} className="text-gray-400" />
-                                        Order Total
-                                    </div>
-                                </th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                                    <SlidersHorizontal size={14} className="text-brand-black" />
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colSpan={11} className="text-center py-12 text-gray-500 text-sm">
-                                    There are no orders available.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable
+                    columns={orderTableData}
+                    emptyText="There are no orders available."
+                    colSpan={11}
+                    onSort={handleSort}
+                />
 
                 {/* Footer */}
                 <div className="flex justify-end items-center px-4 py-3 border-t border-gray-200 text-sm text-gray-500">
