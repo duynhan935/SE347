@@ -16,17 +16,9 @@ interface CustomSelectProps {
     className?: string;
 }
 
-export default function CustomSelect({ 
-    options, 
-    placeholder, 
-    value,
-    onChange,
-    className = ""
-}: CustomSelectProps) {
+export default function CustomSelect({ options, placeholder, value, onChange, className = "" }: CustomSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
-    // Đặt default là option đầu tiên nếu có options
-    const defaultValue = value || (options.length > 0 ? options[0].value : "");
-    const [selectedValue, setSelectedValue] = useState(defaultValue);
+    const [selectedValue, setSelectedValue] = useState(value || (options.length > 0 ? options[0].value : ""));
 
     const handleSelect = (optionValue: string) => {
         setSelectedValue(optionValue);
@@ -34,7 +26,7 @@ export default function CustomSelect({
         onChange?.(optionValue);
     };
 
-    const selectedOption = options.find(opt => opt.value === selectedValue);
+    const selectedOption = options.find((opt) => opt.value === selectedValue);
     const displayText = selectedOption ? selectedOption.label : placeholder;
 
     return (
@@ -61,7 +53,7 @@ export default function CustomSelect({
                         <span>{displayText}</span>
                         <span className="text-xs opacity-75">Press to select</span>
                     </div>
-                    
+
                     {/* Options List */}
                     {options.map((option) => (
                         <button
@@ -77,12 +69,7 @@ export default function CustomSelect({
             )}
 
             {/* Overlay để đóng dropdown khi click outside */}
-            {isOpen && (
-                <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setIsOpen(false)}
-                />
-            )}
+            {isOpen && <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />}
         </div>
     );
 }
