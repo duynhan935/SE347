@@ -14,49 +14,45 @@ import Pizza from "@/assets/HomePage/pizza.png";
 // Restaurant images
 import RestaurantBurger from "@/assets/Restaurant/Burger.png";
 
-
-
 // Export theo category
 export const CommonImages = {
-    Logo,
+        Logo,
 };
 
 export const HomePageImages = {
-    Burger,
-    FeedYourEmployee,
-    FoodEat,
-    Hero,
-    Leaf,
-    Noodles,
-    Partner,
-    Pizza,
+        Burger,
+        FeedYourEmployee,
+        FoodEat,
+        Hero,
+        Leaf,
+        Noodles,
+        Partner,
+        Pizza,
 };
 
 export const RestaurantImages = {
-    Burger: RestaurantBurger,
+        Burger: RestaurantBurger,
 };
 
 // Export tất cả images
 export const Images = {
-    Common: CommonImages,
-    HomePage: HomePageImages,
-    Restaurant: RestaurantImages,
+        Common: CommonImages,
+        HomePage: HomePageImages,
+        Restaurant: RestaurantImages,
 };
 
 // Export individual (với alias để tránh conflict)
 export {
-    Logo,
-    Burger as HomePageBurger,
-    FeedYourEmployee,
-    FoodEat,
-    Hero,
-    Leaf,
-    Noodles,
-    Partner,
-    Pizza,
-    RestaurantBurger,
+        FeedYourEmployee,
+        FoodEat,
+        Hero,
+        Burger as HomePageBurger,
+        Leaf,
+        Logo,
+        Noodles,
+        Partner,
+        Pizza,
+        RestaurantBurger,
 };
-
-
 
 export default Images;
