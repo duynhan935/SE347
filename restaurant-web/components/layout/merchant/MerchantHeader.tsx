@@ -1,6 +1,7 @@
 import Tooltip from "@/components/merchant/dashboard/Tooltip";
 import { Bell, MessageCircleQuestionMark, Settings, Store, User, ChevronDown, MapPin, Plus, LogOut } from "@/constants";
 import HeaderDropdown from "./HeaderDropdown";
+import Link from "next/link";
 
 export default function MerchantHeader() {
     return (
@@ -88,11 +89,14 @@ export default function MerchantHeader() {
                     </div>
                     <div className="border-t"></div>
                     <div className="px-6 py-4 flex flex-col gap-3">
-                        <button className="flex items-center gap-2 text-gray-700 hover:text-blue-600 cursor-pointer">
+                        <Link
+                            href="/merchant/staff"
+                            className="flex items-center w-full gap-3 p-2 rounded hover:bg-gray-100 cursor-pointer"
+                        >
                             <User size={20} />
                             My Account
-                        </button>
-                        <button className="flex items-center gap-2 text-red-600 hover:text-red-800 cursor-pointer">
+                        </Link>
+                        <button className="flex items-center w-full gap-3 p-2 text-red-600 hover:text-red-800 hover:bg-gray-100 cursor-pointer">
                             <LogOut size={20} />
                             Logout
                         </button>
