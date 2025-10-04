@@ -14,6 +14,13 @@ import Pizza from "@/assets/HomePage/pizza.png";
 // Restaurant images
 import RestaurantBurger from "@/assets/Restaurant/Burger.png";
 
+// AboutPage images
+import Chef from "@/assets/About/chef.png";
+import DeliveryGreen from "@/assets/About/delivery-green.png";
+import DeliveryRed from "@/assets/About/delivery-red.png";
+import OurMission from "@/assets/About/ourmission.png";
+import OurStory from "@/assets/About/ourstory.png";
+
 // Export theo category
 export const CommonImages = {
         Logo,
@@ -34,15 +41,27 @@ export const RestaurantImages = {
         Burger: RestaurantBurger,
 };
 
+export const AboutPageImages = {
+        Chef,
+        DeliveryGreen,
+        DeliveryRed,
+        OurMission,
+        OurStory,
+};
+
 // Export tất cả images
 export const Images = {
         Common: CommonImages,
         HomePage: HomePageImages,
         Restaurant: RestaurantImages,
+        AboutPage: AboutPageImages,
 };
 
 // Export individual (với alias để tránh conflict)
 export {
+        Chef,
+        DeliveryGreen,
+        DeliveryRed,
         FeedYourEmployee,
         FoodEat,
         Hero,
@@ -50,6 +69,8 @@ export {
         Leaf,
         Logo,
         Noodles,
+        OurMission,
+        OurStory,
         Partner,
         Pizza,
         RestaurantBurger,
