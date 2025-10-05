@@ -1,6 +1,7 @@
 // Import icons từ lucide-react
 import {
     ChevronDown,
+    ChevronRight,
     Menu,
     X,
     Search,
@@ -80,6 +81,7 @@ export const Icons = {
 // Export individual
 export {
     ChevronDown,
+    ChevronRight,
     Menu,
     X,
     Search,

@@ -26,7 +26,7 @@ interface SearchFilterProps {
 export default function SearchFilter({
     searchPlaceholder,
     filterOptions,
-    showDatePicker = true,
+    showDatePicker = false,
     datePlaceholder = "View all dates",
     HeaderDropdown,
     onSearch,
