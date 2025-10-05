@@ -24,15 +24,16 @@ export default function ScrollReveal({ children, delay = 0, className }: ScrollR
         };
 
         return (
-                <motion.div
-                        ref={ref}
-                        variants={variants}
-                        initial="hidden"
-                        animate={isInView ? "visible" : "hidden"}
-                        transition={{ duration: 0.6, delay }}
-                        className={className}
-                >
-                        {children}
-                </motion.div>
+                <div className={className}>
+                        <motion.div
+                                ref={ref}
+                                variants={variants}
+                                initial="hidden"
+                                animate={isInView ? "visible" : "hidden"}
+                                transition={{ duration: 0.6, delay }}
+                        >
+                                {children}
+                        </motion.div>
+                </div>
         );
 }
