@@ -1,25 +1,92 @@
+/* eslint-disable react/no-children-prop */
 "use client";
 import MerchantHeader from "@/components/layout/merchant/MerchantHeader";
-import {
-    Bell,
-    Calendar,
-    FileText,
-    Gauge,
-    Logo,
-    Megaphone,
-    MessageCircleQuestionMark,
-    Paintbrush,
-    Settings,
-    Store,
-    User,
-    Users,
-    Utensils,
-    Wrench,
-} from "@/constants";
+import MenuItem from "@/components/merchant/dashboard/MenuItem";
+import { Calendar, FileText, Gauge, Logo, Megaphone, Paintbrush, Settings, Users, Utensils, Wrench } from "@/constants";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
+    const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+
+    const toggleMenu = (menuKey: string) => {
+        setOpenMenus((prev) => ({
+            ...prev,
+            [menuKey]: !prev[menuKey],
+        }));
+    };
+
+    const menuItems = [
+        {
+            icon: Gauge,
+            label: "Dashboard",
+            href: "/merchant",
+        },
+        {
+            icon: FileText,
+            label: "Orders",
+            href: "/merchant/orders",
+        },
+        {
+            icon: Calendar,
+            label: "Reservations",
+            href: "/merchant/reservations",
+        },
+        {
+            icon: Users,
+            label: "Customers",
+            href: "/merchant/customers",
+        },
+        {
+            icon: Utensils,
+            label: "Restaurant",
+            children: [
+                { label: "Menu Items", href: "/merchant/restaurant/menu-items" },
+                { label: "Mealtimes", href: "/merchant/restaurant/mealtimes" },
+                { label: "Inventory", href: "/merchant/restaurant/inventory" },
+                { label: "Dining Areas", href: "/merchant/restaurant/dining-areas" },
+            ],
+        },
+        {
+            icon: Megaphone,
+            label: "Marketing",
+            children: [
+                { label: "Coupons", href: "/merchant/marketing/coupons" },
+                { label: "Reviews", href: "/merchant/marketing/reviews" },
+            ],
+        },
+        {
+            icon: Paintbrush,
+            label: "Design",
+            children: [
+                { label: "Themes", href: "/merchant/design/themes" },
+                { label: "Static Pages", href: "/merchant/design/static-pages" },
+                { label: "Mail Templates", href: "/merchant/design/mail-templates" },
+                { label: "Slide & Banners", href: "/merchant/design/slide-banners" },
+            ],
+        },
+        {
+            icon: Wrench,
+            label: "Tools",
+            children: [
+                { label: "APIs", href: "/merchant/tools/apis" },
+                { label: "Automation", href: "/merchant/tools/automation" },
+                { label: "Webhooks", href: "/merchant/tools/webhooks" },
+            ],
+        },
+        {
+            icon: Settings,
+            label: "Manage",
+            children: [
+                { label: "Settings", href: "/merchant/manage/settings" },
+                { label: "Locations", href: "/merchant/manage/locations" },
+                { label: "Staff members", href: "/merchant/manage/staff" },
+                { label: "Request Logs", href: "/merchant/manage/request-logs" },
+            ],
+        },
+    ];
+
     return (
         <div className="flex min-h-screen bg-gray-50">
             {/* Sidebar */}
@@ -32,68 +99,20 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
                 </div>
 
                 <nav className="space-y-2">
-                    <Link href="/merchant" className="flex items-center gap-3 py-2 px-3 rounded hover:bg-gray-100">
-                        <Gauge size={20} />
-                        Dashboard
-                    </Link>
-                    <Link
-                        href="/merchant/orders"
-                        className="flex items-center gap-3 py-2 px-3 rounded hover:bg-gray-100"
-                    >
-                        <FileText size={20} />
-                        Orders
-                    </Link>
-                    <Link
-                        href="/merchant/reservations"
-                        className="flex items-center gap-3 py-2 px-3 rounded hover:bg-gray-100"
-                    >
-                        <Calendar size={20} />
-                        Reservations
-                    </Link>
-                    <Link
-                        href="/merchant/customers"
-                        className="flex items-center gap-3 py-2 px-3 rounded hover:bg-gray-100"
-                    >
-                        <Users size={20} />
-                        Customers
-                    </Link>
-                    <Link
-                        href="/merchant/restaurant"
-                        className="flex items-center gap-3 py-2 px-3 rounded hover:bg-gray-100"
-                    >
-                        <Utensils size={20} />
-                        Restaurant
-                    </Link>
-                    <Link
-                        href="/merchant/marketing"
-                        className="flex items-center gap-3 py-2 px-3 rounded hover:bg-gray-100"
-                    >
-                        <Megaphone size={20} />
-                        Marketing
-                    </Link>
-                    <Link
-                        href="/merchant/design"
-                        className="flex items-center gap-3 py-2 px-3 rounded hover:bg-gray-100"
-                    >
-                        <Paintbrush size={20} />
-                        Design
-                    </Link>
-                    <Link
-                        href="/merchant/tools"
-                        className="flex items-center gap-3 py-2 px-3 rounded hover:bg-gray-100"
-                    >
-                        <Wrench size={20} />
-                        Tools
-                    </Link>
-                    <Link
-                        href="/merchant/manage"
-                        className="flex items-center gap-3 py-2 px-3 rounded hover:bg-gray-100"
-                    >
-                        <Settings size={20} />
-                        Manage
-                    </Link>
+                    {menuItems.map((item, index) => (
+                        <MenuItem
+                            key={index}
+                            icon={item.icon}
+                            label={item.label}
+                            href={item.href}
+                            children={item.children}
+                            isOpen={openMenus[item.label]}
+                            onToggle={() => toggleMenu(item.label)}
+                        />
+                    ))}
                 </nav>
             </aside>
+
             {/* Main content */}
             <main className="flex-1">
                 {/* Header */}
