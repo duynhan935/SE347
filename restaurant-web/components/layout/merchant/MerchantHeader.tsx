@@ -31,9 +31,12 @@ export default function MerchantHeader() {
             </HeaderDropdown>
 
             <Tooltip text="Storefront">
-                <div className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+                <Link
+                    href="/restaurants/1"
+                    className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100"
+                >
                     <Store size={18} className="text-gray-700 cursor-pointer" />
-                </div>
+                </Link>
             </Tooltip>
             <Tooltip text="Help Center">
                 <div className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
