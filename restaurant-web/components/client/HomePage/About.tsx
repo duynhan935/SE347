@@ -2,9 +2,13 @@ import foodeat from "@/assets/HomePage/foodeat.png";
 import leaf from "@/assets/HomePage/leaf.png";
 import pizza from "@/assets/HomePage/pizza.png";
 import Button from "@/components/Button";
+import ScrollReveal from "@/components/client/Animations/ScrollReveal";
+import { Variants } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 
+const slideInFromLeft: Variants = { hidden: { opacity: 0, x: -100 }, visible: { opacity: 1, x: 0 } };
+const slideInFromRight: Variants = { hidden: { opacity: 0, x: 100 }, visible: { opacity: 1, x: 0 } };
 const HomePageAbout = () => {
         return (
                 <section className="mt-40 lg:mt-[260px] relative bg-brand-yellowlight  p-5 lg:p-0 lg:pb-[100px] ">
@@ -66,39 +70,45 @@ const HomePageAbout = () => {
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-[130px] items-center">
                                         {/* Image container */}
 
-                                        <div className="w-full h-[350px] md:h-[500px] lg:h-[594px] relative">
-                                                <Image
-                                                        src={foodeat}
-                                                        alt="foodeat Image"
-                                                        fill
-                                                        className="object-cover rounded-lg"
-                                                />
-                                        </div>
+                                        <ScrollReveal variants={slideInFromLeft}>
+                                                <div className="w-full h-[350px] md:h-[500px] lg:h-[594px] relative">
+                                                        <Image
+                                                                src={foodeat}
+                                                                alt="foodeat Image"
+                                                                fill
+                                                                className="object-cover rounded-lg"
+                                                        />
+                                                </div>
+                                        </ScrollReveal>
 
                                         {/* Text content */}
 
-                                        <div className="text-center lg:text-left">
-                                                <h2 className="font-roboto-serif font-semibold leading-[44px]">
-                                                        About <strong>Foodeats</strong>
-                                                </h2>
-                                                <p className="mt-[18px] font-manrope font-light leading-[30px] text-brand-grey">
-                                                        <strong> Foodeats</strong> helps you find and order food from
-                                                        wherever you are. How it works: you type in an address, we tell
-                                                        you the restaurants that deliver to that locale as well as
-                                                        showing you droves of pickup restaurants near you.
-                                                </p>
+                                        <ScrollReveal variants={slideInFromRight} delay={0.2}>
+                                                <div className="text-center lg:text-left">
+                                                        <h2 className="font-roboto-serif font-semibold leading-[44px]">
+                                                                About <strong>Foodeats</strong>
+                                                        </h2>
+                                                        <p className="mt-[18px] font-manrope font-light leading-[30px] text-brand-grey">
+                                                                <strong> Foodeats</strong> helps you find and order food
+                                                                from wherever you are. How it works: you type in an
+                                                                address, we tell you the restaurants that deliver to
+                                                                that locale as well as showing you droves of pickup
+                                                                restaurants near you.
+                                                        </p>
 
-                                                <p className="mt-[20px] font-manrope font-light leading-[30px] text-brand-grey">
-                                                        Want to be more specific? Search by cuisine, restaurant name or
-                                                        menu item. We&apos;ll filter your results accordingly.
-                                                </p>
+                                                        <p className="mt-[20px] font-manrope font-light leading-[30px] text-brand-grey">
+                                                                Want to be more specific? Search by cuisine, restaurant
+                                                                name or menu item. We&apos;ll filter your results
+                                                                accordingly.
+                                                        </p>
 
-                                                <Link href="/restaurants" className="inline-block">
-                                                        <Button className="mt-[38px] bg-brand-purple text-brand-white cursor-pointer hover:bg-brand-purple/80 transition-all duration-300">
-                                                                Learn More
-                                                        </Button>
-                                                </Link>
-                                        </div>
+                                                        <Link href="/restaurants" className="inline-block">
+                                                                <Button className="mt-[38px] bg-brand-purple text-brand-white cursor-pointer hover:bg-brand-purple/80 transition-all duration-300">
+                                                                        Learn More
+                                                                </Button>
+                                                        </Link>
+                                                </div>
+                                        </ScrollReveal>
                                 </div>
                         </div>
                 </section>
