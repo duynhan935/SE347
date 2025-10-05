@@ -10,7 +10,7 @@ import { AboutPageImages } from "@/constants/images";
 export default function AboutPage() {
         return (
                 <main>
-                        {/*  */}
+                        {/* ✨ 2. Bọc các section bằng ScrollReveal */}
                         <ScrollReveal className="bg-brand-yellowlight">
                                 <AboutHero />
                         </ScrollReveal>
