@@ -58,7 +58,7 @@ export default function Header() {
                                     <Link href="/admin">Admin</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="cursor-pointer">
-                                    <Link href="/merchant">Merchant</Link>
+                                    <Link href="/merchant/testmerchantid">Merchant</Link>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
