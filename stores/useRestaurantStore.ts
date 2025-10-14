@@ -3,19 +3,14 @@
 import { create } from "zustand";
 import { restaurantApi } from "@/lib/api/restaurantApi";
 
-interface Size {
-    id: string;
-    name: string;
-}
-
 interface ProductSize {
     id: string;
-    size: Size;
+    sizeName: string;
     price: number;
 }
 
 interface Category {
-    id: string;
+    cateId: string;
     cateName: string;
 }
 
@@ -23,11 +18,14 @@ interface Product {
     id: string;
     productName: string;
     description: string;
-    imageURL: string;
+    imageURL: string | null;
+    categoryName: string;
+    categoryId: string;
+    volume: number;
     available: boolean;
-    rating: number;
+    restaurant: string | null;
     totalReview: number;
-    category: Category;
+    rating: number;
     productSizes: ProductSize[];
 }
 
@@ -41,14 +39,14 @@ interface Restaurant {
     openingTime: string;
     closingTime: string;
     phone: string;
-    imageURL: string;
+    imageURL: string | null;
     merchantId: string;
     enabled: boolean;
     totalReview: number;
     distance: number;
     duration: number;
-    categories: Category[];
     products: Product[];
+    cate: Category[];
 }
 
 interface RestaurantState {
@@ -78,11 +76,14 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
             set({
                 restaurant: data,
                 products: data.products || [],
-                categories: data.categories || [],
+                categories: data.cate || [],
                 loading: false,
             });
         } catch (err: any) {
-            set({ error: err.message || "Không thể tải dữ liệu nhà hàng", loading: false });
+            set({
+                error: err.message || "Không thể tải dữ liệu nhà hàng",
+                loading: false,
+            });
         }
     },
 

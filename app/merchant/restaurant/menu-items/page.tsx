@@ -6,10 +6,9 @@ import DataTable, { SortDirection } from "@/components/merchant/common/DataTable
 import SearchFilter from "@/components/merchant/common/SearchFilter";
 import ListSetupModal from "@/components/merchant/common/ListSetupModal";
 import { ArrowDown, SlidersHorizontal } from "lucide-react";
-import { useState, useMemo } from "react";
-import { menuItemsData } from "@/fake-data/menuItemsData";
+import { useState, useMemo, useEffect } from "react";
+import { useProductStore } from "@/stores/useProductsStores";
 
-// Cấu hình cột cho modal setup
 const menuItemColumns = [
     { label: "Name", checked: true },
     { label: "Category", checked: true },
@@ -27,13 +26,7 @@ const filterOptions = [
         label: "View all categories",
         options: [
             { value: "all", label: "View all categories" },
-            { value: "Main Course", label: "Main Course" },
-            { value: "Traditional", label: "Traditional" },
-            { value: "Salad", label: "Salad" },
-            { value: "Seafood", label: "Seafood" },
-            { value: "Rice Dishes", label: "Rice Dishes" },
-            { value: "Soup", label: "Soup" },
-            { value: "Grilled", label: "Grilled" },
+            { value: "drinks", label: "Drinks" },
         ],
     },
     {
@@ -42,7 +35,6 @@ const filterOptions = [
             { value: "all", label: "View all status" },
             { value: "Enabled", label: "Enabled" },
             { value: "Disabled", label: "Disabled" },
-            { value: "Out of Stock", label: "Out of Stock" },
         ],
     },
 ];
@@ -53,27 +45,50 @@ export default function MenuItemPage() {
     const [categoryFilter, setCategoryFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
 
-    // Dữ liệu đã lọc dựa trên tìm kiếm và bộ lọc
+    const { products, fetchProductsByRestaurantId, loading, error } = useProductStore();
+
+    useEffect(() => {
+        const merchantId = "testresid";
+        fetchProductsByRestaurantId(merchantId);
+    }, [fetchProductsByRestaurantId]);
+
+    // 🔸 Chuyển dữ liệu products trả về từ API thành dữ liệu bảng phù hợp
+    const mappedData = useMemo(() => {
+        return products.map((p) => ({
+            id: p.id,
+            name: p.productName,
+            category: p.categoryName || "N/A",
+            price: p.productSizes?.[0]?.price ?? 0,
+            stockQty: p.volume ?? 0,
+            specialStatus: p.totalReview ?? 0,
+            status: p.available ? "Enabled" : "Disabled",
+            rating: p.rating ?? 0,
+        }));
+    }, [products]);
+
+    // 🔸 Lọc dữ liệu theo tìm kiếm & bộ lọc
     const filteredData = useMemo(() => {
-        return menuItemsData.filter((item) => {
+        return mappedData.filter((item) => {
             const matchesSearch =
                 item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 item.category.toLowerCase().includes(searchTerm.toLowerCase());
+
             const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
+
             const matchesStatus = statusFilter === "all" || item.status === statusFilter;
 
             return matchesSearch && matchesCategory && matchesStatus;
         });
-    }, [menuItemsData, searchTerm, categoryFilter, statusFilter]);
-    // Dữ liệu sẽ chỉ được lọc lại khi searchTerm, categoryFilter hoặc statusFilter thay đổi khi dùng useMemo để tối ưu hiệu suất
+    }, [mappedData, searchTerm, categoryFilter, statusFilter]);
 
-    // Dữ liệu bảng và cột sẽ được
+    // 🔸 Cấu hình cột cho DataTable
     const menuItemTableData = [
         { label: "Name", sortable: true, key: "name" },
         { label: "Category", sortable: true, key: "category" },
         { label: "Price", sortable: true, key: "price" },
         { label: "Stock Qty", sortable: true, key: "stockQty" },
-        { label: "Special Status", sortable: true, key: "specialStatus" },
+        { label: "Reviews", sortable: true, key: "specialStatus" },
+        { label: "Rating", sortable: true, key: "rating" },
         { label: "Status", sortable: true, key: "status" },
         {
             label: "Setup",
@@ -85,40 +100,28 @@ export default function MenuItemPage() {
                 />
             ),
             tooltip: "Settings",
-            key: "setup", // Thêm key rỗng
-            render: () => null, // Không render gì trong cells
+            key: "setup",
+            render: () => null,
         },
     ];
 
     // Event handlers
-    const handleSearch = (value: any) => {
-        setSearchTerm(value);
-        console.log("Search:", value);
-    };
-
+    const handleSearch = (value: any) => setSearchTerm(value);
     const handleFilterChange = (index: number, value: any) => {
-        if (index === 0) {
-            setCategoryFilter(value);
-        } else if (index === 1) {
-            setStatusFilter(value);
-        }
-        console.log("Filter changed:", index, value);
+        if (index === 0) setCategoryFilter(value);
+        else if (index === 1) setStatusFilter(value);
     };
-
     const handleClear = () => {
         setSearchTerm("");
         setCategoryFilter("all");
         setStatusFilter("all");
-        console.log("Cleared all filters");
     };
-
-    const handleRowSelect = (selectedItems: any) => {
-        console.log("Selected items:", selectedItems);
-    };
-
-    const handleSort = (columnKey: string, direction: SortDirection) => {
+    const handleRowSelect = (selectedItems: any) => console.log("Selected items:", selectedItems);
+    const handleSort = (columnKey: string, direction: SortDirection) =>
         console.log(`Sorting ${columnKey} in ${direction} order`);
-    };
+
+    if (loading) return <p>Đang tải thông tin sản phẩm...</p>;
+    if (error) return <p>Đã xảy ra lỗi khi tải thông tin sản phẩm.</p>;
 
     return (
         <div className="min-h-screen">
@@ -132,7 +135,6 @@ export default function MenuItemPage() {
                 <div className="flex justify-between items-center p-4 border-b border-gray-200">
                     <ActionBar newLabel="New" secondaryLabel="..." secondaryIcon={<ArrowDown size={14} />} />
 
-                    {/* Search and Filter */}
                     <SearchFilter
                         searchPlaceholder="Search by name or category"
                         filterOptions={filterOptions}
@@ -143,7 +145,7 @@ export default function MenuItemPage() {
                     />
                 </div>
 
-                {/* Table */}
+                {/* ✅ Hiển thị bảng bằng dữ liệu thật từ API */}
                 <DataTable
                     columns={menuItemTableData}
                     data={filteredData}
@@ -153,7 +155,6 @@ export default function MenuItemPage() {
                     onSort={handleSort}
                 />
 
-                {/* Footer */}
                 <div className="flex justify-end items-center px-4 py-3 border-t border-gray-200 text-sm text-gray-500">
                     Showing {filteredData.length > 0 ? "1" : "0"}-{filteredData.length} of {filteredData.length} records
                 </div>

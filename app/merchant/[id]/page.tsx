@@ -1,18 +1,19 @@
 "use client";
-import AddWidgetButton from "@/components/merchant/dashboard/AddWidgetButton";
-import AddWidgetModal from "@/components/merchant/dashboard/AddWidgetModal";
+
 import DateRangeSelector from "@/components/merchant/dashboard/DateRangeSelector";
 import ReportsChart from "@/components/merchant/dashboard/ReportsChart";
 import WidgetList from "@/components/merchant/dashboard/WidgetList";
 import { useRestaurantStore } from "@/stores/useRestaurantStore";
 import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Clock, Phone, Star, CheckCircle, XCircle } from "lucide-react";
 
 export default function MerchantDashboard() {
-    const { restaurant, products, loading, error, fetchRestaurantById } = useRestaurantStore();
+    const { restaurant, loading, error, fetchRestaurantById } = useRestaurantStore();
 
     useEffect(() => {
-        const merchantId =
-            "IfW2T1hCS4oI96wdbRDs52Ax5es0x0vZcOB6jKHdjreHsxVyKJ2RQVwiZS6Y9s5DeSb33lMJ42jc6eh2LxfOId4L1rVnA84Rzsyae1F58iHWNIjkxhaKIBR9ZCzJsf4ffgXoZ2K36bYYp3A60d4pOYYkCHuL3Jhme09oFt4pQHIBQYDuJ8OMqlasSjaLpDp5f5tpAa1Gajjaksv6sezWNWmmZMunJGbDXFUzW8kObjcNRfZETjKRSFx0cEaDYH";
+        const merchantId = "testresid";
         fetchRestaurantById(merchantId);
     }, [fetchRestaurantById]);
 
@@ -23,16 +24,58 @@ export default function MerchantDashboard() {
             key: "selection",
         },
     ]);
-    const [openAddWidget, setOpenAddWidget] = useState(false);
+
+    if (loading) return <p>Đang tải thông tin nhà hàng...</p>;
+    if (error) return <p>Đã xảy ra lỗi khi tải thông tin nhà hàng.</p>;
 
     return (
-        <div>
-            <AddWidgetModal open={openAddWidget} onClose={() => setOpenAddWidget(false)} />
+        <div className="space-y-6">
+            {/* Header: Thông tin nhà hàng */}
+            {restaurant && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-bold flex items-center justify-between">
+                            {restaurant.resName}
+                            {restaurant.enabled ? (
+                                <Badge className="bg-green-500 flex items-center gap-1">
+                                    <CheckCircle size={14} /> Đang hoạt động
+                                </Badge>
+                            ) : (
+                                <Badge className="bg-red-500 flex items-center gap-1">
+                                    <XCircle size={14} /> Tạm ngưng
+                                </Badge>
+                            )}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid md:grid-cols-2 gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                            <MapPin size={16} className="text-gray-500" />
+                            <span>{restaurant.address}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Phone size={16} className="text-gray-500" />
+                            <span>{restaurant.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Clock size={16} className="text-gray-500" />
+                            <span>
+                                {restaurant.openingTime} - {restaurant.closingTime}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Star size={16} className="text-yellow-500" />
+                            <span>
+                                {restaurant.rating} ⭐ ({restaurant.totalReview} đánh giá)
+                            </span>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+            <WidgetList />
             <div className="mb-4 flex items-center justify-between">
-                <AddWidgetButton onClick={() => setOpenAddWidget(true)} />
+                <div></div>
                 <DateRangeSelector range={range} setRange={setRange} />
             </div>
-            <WidgetList />
             <ReportsChart />
         </div>
     );
