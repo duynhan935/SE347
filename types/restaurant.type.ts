@@ -1,5 +1,5 @@
 import type { Product } from "./product.type";
-import type { Category } from "./product.type";
+import type { Category } from "./category.type";
 
 export interface RestaurantData {
     resName: string;

@@ -14,7 +14,7 @@ import { useState } from "react";
 
 export default function Header() {
     const [open, setOpen] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(true);
+    const [isLoggedIn] = useState(true);
 
     return (
         <header className="bg-brand-yellowlight px-6 py-4">
@@ -22,7 +22,14 @@ export default function Header() {
                 <div className="max-w-7xl mx-auto flex items-center justify-between relative">
                     {/* Logo */}
                     <Link href="/" className="flex items-center">
-                        <Image src={Logo} alt="FoodEats Logo" width={120} height={40} className="h-8 w-auto" />
+                        <Image
+                            src={Logo}
+                            alt="FoodEats Logo"
+                            width={120}
+                            height={40}
+                            className="h-8 w-auto"
+                            priority
+                        />
                     </Link>
 
                     {/* Navigation */}
@@ -65,7 +72,7 @@ export default function Header() {
                     </nav>
 
                     {/* Auth Buttons */}
-                    <div className="hidden md:flex flex items-center space-x-3">
+                    <div className="hidden md:flex items-center space-x-3">
                         <Link href="/login">
                             <Button
                                 variant="ghost"

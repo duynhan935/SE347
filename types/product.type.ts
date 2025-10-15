@@ -4,11 +4,6 @@ export interface ProductSize {
     price: number;
 }
 
-export interface Category {
-    cateId: string;
-    cateName: string;
-}
-
 export interface Product {
     id: string;
     productName: string;
@@ -32,4 +27,13 @@ export interface ProductData {
     volume: number;
     available: boolean;
     productSizes: { sizeName: string; price: number }[];
+}
+
+export interface ProductCreateData {
+    productName: string;
+    description: string;
+    categoryId: string;
+    available: boolean;
+    restaurantId: string;
+    sizeIds: { sizeId: string; price: number }[];
 }

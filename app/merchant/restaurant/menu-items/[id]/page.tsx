@@ -24,7 +24,7 @@ interface MenuFormData {
 
 export default function MenuEditForm() {
     const { id } = useParams();
-    const { product, fetchProductById, loading, error } = useProductStore();
+    const { product, fetchProductByProductId, loading, error } = useProductStore();
 
     const [formData, setFormData] = useState<MenuFormData>({
         id: "",
@@ -44,8 +44,8 @@ export default function MenuEditForm() {
     const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
-        if (id) fetchProductById(id as string);
-    }, [id, fetchProductById]);
+        if (id) fetchProductByProductId(id as string);
+    }, [id, fetchProductByProductId]);
 
     useEffect(() => {
         if (product) {
