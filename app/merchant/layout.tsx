@@ -21,7 +21,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
         {
             icon: Gauge,
             label: "Dashboard",
-            href: "/merchant",
+            href: "/merchant/testmerchantid",
         },
         {
             icon: FileText,

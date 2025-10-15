@@ -1,36 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { productApi } from "@/lib/api/productApi";
-
-interface ProductSize {
-    id: string;
-    sizeName: string;
-    price: number;
-}
-
-interface Product {
-    id: string;
-    productName: string;
-    description: string;
-    imageURL: string | null;
-    categoryName: string;
-    categoryId: string;
-    volume: number;
-    available: boolean;
-    restaurant: string | null;
-    totalReview: number;
-    rating: number;
-    productSizes: ProductSize[];
-}
+import type { Product, ProductData } from "@/types";
 
 interface ProductState {
     products: Product[];
     product: Product | null;
     loading: boolean;
     error: string | null;
-
     fetchProductsByRestaurantId: (restaurantId: string) => Promise<void>;
-    fetchProductById: (productId: string) => Promise<void>;
+    fetchProductByProductId: (productId: string) => Promise<void>;
+    fetchAllProducts: () => Promise<void>;
+    clearProducts: () => void;
 }
 
 export const useProductStore = create<ProductState>((set, get) => ({
@@ -38,6 +19,16 @@ export const useProductStore = create<ProductState>((set, get) => ({
     product: null,
     loading: false,
     error: null,
+
+    fetchAllProducts: async () => {
+        set({ loading: true, error: null });
+        try {
+            const res = await productApi.getAllProducts();
+            set({ products: res.data || [], loading: false });
+        } catch (err: any) {
+            set({ error: err.message || "Không thể tải sản phẩm", loading: false });
+        }
+    },
 
     fetchProductsByRestaurantId: async (restaurantId) => {
         set({ loading: true, error: null });
@@ -50,7 +41,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
         }
     },
 
-    fetchProductById: async (productId: string) => {
+    fetchProductByProductId: async (productId: string) => {
         set({ loading: true, error: null });
         try {
             const res = await productApi.getProductById(productId);
@@ -58,6 +49,87 @@ export const useProductStore = create<ProductState>((set, get) => ({
             set({ product: res.data || null, loading: false });
         } catch (err: any) {
             set({ error: err.message || "Không thể tải sản phẩm", loading: false });
+        }
+    },
+
+    createNewProduct: async (productData: ProductData, imageFile?: File) => {
+        set({ loading: true, error: null });
+        try {
+            const res = await productApi.createProduct(productData, imageFile);
+            set((state) => ({
+                products: [...state.products, res.data],
+                loading: false,
+                error: null,
+            }));
+        } catch (error: any) {
+            set({
+                error: error.message || "Failed to create product",
+                loading: false,
+            });
+        }
+    },
+
+    updateProduct: async (ProductId: string, ProductData: ProductData, imageFile?: File) => {
+        try {
+            set({ loading: true });
+            const response = await productApi.updateProduct(ProductId, ProductData, imageFile);
+            set((state) => ({
+                Product: response.data,
+                Products: state.products.map((res) => (res.id === ProductId ? response.data : res)),
+                loading: false,
+                error: null,
+            }));
+        } catch (error: any) {
+            set({
+                error: error.message || "Failed to update Product",
+                loading: false,
+            });
+        }
+    },
+
+    updateProductStatus: async (ProductId: string) => {
+        try {
+            set({ loading: true });
+            await productApi.updateProductStatus(ProductId);
+        } catch (error: any) {
+            set({
+                error: error.message || "Failed to update Product status",
+                loading: false,
+            });
+        }
+    },
+
+    deleteProduct: async (ProductId: string) => {
+        try {
+            set({ loading: true });
+            await productApi.deleteProduct(ProductId);
+            set((state) => ({
+                products: state.products.filter((res) => res.id !== ProductId),
+                loading: false,
+                error: null,
+            }));
+        } catch (error: any) {
+            set({
+                error: error.message || "Failed to delete Product",
+                loading: false,
+            });
+        }
+    },
+
+    deleteProductImage: async (ProductId: string) => {
+        try {
+            set({ loading: true });
+            await productApi.deleteProductImage(ProductId);
+            set((state) => ({
+                products: state.products.map((res) => (res.id === ProductId ? { ...res, image: null } : res)),
+                loading: false,
+                error: null,
+            }));
+        } catch (error: any) {
+            set({
+                error: error.message || "Failed to delete Product image",
+                loading: false,
+            });
         }
     },
 
