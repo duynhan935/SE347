@@ -176,7 +176,7 @@ export default function DataTable({
                 );
             }
 
-            return <span className="text-sm text-gray-900">{value}</span>;
+            return <span className="text-sm text-gray-900 ml-5">{value}</span>;
         }
 
         // If no key or icon column, return icon

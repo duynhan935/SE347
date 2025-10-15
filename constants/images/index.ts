@@ -21,59 +21,62 @@ import DeliveryRed from "@/assets/About/delivery-red.png";
 import OurMission from "@/assets/About/ourmission.png";
 import OurStory from "@/assets/About/ourstory.png";
 
+import yeye from "@/assets/Common/yeye.jpg";
+
 // Export theo category
 export const CommonImages = {
-        Logo,
+    Logo,
+    yeye,
 };
 
 export const HomePageImages = {
-        Burger,
-        FeedYourEmployee,
-        FoodEat,
-        Hero,
-        Leaf,
-        Noodles,
-        Partner,
-        Pizza,
+    Burger,
+    FeedYourEmployee,
+    FoodEat,
+    Hero,
+    Leaf,
+    Noodles,
+    Partner,
+    Pizza,
 };
 
 export const RestaurantImages = {
-        Burger: RestaurantBurger,
+    Burger: RestaurantBurger,
 };
 
 export const AboutPageImages = {
-        Chef,
-        DeliveryGreen,
-        DeliveryRed,
-        OurMission,
-        OurStory,
+    Chef,
+    DeliveryGreen,
+    DeliveryRed,
+    OurMission,
+    OurStory,
 };
 
 // Export tất cả images
 export const Images = {
-        Common: CommonImages,
-        HomePage: HomePageImages,
-        Restaurant: RestaurantImages,
-        AboutPage: AboutPageImages,
+    Common: CommonImages,
+    HomePage: HomePageImages,
+    Restaurant: RestaurantImages,
+    AboutPage: AboutPageImages,
 };
 
 // Export individual (với alias để tránh conflict)
 export {
-        Chef,
-        DeliveryGreen,
-        DeliveryRed,
-        FeedYourEmployee,
-        FoodEat,
-        Hero,
-        Burger as HomePageBurger,
-        Leaf,
-        Logo,
-        Noodles,
-        OurMission,
-        OurStory,
-        Partner,
-        Pizza,
-        RestaurantBurger,
+    Chef,
+    DeliveryGreen,
+    DeliveryRed,
+    FeedYourEmployee,
+    FoodEat,
+    Hero,
+    Burger as HomePageBurger,
+    Leaf,
+    Logo,
+    Noodles,
+    OurMission,
+    OurStory,
+    Partner,
+    Pizza,
+    RestaurantBurger,
 };
 
 export default Images;
