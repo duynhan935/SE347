@@ -22,14 +22,7 @@ export default function Header() {
                 <div className="max-w-7xl mx-auto flex items-center justify-between relative">
                     {/* Logo */}
                     <Link href="/" className="flex items-center">
-                        <Image
-                            src={Logo}
-                            alt="FoodEats Logo"
-                            width={120}
-                            height={40}
-                            className="h-8 w-auto"
-                            priority
-                        />
+                        <Image src={Logo} alt="FoodEats Logo" width={120} height={40} className="h-8 w-auto" priority />
                     </Link>
 
                     {/* Navigation */}
