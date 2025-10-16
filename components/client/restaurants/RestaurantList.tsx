@@ -1,24 +1,28 @@
 "use client";
 
 import { useRestaurantStore } from "@/stores/useRestaurantStore";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Category } from "@/types";
+import { ChevronLeft, ChevronRight, Utensils } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Pagination from "../Pagination";
 import { RestaurantCard } from "./RestaurantCard";
 
-const fakeCategories = [
-        { name: "Burger", icon: "🍔" },
-        { name: "Pizza", icon: "🍕" },
-        { name: "Sandwiches", icon: "🥪" },
-        { name: "Wings", icon: "🍗" },
-        { name: "Coffee", icon: "☕" },
-        { name: "Tea", icon: "☕" },
-        { name: "Indian", icon: "🍛" },
-        { name: "Chinese", icon: "🥡" },
-        { name: "Thai", icon: "🍜" },
-        { name: "American", icon: "🇺🇸" },
-];
+const categoryIcons: { [key: string]: string } = {
+        Burger: "🍔",
+        Pizza: "🍕",
+        Sandwiches: "🥪",
+        Wings: "🍗",
+        Coffee: "☕",
+        Tea: "🍵",
+        Indian: "🍛",
+        Chinese: "🥡",
+        Thai: "🍜",
+        American: "🇺🇸",
+        Mexican: "🌮",
+        Japanese: "🍣",
+        // Thêm các category khác nếu cần
+};
 
 export default function RestaurantList() {
         const searchParams = useSearchParams();
@@ -27,14 +31,14 @@ export default function RestaurantList() {
         const activeCategory = searchParams.get("category") || "";
         const scrollContainerRef = useRef<HTMLDivElement>(null);
         const ITEMS_PER_PAGE = 9;
-        const { restaurants, getAllRestaurants, loading } = useRestaurantStore();
+        const { restaurants, getAllRestaurants, loading, categories, getAllCategories } = useRestaurantStore();
 
         useEffect(() => {
                 getAllRestaurants();
-        }, [getAllRestaurants]);
+                getAllCategories();
+        }, [getAllRestaurants, getAllCategories]);
 
         if (loading) return <p>Đang tải...</p>;
-        console.log(restaurants);
         const handleCategoryClick = (categoryName: string) => {
                 const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
                 if (activeCategory === categoryName) {
@@ -77,19 +81,26 @@ export default function RestaurantList() {
                                                 ref={scrollContainerRef}
                                                 className="flex-grow flex items-center gap-4 overflow-x-auto scrollbar-hide"
                                         >
-                                                {fakeCategories.map((category, index) => (
+                                                {categories.map((category: Category) => (
                                                         <button
-                                                                key={index}
-                                                                onClick={() => handleCategoryClick(category.name)}
-                                                                className={`flex flex-col items-center justify-center gap-2 flex-shrink-0 w-24 text-center p-3 rounded-lg transition-colors ${
-                                                                        activeCategory === category.name
-                                                                                ? "bg-brand-purple text-white"
-                                                                                : "bg-gray-100 hover:bg-gray-200"
+                                                                key={category.id}
+                                                                onClick={() => handleCategoryClick(category.cateName)}
+                                                                className={`cursor-pointer capitalize flex flex-col items-center justify-center gap-2 flex-shrink-0 w-24 h-24 text-center p-3 rounded-lg transition-all duration-300 transform hover:-translate-y-1 ${
+                                                                        activeCategory === category.cateName
+                                                                                ? "bg-brand-purple text-white shadow-lg"
+                                                                                : "bg-white hover:bg-gray-50 shadow-sm border"
                                                                 }`}
                                                         >
-                                                                <span className="text-2xl">{category.icon}</span>
-                                                                <span className="text-sm font-semibold">
-                                                                        {category.name}
+                                                                <span className="text-3xl">
+                                                                        {categoryIcons[
+                                                                                category.cateName
+                                                                                        .charAt(0)
+                                                                                        .toUpperCase() +
+                                                                                        category.cateName.slice(1)
+                                                                        ] || <Utensils />}
+                                                                </span>
+                                                                <span className="text-sm font-semibold truncate w-full">
+                                                                        {category.cateName}
                                                                 </span>
                                                         </button>
                                                 ))}

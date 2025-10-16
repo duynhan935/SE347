@@ -13,21 +13,19 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => (
                 href={`/restaurants/${restaurant.id}`}
                 className="group block rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-white h-full flex flex-col"
         >
-                {/* ✨ Sửa 2: Div này chỉ chứa ảnh và các tag nằm trên ảnh */}
                 <div className="relative w-full h-48">
                         <Image
-                                src={restaurant.imageURL || "/placeholder.png"} // Thêm ảnh dự phòng
+                                src={restaurant.imageURL || "/placeholder.png"}
                                 alt={restaurant.resName}
                                 fill
                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        {/* Tag thời gian giao hàng */}
+
                         <div className="absolute bottom-2 right-2 bg-white/80 text-gray-800 text-xs px-2 py-1 rounded-full backdrop-blur-sm font-semibold">
                                 {restaurant.duration} min
                         </div>
                 </div>
 
-                {/* ✨ Sửa 3: Toàn bộ thông tin text được đặt trong một div riêng có padding */}
                 <div className="p-4 flex-grow flex flex-col">
                         <h3 className="font-bold text-lg truncate" title={restaurant.resName}>
                                 {restaurant.resName}
