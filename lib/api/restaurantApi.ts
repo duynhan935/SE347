@@ -3,7 +3,7 @@ import type { RestaurantData, Restaurant } from "@/types";
 
 export const restaurantApi = {
     getByRestaurantId: (restaurantId: string) => api.get<Restaurant>(`restaurant/${restaurantId}`),
-    getRestaurantByMerchantId: (merchantId: string) => api.get<Restaurant>(`/restaurant/merchant/${merchantId}`),
+    getRestaurantByMerchantId: (merchantId: string) => api.get<Restaurant[]>(`/restaurant/merchant/${merchantId}`),
     getAllRestaurants: () => api.get<Restaurant[]>("/restaurant"),
     createRestaurant: (restaurantData: RestaurantData, imageFile?: File) => {
         const formData = new FormData();
@@ -23,7 +23,7 @@ export const restaurantApi = {
             headers: { "Content-Type": "multipart/form-data" },
         });
     },
-    updateRestaurantStatus: (restaurantId: string) => api.patch<Restaurant>(`api/restaurant/enable/${restaurantId}`),
+    updateRestaurantStatus: (restaurantId: string) => api.patch<Restaurant>(`/restaurant/enable/${restaurantId}`),
     deleteRestaurant: (restaurantId: string) => api.delete(`/restaurant/${restaurantId}`),
     deleteRestaurantImage: (restaurantId: string) => api.delete(`/restaurant/image/${restaurantId}`),
 };

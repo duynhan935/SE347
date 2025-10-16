@@ -1,113 +1,176 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, Save, Trash2, Pencil } from "lucide-react";
 import Link from "next/link";
-import { useProductStore } from "@/stores/useProductsStores";
-import { useParams } from "next/navigation";
 import Image from "next/image";
+import { useParams } from "next/navigation";
+import { useProductStore } from "@/stores/useProductsStores";
+import { useCategoryStore } from "@/stores/categoryStore";
+import { useSizeStore } from "@/stores/sizeStore";
+import { useRestaurantStore } from "@/stores/useRestaurantStore";
 import { CommonImages } from "@/constants";
+
+interface SizePrice {
+    sizeId: string;
+    price: number;
+}
 
 interface MenuFormData {
     id: string;
-    name: string;
-    price: string;
-    size: string;
-    category: string;
-    categoryId: string;
-    status: boolean;
+    productName: string;
     description: string;
-    image: File | null;
-    volume: string;
-    totalReview: number;
-    rating: number;
+    categoryId: string;
+    available: boolean;
+    restaurantId: string;
+    sizePrices: SizePrice[];
 }
 
 export default function MenuEditForm() {
     const { id } = useParams();
-    const { product, fetchProductById, loading, error } = useProductStore();
+    const { product, fetchProductByProductId, updateProduct, loading, error } = useProductStore();
+    const { categories, fetchAllCategories } = useCategoryStore();
+    const { sizes, fetchAllSizes } = useSizeStore();
+    const restaurantId = useRestaurantStore((state) => state.restaurant?.id ?? "");
+    const { getRestaurantByMerchantId } = useRestaurantStore();
 
     const [formData, setFormData] = useState<MenuFormData>({
         id: "",
-        name: "",
-        price: "",
-        size: "",
-        category: "",
-        categoryId: "",
-        status: false,
+        productName: "",
         description: "",
-        image: null,
-        volume: "",
-        totalReview: 0,
-        rating: 0,
+        categoryId: "",
+        available: false,
+        restaurantId: "",
+        sizePrices: [],
     });
-
+    const [image, setImage] = useState<File | null>(null);
     const [isEditing, setIsEditing] = useState(false);
 
+    // ✅ Fetch dữ liệu cần thiết
     useEffect(() => {
-        if (id) fetchProductById(id as string);
-    }, [id, fetchProductById]);
+        if (id) fetchProductByProductId(id as string);
+        fetchAllCategories();
+        fetchAllSizes();
+        const merchantId = "testmerchantid"; // tạm thời
+        getRestaurantByMerchantId(merchantId);
+    }, [id, fetchProductByProductId, fetchAllCategories, fetchAllSizes, getRestaurantByMerchantId]);
 
+    // ✅ Khi có product thì set lại form
     useEffect(() => {
         if (product) {
-            const sizeData = product.productSizes?.[0];
             setFormData({
-                id: product.id || "",
-                name: product.productName || "",
-                price: sizeData?.price?.toString() || "",
-                size: sizeData?.sizeName || "",
-                category: product.categoryName || "",
-                categoryId: product.categoryId || "",
-                status: product.available ?? false,
+                id: product.id,
+                productName: product.productName || "",
                 description: product.description || "",
-                image: null,
-                volume: product.volume?.toString() || "",
-                totalReview: product.totalReview || 0,
-                rating: product.rating || 0,
+                categoryId: product.categoryId || "",
+                available: product.available ?? false,
+                restaurantId: restaurantId || "",
+                sizePrices:
+                    product.productSizes?.map((s: any) => ({
+                        sizeId: s.sizeId,
+                        price: s.price,
+                    })) || [],
             });
         }
-    }, [product]);
+    }, [product, restaurantId]);
 
-    const handleInputChange = (field: keyof MenuFormData, value: string | boolean | number) => {
+    // ✅ Xử lý thay đổi trường nhập
+    const handleChange = (field: keyof MenuFormData, value: any) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleSizePriceChange = (index: number, field: keyof SizePrice, value: string | number) => {
+        const updated = [...formData.sizePrices];
+        updated[index] = { ...updated[index], [field]: value };
+        setFormData((prev) => ({ ...prev, sizePrices: updated }));
+    };
+
+    const handleAddSizePrice = () => {
         setFormData((prev) => ({
             ...prev,
-            [field]: value,
+            sizePrices: [...prev.sizePrices, { sizeId: "", price: 0 }],
+        }));
+    };
+
+    const handleRemoveSizePrice = (index: number) => {
+        setFormData((prev) => ({
+            ...prev,
+            sizePrices: prev.sizePrices.filter((_, i) => i !== index),
         }));
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            setFormData((prev) => ({ ...prev, image: file }));
+        if (file) setImage(file);
+    };
+
+    const handleSave = async () => {
+        if (!product) {
+            alert("Không tìm thấy sản phẩm để cập nhật!");
+            return;
+        }
+
+        // Giữ lại dữ liệu cũ nếu người dùng không chỉnh sửa
+        const updatedProductData = {
+            productName: formData.productName || product.productName,
+            description: formData.description || product.description,
+            categoryId: formData.categoryId || product.categoryId,
+            available: formData.available !== undefined ? formData.available : product.available,
+            restaurantId: formData.restaurantId || restaurantId,
+            sizeIds:
+                formData.sizePrices.length > 0
+                    ? formData.sizePrices.filter((s) => s.sizeId && s.price > 0)
+                    : product.productSizes?.map((s: any) => ({
+                          sizeId: s.sizeId,
+                          price: s.price,
+                      })) || [],
+        };
+
+        // Kiểm tra xem có thay đổi gì không
+        const hasChanges =
+            updatedProductData.productName !== product.productName ||
+            updatedProductData.description !== product.description ||
+            updatedProductData.categoryId !== product.categoryId ||
+            updatedProductData.available !== product.available ||
+            JSON.stringify(updatedProductData.sizeIds) !==
+                JSON.stringify(
+                    product.productSizes?.map((s: any) => ({
+                        sizeId: s.sizeId,
+                        price: s.price,
+                    }))
+                ) ||
+            image;
+
+        if (!hasChanges) {
+            alert("Không có thay đổi nào để lưu!");
+            return;
+        }
+
+        try {
+            await updateProduct(formData.id, updatedProductData, image ?? undefined);
+            alert("Cập nhật sản phẩm thành công!");
+            setIsEditing(false);
+        } catch (err) {
+            console.error("Lỗi cập nhật sản phẩm:", err);
+            alert("Cập nhật sản phẩm thất bại!");
         }
     };
 
-    const handleSave = () => {
-        console.log("Form sau khi chỉnh:", formData);
-        // TODO: Gọi API update sản phẩm
-    };
+    const currentImage = product?.imageURL && product.imageURL.trim() !== "" ? product.imageURL : CommonImages.yeye;
 
-    const handleEdit = () => {
-        setIsEditing(true);
-        console.log("Đang chỉnh sửa sản phẩm:", formData.name);
-    };
-
-    if (loading) {
+    if (loading)
         return (
             <div className="flex justify-center items-center min-h-screen">
                 <p className="text-gray-600">Đang tải dữ liệu...</p>
             </div>
         );
-    }
 
-    if (error) {
+    if (error)
         return (
             <div className="flex justify-center items-center min-h-screen">
                 <p className="text-red-600">Lỗi: {error}</p>
             </div>
         );
-    }
-
-    const currentImage = product?.imageURL && product.imageURL.trim() !== "" ? product.imageURL : CommonImages.yeye;
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -126,12 +189,20 @@ export default function MenuEditForm() {
                     <div className="flex items-center gap-3 mb-4">
                         <button
                             onClick={handleSave}
-                            className="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-md transition-colors"
+                            disabled={!isEditing}
+                            className={`inline-flex items-center px-4 py-2 font-medium rounded-md transition-colors ${
+                                isEditing
+                                    ? "bg-orange-500 hover:bg-orange-600 text-white"
+                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                            }`}
                         >
                             <Save className="w-4 h-4 mr-2" />
                             Save
                         </button>
-                        <button onClick={handleEdit} className="p-2 text-gray-600 hover:bg-gray-100 rounded-md">
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="p-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                        >
                             <Pencil size={18} className="inline-block mr-1 text-gray-400 hover:text-orange-500" />
                         </button>
                         <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-md">
@@ -141,24 +212,13 @@ export default function MenuEditForm() {
 
                     {/* Form */}
                     <div className="bg-white rounded-lg shadow-sm border p-6 space-y-6">
-                        {/* ID */}
+                        {/* Tên sản phẩm */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Product ID</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Tên sản phẩm</label>
                             <input
                                 type="text"
-                                value={formData.id}
-                                disabled
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700"
-                            />
-                        </div>
-
-                        {/* Name */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                            <input
-                                type="text"
-                                value={formData.name}
-                                onChange={(e) => handleInputChange("name", e.target.value)}
+                                value={formData.productName}
+                                onChange={(e) => handleChange("productName", e.target.value)}
                                 disabled={!isEditing}
                                 className={`w-full px-3 py-2 border rounded-md ${
                                     isEditing
@@ -168,148 +228,125 @@ export default function MenuEditForm() {
                             />
                         </div>
 
-                        {/* Category */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                                <input
-                                    type="text"
-                                    value={formData.category}
-                                    disabled
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Category ID</label>
-                                <input
-                                    type="text"
-                                    value={formData.categoryId}
-                                    disabled
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700"
-                                />
-                            </div>
+                        {/* Danh mục */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
+                            <select
+                                value={formData.categoryId}
+                                onChange={(e) => handleChange("categoryId", e.target.value)}
+                                disabled={!isEditing}
+                                className={`w-full px-3 py-2 border rounded-md ${
+                                    isEditing
+                                        ? "border-gray-300 focus:ring-2 focus:ring-orange-500"
+                                        : "border-gray-200 bg-gray-50 text-gray-700"
+                                }`}
+                            >
+                                <option value="">-- Chọn danh mục --</option>
+                                {categories.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.cateName}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
-                        {/* Size & Price */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Size</label>
-                                <input
-                                    type="text"
-                                    value={formData.size}
-                                    onChange={(e) => handleInputChange("size", e.target.value)}
-                                    disabled={!isEditing}
-                                    className={`w-full px-3 py-2 border rounded-md ${
-                                        isEditing
-                                            ? "border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                            : "border-gray-200 bg-gray-50 text-gray-700"
-                                    }`}
-                                />
+                        {/* Kích thước & Giá */}
+                        <div>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Kích thước & Giá</label>
+                                {isEditing && (
+                                    <button
+                                        type="button"
+                                        onClick={handleAddSizePrice}
+                                        className="flex items-center text-orange-500 hover:text-orange-600 text-sm"
+                                    >
+                                        + Thêm size
+                                    </button>
+                                )}
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Price</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                                        ₫
-                                    </span>
-                                    <input
-                                        type="text"
-                                        value={formData.price}
-                                        onChange={(e) => handleInputChange("price", e.target.value)}
+                            {formData.sizePrices.map((sp, index) => (
+                                <div key={index} className="flex gap-3 mb-2">
+                                    <select
+                                        value={sp.sizeId}
+                                        onChange={(e) => handleSizePriceChange(index, "sizeId", e.target.value)}
                                         disabled={!isEditing}
-                                        className={`w-full pl-8 pr-3 py-2 border rounded-md ${
-                                            isEditing
-                                                ? "border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                                : "border-gray-200 bg-gray-50 text-gray-700"
-                                        }`}
+                                        className="w-1/2 px-3 py-2 border rounded-md border-gray-300 focus:ring-2 focus:ring-orange-500"
+                                    >
+                                        <option value="">-- Chọn size --</option>
+                                        {sizes.map((s) => (
+                                            <option key={s.id} value={s.id}>
+                                                {s.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={sp.price}
+                                        onChange={(e) => handleSizePriceChange(index, "price", Number(e.target.value))}
+                                        disabled={!isEditing}
+                                        placeholder="Giá"
+                                        className="w-1/3 px-3 py-2 border rounded-md border-gray-300 focus:ring-2 focus:ring-orange-500"
                                     />
+                                    {isEditing && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveSizePrice(index)}
+                                            className="text-red-500 hover:text-red-600"
+                                        >
+                                            Xóa
+                                        </button>
+                                    )}
                                 </div>
-                            </div>
+                            ))}
                         </div>
 
-                        {/* Volume */}
+                        {/* Mô tả */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Volume</label>
-                            <input
-                                type="text"
-                                value={formData.volume}
-                                onChange={(e) => handleInputChange("volume", e.target.value)}
-                                disabled={!isEditing}
-                                className={`w-full px-3 py-2 border rounded-md ${
-                                    isEditing
-                                        ? "border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                        : "border-gray-200 bg-gray-50 text-gray-700"
-                                }`}
-                            />
-                        </div>
-
-                        {/* Description */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Mô tả</label>
                             <textarea
                                 value={formData.description}
-                                onChange={(e) => handleInputChange("description", e.target.value)}
-                                rows={4}
+                                onChange={(e) => handleChange("description", e.target.value)}
+                                rows={3}
                                 disabled={!isEditing}
                                 className={`w-full px-3 py-2 border rounded-md resize-none ${
                                     isEditing
-                                        ? "border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        ? "border-gray-300 focus:ring-2 focus:ring-orange-500"
                                         : "border-gray-200 bg-gray-50 text-gray-700"
                                 }`}
                             />
                         </div>
 
-                        {/* Rating + Reviews */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
-                                <input
-                                    type="text"
-                                    value={formData.rating}
-                                    disabled
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Total Reviews</label>
-                                <input
-                                    type="text"
-                                    value={formData.totalReview}
-                                    disabled
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Status */}
+                        {/* Trạng thái */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Trạng thái</label>
                             <div className="flex items-center">
                                 <button
-                                    onClick={() => handleInputChange("status", !formData.status)}
+                                    type="button"
+                                    onClick={() => handleChange("available", !formData.available)}
                                     disabled={!isEditing}
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                        formData.status ? "bg-orange-500" : "bg-gray-200"
+                                        formData.available ? "bg-orange-500" : "bg-gray-300"
                                     }`}
                                 >
                                     <span
                                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                            formData.status ? "translate-x-6" : "translate-x-1"
+                                            formData.available ? "translate-x-6" : "translate-x-1"
                                         }`}
                                     />
                                 </button>
                                 <span className="ml-3 text-sm text-gray-700">
-                                    {formData.status ? "Enabled" : "Disabled"}
+                                    {formData.available ? "Enabled" : "Disabled"}
                                 </span>
                             </div>
                         </div>
 
-                        {/* Image */}
+                        {/* Hình ảnh */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Ảnh sản phẩm</label>
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="flex flex-col items-center">
-                                    <p className="text-sm text-gray-600 mb-2">Current Image</p>
+                                    <p className="text-sm text-gray-600 mb-2">Ảnh hiện tại</p>
                                     <Image
                                         src={currentImage}
                                         alt="Current Product"
@@ -335,11 +372,9 @@ export default function MenuEditForm() {
                                                 : "text-gray-300 cursor-not-allowed"
                                         }`}
                                     >
-                                        Select a file to update menu image
+                                        Chọn ảnh để cập nhật
                                     </label>
-                                    {formData.image && (
-                                        <p className="mt-2 text-sm text-green-600">Selected: {formData.image.name}</p>
-                                    )}
+                                    {image && <p className="mt-2 text-sm text-green-600">Đã chọn: {image.name}</p>}
                                 </div>
                             </div>
                         </div>

@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import { Plus } from "lucide-react";
 
 interface ActionBarProps {
-    onNew?: () => void;
     newLabel?: string;
     secondaryLabel?: string;
     tertiaryLabel?: string;
@@ -12,7 +11,6 @@ interface ActionBarProps {
 }
 
 export default function ActionBar({
-    onNew,
     newLabel = "New",
     secondaryLabel,
     secondaryIcon,
@@ -23,8 +21,8 @@ export default function ActionBar({
     return (
         <div className="flex items-center gap-3">
             <button
-                className="bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg px-4 py-2 flex items-center gap-2 text-sm"
-                onClick={onNew}
+                onClick={() => (window.location.href = "/merchant/restaurant/menu-items/create")}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg px-4 py-2 flex items-center gap-2 text-sm cursor-pointer"
             >
                 <Plus size={16} />
                 {newLabel}
