@@ -12,7 +12,7 @@ interface ProductState {
     fetchProductByProductId: (productId: string) => Promise<void>;
     fetchAllProducts: () => Promise<void>;
     createNewProduct: (productData: ProductCreateData, imageFile?: File) => Promise<void>;
-    updateProduct: (ProductId: string, ProductData: ProductData, imageFile?: File) => Promise<void>;
+    updateProduct: (ProductId: string, ProductData: ProductCreateData, imageFile?: File) => Promise<void>;
     updateProductStatus: (ProductId: string) => Promise<void>;
     deleteProduct: (ProductId: string) => Promise<void>;
     deleteProductImage: (ProductId: string) => Promise<void>;
@@ -75,13 +75,13 @@ export const useProductStore = create<ProductState>((set) => ({
         }
     },
 
-    updateProduct: async (ProductId: string, ProductData: ProductData, imageFile?: File) => {
+    updateProduct: async (ProductId: string, ProductData: ProductCreateData, imageFile?: File) => {
         try {
             set({ loading: true });
             const response = await productApi.updateProduct(ProductId, ProductData, imageFile);
             set((state) => ({
-                Product: response.data,
-                Products: state.products.map((res) => (res.id === ProductId ? response.data : res)),
+                product: response.data,
+                products: state.products.map((res) => (res.id === ProductId ? response.data : res)),
                 loading: false,
                 error: null,
             }));

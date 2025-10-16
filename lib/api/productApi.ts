@@ -12,7 +12,7 @@ export const productApi = {
 
         return api.post<Product>("/products", formData);
     },
-    updateProduct: (productId: string, productData: ProductData, imageFile?: File) => {
+    updateProduct: (productId: string, productData: ProductCreateData, imageFile?: File) => {
         const formData = new FormData();
         formData.append("product", new Blob([JSON.stringify(productData)], { type: "application/json" }));
         if (imageFile) formData.append("image", imageFile);
