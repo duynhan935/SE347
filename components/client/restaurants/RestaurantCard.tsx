@@ -1,56 +1,51 @@
+import { Restaurant } from "@/types";
 import { Star } from "lucide-react";
-import Image, { StaticImageData } from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 
-type Restaurant = {
-        id: number;
-        name: string;
-        image: StaticImageData;
-        deliveryFee: string;
-        deliveryTime: number;
-        foodType: string;
-        rating: number;
-        reviewCount: number;
+// Props của component, nhận vào một object restaurant
+type RestaurantCardProps = {
+        restaurant: Restaurant;
 };
 
-export const RestaurantCard = ({ restaurant }: { restaurant: Restaurant }) => (
+export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => (
         <Link
                 href={`/restaurants/${restaurant.id}`}
-                className="group block rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-white"
+                className="group block rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-white h-full flex flex-col"
         >
-                {/* Ảnh nhà hàng */}
+                {/* ✨ Sửa 2: Div này chỉ chứa ảnh và các tag nằm trên ảnh */}
                 <div className="relative w-full h-48">
                         <Image
-                                src={restaurant.image}
-                                alt={restaurant.name}
+                                src={restaurant.imageURL || "/placeholder.png"} // Thêm ảnh dự phòng
+                                alt={restaurant.resName}
                                 fill
                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         {/* Tag thời gian giao hàng */}
-                        <div className="absolute bottom-2 right-2 bg-white/80 text-gray-700 text-xs px-2 py-1 rounded-md backdrop-blur-sm">
-                                {restaurant.deliveryTime} min
+                        <div className="absolute bottom-2 right-2 bg-white/80 text-gray-800 text-xs px-2 py-1 rounded-full backdrop-blur-sm font-semibold">
+                                {restaurant.duration} min
                         </div>
                 </div>
 
-                {/* Nội dung thông tin */}
-                <div className="p-4">
-                        <h3 className="font-semibold text-lg text-gray-800 group-hover:text-primary transition-colors">
-                                {restaurant.name}
+                {/* ✨ Sửa 3: Toàn bộ thông tin text được đặt trong một div riêng có padding */}
+                <div className="p-4 flex-grow flex flex-col">
+                        <h3 className="font-bold text-lg truncate" title={restaurant.resName}>
+                                {restaurant.resName}
                         </h3>
+                        <p className="text-sm text-gray-500 mt-1">{restaurant.distance.toFixed(1)} km</p>
 
-                        <p className="text-sm text-gray-500 mt-1">
-                                {restaurant.foodType} • {restaurant.deliveryFee} delivery fee
-                        </p>
-
-                        <div className="flex items-center justify-between mt-3 text-sm text-gray-600">
+                        <div className="flex items-center justify-between mt-auto pt-3 text-sm text-gray-600">
                                 <div className="flex items-center gap-1">
                                         <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                                         <span className="font-medium text-gray-800">{restaurant.rating}</span>
                                         <span className="text-gray-500">
-                                                ({restaurant.reviewCount.toLocaleString()})
+                                                ({restaurant.totalReview.toLocaleString()})
                                         </span>
                                 </div>
-                                <span className="text-xs text-gray-400">View details →</span>
+                                {/* Hiệu ứng mũi tên xuất hiện khi hover */}
+                                <span className="text-xs text-brand-purple opacity-0 group-hover:opacity-100 transition-opacity font-semibold">
+                                        View details →
+                                </span>
                         </div>
                 </div>
         </Link>

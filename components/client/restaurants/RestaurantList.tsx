@@ -1,9 +1,9 @@
 "use client";
 
+import { useRestaurantStore } from "@/stores/useRestaurantStore";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useRef } from "react";
-import { type Restaurant } from "../../../app/(client)/restaurants/page";
+import { useEffect, useRef } from "react";
 import Pagination from "../Pagination";
 import { RestaurantCard } from "./RestaurantCard";
 
@@ -20,19 +20,21 @@ const fakeCategories = [
         { name: "American", icon: "🇺🇸" },
 ];
 
-type RestaurantListProps = {
-        initialData: Restaurant[];
-        totalResults: number;
-};
-
-export default function RestaurantList({ initialData, totalResults }: RestaurantListProps) {
+export default function RestaurantList() {
         const searchParams = useSearchParams();
         const pathname = usePathname();
         const router = useRouter();
         const activeCategory = searchParams.get("category") || "";
         const scrollContainerRef = useRef<HTMLDivElement>(null);
         const ITEMS_PER_PAGE = 9;
+        const { restaurants, getAllRestaurants, loading } = useRestaurantStore();
 
+        useEffect(() => {
+                getAllRestaurants();
+        }, [getAllRestaurants]);
+
+        if (loading) return <p>Đang tải...</p>;
+        console.log(restaurants);
         const handleCategoryClick = (categoryName: string) => {
                 const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
                 if (activeCategory === categoryName) {
@@ -106,17 +108,17 @@ export default function RestaurantList({ initialData, totalResults }: Restaurant
 
                         {/* --- List Header & Grid --- */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                                <h2 className="text-xl font-bold">{totalResults} Restaurants Found</h2>
+                                <h2 className="text-xl font-bold">{restaurants.length} Restaurants Found</h2>
                                 {/* Sort By Dropdown */}
                         </div>
-                        {initialData && initialData.length > 0 ? (
+                        {restaurants && restaurants.length > 0 ? (
                                 <>
                                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-10">
-                                                {initialData.map((restaurant) => (
+                                                {restaurants.map((restaurant) => (
                                                         <RestaurantCard key={restaurant.id} restaurant={restaurant} />
                                                 ))}
                                         </div>
-                                        <Pagination totalResults={totalResults} itemsPerPage={ITEMS_PER_PAGE} />
+                                        <Pagination totalResults={restaurants.length} itemsPerPage={ITEMS_PER_PAGE} />
                                 </>
                         ) : (
                                 <p>No restaurants found. Try adjusting your filters.</p>
