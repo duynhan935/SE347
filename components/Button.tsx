@@ -6,12 +6,14 @@ const Button = ({
         title,
         type,
         onClickFunction,
+        disabled,
 }: {
         className?: string;
         children?: React.ReactNode;
         title?: string;
         type?: "button" | "submit" | "reset";
         onClickFunction?: () => void;
+        disabled?: boolean;
 }) => {
         if (onClickFunction) {
                 return (
@@ -20,13 +22,20 @@ const Button = ({
                                 title={title}
                                 type={type || "button"}
                                 onClick={onClickFunction}
+                                disabled={disabled}
                         >
                                 {children}
                         </button>
                 );
         }
         return (
-                <button className={`btn ${className}`} title={title} type={type || "button"} onClick={onClickFunction}>
+                <button
+                        className={`btn ${className}`}
+                        title={title}
+                        type={type || "button"}
+                        onClick={onClickFunction}
+                        disabled={disabled}
+                >
                         {children}
                 </button>
         );
