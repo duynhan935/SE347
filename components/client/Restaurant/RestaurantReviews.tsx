@@ -1,32 +1,52 @@
+// File: app/_components/client/Restaurant/RestaurantReviews.tsx
 "use client";
-import { type RestaurantDetail } from "@/app/(client)/restaurants/[id]/page";
+
+import { Review } from "@/types";
+import { MessageSquare, Star } from "lucide-react";
 import { useState } from "react";
-import { ReviewCard } from "./ReviewCard";
 
-export default function RestaurantReviews({ reviews }: { reviews: RestaurantDetail["reviews"] }) {
-        const [showAllReviews, setShowAllReviews] = useState(false);
+const RatingStars = ({ rating }: { rating: number }) => (
+        <div className="flex items-center">
+                {Array.from({ length: 5 }, (_, i) => (
+                        <Star
+                                key={i}
+                                className={`w-4 h-4 ${
+                                        i < rating ? "text-yellow-500 fill-yellow-500" : "text-gray-300"
+                                }`}
+                        />
+                ))}
+        </div>
+);
 
-        const handleShowAllReviews = () => {
-                setShowAllReviews(!showAllReviews);
-        };
+export default function RestaurantReviews({ reviews }: { reviews: Review[] }) {
+        const [showAll, setShowAll] = useState(false);
+        const visibleReviews = showAll ? reviews : reviews.slice(0, 3);
 
-        const visibleReviews = showAllReviews ? reviews : reviews.slice(0, 3);
         return (
-                <section>
-                        <h2 className="text-xl font-bold mb-4">Customer Reviews</h2>
-
-                        <div className="space-y-4">
+                <div className="bg-white p-6 rounded-lg shadow-lg">
+                        <h2 className="text-3xl font-bold font-roboto-serif mb-6 flex items-center gap-3">
+                                <MessageSquare className="w-7 h-7 text-brand-purple" />
+                                Customer Reviews
+                        </h2>
+                        <div className="space-y-6">
                                 {visibleReviews.map((review) => (
-                                        <ReviewCard key={review.id} review={review} />
+                                        <div key={review.id} className="border-b pb-4 last:border-b-0 last:pb-0">
+                                                <div className="flex items-center justify-between">
+                                                        <p className="font-semibold">{review.author}</p>
+                                                        <RatingStars rating={review.rating} />
+                                                </div>
+                                                <p className="mt-3 text-gray-600 italic">&quot;{review.text}&quot;</p>
+                                        </div>
                                 ))}
                         </div>
-
-                        <button
-                                onClick={handleShowAllReviews}
-                                className="w-full mt-6 text-center py-2 px-4 border border-gray-300 rounded-md font-semibold text-sm hover:bg-gray-50 cursor-pointer"
-                        >
-                                View all reviews
-                        </button>
-                </section>
+                        {reviews.length > 3 && (
+                                <button
+                                        onClick={() => setShowAll(!showAll)}
+                                        className="w-full mt-6 text-center py-2 px-4 border rounded-md font-semibold text-sm hover:bg-gray-50"
+                                >
+                                        {showAll ? "Show Less" : `View all ${reviews.length} reviews`}
+                                </button>
+                        )}
+                </div>
         );
 }
