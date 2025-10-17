@@ -48,8 +48,7 @@ export default function MenuItemPage() {
         const { products, fetchProductsByRestaurantId, loading, error } = useProductStore();
 
         useEffect(() => {
-                const merchantId =
-                        "xosmpw7eGLWCnF9b8f8v6AAEGYGftLzGC1Z3wFo4bjYRQp04rEKluhPdoVh0pqtIX0p9CBUBBZhCJZK4hIIDtTUqJMN9apWAmtYi8qukcw0Q7ausIxH9KtmTp2cndAS09Pazrm8ZcmBb1MBCU7woj7wvu4QClGX8uWExUVBcB0zZfawQBq4TNFA3236KhmHRDH7ownJX7WldcOb1zNdlApmsLBLgETTtORrv230X8ETkZGKTQNJrBOdQBds6Qg";
+                const merchantId = "testresid";
                 fetchProductsByRestaurantId(merchantId);
         }, [fetchProductsByRestaurantId]);
 

@@ -12,6 +12,8 @@ import RestaurantNavTabs from "@/components/client/Restaurant/RestaurantNavTabs"
 export default async function RestaurantDetailPage({ params }: { params: { id: string } }) {
         const response = await restaurantApi.getByRestaurantId(params.id);
         const restaurant = response.data;
+        console.log(restaurant);
+
         if (!restaurant) notFound();
 
         return (

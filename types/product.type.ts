@@ -7,7 +7,7 @@ export interface ProductSize {
 }
 
 export interface Category {
-        id: string;
+        cateId: string;
         cateName: string;
 }
 
