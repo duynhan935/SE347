@@ -30,7 +30,6 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
                 try {
                         const res = await restaurantApi.getByRestaurantId(id);
                         const data = res.data;
-                        console.log(data);
 
                         set({
                                 restaurant: data,
@@ -51,7 +50,6 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
                 try {
                         const res = await restaurantApi.getRestaurantByMerchantId(merchantId);
                         const data = res.data;
-                        console.log(data);
 
                         set({
                                 restaurant: data,
