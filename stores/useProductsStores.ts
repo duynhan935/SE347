@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { productApi } from "@/lib/api/productApi";
-import type { Product, ProductData } from "@/types";
+import type { Product, ProductData, ProductCreateData } from "@/types";
 
 interface ProductState {
     products: Product[];
@@ -11,10 +11,15 @@ interface ProductState {
     fetchProductsByRestaurantId: (restaurantId: string) => Promise<void>;
     fetchProductByProductId: (productId: string) => Promise<void>;
     fetchAllProducts: () => Promise<void>;
+    createNewProduct: (productData: ProductCreateData, imageFile?: File) => Promise<void>;
+    updateProduct: (ProductId: string, ProductData: ProductCreateData, imageFile?: File) => Promise<void>;
+    updateProductStatus: (ProductId: string) => Promise<void>;
+    deleteProduct: (ProductId: string) => Promise<void>;
+    deleteProductImage: (ProductId: string) => Promise<void>;
     clearProducts: () => void;
 }
 
-export const useProductStore = create<ProductState>((set, get) => ({
+export const useProductStore = create<ProductState>((set) => ({
     products: [],
     product: null,
     loading: false,
@@ -45,17 +50,17 @@ export const useProductStore = create<ProductState>((set, get) => ({
         set({ loading: true, error: null });
         try {
             const res = await productApi.getProductById(productId);
-            console.log(res.data);
             set({ product: res.data || null, loading: false });
         } catch (err: any) {
             set({ error: err.message || "Không thể tải sản phẩm", loading: false });
         }
     },
 
-    createNewProduct: async (productData: ProductData, imageFile?: File) => {
+    createNewProduct: async (productData: ProductCreateData, imageFile?: File) => {
         set({ loading: true, error: null });
         try {
             const res = await productApi.createProduct(productData, imageFile);
+
             set((state) => ({
                 products: [...state.products, res.data],
                 loading: false,
@@ -66,16 +71,17 @@ export const useProductStore = create<ProductState>((set, get) => ({
                 error: error.message || "Failed to create product",
                 loading: false,
             });
+            throw error;
         }
     },
 
-    updateProduct: async (ProductId: string, ProductData: ProductData, imageFile?: File) => {
+    updateProduct: async (ProductId: string, ProductData: ProductCreateData, imageFile?: File) => {
         try {
             set({ loading: true });
             const response = await productApi.updateProduct(ProductId, ProductData, imageFile);
             set((state) => ({
-                Product: response.data,
-                Products: state.products.map((res) => (res.id === ProductId ? response.data : res)),
+                product: response.data,
+                products: state.products.map((res) => (res.id === ProductId ? response.data : res)),
                 loading: false,
                 error: null,
             }));

@@ -50,12 +50,12 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
         try {
             const res = await restaurantApi.getRestaurantByMerchantId(merchantId);
             const data = res.data;
-            console.log(data);
 
             set({
-                restaurant: data,
-                products: data.products || [],
-                categories: data.cate || [],
+                restaurants: data,
+                restaurant: data[0] || null,
+                products: data[0].products || [],
+                categories: data[0].cate || [],
                 loading: false,
             });
         } catch (err: any) {
@@ -148,9 +148,7 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
             set({ loading: true });
             await restaurantApi.deleteRestaurantImage(restaurantId);
             set((state) => ({
-                restaurants: state.restaurants.map((res) =>
-                    res.id === restaurantId ? { ...res, image: null } : res
-                ),
+                restaurants: state.restaurants.map((res) => (res.id === restaurantId ? { ...res, image: null } : res)),
                 loading: false,
                 error: null,
             }));
