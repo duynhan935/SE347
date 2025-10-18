@@ -1,11 +1,6 @@
-import { StaticImageData } from "next/image";
-import type { Category, Product } from "./product.type";
-export interface Review {
-        id: string;
-        author: string;
-        rating: number;
-        text: string;
-}
+import type { Product } from "./product.type";
+import type { Category } from "./category.type";
+
 export interface RestaurantData {
         resName: string;
         address: string;
