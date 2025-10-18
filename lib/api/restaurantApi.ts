@@ -2,13 +2,13 @@ import type { Category, Restaurant, RestaurantData } from "@/types";
 import api from "../axios";
 
 export const restaurantApi = {
-        getByRestaurantId: (restaurantId: string) => api.get<Restaurant>(`restaurant/${restaurantId}`),
-        getRestaurantByMerchantId: (merchantId: string) => api.get<Restaurant>(`/restaurant/merchant/${merchantId}`),
-        getAllRestaurants: () => api.get<Restaurant[]>("/restaurant"),
-        createRestaurant: (restaurantData: RestaurantData, imageFile?: File) => {
-                const formData = new FormData();
-                formData.append("restaurant", JSON.stringify(restaurantData));
-                if (imageFile) formData.append("image", imageFile);
+    getByRestaurantId: (restaurantId: string) => api.get<Restaurant>(`restaurant/${restaurantId}`),
+    getRestaurantByMerchantId: (merchantId: string) => api.get<Restaurant[]>(`/restaurant/merchant/${merchantId}`),
+    getAllRestaurants: () => api.get<Restaurant[]>("/restaurant"),
+    createRestaurant: (restaurantData: RestaurantData, imageFile?: File) => {
+        const formData = new FormData();
+        formData.append("restaurant", JSON.stringify(restaurantData));
+        if (imageFile) formData.append("image", imageFile);
 
                 return api.post<Restaurant>("/restaurant", formData, {
                         headers: { "Content-Type": "multipart/form-data" },

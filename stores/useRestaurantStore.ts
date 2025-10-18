@@ -45,25 +45,26 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
                 }
         },
 
-        getRestaurantByMerchantId: async (merchantId) => {
-                set({ loading: true, error: null });
-                try {
-                        const res = await restaurantApi.getRestaurantByMerchantId(merchantId);
-                        const data = res.data;
+    getRestaurantByMerchantId: async (merchantId) => {
+        set({ loading: true, error: null });
+        try {
+            const res = await restaurantApi.getRestaurantByMerchantId(merchantId);
+            const data = res.data;
 
-                        set({
-                                restaurant: data,
-                                products: data.products || [],
-                                categories: data.cate || [],
-                                loading: false,
-                        });
-                } catch (err: any) {
-                        set({
-                                error: err.message || "Không thể tải dữ liệu nhà hàng",
-                                loading: false,
-                        });
-                }
-        },
+            set({
+                restaurants: data,
+                restaurant: data[0] || null,
+                products: data[0].products || [],
+                categories: data[0].cate || [],
+                loading: false,
+            });
+        } catch (err: any) {
+            set({
+                error: err.message || "Không thể tải dữ liệu nhà hàng",
+                loading: false,
+            });
+        }
+    },
 
         getAllRestaurants: async () => {
                 set({ loading: true, error: null });
@@ -144,24 +145,22 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
                 }
         },
 
-        deleteRestaurantImage: async (restaurantId: string) => {
-                try {
-                        set({ loading: true });
-                        await restaurantApi.deleteRestaurantImage(restaurantId);
-                        set((state) => ({
-                                restaurants: state.restaurants.map((res) =>
-                                        res.id === restaurantId ? { ...res, image: null } : res
-                                ),
-                                loading: false,
-                                error: null,
-                        }));
-                } catch (error: any) {
-                        set({
-                                error: error.message || "Failed to delete restaurant image",
-                                loading: false,
-                        });
-                }
-        },
+    deleteRestaurantImage: async (restaurantId: string) => {
+        try {
+            set({ loading: true });
+            await restaurantApi.deleteRestaurantImage(restaurantId);
+            set((state) => ({
+                restaurants: state.restaurants.map((res) => (res.id === restaurantId ? { ...res, image: null } : res)),
+                loading: false,
+                error: null,
+            }));
+        } catch (error: any) {
+            set({
+                error: error.message || "Failed to delete restaurant image",
+                loading: false,
+            });
+        }
+    },
 
         clearRestaurant: () => {
                 set({

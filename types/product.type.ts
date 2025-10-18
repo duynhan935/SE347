@@ -35,3 +35,12 @@ export interface ProductData {
         available: boolean;
         productSizes: { sizeName: string; price: number }[];
 }
+
+export interface ProductCreateData {
+    productName: string;
+    description: string;
+    categoryId: string;
+    available: boolean;
+    restaurantId: string;
+    sizeIds: { sizeId: string; price: number }[];
+}
