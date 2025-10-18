@@ -47,11 +47,11 @@ export default function MenuItemPage() {
 
         const { products, fetchProductsByRestaurantId, loading, error } = useProductStore();
 
-    useEffect(() => {
-        const merchantId =
-            "f6M7LxiWsKU3yu1QqxBJrc0ePRG8ciHF60Y9xO3XzzHhRf1FlmC5H0ovQM4slJVwrqwz0aFaz2ZUOJCq45EUY4S1mAYZAoOhkuc4bfF3L34ilHpUbmPgv14qM7OnTOXioewL4YKV0KettlXDBzBOXk6WGOF2r0AD4cAiBZq5PkqTasK9O20iwUUORGDsGlNIrswd35K15ZLhM18fhlXAV9bkd96kSSn9SMiEIz5It1PMdvrKpXRbaYk0r0RdvZ";
-        fetchProductsByRestaurantId(merchantId);
-    }, [fetchProductsByRestaurantId]);
+        useEffect(() => {
+                const merchantId =
+                        "f6M7LxiWsKU3yu1QqxBJrc0ePRG8ciHF60Y9xO3XzzHhRf1FlmC5H0ovQM4slJVwrqwz0aFaz2ZUOJCq45EUY4S1mAYZAoOhkuc4bfF3L34ilHpUbmPgv14qM7OnTOXioewL4YKV0KettlXDBzBOXk6WGOF2r0AD4cAiBZq5PkqTasK9O20iwUUORGDsGlNIrswd35K15ZLhM18fhlXAV9bkd96kSSn9SMiEIz5It1PMdvrKpXRbaYk0r0RdvZ";
+                fetchProductsByRestaurantId(merchantId);
+        }, [fetchProductsByRestaurantId]);
 
         // 🔸 Chuyển dữ liệu products trả về từ API thành dữ liệu bảng phù hợp
         const mappedData = useMemo(() => {

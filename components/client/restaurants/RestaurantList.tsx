@@ -1,38 +1,44 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useRestaurantStore } from "@/stores/useRestaurantStore";
+import { Category } from "@/types";
+import { ChevronLeft, ChevronRight, Utensils } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useRef } from "react";
-import { type Restaurant } from "../../../app/(client)/restaurants/page";
+import { useEffect, useRef } from "react";
 import Pagination from "../Pagination";
 import { RestaurantCard } from "./RestaurantCard";
 
-const fakeCategories = [
-        { name: "Burger", icon: "🍔" },
-        { name: "Pizza", icon: "🍕" },
-        { name: "Sandwiches", icon: "🥪" },
-        { name: "Wings", icon: "🍗" },
-        { name: "Coffee", icon: "☕" },
-        { name: "Tea", icon: "☕" },
-        { name: "Indian", icon: "🍛" },
-        { name: "Chinese", icon: "🥡" },
-        { name: "Thai", icon: "🍜" },
-        { name: "American", icon: "🇺🇸" },
-];
-
-type RestaurantListProps = {
-        initialData: Restaurant[];
-        totalResults: number;
+const categoryIcons: { [key: string]: string } = {
+        Burger: "🍔",
+        Pizza: "🍕",
+        Sandwiches: "🥪",
+        Wings: "🍗",
+        Coffee: "☕",
+        Tea: "🍵",
+        Indian: "🍛",
+        Chinese: "🥡",
+        Thai: "🍜",
+        American: "🇺🇸",
+        Mexican: "🌮",
+        Japanese: "🍣",
+        // Thêm các category khác nếu cần
 };
 
-export default function RestaurantList({ initialData, totalResults }: RestaurantListProps) {
+export default function RestaurantList() {
         const searchParams = useSearchParams();
         const pathname = usePathname();
         const router = useRouter();
         const activeCategory = searchParams.get("category") || "";
         const scrollContainerRef = useRef<HTMLDivElement>(null);
         const ITEMS_PER_PAGE = 9;
+        const { restaurants, getAllRestaurants, loading, categories, getAllCategories } = useRestaurantStore();
 
+        useEffect(() => {
+                getAllRestaurants();
+                getAllCategories();
+        }, [getAllRestaurants, getAllCategories]);
+
+        if (loading) return <p>Đang tải...</p>;
         const handleCategoryClick = (categoryName: string) => {
                 const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
                 if (activeCategory === categoryName) {
@@ -75,19 +81,26 @@ export default function RestaurantList({ initialData, totalResults }: Restaurant
                                                 ref={scrollContainerRef}
                                                 className="flex-grow flex items-center gap-4 overflow-x-auto scrollbar-hide"
                                         >
-                                                {fakeCategories.map((category, index) => (
+                                                {categories.map((category: Category) => (
                                                         <button
-                                                                key={index}
-                                                                onClick={() => handleCategoryClick(category.name)}
-                                                                className={`flex flex-col items-center justify-center gap-2 flex-shrink-0 w-24 text-center p-3 rounded-lg transition-colors ${
-                                                                        activeCategory === category.name
-                                                                                ? "bg-brand-purple text-white"
-                                                                                : "bg-gray-100 hover:bg-gray-200"
+                                                                key={category.id}
+                                                                onClick={() => handleCategoryClick(category.cateName)}
+                                                                className={`cursor-pointer capitalize flex flex-col items-center justify-center gap-2 flex-shrink-0 w-24 h-24 text-center p-3 rounded-lg transition-all duration-300 transform hover:-translate-y-1 ${
+                                                                        activeCategory === category.cateName
+                                                                                ? "bg-brand-purple text-white shadow-lg"
+                                                                                : "bg-white hover:bg-gray-50 shadow-sm border"
                                                                 }`}
                                                         >
-                                                                <span className="text-2xl">{category.icon}</span>
-                                                                <span className="text-sm font-semibold">
-                                                                        {category.name}
+                                                                <span className="text-3xl">
+                                                                        {categoryIcons[
+                                                                                category.cateName
+                                                                                        .charAt(0)
+                                                                                        .toUpperCase() +
+                                                                                        category.cateName.slice(1)
+                                                                        ] || <Utensils />}
+                                                                </span>
+                                                                <span className="text-sm font-semibold truncate w-full">
+                                                                        {category.cateName}
                                                                 </span>
                                                         </button>
                                                 ))}
@@ -106,17 +119,17 @@ export default function RestaurantList({ initialData, totalResults }: Restaurant
 
                         {/* --- List Header & Grid --- */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                                <h2 className="text-xl font-bold">{totalResults} Restaurants Found</h2>
+                                <h2 className="text-xl font-bold">{restaurants.length} Restaurants Found</h2>
                                 {/* Sort By Dropdown */}
                         </div>
-                        {initialData && initialData.length > 0 ? (
+                        {restaurants && restaurants.length > 0 ? (
                                 <>
                                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-10">
-                                                {initialData.map((restaurant) => (
+                                                {restaurants.map((restaurant) => (
                                                         <RestaurantCard key={restaurant.id} restaurant={restaurant} />
                                                 ))}
                                         </div>
-                                        <Pagination totalResults={totalResults} itemsPerPage={ITEMS_PER_PAGE} />
+                                        <Pagination totalResults={restaurants.length} itemsPerPage={ITEMS_PER_PAGE} />
                                 </>
                         ) : (
                                 <p>No restaurants found. Try adjusting your filters.</p>

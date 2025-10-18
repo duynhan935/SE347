@@ -1,78 +1,41 @@
-import { type RestaurantDetail } from "@/app/(client)/restaurants/[id]/page";
-import { Heart, Info } from "lucide-react";
+// File: app/_components/client/Restaurant/RestaurantHero.tsx
+import { Restaurant } from "@/types";
+import { Star } from "lucide-react";
 import Image from "next/image";
 
-type RestaurantHeroProps = {
-        restaurant: RestaurantDetail;
-};
+export default function RestaurantHero({ restaurant }: { restaurant: Restaurant }) {
+        const mainCategory = restaurant.cate[0]?.cateName || "Restaurant";
 
-export default function RestaurantHero({ restaurant }: RestaurantHeroProps) {
         return (
-                <section className="relative">
-                        {/* Banner Image */}
-                        <div className="h-56 w-full">
-                                <Image
-                                        src={restaurant.bannerImage}
-                                        alt={`${restaurant.name} banner`}
-                                        layout="fill"
-                                        objectFit="cover"
-                                />
-                        </div>
-
-                        {/* Content Container */}
-                        <div className="custom-container">
-                                <div className="bg-white p-6 rounded-lg shadow-lg relative -mt-16 z-10">
-                                        {/* Logo */}
-                                        <Image
-                                                src={restaurant.image}
-                                                alt={`${restaurant.name} logo`}
-                                                width={96}
-                                                height={96}
-                                                className="rounded-full border-4 border-white absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                                        />
-
-                                        {/* Buttons */}
-                                        <div className="flex justify-end gap-2 pt-2 mt-5 lg:mt-">
-                                                <button className="flex items-center gap-2 text-sm font-semibold border rounded-full px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                                                        <Info className="w-4 h-4" /> Store info
-                                                </button>
-                                                <button className="flex items-center gap-2 text-sm font-semibold bg-green-600 text-white rounded-full px-4 py-2 hover:bg-green-700 cursor-pointer">
-                                                        <Heart className="w-4 h-4" /> Add to favorites
-                                                </button>
-                                        </div>
-
-                                        {/* Info */}
-                                        <div className="text-center mt-10">
-                                                <h1 className="text-3xl font-bold">{restaurant.name}</h1>
-                                                <p className="text-gray-500 mt-1 text-sm">
-                                                        <span>{restaurant.deliveryFee} delivery fee</span>
-                                                        <span className="mx-2">•</span>
-                                                        <span>{restaurant.deliveryTime} min</span>
-                                                        <span className="mx-2">•</span>
-                                                        <span>{restaurant.foodType}</span>
-                                                </p>
-                                        </div>
-
-                                        {/* Stats */}
-                                        <div className="mt-4 pt-4 border-t flex flex-wrap justify-around text-center text-sm gap-y-2">
-                                                <div>
-                                                        <p className="font-bold">
-                                                                {restaurant.rating.toFixed(1)} (
-                                                                {restaurant.reviewCount.toLocaleString()})
-                                                        </p>
-                                                        <p className="text-gray-500">Rating</p>
+                <section className="relative h-[300px] md:h-[400px] w-full">
+                        <Image
+                                src={restaurant.imageURL || "/placeholder-banner.png"}
+                                alt={`${restaurant.resName} banner`}
+                                fill
+                                className="object-cover"
+                                priority
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                        <div className="absolute bottom-0 left-0 w-full">
+                                <div className="custom-container py-8 text-white">
+                                        <h1 className="text-4xl lg:text-5xl font-bold font-roboto-serif">
+                                                {restaurant.resName}
+                                        </h1>
+                                        <p className="mt-2 text-lg">{mainCategory}</p>
+                                        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                                                <div className="flex items-center gap-1">
+                                                        <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                                                        <span className="font-semibold">{restaurant.rating}</span>
+                                                        <span className="text-gray-300">
+                                                                ({restaurant.totalReview.toLocaleString()} reviews)
+                                                        </span>
                                                 </div>
-                                                <div>
-                                                        <p className="font-bold">{restaurant.foodGood}%</p>
-                                                        <p className="text-gray-500">Food was good</p>
-                                                </div>
-                                                <div>
-                                                        <p className="font-bold">{restaurant.deliveryOnTime}%</p>
-                                                        <p className="text-gray-500">Delivery on time</p>
-                                                </div>
-                                                <div>
-                                                        <p className="font-bold">{restaurant.orderCorrect}%</p>
-                                                        <p className="text-gray-500">Order was correct</p>
+                                                <div className="flex items-center gap-2">
+                                                        <span className="font-semibold">{restaurant.duration} min</span>
+                                                        <span className="text-gray-300">•</span>
+                                                        <span className="font-semibold">
+                                                                {restaurant.distance.toFixed(1)} km
+                                                        </span>
                                                 </div>
                                         </div>
                                 </div>

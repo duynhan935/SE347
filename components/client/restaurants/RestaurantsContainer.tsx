@@ -3,16 +3,10 @@
 
 import { Filter, X } from "lucide-react";
 import { useState } from "react";
-import { type Restaurant } from "../../../app/(client)/restaurants/page"; // Import type từ page.tsx
 import FilterSidebar from "./FilterSidebar";
 import RestaurantList from "./RestaurantList";
 
-type RestaurantsContainerProps = {
-        initialData: Restaurant[];
-        totalResults: number;
-};
-
-export default function RestaurantsContainer({ initialData, totalResults }: RestaurantsContainerProps) {
+export default function RestaurantsContainer() {
         const [isFilterOpen, setIsFilterOpen] = useState(false);
 
         return (
@@ -59,7 +53,7 @@ export default function RestaurantsContainer({ initialData, totalResults }: Rest
 
                                 {/* --- Danh sách nhà hàng --- */}
                                 <div className="col-span-1 lg:col-span-8">
-                                        <RestaurantList initialData={initialData} totalResults={totalResults} />
+                                        <RestaurantList />
                                 </div>
                         </div>
                 </>
