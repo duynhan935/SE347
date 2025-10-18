@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { productApi } from "@/lib/api/productApi";
-import type { Product, ProductData, ProductCreateData } from "@/types";
-
+import type { Product, ProductCreateData } from "@/types";
+import { create } from "zustand";
 interface ProductState {
         products: Product[];
         product: Product | null;

@@ -26,4 +26,5 @@ export const restaurantApi = {
         updateRestaurantStatus: (restaurantId: string) => api.patch<Restaurant>(`/restaurant/enable/${restaurantId}`),
         deleteRestaurant: (restaurantId: string) => api.delete(`/restaurant/${restaurantId}`),
         deleteRestaurantImage: (restaurantId: string) => api.delete(`/restaurant/image/${restaurantId}`),
+        getAllCategories: () => api.get<Category[]>(`/category`),
 };
