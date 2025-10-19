@@ -61,7 +61,6 @@ export default function FilterSidebar() {
                 const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
 
                 if (currentParams.get(name) === value) {
-                        currentParams.delete(name);
                 } else {
                         currentParams.set(name, value);
                 }
@@ -83,7 +82,7 @@ export default function FilterSidebar() {
                 router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
         };
 
-        const deliveryType = searchParams.get("type") || "delivery";
+        const searchType = searchParams.get("type") || "restaurants";
 
         return (
                 <aside className="w-full py-2 px-4">
@@ -102,24 +101,24 @@ export default function FilterSidebar() {
                         {/* Delivery Type */}
                         <div className="mt-[30px] grid grid-cols-2 gap-2 p-1 bg-brand-white rounded-md ">
                                 <button
-                                        onClick={() => handleToggleChange("type", "delivery")}
-                                        className={`border border-brand-black px-4 py-3 rounded text-sm font-semibold transition-colors ${
-                                                deliveryType === "delivery"
+                                        onClick={() => handleToggleChange("type", "restaurants")}
+                                        className={`border border-brand-black px-4 py-3 rounded text-sm font-semibold transition-colors uppercase cursor-pointer ${
+                                                searchType === "restaurants"
                                                         ? "bg-brand-purple text-white"
                                                         : "bg-transparent text-gray-700"
                                         }`}
                                 >
-                                        Delivery
+                                        Restaurants
                                 </button>
                                 <button
-                                        onClick={() => handleToggleChange("type", "pickup")}
-                                        className={`border border-brand-black px-4 py-3 rounded text-sm font-semibold transition-colors ${
-                                                deliveryType === "pickup"
+                                        onClick={() => handleToggleChange("type", "foods")}
+                                        className={`border border-brand-black px-4 py-3 rounded text-sm font-semibold transition-colors uppercase cursor-pointer ${
+                                                searchType === "foods"
                                                         ? "bg-brand-purple text-white"
                                                         : "bg-transparent text-gray-700"
                                         }`}
                                 >
-                                        Pickup
+                                        Foods
                                 </button>
                         </div>
 
@@ -147,31 +146,33 @@ export default function FilterSidebar() {
                         </FilterSection>
 
                         {/* Price */}
-                        <FilterSection title="Price">
-                                <div className="flex items-center gap-2">
-                                        <input
-                                                type="number"
-                                                placeholder="Min"
-                                                value={minPrice}
-                                                onChange={(e) => setMinPrice(e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                        />
-                                        <span>-</span>
-                                        <input
-                                                type="number"
-                                                placeholder="Max"
-                                                value={maxPrice}
-                                                onChange={(e) => setMaxPrice(e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                        />
-                                </div>
-                                <button
-                                        onClick={handlePriceApply}
-                                        className="cursor-pointer w-full mt-3 px-4 py-2 bg-brand-purple text-white rounded-md text-sm font-semibold hover:bg-brand-purple/80"
-                                >
-                                        Apply Price
-                                </button>
-                        </FilterSection>
+                        {searchType === "foods" && (
+                                <FilterSection title="Price">
+                                        <div className="flex items-center gap-2">
+                                                <input
+                                                        type="number"
+                                                        placeholder="Min"
+                                                        value={minPrice}
+                                                        onChange={(e) => setMinPrice(e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                                />
+                                                <span>-</span>
+                                                <input
+                                                        type="number"
+                                                        placeholder="Max"
+                                                        value={maxPrice}
+                                                        onChange={(e) => setMaxPrice(e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                                />
+                                        </div>
+                                        <button
+                                                onClick={handlePriceApply}
+                                                className="cursor-pointer w-full mt-3 px-4 py-2 bg-brand-purple text-white rounded-md text-sm font-semibold hover:bg-brand-purple/80"
+                                        >
+                                                Apply Price
+                                        </button>
+                                </FilterSection>
+                        )}
 
                         {/* Max Delivery Fee */}
                         <FilterSection title="Max Delivery Fee">

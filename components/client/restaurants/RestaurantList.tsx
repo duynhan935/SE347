@@ -1,11 +1,13 @@
 "use client";
 
+import { useProductStore } from "@/stores/useProductsStores";
 import { useRestaurantStore } from "@/stores/useRestaurantStore";
 import { Category } from "@/types";
 import { ChevronLeft, ChevronRight, Utensils } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Pagination from "../Pagination";
+import { FoodCard } from "./FoodCard";
 import { RestaurantCard } from "./RestaurantCard";
 
 const categoryIcons: { [key: string]: string } = {
@@ -32,13 +34,19 @@ export default function RestaurantList() {
         const scrollContainerRef = useRef<HTMLDivElement>(null);
         const ITEMS_PER_PAGE = 9;
         const { restaurants, getAllRestaurants, loading, categories, getAllCategories } = useRestaurantStore();
+        const { fetchAllProducts, products, loading: productsLoading } = useProductStore();
+        const searchType = searchParams.get("type") || "restaurants";
 
         useEffect(() => {
-                getAllRestaurants();
+                if (searchType === "restaurants") {
+                        getAllRestaurants();
+                } else if (searchType === "foods") {
+                        fetchAllProducts();
+                }
                 getAllCategories();
-        }, [getAllRestaurants, getAllCategories]);
+        }, [getAllRestaurants, getAllCategories, fetchAllProducts, searchType]);
 
-        if (loading) return <p>Đang tải...</p>;
+        if (loading || productsLoading) return <p>Đang tải...</p>;
         const handleCategoryClick = (categoryName: string) => {
                 const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
                 if (activeCategory === categoryName) {
@@ -54,6 +62,10 @@ export default function RestaurantList() {
                         scrollContainerRef.current.scrollBy({ left: scrollOffset, behavior: "smooth" });
                 }
         };
+
+        const items = searchType === "restaurants" ? restaurants : products;
+        const totalResults = items.length;
+        const title = searchType === "restaurants" ? "Restaurants" : "Food Items";
 
         return (
                 <div>
@@ -83,7 +95,7 @@ export default function RestaurantList() {
                                         >
                                                 {categories.map((category: Category) => (
                                                         <button
-                                                                key={category.id}
+                                                                key={category.cateName}
                                                                 onClick={() => handleCategoryClick(category.cateName)}
                                                                 className={`cursor-pointer capitalize flex flex-col items-center justify-center gap-2 flex-shrink-0 w-24 h-24 text-center p-3 rounded-lg transition-all duration-300 transform hover:-translate-y-1 ${
                                                                         activeCategory === category.cateName
@@ -119,20 +131,28 @@ export default function RestaurantList() {
 
                         {/* --- List Header & Grid --- */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                                <h2 className="text-xl font-bold">{restaurants.length} Restaurants Found</h2>
-                                {/* Sort By Dropdown */}
+                                <h2 className="text-xl font-bold">
+                                        {totalResults} {title} Found
+                                </h2>
                         </div>
-                        {restaurants && restaurants.length > 0 ? (
+                        {items && items.length > 0 ? (
                                 <>
                                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-10">
-                                                {restaurants.map((restaurant) => (
-                                                        <RestaurantCard key={restaurant.id} restaurant={restaurant} />
-                                                ))}
+                                                {searchType === "restaurants"
+                                                        ? restaurants.map((restaurant) => (
+                                                                  <RestaurantCard
+                                                                          key={restaurant.id}
+                                                                          restaurant={restaurant}
+                                                                  />
+                                                          ))
+                                                        : products.map((product) => (
+                                                                  <FoodCard key={product.id} product={product} />
+                                                          ))}
                                         </div>
-                                        <Pagination totalResults={restaurants.length} itemsPerPage={ITEMS_PER_PAGE} />
+                                        <Pagination totalResults={totalResults} itemsPerPage={ITEMS_PER_PAGE} />
                                 </>
                         ) : (
-                                <p>No restaurants found. Try adjusting your filters.</p>
+                                <p>No {title} found. Try adjusting your filters.</p>
                         )}
                 </div>
         );
