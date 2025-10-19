@@ -63,7 +63,7 @@ export default function Pagination({ totalResults, itemsPerPage }: PaginationPro
                                                 <button
                                                         onClick={() => handlePageChange(currentPage - 1)}
                                                         disabled={currentPage === 1}
-                                                        className="flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-500 bg-white border border-e-0 border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-500 bg-white border border-e-0 border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                                 >
                                                         <ChevronLeft className="w-4 h-4" />
                                                         <span className="sr-only">Previous</span>
@@ -76,7 +76,7 @@ export default function Pagination({ totalResults, itemsPerPage }: PaginationPro
                                                         {typeof page === "number" ? (
                                                                 <button
                                                                         onClick={() => handlePageChange(page)}
-                                                                        className={`flex items-center justify-center px-3 h-8 leading-tight border border-gray-300 transition-colors ${
+                                                                        className={`flex items-center justify-center px-3 h-8 leading-tight border border-gray-300 transition-colors cursor-pointer ${
                                                                                 currentPage === page
                                                                                         ? "bg-brand-purple text-white border-brand-purple z-10"
                                                                                         : "bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700"
@@ -85,7 +85,7 @@ export default function Pagination({ totalResults, itemsPerPage }: PaginationPro
                                                                         {page}
                                                                 </button>
                                                         ) : (
-                                                                <span className="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300">
+                                                                <span className="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 cursor-pointer">
                                                                         ...
                                                                 </span>
                                                         )}
@@ -97,7 +97,7 @@ export default function Pagination({ totalResults, itemsPerPage }: PaginationPro
                                                 <button
                                                         onClick={() => handlePageChange(currentPage + 1)}
                                                         disabled={currentPage === totalPages}
-                                                        className="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                                 >
                                                         <ChevronRight className="w-4 h-4" />
                                                         <span className="sr-only">Next</span>

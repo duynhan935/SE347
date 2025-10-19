@@ -41,7 +41,7 @@ export const restaurantApi = {
                 // Vẫn XÓA header đi!
                 return api.put<Restaurant>(`/restaurant/${restaurantId}`, formData);
         },
-        updateRestaurantStatus: (restaurantId: string) => api.patch<Restaurant>(`/restaurant/enable/${restaurantId}`),
+        updateRestaurantStatus: (restaurantId: string) => api.put<Restaurant>(`/restaurant/enable/${restaurantId}`),
         deleteRestaurant: (restaurantId: string) => api.delete(`/restaurant/${restaurantId}`),
         deleteRestaurantImage: (restaurantId: string) => api.delete(`/restaurant/image/${restaurantId}`),
         getAllCategories: () => api.get<Category[]>(`/category`),
