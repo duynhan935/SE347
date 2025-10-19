@@ -1,5 +1,6 @@
 "use client";
 
+import { useGeolocation } from "@/lib/userLocation";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import FilterSection from "./FilterSection";
@@ -34,6 +35,10 @@ export default function FilterSidebar() {
 
         const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
         const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
+
+        const { coords, error, loading } = useGeolocation();
+
+        console.log(coords);
 
         const handleClearAll = () => {
                 router.push(pathname, { scroll: false });
