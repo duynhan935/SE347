@@ -1,4 +1,5 @@
 import { StaticImageData } from "next/image";
+import { Restaurant } from ".";
 
 export interface ProductSize {
         id: string;
@@ -15,7 +16,7 @@ export interface Product {
         categoryId: string;
         volume: number;
         available: boolean;
-        restaurant: string | null;
+        restaurant: Restaurant | null;
         totalReview: number;
         rating: number;
         productSizes: ProductSize[];

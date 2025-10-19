@@ -1,3 +1,4 @@
+import { StaticImageData } from "next/image";
 import type { Category } from "./category.type";
 import type { Product } from "./product.type";
 
@@ -31,5 +32,5 @@ export interface Restaurant {
         duration: number;
         products: Product[];
         cate: Category[];
-        reviews: Review[];
+        // reviews: Review[];
 }
