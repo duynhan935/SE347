@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import type { Category, Product, Restaurant, RestaurantData } from "@/types";
+import { Review } from "@/types/review.type";
 import { create } from "zustand";
 
 interface RestaurantState {
@@ -8,6 +9,7 @@ interface RestaurantState {
         restaurants: Restaurant[];
         products: Product[];
         categories: Category[];
+        reviews: Review[];
         loading: boolean;
         error: string | null;
         fetchRestaurantById: (id: string) => Promise<void>;
@@ -20,6 +22,7 @@ interface RestaurantState {
         updateRestaurantStatus: (restaurantId: string) => Promise<void>;
         deleteRestaurant: (restaurantId: string) => Promise<void>;
         deleteRestaurantImage: (restaurantId: string) => Promise<void>;
+        getAllReviews: (restaurantId: string) => Promise<void>;
 }
 
 export const useRestaurantStore = create<RestaurantState>((set) => ({
@@ -27,6 +30,7 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
         restaurants: [],
         products: [],
         categories: [],
+        reviews: [],
         loading: false,
         error: null,
 
@@ -195,6 +199,20 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
                 } catch (error: any) {
                         set({
                                 error: error.message || "Failed to get all categories",
+                                loading: false,
+                        });
+                } finally {
+                        set({ loading: false });
+                }
+        },
+        getAllReviews: async (restaurantId: string) => {
+                try {
+                        set({ loading: true });
+                        const response = await restaurantApi.getAllReviews(restaurantId);
+                        set({ reviews: response.data, loading: false });
+                } catch (error: any) {
+                        set({
+                                error: error.message || "Failed to get all reviews",
                                 loading: false,
                         });
                 } finally {

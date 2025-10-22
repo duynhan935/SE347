@@ -1,4 +1,3 @@
-// File: app/_components/client/Restaurant/RestaurantReviews.tsx
 "use client";
 
 import { Review } from "@/types";
@@ -20,6 +19,18 @@ const RatingStars = ({ rating }: { rating: number }) => (
 
 export default function RestaurantReviews({ reviews }: { reviews: Review[] }) {
         const [showAll, setShowAll] = useState(false);
+
+        if (!reviews || reviews.length === 0) {
+                return (
+                        <div className="bg-white p-6 rounded-lg shadow-lg">
+                                <h2 className="text-3xl font-bold font-roboto-serif mb-6 flex items-center gap-3">
+                                        <MessageSquare className="w-7 h-7 text-brand-purple" />
+                                        Customer Reviews
+                                </h2>
+                                <p className="text-gray-500 italic">This restaurant has no reviews yet.</p>
+                        </div>
+                );
+        }
         const visibleReviews = showAll ? reviews : reviews.slice(0, 3);
 
         return (
@@ -32,10 +43,12 @@ export default function RestaurantReviews({ reviews }: { reviews: Review[] }) {
                                 {visibleReviews.map((review) => (
                                         <div key={review.id} className="border-b pb-4 last:border-b-0 last:pb-0">
                                                 <div className="flex items-center justify-between">
-                                                        <p className="font-semibold">{review.author}</p>
+                                                        <p className="font-semibold">{review.title}</p>
                                                         <RatingStars rating={review.rating} />
                                                 </div>
-                                                <p className="mt-3 text-gray-600 italic">&quot;{review.text}&quot;</p>
+                                                <p className="mt-3 text-gray-600 italic">
+                                                        &quot;{review.content}&quot;
+                                                </p>
                                         </div>
                                 ))}
                         </div>
