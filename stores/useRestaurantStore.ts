@@ -12,7 +12,7 @@ interface RestaurantState {
         error: string | null;
         fetchRestaurantById: (id: string) => Promise<void>;
         getRestaurantByMerchantId: (merchantId: string) => Promise<void>;
-        getAllRestaurants: () => Promise<void>;
+        getAllRestaurants: (params: URLSearchParams) => Promise<void>;
         clearRestaurant: () => void;
         getAllCategories: () => Promise<void>;
         createNewRestaurant: (restaurantData: RestaurantData, imageFile?: File) => Promise<void>;
@@ -73,10 +73,10 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
                 }
         },
 
-        getAllRestaurants: async () => {
+        getAllRestaurants: async (params: URLSearchParams) => {
                 set({ loading: true, error: null });
                 try {
-                        const res = await restaurantApi.getAllRestaurants();
+                        const res = await restaurantApi.getAllRestaurants(params);
                         set({ restaurants: res.data, loading: false });
                 } catch (err: any) {
                         set({

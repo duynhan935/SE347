@@ -1,8 +1,8 @@
+import type { Product, ProductCreateData } from "@/types";
 import api from "../axios";
-import type { Product, ProductData, ProductCreateData } from "@/types";
 
 export const productApi = {
-        getAllProducts: () => api.get<Product[]>("/products"),
+        getAllProducts: (params: URLSearchParams) => api.get<Product[]>("/products", { params: params }),
         getProductsByRestaurantId: (restaurantId: string) => api.get<Product[]>(`/products/restaurant/${restaurantId}`),
         getProductById: (productId: string) => api.get<Product>(`/products/${productId}`),
         createProduct: (productData: ProductCreateData, imageFile?: File) => {

@@ -9,7 +9,7 @@ interface ProductState {
         error: string | null;
         fetchProductsByRestaurantId: (restaurantId: string) => Promise<void>;
         fetchProductByProductId: (productId: string) => Promise<void>;
-        fetchAllProducts: () => Promise<void>;
+        fetchAllProducts: (params: URLSearchParams) => Promise<void>;
         createNewProduct: (productData: ProductCreateData, imageFile?: File) => Promise<void>;
         updateProduct: (ProductId: string, ProductData: ProductCreateData, imageFile?: File) => Promise<void>;
         updateProductStatus: (ProductId: string) => Promise<void>;
@@ -24,10 +24,10 @@ export const useProductStore = create<ProductState>((set) => ({
         loading: false,
         error: null,
 
-        fetchAllProducts: async () => {
+        fetchAllProducts: async (params: URLSearchParams) => {
                 set({ loading: true, error: null });
                 try {
-                        const res = await productApi.getAllProducts();
+                        const res = await productApi.getAllProducts(params);
                         set({ products: res.data || [], loading: false });
                 } catch (err: any) {
                         set({ error: err.message || "Không thể tải sản phẩm", loading: false });

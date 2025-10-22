@@ -1,8 +1,9 @@
 "use client";
 
 import { useGeolocation } from "@/lib/userLocation";
+import { MapPin, Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import FilterSection from "./FilterSection";
 const foodEatsOptions = [
         { value: "special-deals", label: "Special Deals" },
@@ -35,10 +36,15 @@ export default function FilterSidebar() {
 
         const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
         const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
+        const [search, setSearch] = useState(searchParams.get("search") || "");
 
         const { coords, error, loading } = useGeolocation();
 
-        console.log(coords);
+        useEffect(() => {
+                setSearch(searchParams.get("search") || "");
+                setMinPrice(searchParams.get("minPrice") || "");
+                setMaxPrice(searchParams.get("maxPrice") || "");
+        }, [searchParams]);
 
         const handleClearAll = () => {
                 router.push(pathname, { scroll: false });
@@ -61,6 +67,7 @@ export default function FilterSidebar() {
                 const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
 
                 if (currentParams.get(name) === value) {
+                        currentParams.delete(name);
                 } else {
                         currentParams.set(name, value);
                 }
@@ -81,9 +88,39 @@ export default function FilterSidebar() {
                 }
                 router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
         };
+        const handleSearchApply = () => {
+                const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+                if (search) {
+                        currentParams.set("search", search);
+                } else {
+                        currentParams.delete("search");
+                }
+                router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
+        };
+
+        const handleNearbyClick = () => {
+                if (loading || !coords) {
+                        if (error) alert(error);
+                        return;
+                }
+
+                const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+
+                // Nếu đang active "nearby" thì tắt đi
+                if (currentParams.has("nearby")) {
+                        currentParams.delete("nearby");
+                        currentParams.delete("lat");
+                        currentParams.delete("lon");
+                } else {
+                        currentParams.set("nearby", "20");
+                        currentParams.set("lat", "10.7626");
+                        currentParams.set("lon", "106.6825");
+                }
+                router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
+        };
 
         const searchType = searchParams.get("type") || "restaurants";
-
+        const isNearbyActive = searchParams.has("nearby");
         return (
                 <aside className="w-full py-2 px-4">
                         <div className="flex justify-between items-center ">
@@ -122,126 +159,209 @@ export default function FilterSidebar() {
                                 </button>
                         </div>
 
-                        {/* FoodEats */}
-                        <FilterSection title="FoodEats">
-                                {foodEatsOptions.map(({ value, label }) => (
-                                        <div key={value} className="flex items-center">
-                                                <input
-                                                        id={value}
-                                                        name="foodeats"
-                                                        type="checkbox"
-                                                        value={value}
-                                                        checked={searchParams.getAll("foodeats").includes(value)}
-                                                        onChange={() => handleCheckboxChange("foodeats", value)}
-                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                />
-                                                <label
-                                                        htmlFor={value}
-                                                        className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
-                                                >
-                                                        {label}
-                                                </label>
-                                        </div>
-                                ))}
+                        {/* Search */}
+                        <FilterSection title="Search by Name">
+                                <div className="flex items-center gap-2">
+                                        <input
+                                                type="text"
+                                                placeholder={
+                                                        searchType === "restaurants"
+                                                                ? "e.g., Pizza Palace"
+                                                                : "e.g., Pepperoni Pizza"
+                                                }
+                                                value={search}
+                                                onChange={(e) => setSearch(e.target.value)}
+                                                onKeyDown={(e) => e.key === "Enter" && handleSearchApply()}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                        />
+                                        <button
+                                                onClick={handleSearchApply}
+                                                className="p-2 bg-brand-purple text-white rounded-md hover:bg-brand-purple/80"
+                                                title="Search"
+                                        >
+                                                <Search className="w-5 h-5" />
+                                        </button>
+                                </div>
                         </FilterSection>
 
-                        {/* Price */}
-                        {searchType === "foods" && (
-                                <FilterSection title="Price">
-                                        <div className="flex items-center gap-2">
-                                                <input
-                                                        type="number"
-                                                        placeholder="Min"
-                                                        value={minPrice}
-                                                        onChange={(e) => setMinPrice(e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                                />
-                                                <span>-</span>
-                                                <input
-                                                        type="number"
-                                                        placeholder="Max"
-                                                        value={maxPrice}
-                                                        onChange={(e) => setMaxPrice(e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                                />
-                                        </div>
-                                        <button
-                                                onClick={handlePriceApply}
-                                                className="cursor-pointer w-full mt-3 px-4 py-2 bg-brand-purple text-white rounded-md text-sm font-semibold hover:bg-brand-purple/80"
-                                        >
-                                                Apply Price
-                                        </button>
-                                </FilterSection>
-                        )}
-
-                        {/* Max Delivery Fee */}
-                        <FilterSection title="Max Delivery Fee">
-                                {deliveryFeeOptions.map(({ value, label }) => (
-                                        <div key={value} className="flex items-center">
-                                                <input
-                                                        id={value}
-                                                        name="fee"
-                                                        type="checkbox"
-                                                        value={value}
-                                                        checked={searchParams.getAll("fee").includes(value)}
-                                                        onChange={() => handleCheckboxChange("fee", value)}
-                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                />
-                                                <label
-                                                        htmlFor={value}
-                                                        className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
-                                                >
-                                                        {label}
-                                                </label>
-                                        </div>
-                                ))}
+                        {/* Location */}
+                        <FilterSection title="Location">
+                                <button
+                                        onClick={handleNearbyClick}
+                                        disabled={loading}
+                                        className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded text-sm font-semibold transition-colors border cursor-pointer ${
+                                                isNearbyActive
+                                                        ? "bg-brand-purple text-white border-brand-purple"
+                                                        : "bg-transparent text-gray-700 border-brand-black"
+                                        } ${loading ? "opacity-50 cursor-wait" : ""}`}
+                                >
+                                        <MapPin className="w-4 h-4" />
+                                        <span>{isNearbyActive ? "Show All" : "Nearby Me"}</span>
+                                </button>
+                                {loading && <p className="text-xs text-center mt-1">Getting location...</p>}
+                                {error && <p className="text-xs text-center mt-1 text-red-500">{error}</p>}
                         </FilterSection>
 
                         {/* Sort by */}
-                        <FilterSection title="Sort by">
-                                {sortOptions.map(({ value, label }) => (
-                                        <div key={value} className="flex items-center ">
-                                                <input
-                                                        id={value}
-                                                        name="sortBy"
-                                                        type="radio"
-                                                        value={value}
-                                                        checked={searchParams.get("sortBy") === value}
-                                                        onChange={() => handleToggleChange("sortBy", value)}
-                                                        className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                />
-                                                <label
-                                                        htmlFor={value}
-                                                        className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
-                                                >
-                                                        {label}
-                                                </label>
-                                        </div>
-                                ))}
-                        </FilterSection>
+                        {searchType === "restaurants" && (
+                                <FilterSection title="Sort by">
+                                        {sortOptions.map(({ value, label }) => (
+                                                <div key={value} className="flex items-center ">
+                                                        <input
+                                                                id={value}
+                                                                name="rating"
+                                                                type="radio"
+                                                                value={value}
+                                                                checked={searchParams.get("rating") === value}
+                                                                onChange={() => handleToggleChange("rating", value)}
+                                                                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                        />
+                                                        <label
+                                                                htmlFor={value}
+                                                                className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
+                                                        >
+                                                                {label}
+                                                        </label>
+                                                </div>
+                                        ))}
+                                </FilterSection>
+                        )}
 
-                        {/* Delivery Time */}
-                        <FilterSection title="Delivery Time">
-                                {deliveryTimeOptions.map(({ value, label }) => (
-                                        <div key={value} className="flex items-center">
-                                                <input
-                                                        id={value}
-                                                        name="time"
-                                                        type="checkbox"
-                                                        value={value}
-                                                        checked={searchParams.getAll("time").includes(value)}
-                                                        onChange={() => handleCheckboxChange("time", value)}
-                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                />
-                                                <label
-                                                        htmlFor={value}
-                                                        className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
+                        {searchType === "foods" && (
+                                <>
+                                        {/* FoodEats */}
+                                        <FilterSection title="FoodEats">
+                                                {foodEatsOptions.map(({ value, label }) => (
+                                                        <div key={value} className="flex items-center">
+                                                                <input
+                                                                        id={value}
+                                                                        name="foodeats"
+                                                                        type="checkbox"
+                                                                        value={value}
+                                                                        checked={searchParams
+                                                                                .getAll("foodeats")
+                                                                                .includes(value)}
+                                                                        onChange={() =>
+                                                                                handleCheckboxChange("foodeats", value)
+                                                                        }
+                                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                />
+                                                                <label
+                                                                        htmlFor={value}
+                                                                        className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
+                                                                >
+                                                                        {label}
+                                                                </label>
+                                                        </div>
+                                                ))}
+                                        </FilterSection>
+
+                                        {/* Price  */}
+                                        <FilterSection title="Price">
+                                                <div className="flex items-center gap-2">
+                                                        <input
+                                                                type="number"
+                                                                placeholder="Min"
+                                                                value={minPrice}
+                                                                onChange={(e) => setMinPrice(e.target.value)}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                                        />
+                                                        <span>-</span>
+                                                        <input
+                                                                type="number"
+                                                                placeholder="Max"
+                                                                value={maxPrice}
+                                                                onChange={(e) => setMaxPrice(e.target.value)}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                                        />
+                                                </div>
+                                                <button
+                                                        onClick={handlePriceApply}
+                                                        className="cursor-pointer w-full mt-3 px-4 py-2 bg-brand-purple text-white rounded-md text-sm font-semibold hover:bg-brand-purple/80"
                                                 >
-                                                        {label}
-                                                </label>
-                                        </div>
-                                ))}
-                        </FilterSection>
+                                                        Apply Price
+                                                </button>
+                                        </FilterSection>
+
+                                        {/* Max Delivery Fee */}
+                                        <FilterSection title="Max Delivery Fee">
+                                                {deliveryFeeOptions.map(({ value, label }) => (
+                                                        <div key={value} className="flex items-center">
+                                                                <input
+                                                                        id={value}
+                                                                        name="fee"
+                                                                        type="checkbox"
+                                                                        value={value}
+                                                                        checked={searchParams
+                                                                                .getAll("fee")
+                                                                                .includes(value)}
+                                                                        onChange={() =>
+                                                                                handleCheckboxChange("fee", value)
+                                                                        }
+                                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                />
+                                                                <label
+                                                                        htmlFor={value}
+                                                                        className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
+                                                                >
+                                                                        {label}
+                                                                </label>
+                                                        </div>
+                                                ))}
+                                        </FilterSection>
+
+                                        <FilterSection title="Sort by">
+                                                {sortOptions.map(({ value, label }) => (
+                                                        <div key={value} className="flex items-center ">
+                                                                <input
+                                                                        id={value}
+                                                                        name="order"
+                                                                        type="radio"
+                                                                        value={value}
+                                                                        checked={searchParams.get("order") === value}
+                                                                        onChange={() =>
+                                                                                handleToggleChange("order", value)
+                                                                        }
+                                                                        className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                />
+                                                                <label
+                                                                        htmlFor={value}
+                                                                        className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
+                                                                >
+                                                                        {label}
+                                                                </label>
+                                                        </div>
+                                                ))}
+                                        </FilterSection>
+
+                                        {/* Delivery Time */}
+                                        <FilterSection title="Delivery Time">
+                                                {deliveryTimeOptions.map(({ value, label }) => (
+                                                        <div key={value} className="flex items-center">
+                                                                <input
+                                                                        id={value}
+                                                                        name="time"
+                                                                        type="checkbox"
+                                                                        value={value}
+                                                                        checked={searchParams
+                                                                                .getAll("time")
+                                                                                .includes(value)}
+                                                                        onChange={() =>
+                                                                                handleCheckboxChange("time", value)
+                                                                        }
+                                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                />
+                                                                <label
+                                                                        htmlFor={value}
+                                                                        className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
+                                                                >
+                                                                        {label}
+                                                                </label>
+                                                        </div>
+                                                ))}
+                                        </FilterSection>
+                                </>
+                        )}
                 </aside>
         );
 }
