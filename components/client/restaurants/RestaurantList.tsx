@@ -38,13 +38,16 @@ export default function RestaurantList() {
         const searchType = searchParams.get("type") || "restaurants";
 
         useEffect(() => {
+                const params = new URLSearchParams(Array.from(searchParams.entries()));
                 if (searchType === "restaurants") {
-                        getAllRestaurants();
+                        getAllRestaurants(params);
                 } else if (searchType === "foods") {
-                        fetchAllProducts();
+                        params.set("lat", "10.7626");
+                        params.set("lon", "106.6825");
+                        fetchAllProducts(params);
                 }
                 getAllCategories();
-        }, [getAllRestaurants, getAllCategories, fetchAllProducts, searchType]);
+        }, [getAllRestaurants, getAllCategories, fetchAllProducts, searchType, searchParams]);
 
         if (loading || productsLoading) return <p>Đang tải...</p>;
         const handleCategoryClick = (categoryName: string) => {

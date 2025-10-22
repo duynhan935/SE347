@@ -26,7 +26,7 @@ function buildRestaurantFormData(restaurantData: RestaurantData, imageFile?: Fil
 export const restaurantApi = {
         getByRestaurantId: (restaurantId: string) => api.get<Restaurant>(`restaurant/${restaurantId}`),
         getRestaurantByMerchantId: (merchantId: string) => api.get<Restaurant[]>(`/restaurant/merchant/${merchantId}`),
-        getAllRestaurants: () => api.get<Restaurant[]>("/restaurant"),
+        getAllRestaurants: (params: URLSearchParams) => api.get<Restaurant[]>("/restaurant", { params: params }),
         createRestaurant: (restaurantData: RestaurantData, imageFile?: File) => {
                 // Sử dụng hàm helper mới
                 const formData = buildRestaurantFormData(restaurantData, imageFile);
