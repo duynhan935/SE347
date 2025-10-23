@@ -1,13 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { CommonImages } from "@/constants";
+import { CommonImages } from "@/constants"; // Đảm bảo bạn có file này và CommonImages.yeye tồn tại
+// ✅ Sử dụng store bạn cung cấp
 import { useCategoryStore } from "@/stores/categoryStore";
 import { useSizeStore } from "@/stores/sizeStore";
 import { useProductStore } from "@/stores/useProductsStores";
 import { useRestaurantStore } from "@/stores/useRestaurantStore";
-import { Product, SizePrice } from "@/types";
+import { Product, SizePrice } from "@/types"; // Đảm bảo SizePrice được export từ types
+// ✅ Import icons
 import { ChevronLeft, Loader2, Pencil, Plus, Save, Trash2, UploadCloud, X } from "lucide-react";
-import Image, { StaticImageData } from "next/image";
+import Image from "next/image"; // Sử dụng next/image
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
@@ -46,16 +48,20 @@ export default function MenuEditForm() {
         const { getRestaurantByMerchantId } = useRestaurantStore();
         const restaurantIdFromStore = useRestaurantStore((state) => state.restaurant?.id ?? "");
 
+        // --- State cho form ---
         const [formData, setFormData] = useState<Partial<MenuFormData>>({});
         const [initialFormData, setInitialFormData] = useState<Partial<MenuFormData>>({});
         const [image, setImage] = useState<File | null>(null);
-        const [imagePreview, setImagePreview] = useState<string | StaticImageData | null>(null);
+        const [imagePreview, setImagePreview] = useState<string | null>(null); // ✅ Type: string | null
         const [isEditing, setIsEditing] = useState(false);
         const [showNewCategory, setShowNewCategory] = useState(false);
         const [newCategoryName, setNewCategoryName] = useState("");
         const [showNewSize, setShowNewSize] = useState(false);
         const [newSizeName, setNewSizeName] = useState("");
+        const [isInitialized, setIsInitialized] = useState(false);
+        // --- Kết thúc State ---
 
+        // Hàm khởi tạo form data
         const initializeForm = useCallback(
                 (productData: Product | null, restaurantId: string) => {
                         if (productData) {
@@ -65,52 +71,60 @@ export default function MenuEditForm() {
                                         description: productData.description || "",
                                         categoryId: productData.categoryId || "",
                                         available: productData.available ?? false,
-                                        restaurantId: restaurantId || productData.restaurant?.id || "",
+                                        restaurantId: productData.restaurant?.id || restaurantId || "",
                                         sizePrices:
-                                                productData.productSizes?.length > 0
+                                                productData.productSizes && productData.productSizes.length > 0
                                                         ? productData.productSizes.map((s: any) => ({
-                                                                  sizeId: s.sizeId,
+                                                                  sizeId: s.sizeId || s.id || "", // Lấy sizeId hoặc id (tùy thuộc API response)
                                                                   price: s.price?.toString() ?? "",
                                                           }))
                                                         : [{ sizeId: "", price: "" }],
                                 };
                                 setFormData(initialData);
                                 setInitialFormData(initialData);
-                                setImagePreview(productData?.imageURL || null);
-                        } else {
-                                toast.error("Không tìm thấy thông tin sản phẩm!");
+                                setImagePreview((productData.imageURL as string) || null); // Set ảnh preview ban đầu
+                                setIsInitialized(true);
+                        } else if (!productLoading) {
                                 router.push("/merchant/restaurant/menu-items");
                         }
                 },
-                [router]
+                [router, productLoading]
         );
 
+        // Fetch data ban đầu
         useEffect(() => {
-                const merchantId = "testmerchantid";
+                const merchantId = "testmerchantid"; // Cần lấy động
                 if (merchantId && !restaurantIdFromStore) {
                         getRestaurantByMerchantId(merchantId);
                 }
                 fetchAllCategories();
                 fetchAllSizes();
                 if (productId) {
+                        setIsInitialized(false);
+                        setFormData({});
                         fetchProductByProductId(productId as string);
                 } else {
                         toast.error("ID sản phẩm không hợp lệ!");
                         router.push("/merchant/restaurant/menu-items");
                 }
                 // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [productId, fetchProductByProductId, fetchAllCategories, fetchAllSizes, getRestaurantByMerchantId, router]);
-        useEffect(() => {
-                if (product && restaurantIdFromStore) {
-                        initializeForm(product, restaurantIdFromStore);
-                }
-        }, [product, restaurantIdFromStore, initializeForm]);
+        }, [productId, fetchProductByProductId, fetchAllCategories, fetchAllSizes, getRestaurantByMerchantId, router]); // Bỏ restaurantIdFromStore
 
+        // Khởi tạo form khi data sẵn sàng
+        useEffect(() => {
+                const targetRestaurantId = product?.restaurant?.id || restaurantIdFromStore;
+                if (product && targetRestaurantId && !isInitialized) {
+                        initializeForm(product, targetRestaurantId);
+                } else if (!product && !productLoading && productId && !isInitialized) {
+                        initializeForm(null, restaurantIdFromStore);
+                }
+        }, [product, restaurantIdFromStore, initializeForm, productLoading, productId, isInitialized]);
+
+        // --- Các hàm handle (giữ nguyên logic) ---
         const handleChange = (field: keyof MenuFormData, value: any) => {
                 if (!isEditing) return;
                 setFormData((prev) => ({ ...prev, [field]: value }));
         };
-
         const handleSizePriceChange = (index: number, field: keyof SizePrice, value: string) => {
                 if (!isEditing) return;
                 const updated = [...(formData.sizePrices || [])];
@@ -149,117 +163,100 @@ export default function MenuEditForm() {
                         reader.readAsDataURL(file);
                 }
         };
-
         const handleSaveNewCategory = async () => {
                 if (!isEditing || !newCategoryName.trim()) return;
-                const loadingToast = toast.loading("Đang tạo...");
+                const lt = toast.loading("Đang tạo...");
                 try {
                         await createNewCategory({ cateName: newCategoryName.trim() });
-                        toast.dismiss(loadingToast);
-                        const currentError = useCategoryStore.getState().error;
-                        if (currentError) toast.error(`Tạo thất bại: ${currentError}`);
+                        toast.dismiss(lt);
+                        const ce = useCategoryStore.getState().error;
+                        if (ce) toast.error(`Tạo thất bại: ${ce}`);
                         else {
                                 toast.success("Tạo danh mục thành công!");
                                 setNewCategoryName("");
                                 setShowNewCategory(false);
                         }
-                } catch (error: any) {
-                        toast.dismiss(loadingToast);
-                        toast.error(`Tạo thất bại: ${error.message || "Lỗi"}`);
+                } catch (e: any) {
+                        toast.dismiss(lt);
+                        toast.error(`Tạo thất bại: ${e.message || "Lỗi"}`);
                 }
         };
-
-        // ✅ Hàm tạo size mới (dùng createNewSize)
         const handleSaveNewSize = async () => {
                 if (!isEditing || !newSizeName.trim()) return;
-                const loadingToast = toast.loading("Đang tạo...");
+                const lt = toast.loading("Đang tạo...");
                 try {
-                        await createNewSize({ name: newSizeName.trim() }); // ✅ Gọi hàm store
-                        toast.dismiss(loadingToast);
-                        const currentError = useSizeStore.getState().error;
-                        if (currentError) toast.error(`Tạo thất bại: ${currentError}`);
+                        await createNewSize({ name: newSizeName.trim() });
+                        toast.dismiss(lt);
+                        const ce = useSizeStore.getState().error;
+                        if (ce) toast.error(`Tạo thất bại: ${ce}`);
                         else {
                                 toast.success("Tạo kích thước thành công!");
                                 setNewSizeName("");
                                 setShowNewSize(false);
                         }
-                } catch (error: any) {
-                        toast.dismiss(loadingToast);
-                        toast.error(`Tạo thất bại: ${error.message || "Lỗi"}`);
+                } catch (e: any) {
+                        toast.dismiss(lt);
+                        toast.error(`Tạo thất bại: ${e.message || "Lỗi"}`);
                 }
         };
-
-        // ✅ Hàm xử lý lưu thay đổi (giữ nguyên logic gọi updateProduct)
         const handleSave = async () => {
                 if (!formData.id || !product) return toast.error("Lỗi: Không tìm thấy sản phẩm!");
-                // --- Validation ---
                 if (!formData.productName?.trim()) return toast.error("Tên sản phẩm trống!");
                 if (!formData.categoryId) return toast.error("Chưa chọn danh mục!");
                 if (!imagePreview && !image) return toast.error("Chưa chọn ảnh!");
                 if (!formData.restaurantId) return toast.error("Lỗi: Thiếu ID nhà hàng!");
-                const validSizePrices = (formData.sizePrices || []).filter(
+                const validSPs = (formData.sizePrices || []).filter(
                         (sp) => sp.sizeId && sp.price !== "" && Number(sp.price) >= 0
                 );
-                if (validSizePrices.length === 0) return toast.error("Cần ít nhất một size/giá hợp lệ.");
-                const sizeIds = validSizePrices.map((sp) => sp.sizeId);
-                if (new Set(sizeIds).size !== sizeIds.length) return toast.error("Không chọn trùng kích thước.");
-                // --- Kết thúc Validation ---
-
-                const updatedProductData = {
+                if (validSPs.length === 0) return toast.error("Cần ít nhất một size/giá hợp lệ.");
+                const sIds = validSPs.map((sp) => sp.sizeId);
+                if (new Set(sIds).size !== sIds.length) return toast.error("Không chọn trùng kích thước.");
+                const updatedData = {
                         productName: formData.productName.trim(),
                         description: formData.description?.trim() || "",
                         categoryId: formData.categoryId,
                         available: formData.available ?? false,
                         restaurantId: formData.restaurantId,
-                        sizeIds: validSizePrices.map((sp) => ({ sizeId: sp.sizeId, price: Number(sp.price) })),
+                        sizeIds: validSPs.map((sp) => ({ sizeId: sp.sizeId, price: Number(sp.price) })),
+                        volume: 0 /* ✅ Thêm volume nếu cần */,
                 };
-
-                // So sánh thay đổi
-                const initialValidSizePrices = (initialFormData.sizePrices || [])
+                const initValidSPs = (initialFormData.sizePrices || [])
                         .filter((sp) => sp.sizeId && sp.price !== "" && Number(sp.price) >= 0)
                         .map((sp) => ({ sizeId: sp.sizeId, price: Number(sp.price) }));
-                const hasFormChanges =
-                        updatedProductData.productName !== initialFormData.productName?.trim() ||
-                        updatedProductData.description !== (initialFormData.description?.trim() || "") ||
-                        updatedProductData.categoryId !== initialFormData.categoryId ||
-                        updatedProductData.available !== (initialFormData.available ?? false) ||
-                        JSON.stringify(
-                                updatedProductData.sizeIds.slice().sort((a, b) => a.sizeId.localeCompare(b.sizeId))
-                        ) !==
-                                JSON.stringify(
-                                        initialValidSizePrices.slice().sort((a, b) => a.sizeId.localeCompare(b.sizeId))
-                                );
-
-                if (!hasFormChanges && !image) {
+                const hasChanges =
+                        updatedData.productName !== initialFormData.productName?.trim() ||
+                        updatedData.description !== (initialFormData.description?.trim() || "") ||
+                        updatedData.categoryId !== initialFormData.categoryId ||
+                        updatedData.available !== (initialFormData.available ?? false) ||
+                        JSON.stringify(updatedData.sizeIds.slice().sort((a, b) => a.sizeId.localeCompare(b.sizeId))) !==
+                                JSON.stringify(initValidSPs.slice().sort((a, b) => a.sizeId.localeCompare(b.sizeId)));
+                if (!hasChanges && !image) {
                         toast("Không có thay đổi.", { icon: "🤷" });
                         setIsEditing(false);
                         return;
                 }
-
-                const loadingToast = toast.loading("Đang cập nhật...");
+                const lt = toast.loading("Đang cập nhật...");
                 try {
-                        await updateProduct(formData.id, updatedProductData, image ?? undefined); // Gọi hàm từ useProductStore
-                        toast.dismiss(loadingToast);
-                        const currentError = useProductStore.getState().error;
-                        if (currentError) {
-                                toast.error(`Cập nhật thất bại: ${currentError}`);
+                        console.log(updatedData, image);
+                        await updateProduct(formData.id as string, updatedData, image ?? undefined);
+                        toast.dismiss(lt);
+                        const ce = useProductStore.getState().error;
+                        if (ce) {
+                                toast.error(`Cập nhật thất bại: ${ce}`);
                         } else {
                                 toast.success("Cập nhật thành công! ✨");
-                                setInitialFormData(formData); // Cập nhật trạng thái gốc
-                                setImage(null); // Reset file ảnh
+                                setInitialFormData(formData);
+                                setImage(null);
                                 setIsEditing(false);
-                                if (productId) fetchProductByProductId(productId as string); // Fetch lại data mới
+                                if (productId) fetchProductByProductId(productId as string);
                         }
                 } catch (err: any) {
-                        // Lỗi mạng etc.
-                        toast.dismiss(loadingToast);
+                        toast.dismiss(lt);
                         toast.error(`Cập nhật thất bại: ${err.message || "Lỗi"}`);
                 }
         };
-
-        // --- Hàm handleDelete, handleCancelEdit (giữ nguyên) ---
         const handleDelete = async () => {
-                if (!formData.id) return toast.error("Lỗi: Thiếu ID sản phẩm!");
+                if (!formData.id) return toast.error("Lỗi: Thiếu ID!");
                 if (window.confirm(`Xóa món "${formData.productName}"?`)) {
                         const lt = toast.loading("Đang xóa...");
                         try {
@@ -280,36 +277,46 @@ export default function MenuEditForm() {
         const handleCancelEdit = () => {
                 setFormData(initialFormData);
                 setImage(null);
-                setImagePreview(product?.imageURL || null);
+                setImagePreview((product?.imageURL as string) || null);
                 setIsEditing(false);
                 setShowNewCategory(false);
                 setShowNewSize(false);
                 toast("Đã hủy thay đổi.", { icon: "↩️" });
         };
-        // --- Kết thúc hàm ---
+        // --- Kết thúc ---
 
         // --- Loading & Error Handling ---
-        const isLoadingData = (productLoading && !product) || categoryLoading || sizeLoading;
+        const isLoadingData =
+                (productLoading && !product && !productError && !isInitialized) ||
+                categoryLoading ||
+                sizeLoading ||
+                !isInitialized;
         const isProcessing = productLoading || categoryLoading || sizeLoading;
-        if (isLoadingData && !Object.keys(formData).length) {
+
+        // ✅ displayImage bây giờ là string | StaticImageData | null (an toàn cho <Image>)
+        const displayImage = imagePreview || CommonImages.yeye; // Dùng ảnh preview hoặc default
+
+        const validCategories = Array.isArray(categories) ? categories : [];
+        const validSizes = Array.isArray(sizes) ? sizes : [];
+        // --- Kết thúc ---
+
+        if (isLoadingData && !isInitialized) {
+                // Chỉ hiện loading toàn màn hình khi chưa init
                 return (
                         <div className="flex justify-center items-center h-screen">
                                 <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
                         </div>
                 );
         }
-        if (productError && !product) {
+        if (productError && !product && !isLoadingData) {
+                // Chỉ hiện lỗi fetch ban đầu
                 return <div className="p-6 text-center text-red-600">Lỗi tải dữ liệu sản phẩm: {productError}</div>;
         }
-
-        const displayImage = imagePreview || CommonImages.yeye;
-        const validCategories = Array.isArray(categories) ? categories : [];
-        const validSizes = Array.isArray(sizes) ? sizes : [];
 
         return (
                 <div className="min-h-screen bg-gray-50 pb-10">
                         <Toaster position="top-center" reverseOrder={false} />
-                        {/* --- Header  --- */}
+                        {/* --- Header (giữ nguyên) --- */}
                         <div className="bg-white border-b sticky top-0 z-10">
                                 {" "}
                                 <div className="px-6 py-4">
@@ -356,7 +363,8 @@ export default function MenuEditForm() {
                                                 ) : (
                                                         <button
                                                                 onClick={() => setIsEditing(true)}
-                                                                className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md transition-colors"
+                                                                disabled={!isInitialized || isProcessing}
+                                                                className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                         >
                                                                 {" "}
                                                                 <Pencil size={16} className="mr-2" /> Chỉnh sửa{" "}
@@ -364,7 +372,7 @@ export default function MenuEditForm() {
                                                 )}{" "}
                                                 <button
                                                         onClick={handleDelete}
-                                                        disabled={isProcessing || isEditing}
+                                                        disabled={isProcessing || isEditing || !isInitialized}
                                                         className="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
                                                 >
                                                         {" "}
@@ -376,7 +384,7 @@ export default function MenuEditForm() {
 
                         {/* Form */}
                         <div className="px-6 pt-6">
-                                {!isEditing && Object.keys(formData).length > 0 && (
+                                {!isEditing && isInitialized && (
                                         <div
                                                 className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-md mb-6 max-w-4xl mx-auto text-sm"
                                                 role="alert"
@@ -388,12 +396,14 @@ export default function MenuEditForm() {
                                                 </p>{" "}
                                         </div>
                                 )}
-                                {Object.keys(formData).length > 0 ? (
+                                {/* Chỉ render form khi đã initialized */}
+                                {isInitialized ? (
                                         <div
                                                 className={`bg-white rounded-lg shadow-sm border p-6 space-y-6 max-w-4xl mx-auto ${
                                                         !isEditing ? "opacity-70 pointer-events-none" : ""
                                                 }`}
                                         >
+                                                {/* --- Tên sản phẩm --- */}
                                                 <div>
                                                         {" "}
                                                         <label
@@ -415,6 +425,8 @@ export default function MenuEditForm() {
                                                                 maxLength={100}
                                                         />{" "}
                                                 </div>
+
+                                                {/* --- Danh mục --- */}
                                                 <div>
                                                         {" "}
                                                         <div className="flex justify-between items-center mb-1">
@@ -508,6 +520,8 @@ export default function MenuEditForm() {
                                                                 </div>
                                                         )}{" "}
                                                 </div>
+
+                                                {/* --- Kích thước & Giá --- */}
                                                 <div className="border-t pt-6">
                                                         {" "}
                                                         <div className="flex justify-between items-center mb-3">
@@ -684,6 +698,8 @@ export default function MenuEditForm() {
                                                                 </button>
                                                         )}{" "}
                                                 </div>
+
+                                                {/* --- Mô tả --- */}
                                                 <div className="border-t pt-6">
                                                         {" "}
                                                         <label
@@ -713,6 +729,8 @@ export default function MenuEditForm() {
                                                                 {(formData.description || "").length}/500
                                                         </p>{" "}
                                                 </div>
+
+                                                {/* --- Trạng thái --- */}
                                                 <div className="border-t pt-6">
                                                         {" "}
                                                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -758,6 +776,8 @@ export default function MenuEditForm() {
                                                                         : "Ẩn khỏi menu."}
                                                         </p>{" "}
                                                 </div>
+
+                                                {/* --- Ảnh sản phẩm --- */}
                                                 <div className="border-t pt-6">
                                                         {" "}
                                                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -814,28 +834,44 @@ export default function MenuEditForm() {
                                                                                         Đã chọn: {image.name}
                                                                                 </p>
                                                                         )}{" "}
-                                                                </label>{" "}
+                                                                </label>
+                                                                {/* ✅ Sửa lỗi src cho Image */}
                                                                 {displayImage && (
                                                                         <div className="relative w-32 h-32 border rounded-md overflow-hidden flex-shrink-0">
-                                                                                {" "}
                                                                                 <Image
-                                                                                        src={displayImage}
+                                                                                        src={
+                                                                                                typeof displayImage ===
+                                                                                                "string"
+                                                                                                        ? displayImage
+                                                                                                        : displayImage.src
+                                                                                        } // Kiểm tra type trước khi dùng
                                                                                         alt="Ảnh sản phẩm"
                                                                                         layout="fill"
                                                                                         objectFit="cover"
-                                                                                        onError={() =>
+                                                                                        onError={(e) => {
+                                                                                                // Xử lý nếu ảnh lỗi
+                                                                                                console.error(
+                                                                                                        "Image load error:",
+                                                                                                        e.target
+                                                                                                );
+                                                                                                // Set về ảnh mặc định nếu lỗi (đảm bảo CommonImages.yeye là string hoặc StaticImageData)
                                                                                                 setImagePreview(
-                                                                                                        CommonImages.yeye
-                                                                                                )
-                                                                                        }
-                                                                                />{" "}
+                                                                                                        typeof CommonImages.yeye ===
+                                                                                                                "string"
+                                                                                                                ? CommonImages.yeye
+                                                                                                                : CommonImages
+                                                                                                                          .yeye
+                                                                                                                          .src
+                                                                                                );
+                                                                                        }}
+                                                                                />
                                                                                 {isEditing && image && (
                                                                                         <button
                                                                                                 type="button"
                                                                                                 onClick={() => {
                                                                                                         setImage(null);
                                                                                                         setImagePreview(
-                                                                                                                product?.imageURL ||
+                                                                                                                (product?.imageURL as string) ||
                                                                                                                         null
                                                                                                         );
                                                                                                         const input =
@@ -855,17 +891,14 @@ export default function MenuEditForm() {
                                                                                         </button>
                                                                                 )}{" "}
                                                                         </div>
-                                                                )}{" "}
+                                                                )}
                                                         </div>{" "}
                                                 </div>
-                                                {/* --- Kết thúc --- */}
                                         </div>
                                 ) : (
-                                        // Hiển thị khi formData chưa load xong
+                                        // Hiển thị loading nếu chưa initialized và không có lỗi fetch ban đầu
                                         !productError && (
-                                                <p className="text-center text-gray-500 py-10">
-                                                        Đang tải chi tiết món ăn...
-                                                </p>
+                                                <p className="text-center text-gray-500 py-10">Đang chuẩn bị form...</p>
                                         )
                                 )}
                         </div>

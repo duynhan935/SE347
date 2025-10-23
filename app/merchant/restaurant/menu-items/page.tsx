@@ -41,7 +41,7 @@ export default function MenuItemPage() {
         useEffect(() => {
                 // Tạm dùng restaurantId mẫu
                 const restaurantId =
-                        "xosmpw7eGLWCnF9b8f8v6AAEGYGftLzGC1Z3wFo4bjYRQp04rEKluhPdoVh0pqtIX0p9CBUBBZhCJZK4hIIDtTUqJMN9apWAmtYi8qukcw0Q7ausIxH9KtmTp2cndAS09Pazrm8ZcmBb1MBCU7woj7wvu4QClGX8uWExUVBcB0zZfawQBq4TNFA3236KhmHRDH7ownJX7WldcOb1zNdlApmsLBLgETTtORrv230X8ETkZGKTQNJrBOdQBds6Qg";
+                        "aLllLYkss6DkGM4fNys8RA08B7ENNcL0niS3FPpEItEWKAb2xg85Dspu8DNt9Fj9Vu9FB0kh5xLSOQcClUOv69rEJJsqHwxAgcXv4b7kLdoxV0PNR7gXRkR5tYZwbxweKkiYmQ35SlqvYHf1jFeehZrPS8OT8fqYrQpHRkUAZKqHPr2ihtUiksD6WXqMlgR1dFtj6DmQ21CZ2lYJJ1nSTrU906s8hidYM2EBQ94hOLfE6pI3IBh104u4cv80KD";
                 fetchProductsByRestaurantId(restaurantId);
                 fetchAllCategories();
         }, [fetchProductsByRestaurantId, fetchAllCategories]);
@@ -106,7 +106,7 @@ export default function MenuItemPage() {
                         label: "Edit",
                         key: "edit",
                         sortable: false,
-                        render: (_, item: any) => (
+                        render: (_: any, item: any) => (
                                 <Link
                                         href={`/merchant/restaurant/menu-items/${item.id}`}
                                         className="inline-flex items-center justify-center px-3 py-1 text-sm text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition"

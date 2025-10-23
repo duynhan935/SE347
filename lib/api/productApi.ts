@@ -1,4 +1,4 @@
-import type { Product, ProductCreateData } from "@/types";
+import type { Product, ProductCreateData, Review } from "@/types";
 import api from "../axios";
 
 export const productApi = {
@@ -17,9 +17,10 @@ export const productApi = {
                 formData.append("product", new Blob([JSON.stringify(productData)], { type: "application/json" }));
                 if (imageFile) formData.append("image", imageFile);
 
-                return api.put<Product>(`/product/${productId}`, formData);
+                return api.put<Product>(`/products/${productId}`, formData);
         },
         updateProductStatus: (productId: string) => api.patch<Product>(`/product/enable/${productId}`),
-        deleteProduct: (productId: string) => api.delete(`/product/${productId}`),
+        deleteProduct: (productId: string) => api.delete(`/products/${productId}`),
         deleteProductImage: (productId: string) => api.delete(`/product/image/${productId}`),
+        getAllReviews: (productId: string) => api.get<Review[]>(`/reviews/product/${productId}`),
 };

@@ -63,7 +63,7 @@ export const useProductStore = create<ProductState>((set) => ({
                 try {
                         console.log(productData, imageFile);
                         const res = await productApi.createProduct(productData, imageFile);
-
+                        console.log(res);
                         set((state) => ({
                                 products: [...state.products, res.data],
                                 loading: false,
@@ -111,6 +111,7 @@ export const useProductStore = create<ProductState>((set) => ({
         deleteProduct: async (ProductId: string) => {
                 try {
                         set({ loading: true });
+                        console.log(ProductId);
                         await productApi.deleteProduct(ProductId);
                         set((state) => ({
                                 products: state.products.filter((res) => res.id !== ProductId),
