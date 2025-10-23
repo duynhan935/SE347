@@ -5,8 +5,11 @@ import ActionBar from "@/components/merchant/common/ActionBar";
 import DataTable, { SortDirection } from "@/components/merchant/common/DataTable";
 import ListSetupModal from "@/components/merchant/common/ListSetupModal";
 import SearchFilter from "@/components/merchant/common/SearchFilter";
+import { useCategoryStore } from "@/stores/categoryStore";
 import { useProductStore } from "@/stores/useProductsStores";
-import { ArrowDown, SlidersHorizontal } from "lucide-react";
+import { ArrowDown, Loader2, Pencil } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const menuItemColumns = [
@@ -14,138 +17,152 @@ const menuItemColumns = [
         { label: "Category", checked: true },
         { label: "Price", checked: true },
         { label: "Stock Qty", checked: true },
-        { label: "Special Status", checked: true },
+        { label: "Reviews", checked: true },
+        { label: "Rating", checked: false },
         { label: "Status", checked: true },
         { label: "ID", checked: false },
-        { label: "Date Added", checked: false },
-        { label: "Date Updated", checked: false },
-];
-
-const filterOptions = [
-        {
-                label: "View all categories",
-                options: [
-                        { value: "all", label: "View all categories" },
-                        { value: "drinks", label: "Drinks" },
-                ],
-        },
-        {
-                label: "View all status",
-                options: [
-                        { value: "all", label: "View all status" },
-                        { value: "Enabled", label: "Enabled" },
-                        { value: "Disabled", label: "Disabled" },
-                ],
-        },
 ];
 
 export default function MenuItemPage() {
+        const router = useRouter();
         const [openSetupModal, setOpenSetupModal] = useState(false);
         const [searchTerm, setSearchTerm] = useState("");
         const [categoryFilter, setCategoryFilter] = useState("all");
         const [statusFilter, setStatusFilter] = useState("all");
 
-        const { products, fetchProductsByRestaurantId, loading, error } = useProductStore();
+        const {
+                products,
+                fetchProductsByRestaurantId,
+                loading: productLoading,
+                error: productError,
+        } = useProductStore();
+        const { categories, fetchAllCategories, loading: categoryLoading, error: categoryError } = useCategoryStore();
 
         useEffect(() => {
-                const merchantId =
-                        "f6M7LxiWsKU3yu1QqxBJrc0ePRG8ciHF60Y9xO3XzzHhRf1FlmC5H0ovQM4slJVwrqwz0aFaz2ZUOJCq45EUY4S1mAYZAoOhkuc4bfF3L34ilHpUbmPgv14qM7OnTOXioewL4YKV0KettlXDBzBOXk6WGOF2r0AD4cAiBZq5PkqTasK9O20iwUUORGDsGlNIrswd35K15ZLhM18fhlXAV9bkd96kSSn9SMiEIz5It1PMdvrKpXRbaYk0r0RdvZ";
-                fetchProductsByRestaurantId(merchantId);
-        }, [fetchProductsByRestaurantId]);
+                // Tạm dùng restaurantId mẫu
+                const restaurantId =
+                        "xosmpw7eGLWCnF9b8f8v6AAEGYGftLzGC1Z3wFo4bjYRQp04rEKluhPdoVh0pqtIX0p9CBUBBZhCJZK4hIIDtTUqJMN9apWAmtYi8qukcw0Q7ausIxH9KtmTp2cndAS09Pazrm8ZcmBb1MBCU7woj7wvu4QClGX8uWExUVBcB0zZfawQBq4TNFA3236KhmHRDH7ownJX7WldcOb1zNdlApmsLBLgETTtORrv230X8ETkZGKTQNJrBOdQBds6Qg";
+                fetchProductsByRestaurantId(restaurantId);
+                fetchAllCategories();
+        }, [fetchProductsByRestaurantId, fetchAllCategories]);
 
-        // 🔸 Chuyển dữ liệu products trả về từ API thành dữ liệu bảng phù hợp
+        const filterOptions = useMemo(() => {
+                const validCategories = Array.isArray(categories) ? categories : [];
+                const categoryOptions = validCategories.map((c) => ({
+                        value: c.cateName,
+                        label: c.cateName,
+                }));
+                return [
+                        {
+                                label: "View all categories",
+                                options: [{ value: "all", label: "View all categories" }, ...categoryOptions],
+                        },
+                        {
+                                label: "View all status",
+                                options: [
+                                        { value: "all", label: "View all status" },
+                                        { value: "Enabled", label: "Enabled" },
+                                        { value: "Disabled", label: "Disabled" },
+                                ],
+                        },
+                ];
+        }, [categories]);
+
         const mappedData = useMemo(() => {
-                return products.map((p) => ({
+                const validProducts = Array.isArray(products) ? products : [];
+                return validProducts.map((p) => ({
                         id: p.id,
                         name: p.productName,
                         category: p.categoryName || "N/A",
                         price: p.productSizes?.[0]?.price ?? 0,
                         stockQty: p.volume ?? 0,
-                        specialStatus: p.totalReview ?? 0,
-                        status: p.available ? "Enabled" : "Disabled",
+                        reviews: p.totalReview ?? 0,
                         rating: p.rating ?? 0,
+                        status: p.available ? "Enabled" : "Disabled",
                 }));
         }, [products]);
 
-        // 🔸 Lọc dữ liệu theo tìm kiếm & bộ lọc
         const filteredData = useMemo(() => {
                 return mappedData.filter((item) => {
+                        const lowerSearch = searchTerm.toLowerCase();
                         const matchesSearch =
-                                item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                item.category.toLowerCase().includes(searchTerm.toLowerCase());
-
+                                item.name.toLowerCase().includes(lowerSearch) ||
+                                item.category.toLowerCase().includes(lowerSearch);
                         const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
-
                         const matchesStatus = statusFilter === "all" || item.status === statusFilter;
-
                         return matchesSearch && matchesCategory && matchesStatus;
                 });
         }, [mappedData, searchTerm, categoryFilter, statusFilter]);
 
-        // 🔸 Cấu hình cột cho DataTable
         const menuItemTableData = [
                 { label: "Name", sortable: true, key: "name" },
                 { label: "Category", sortable: true, key: "category" },
                 { label: "Price", sortable: true, key: "price" },
                 { label: "Stock Qty", sortable: true, key: "stockQty" },
-                { label: "Reviews", sortable: true, key: "specialStatus" },
+                { label: "Reviews", sortable: true, key: "reviews" },
                 { label: "Rating", sortable: true, key: "rating" },
                 { label: "Status", sortable: true, key: "status" },
                 {
-                        label: "Setup",
-                        icon: (
-                                <SlidersHorizontal
-                                        size={14}
-                                        className="text-brand-black cursor-pointer"
-                                        onClick={() => setOpenSetupModal(true)}
-                                />
+                        label: "Edit",
+                        key: "edit",
+                        sortable: false,
+                        render: (_, item: any) => (
+                                <Link
+                                        href={`/merchant/restaurant/menu-items/${item.id}`}
+                                        className="inline-flex items-center justify-center px-3 py-1 text-sm text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition"
+                                >
+                                        <Pencil size={14} className="mr-1" />
+                                        Edit
+                                </Link>
                         ),
-                        tooltip: "Settings",
-                        key: "setup",
-                        render: () => null,
                 },
         ];
 
-        // Event handlers
-        const handleSearch = (value: any) => setSearchTerm(value);
-        const handleFilterChange = (index: number, value: any) => {
-                if (index === 0) setCategoryFilter(value);
-                else if (index === 1) setStatusFilter(value);
+        const handleSearch = (value: string) => setSearchTerm(value);
+        const handleFilterChange = (index: number, value: string) => {
+                index === 0 ? setCategoryFilter(value) : setStatusFilter(value);
         };
         const handleClear = () => {
                 setSearchTerm("");
                 setCategoryFilter("all");
                 setStatusFilter("all");
         };
-        const handleRowSelect = (selectedItems: any) => console.log("Selected items:", selectedItems);
+        const handleRowSelect = (selectedItems: any[]) => console.log("Selected items:", selectedItems);
         const handleSort = (columnKey: string, direction: SortDirection) =>
                 console.log(`Sorting ${columnKey} in ${direction} order`);
 
-        if (loading) return <p>Đang tải thông tin sản phẩm...</p>;
-        if (error) return <p>Đã xảy ra lỗi khi tải thông tin sản phẩm.</p>;
+        const isLoading = productLoading || categoryLoading;
+        const error = productError || categoryError;
+
+        if (isLoading && !products?.length) {
+                return (
+                        <div className="flex justify-center items-center h-screen">
+                                <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+                        </div>
+                );
+        }
+        if (error) return <p className="p-6 text-center text-red-600">Đã xảy ra lỗi: {error} 😭</p>;
 
         return (
-                <div className="min-h-screen">
-                        <h1 className="text-2xl font-semibold mb-6 text-gray-900">Menus</h1>
+                <div className="min-h-screen p-6 bg-gray-50">
+                        <h1 className="text-2xl font-semibold mb-6 text-gray-900">Quản lý món ăn 🍜</h1>
 
-                        {/* Modal setup columns */}
                         <ListSetupModal
                                 open={openSetupModal}
                                 onClose={() => setOpenSetupModal(false)}
                                 columns={menuItemColumns}
+                                title="Cài đặt hiển thị danh sách món ăn"
                         />
 
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                                {/* Action Bar */}
-                                <div className="flex justify-between items-center p-4 border-b border-gray-200">
+                                <div className="flex flex-wrap justify-between items-center p-4 border-b border-gray-200 gap-4">
                                         <ActionBar
-                                                newLabel="New"
-                                                secondaryLabel="..."
+                                                newLabel="Thêm món mới"
+                                                secondaryLabel="Hành động"
                                                 secondaryIcon={<ArrowDown size={14} />}
                                         />
-
                                         <SearchFilter
-                                                searchPlaceholder="Search by name or category"
+                                                searchPlaceholder="Tìm theo tên hoặc danh mục..."
                                                 filterOptions={filterOptions}
                                                 HeaderDropdown={HeaderDropdown}
                                                 onSearch={handleSearch}
@@ -154,19 +171,18 @@ export default function MenuItemPage() {
                                         />
                                 </div>
 
-                                {/* ✅ Hiển thị bảng bằng dữ liệu thật từ API */}
                                 <DataTable
                                         columns={menuItemTableData}
                                         data={filteredData}
-                                        emptyText="There are no MenuItem available."
-                                        colSpan={7}
+                                        emptyText="Chưa có món nào trong menu. Thêm món mới nhé! 🥳"
+                                        colSpan={menuItemTableData.length}
                                         onRowSelect={handleRowSelect}
                                         onSort={handleSort}
                                 />
 
                                 <div className="flex justify-end items-center px-4 py-3 border-t border-gray-200 text-sm text-gray-500">
-                                        Showing {filteredData.length > 0 ? "1" : "0"}-{filteredData.length} of{" "}
-                                        {filteredData.length} records
+                                        Hiển thị {filteredData.length > 0 ? "1" : "0"} - {filteredData.length} trên tổng
+                                        số {filteredData.length} món
                                 </div>
                         </div>
                 </div>
