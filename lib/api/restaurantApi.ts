@@ -1,4 +1,5 @@
 import type { Category, Restaurant, RestaurantData } from "@/types";
+import { Review } from "@/types/review.type";
 import api from "../axios";
 
 // Hàm helper để tạo FormData CHUẨN
@@ -45,4 +46,5 @@ export const restaurantApi = {
         deleteRestaurant: (restaurantId: string) => api.delete(`/restaurant/${restaurantId}`),
         deleteRestaurantImage: (restaurantId: string) => api.delete(`/restaurant/image/${restaurantId}`),
         getAllCategories: () => api.get<Category[]>(`/category`),
+        getAllReviews: (restaurantId: string) => api.get<Review[]>(`/review?param=${restaurantId}`),
 };

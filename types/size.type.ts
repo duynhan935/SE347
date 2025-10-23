@@ -1,7 +1,11 @@
 export interface Size {
-    id: string;
-    name: string;
+        id: string;
+        name: string;
 }
 export interface SizeData {
-    name: string;
+        name: string;
+}
+export interface SizePrice {
+        sizeId: string;
+        price: string;
 }

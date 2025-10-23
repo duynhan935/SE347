@@ -8,11 +8,15 @@ import RestaurantHero from "@/components/client/Restaurant/RestaurantHero";
 import RestaurantInfo from "@/components/client/Restaurant/RestaurantInfo";
 import RestaurantMenu from "@/components/client/Restaurant/RestaurantMenu";
 import RestaurantNavTabs from "@/components/client/Restaurant/RestaurantNavTabs";
+import RestaurantReviews from "@/components/client/Restaurant/RestaurantReviews";
 
 export default async function RestaurantDetailPage({ params }: { params: { id: string } }) {
-        const response = await restaurantApi.getByRestaurantId(params.id);
-        const restaurant = response.data;
-        console.log(restaurant);
+        const [restaurantResponse, reviewsResponse] = await Promise.all([
+                restaurantApi.getByRestaurantId(params.id),
+                restaurantApi.getAllReviews(params.id),
+        ]);
+        const restaurant = restaurantResponse.data;
+        const reviews = reviewsResponse.data;
 
         if (!restaurant) notFound();
 
@@ -42,11 +46,12 @@ export default async function RestaurantDetailPage({ params }: { params: { id: s
                                                         />
                                                 </section>
                                         </ScrollReveal>
-                                        {/* <ScrollReveal delay={0.2}>
+
+                                        <ScrollReveal delay={0.2}>
                                                 <section id="reviews" className="scroll-mt-24">
-                                                        <RestaurantReviews reviews={restaurant.reviews} />
+                                                        <RestaurantReviews reviews={reviews || []} />
                                                 </section>
-                                        </ScrollReveal> */}
+                                        </ScrollReveal>
                                 </div>
                         </div>
                 </main>

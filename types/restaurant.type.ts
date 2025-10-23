@@ -32,5 +32,4 @@ export interface Restaurant {
         duration: number;
         products: Product[];
         cate: Category[];
-        // reviews: Review[];
 }

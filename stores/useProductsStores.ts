@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { productApi } from "@/lib/api/productApi";
-import type { Product, ProductCreateData } from "@/types";
+import type { Product, ProductCreateData, Review } from "@/types";
 import { create } from "zustand";
 interface ProductState {
         products: Product[];
         product: Product | null;
+        reviews: Review[];
         loading: boolean;
         error: string | null;
         fetchProductsByRestaurantId: (restaurantId: string) => Promise<void>;
@@ -15,12 +16,14 @@ interface ProductState {
         updateProductStatus: (ProductId: string) => Promise<void>;
         deleteProduct: (ProductId: string) => Promise<void>;
         deleteProductImage: (ProductId: string) => Promise<void>;
+        getAllReviews: (productId: string) => Promise<void>;
         clearProducts: () => void;
 }
 
 export const useProductStore = create<ProductState>((set) => ({
         products: [],
         product: null,
+        reviews: [],
         loading: false,
         error: null,
 
@@ -58,6 +61,7 @@ export const useProductStore = create<ProductState>((set) => ({
         createNewProduct: async (productData: ProductCreateData, imageFile?: File) => {
                 set({ loading: true, error: null });
                 try {
+                        console.log(productData, imageFile);
                         const res = await productApi.createProduct(productData, imageFile);
 
                         set((state) => ({
@@ -140,5 +144,14 @@ export const useProductStore = create<ProductState>((set) => ({
                 }
         },
 
+        getAllReviews: async (productId: string) => {
+                set({ loading: true, error: null });
+                try {
+                        const res = await productApi.getAllReviews(productId);
+                        set({ reviews: res.data || [], loading: false });
+                } catch (err: any) {
+                        set({ error: err.message || "Không thể tải đánh giá", loading: false });
+                }
+        },
         clearProducts: () => set({ products: [], product: null }),
 }));
