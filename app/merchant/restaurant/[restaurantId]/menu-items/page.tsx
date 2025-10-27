@@ -9,7 +9,7 @@ import { useCategoryStore } from "@/stores/categoryStore";
 import { useProductStore } from "@/stores/useProductsStores";
 import { ArrowDown, Loader2, Pencil } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const menuItemColumns = [
@@ -29,7 +29,8 @@ export default function MenuItemPage() {
         const [searchTerm, setSearchTerm] = useState("");
         const [categoryFilter, setCategoryFilter] = useState("all");
         const [statusFilter, setStatusFilter] = useState("all");
-
+        const params = useParams();
+        const restaurantId = params.restaurantId as string;
         const {
                 products,
                 fetchProductsByRestaurantId,
@@ -39,9 +40,6 @@ export default function MenuItemPage() {
         const { categories, fetchAllCategories, loading: categoryLoading, error: categoryError } = useCategoryStore();
 
         useEffect(() => {
-                // Tạm dùng restaurantId mẫu
-                const restaurantId =
-                        "aLllLYkss6DkGM4fNys8RA08B7ENNcL0niS3FPpEItEWKAb2xg85Dspu8DNt9Fj9Vu9FB0kh5xLSOQcClUOv69rEJJsqHwxAgcXv4b7kLdoxV0PNR7gXRkR5tYZwbxweKkiYmQ35SlqvYHf1jFeehZrPS8OT8fqYrQpHRkUAZKqHPr2ihtUiksD6WXqMlgR1dFtj6DmQ21CZ2lYJJ1nSTrU906s8hidYM2EBQ94hOLfE6pI3IBh104u4cv80KD";
                 fetchProductsByRestaurantId(restaurantId);
                 fetchAllCategories();
         }, [fetchProductsByRestaurantId, fetchAllCategories]);
@@ -108,7 +106,7 @@ export default function MenuItemPage() {
                         sortable: false,
                         render: (_: any, item: any) => (
                                 <Link
-                                        href={`/merchant/restaurant/menu-items/${item.id}`}
+                                        href={`/merchant/restaurant/${restaurantId}/menu-items/${item.id}`}
                                         className="inline-flex items-center justify-center px-3 py-1 text-sm text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition"
                                 >
                                         <Pencil size={14} className="mr-1" />
@@ -157,6 +155,7 @@ export default function MenuItemPage() {
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                                 <div className="flex flex-wrap justify-between items-center p-4 border-b border-gray-200 gap-4">
                                         <ActionBar
+                                                restaurantId={restaurantId}
                                                 newLabel="Thêm món mới"
                                                 secondaryLabel="Hành động"
                                                 secondaryIcon={<ArrowDown size={14} />}

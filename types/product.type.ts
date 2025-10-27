@@ -5,6 +5,7 @@ export interface ProductSize {
         id: string;
         sizeName: string;
         price: number;
+        sizeId: string;
 }
 
 export interface Product {

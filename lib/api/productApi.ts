@@ -19,7 +19,7 @@ export const productApi = {
 
                 return api.put<Product>(`/products/${productId}`, formData);
         },
-        updateProductStatus: (productId: string) => api.patch<Product>(`/product/enable/${productId}`),
+        updateProductStatus: (productId: string) => api.put<Product>(`/products/availability/${productId}`),
         deleteProduct: (productId: string) => api.delete(`/products/${productId}`),
         deleteProductImage: (productId: string) => api.delete(`/product/image/${productId}`),
         getAllReviews: (productId: string) => api.get<Review[]>(`/reviews/product/${productId}`),

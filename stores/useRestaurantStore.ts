@@ -12,9 +12,11 @@ interface RestaurantState {
         reviews: Review[];
         loading: boolean;
         error: string | null;
+        selectedRestaurantId: string | null;
         fetchRestaurantById: (id: string) => Promise<void>;
         getRestaurantByMerchantId: (merchantId: string) => Promise<void>;
         getAllRestaurants: (params: URLSearchParams) => Promise<void>;
+        setSelectedRestaurantId: (id: string | null) => void;
         clearRestaurant: () => void;
         getAllCategories: () => Promise<void>;
         createNewRestaurant: (restaurantData: RestaurantData, imageFile?: File) => Promise<void>;
@@ -25,7 +27,7 @@ interface RestaurantState {
         getAllReviews: (restaurantId: string) => Promise<void>;
 }
 
-export const useRestaurantStore = create<RestaurantState>((set) => ({
+export const useRestaurantStore = create<RestaurantState>((set, get) => ({
         restaurant: null,
         restaurants: [],
         products: [],
@@ -33,6 +35,7 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
         reviews: [],
         loading: false,
         error: null,
+        selectedRestaurantId: null,
 
         fetchRestaurantById: async (id) => {
                 set({ loading: true, error: null });
@@ -46,6 +49,10 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
                                 categories: data.cate || [],
                                 loading: false,
                         });
+
+                        if (data) {
+                                get().getAllReviews(data.id);
+                        }
                 } catch (err: any) {
                         set({
                                 error: err.message || "Không thể tải dữ liệu nhà hàng",
@@ -91,7 +98,14 @@ export const useRestaurantStore = create<RestaurantState>((set) => ({
                         set({ loading: false });
                 }
         },
-
+        setSelectedRestaurantId: (id: string | null) => {
+                set({ selectedRestaurantId: id, restaurant: null, products: [], categories: [], reviews: [] });
+                if (id) {
+                        const selectedRestBrief = get().restaurants.find((r) => r.id === id);
+                        set({ restaurant: selectedRestBrief || null });
+                        get().fetchRestaurantById(id);
+                }
+        },
         createNewRestaurant: async (restaurantData: RestaurantData, imageFile?: File) => {
                 try {
                         set({ loading: true });
