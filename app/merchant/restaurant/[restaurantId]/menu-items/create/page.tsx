@@ -1,17 +1,18 @@
 "use client";
-// ✅ Sử dụng store bạn cung cấp
 import { useCategoryStore } from "@/stores/categoryStore";
 import { useSizeStore } from "@/stores/sizeStore";
 import { useProductStore } from "@/stores/useProductsStores";
 import { useRestaurantStore } from "@/stores/useRestaurantStore";
 import { SizePrice } from "@/types";
-// ✅ Import icons
 import { ChevronLeft, Loader2, Plus, Save, Trash2, UploadCloud, X } from "lucide-react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
 
 export default function MenuCreateForm() {
+        const params = useParams();
+
         const {
                 categories,
                 fetchAllCategories,
@@ -21,10 +22,9 @@ export default function MenuCreateForm() {
         } = useCategoryStore();
         const { sizes, fetchAllSizes, createNewSize, loading: sizeLoading, error: sizeError } = useSizeStore();
         const { getRestaurantByMerchantId } = useRestaurantStore();
-        const restaurantId = useRestaurantStore((state) => state.restaurant?.id ?? "");
+        const restaurantId = params.restaurantId as string;
         const { createNewProduct, loading: productLoading, error: productError } = useProductStore();
 
-        // --- State cho form (giữ nguyên) ---
         const [productName, setProductName] = useState("");
         const [description, setDescription] = useState("");
         const [categoryId, setCategoryId] = useState("");
@@ -182,7 +182,7 @@ export default function MenuCreateForm() {
                                         <div className="flex items-center gap-2 mb-4">
                                                 {" "}
                                                 <Link
-                                                        href="/merchant/restaurant/menu-items"
+                                                        href={`/merchant/restaurant/${restaurantId}/menu-items`}
                                                         className="p-1 rounded hover:bg-gray-100"
                                                 >
                                                         {" "}

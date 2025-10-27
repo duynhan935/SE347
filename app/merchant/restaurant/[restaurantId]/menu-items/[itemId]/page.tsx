@@ -1,15 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { CommonImages } from "@/constants"; // Đảm bảo bạn có file này và CommonImages.yeye tồn tại
-// ✅ Sử dụng store bạn cung cấp
+import { CommonImages } from "@/constants";
 import { useCategoryStore } from "@/stores/categoryStore";
 import { useSizeStore } from "@/stores/sizeStore";
 import { useProductStore } from "@/stores/useProductsStores";
 import { useRestaurantStore } from "@/stores/useRestaurantStore";
-import { Product, SizePrice } from "@/types"; // Đảm bảo SizePrice được export từ types
-// ✅ Import icons
+import { Product, SizePrice } from "@/types";
 import { ChevronLeft, Loader2, Pencil, Plus, Save, Trash2, UploadCloud, X } from "lucide-react";
-import Image from "next/image"; // Sử dụng next/image
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
@@ -26,25 +24,21 @@ interface MenuFormData {
 }
 
 export default function MenuEditForm() {
-        const { id: productId } = useParams();
+        const params = useParams();
         const router = useRouter();
-
+        const productId = params.itemId as string;
+        const restaurantId = params.restaurantId as string;
         const {
                 product,
                 fetchProductByProductId,
                 updateProduct,
                 deleteProduct,
+                updateProductStatus,
                 loading: productLoading,
                 error: productError,
         } = useProductStore();
-        const {
-                categories,
-                fetchAllCategories,
-                createNewCategory,
-                loading: categoryLoading,
-                error: categoryError,
-        } = useCategoryStore();
-        const { sizes, fetchAllSizes, createNewSize, loading: sizeLoading, error: sizeError } = useSizeStore();
+        const { categories, fetchAllCategories, createNewCategory, loading: categoryLoading } = useCategoryStore();
+        const { sizes, fetchAllSizes, createNewSize, loading: sizeLoading } = useSizeStore();
         const { getRestaurantByMerchantId } = useRestaurantStore();
         const restaurantIdFromStore = useRestaurantStore((state) => state.restaurant?.id ?? "");
 
@@ -52,7 +46,7 @@ export default function MenuEditForm() {
         const [formData, setFormData] = useState<Partial<MenuFormData>>({});
         const [initialFormData, setInitialFormData] = useState<Partial<MenuFormData>>({});
         const [image, setImage] = useState<File | null>(null);
-        const [imagePreview, setImagePreview] = useState<string | null>(null); // ✅ Type: string | null
+        const [imagePreview, setImagePreview] = useState<string | null>(null);
         const [isEditing, setIsEditing] = useState(false);
         const [showNewCategory, setShowNewCategory] = useState(false);
         const [newCategoryName, setNewCategoryName] = useState("");
@@ -63,37 +57,66 @@ export default function MenuEditForm() {
 
         // Hàm khởi tạo form data
         const initializeForm = useCallback(
-                (productData: Product | null, restaurantId: string) => {
+                (productData: Product | null) => {
                         if (productData) {
+                                const restId = productData.restaurant?.id || restaurantIdFromStore;
+                                if (!restId) {
+                                        console.warn("Đang chờ restaurantId...");
+                                        // Vẫn có thể set data khác trước
+                                }
+
                                 const initialData: MenuFormData = {
                                         id: productData.id,
                                         productName: productData.productName || "",
                                         description: productData.description || "",
                                         categoryId: productData.categoryId || "",
                                         available: productData.available ?? false,
-                                        restaurantId: productData.restaurant?.id || restaurantId || "",
+                                        restaurantId: restId, // Sẽ được cập nhật sau nếu restId rỗng
                                         sizePrices:
                                                 productData.productSizes && productData.productSizes.length > 0
                                                         ? productData.productSizes.map((s: any) => ({
-                                                                  sizeId: s.sizeId || s.id || "", // Lấy sizeId hoặc id (tùy thuộc API response)
+                                                                  // ❗️❗️ YÊU CẦU BACKEND SỬA ❗️❗️
+                                                                  // API (GET /products/{id}) phải trả về `sizeId` (ID của size)
+                                                                  // `s.id` (ID của bảng product_sizes) KHÔNG DÙNG ĐƯỢC
+                                                                  sizeId: s.sizeId || "", // ✅ Đổi thành s.sizeId
                                                                   price: s.price?.toString() ?? "",
                                                           }))
                                                         : [{ sizeId: "", price: "" }],
                                 };
+
+                                // Log kiểm tra lỗi size
+                                if (
+                                        productData.productSizes &&
+                                        productData.productSizes.length > 0 &&
+                                        !productData.productSizes[0].sizeId
+                                ) {
+                                        console.error(
+                                                "LỖI API: Backend không trả về 'sizeId' trong 'productSizes'. Frontend đang dùng 's.id' làm fallback (có thể sai)."
+                                        );
+                                        // Dùng tạm s.id nếu s.sizeId không có (DÙ BIẾT LÀ SAI)
+                                        initialData.sizePrices = productData.productSizes.map((s: any) => ({
+                                                sizeId: s.id || "", // Dùng tạm s.id
+                                                price: s.price?.toString() ?? "",
+                                        }));
+                                        // toast.error("Lỗi: API không trả về 'sizeId', size món ăn có thể hiển thị sai.");
+                                }
+
                                 setFormData(initialData);
                                 setInitialFormData(initialData);
-                                setImagePreview((productData.imageURL as string) || null); // Set ảnh preview ban đầu
+                                setImagePreview((productData.imageURL as string) || null);
                                 setIsInitialized(true);
                         } else if (!productLoading) {
+                                // Chỉ báo lỗi khi đã load xong và product = null
+                                toast.error("Không tìm thấy thông tin sản phẩm!");
                                 router.push("/merchant/restaurant/menu-items");
                         }
                 },
-                [router, productLoading]
+                [restaurantIdFromStore, router, productLoading]
         );
 
         // Fetch data ban đầu
         useEffect(() => {
-                const merchantId = "testmerchantid"; // Cần lấy động
+                const merchantId = "testmerchantid";
                 if (merchantId && !restaurantIdFromStore) {
                         getRestaurantByMerchantId(merchantId);
                 }
@@ -102,25 +125,39 @@ export default function MenuEditForm() {
                 if (productId) {
                         setIsInitialized(false);
                         setFormData({});
-                        fetchProductByProductId(productId as string);
+                        fetchProductByProductId(productId as string); // ✅ Store đã set product: null
                 } else {
                         toast.error("ID sản phẩm không hợp lệ!");
                         router.push("/merchant/restaurant/menu-items");
                 }
                 // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [productId, fetchProductByProductId, fetchAllCategories, fetchAllSizes, getRestaurantByMerchantId, router]); // Bỏ restaurantIdFromStore
+        }, [productId, fetchAllCategories, fetchAllSizes, getRestaurantByMerchantId]); // Bỏ fetchProductByProductId
 
-        // Khởi tạo form khi data sẵn sàng
+        // Khởi tạo form khi data sẵn sàng (FIX LỖI CLICK 2 LẦN)
         useEffect(() => {
-                const targetRestaurantId = product?.restaurant?.id || restaurantIdFromStore;
-                if (product && targetRestaurantId && !isInitialized) {
-                        initializeForm(product, targetRestaurantId);
-                } else if (!product && !productLoading && productId && !isInitialized) {
-                        initializeForm(null, restaurantIdFromStore);
+                // Chỉ chạy khi:
+                // 1. product đã load về (product !== null)
+                // 2. ID product khớp (tránh data cũ)
+                // 3. Form chưa được init
+                if (product && product.id === productId && !isInitialized) {
+                        initializeForm(product);
                 }
-        }, [product, restaurantIdFromStore, initializeForm, productLoading, productId, isInitialized]);
+                // Xử lý khi fetch xong (loading=false) nhưng không tìm thấy (product=null)
+                // VÀ có lỗi (productError)
+                else if (!product && !productLoading && productError && !isInitialized) {
+                        initializeForm(null); // Sẽ trigger "Không tìm thấy"
+                }
+        }, [product, productLoading, productError, isInitialized, initializeForm, productId]);
 
-        // --- Các hàm handle (giữ nguyên logic) ---
+        // Cập nhật restaurantId nếu nó về trễ
+        useEffect(() => {
+                if (isInitialized && !formData.restaurantId && restaurantIdFromStore) {
+                        setFormData((prev) => ({ ...prev, restaurantId: restaurantIdFromStore }));
+                        setInitialFormData((prev) => ({ ...prev, restaurantId: restaurantIdFromStore }));
+                }
+        }, [isInitialized, formData.restaurantId, restaurantIdFromStore]);
+
+        // --- Các hàm handle (giữ nguyên) ---
         const handleChange = (field: keyof MenuFormData, value: any) => {
                 if (!isEditing) return;
                 setFormData((prev) => ({ ...prev, [field]: value }));
@@ -199,8 +236,29 @@ export default function MenuEditForm() {
                         toast.error(`Tạo thất bại: ${e.message || "Lỗi"}`);
                 }
         };
+
+        const handleToggleAvailable = async (currentStatus: boolean | undefined) => {
+                if (!isEditing || formData.id === undefined) return;
+
+                const newStatus = !currentStatus;
+                const loadingToast = toast.loading(newStatus ? "Đang bật món..." : "Đang tắt món...");
+
+                try {
+                        await updateProductStatus(formData.id as string);
+                        toast.dismiss(loadingToast);
+                        toast.success("Cập nhật trạng thái thành công!");
+                        const updatedData = { ...formData, available: newStatus };
+                        setFormData(updatedData);
+                        setInitialFormData(updatedData);
+                } catch (err: any) {
+                        toast.dismiss(loadingToast);
+                        toast.error(`Cập nhật thất bại: ${err.message || "Lỗi"}`);
+                }
+        };
+
         const handleSave = async () => {
                 if (!formData.id || !product) return toast.error("Lỗi: Không tìm thấy sản phẩm!");
+
                 if (!formData.productName?.trim()) return toast.error("Tên sản phẩm trống!");
                 if (!formData.categoryId) return toast.error("Chưa chọn danh mục!");
                 if (!imagePreview && !image) return toast.error("Chưa chọn ảnh!");
@@ -211,6 +269,7 @@ export default function MenuEditForm() {
                 if (validSPs.length === 0) return toast.error("Cần ít nhất một size/giá hợp lệ.");
                 const sIds = validSPs.map((sp) => sp.sizeId);
                 if (new Set(sIds).size !== sIds.length) return toast.error("Không chọn trùng kích thước.");
+
                 const updatedData = {
                         productName: formData.productName.trim(),
                         description: formData.description?.trim() || "",
@@ -218,8 +277,9 @@ export default function MenuEditForm() {
                         available: formData.available ?? false,
                         restaurantId: formData.restaurantId,
                         sizeIds: validSPs.map((sp) => ({ sizeId: sp.sizeId, price: Number(sp.price) })),
-                        volume: 0 /* ✅ Thêm volume nếu cần */,
+                        volume: product.volume ?? 0,
                 };
+
                 const initValidSPs = (initialFormData.sizePrices || [])
                         .filter((sp) => sp.sizeId && sp.price !== "" && Number(sp.price) >= 0)
                         .map((sp) => ({ sizeId: sp.sizeId, price: Number(sp.price) }));
@@ -235,9 +295,9 @@ export default function MenuEditForm() {
                         setIsEditing(false);
                         return;
                 }
+
                 const lt = toast.loading("Đang cập nhật...");
                 try {
-                        console.log(updatedData, image);
                         await updateProduct(formData.id as string, updatedData, image ?? undefined);
                         toast.dismiss(lt);
                         const ce = useProductStore.getState().error;
@@ -255,6 +315,8 @@ export default function MenuEditForm() {
                         toast.error(`Cập nhật thất bại: ${err.message || "Lỗi"}`);
                 }
         };
+
+        // ... (handleDelete, handleCancelEdit giữ nguyên) ...
         const handleDelete = async () => {
                 if (!formData.id) return toast.error("Lỗi: Thiếu ID!");
                 if (window.confirm(`Xóa món "${formData.productName}"?`)) {
@@ -283,33 +345,25 @@ export default function MenuEditForm() {
                 setShowNewSize(false);
                 toast("Đã hủy thay đổi.", { icon: "↩️" });
         };
-        // --- Kết thúc ---
 
         // --- Loading & Error Handling ---
-        const isLoadingData =
-                (productLoading && !product && !productError && !isInitialized) ||
-                categoryLoading ||
-                sizeLoading ||
-                !isInitialized;
+        const isLoadingData = (productLoading && !isInitialized) || categoryLoading || sizeLoading;
         const isProcessing = productLoading || categoryLoading || sizeLoading;
-
-        // ✅ displayImage bây giờ là string | StaticImageData | null (an toàn cho <Image>)
-        const displayImage = imagePreview || CommonImages.yeye; // Dùng ảnh preview hoặc default
-
+        // ✅ Sửa lỗi Image src type
+        const displayImage = imagePreview || CommonImages.yeye;
         const validCategories = Array.isArray(categories) ? categories : [];
         const validSizes = Array.isArray(sizes) ? sizes : [];
-        // --- Kết thúc ---
 
-        if (isLoadingData && !isInitialized) {
-                // Chỉ hiện loading toàn màn hình khi chưa init
+        // Loading toàn màn hình khi chưa khởi tạo xong
+        if (!isInitialized) {
                 return (
                         <div className="flex justify-center items-center h-screen">
                                 <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
                         </div>
                 );
         }
-        if (productError && !product && !isLoadingData) {
-                // Chỉ hiện lỗi fetch ban đầu
+        // Lỗi nghiêm trọng khi không thể fetch product ban đầu
+        if (productError && !product) {
                 return <div className="p-6 text-center text-red-600">Lỗi tải dữ liệu sản phẩm: {productError}</div>;
         }
 
@@ -324,7 +378,7 @@ export default function MenuEditForm() {
                                         <div className="flex items-center gap-2 mb-4">
                                                 {" "}
                                                 <Link
-                                                        href="/merchant/restaurant/menu-items"
+                                                        href={`/merchant/restaurant/${restaurantId}/menu-items`}
                                                         className="p-1 rounded hover:bg-gray-100"
                                                 >
                                                         {" "}
@@ -396,7 +450,7 @@ export default function MenuEditForm() {
                                                 </p>{" "}
                                         </div>
                                 )}
-                                {/* Chỉ render form khi đã initialized */}
+
                                 {isInitialized ? (
                                         <div
                                                 className={`bg-white rounded-lg shadow-sm border p-6 space-y-6 max-w-4xl mx-auto ${
@@ -731,50 +785,48 @@ export default function MenuEditForm() {
                                                 </div>
 
                                                 {/* --- Trạng thái --- */}
+                                                {/* ✅ SỬA LỖI: GỌI HÀM MỚI KHI CLICK */}
                                                 <div className="border-t pt-6">
-                                                        {" "}
                                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                                                 {" "}
                                                                 Trạng thái bán{" "}
-                                                        </label>{" "}
+                                                        </label>
                                                         <div className="flex items-center">
-                                                                {" "}
                                                                 <button
+                                                                        title="Chỉnh sửa trạng thái bán"
                                                                         type="button"
                                                                         onClick={() =>
-                                                                                handleChange(
-                                                                                        "available",
-                                                                                        !formData.available
+                                                                                handleToggleAvailable(
+                                                                                        formData.available
                                                                                 )
-                                                                        }
-                                                                        disabled={!isEditing || isProcessing}
+                                                                        } // ✅ Gọi hàm mới
+                                                                        disabled={!isEditing || isProcessing} // Chỉ cho click khi đang edit
                                                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 ${
                                                                                 formData.available
                                                                                         ? "bg-orange-500"
                                                                                         : "bg-gray-300"
                                                                         }`}
                                                                 >
-                                                                        {" "}
                                                                         <span
                                                                                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                                                                                         formData.available
                                                                                                 ? "translate-x-6"
                                                                                                 : "translate-x-1"
                                                                                 }`}
-                                                                        />{" "}
-                                                                </button>{" "}
+                                                                        />
+                                                                </button>
                                                                 <span className="ml-3 text-sm text-gray-700">
                                                                         {" "}
                                                                         {formData.available
                                                                                 ? "Đang bán"
                                                                                 : "Tạm dừng"}{" "}
-                                                                </span>{" "}
-                                                        </div>{" "}
+                                                                </span>
+                                                        </div>
                                                         <p className="text-xs text-gray-500 mt-1">
                                                                 {formData.available
                                                                         ? "Hiển thị trên menu."
                                                                         : "Ẩn khỏi menu."}
-                                                        </p>{" "}
+                                                        </p>
                                                 </div>
 
                                                 {/* --- Ảnh sản phẩm --- */}
@@ -835,7 +887,7 @@ export default function MenuEditForm() {
                                                                                 </p>
                                                                         )}{" "}
                                                                 </label>
-                                                                {/* ✅ Sửa lỗi src cho Image */}
+                                                                {/* ✅ SỬA LỖI SRC */}
                                                                 {displayImage && (
                                                                         <div className="relative w-32 h-32 border rounded-md overflow-hidden flex-shrink-0">
                                                                                 <Image
@@ -844,24 +896,18 @@ export default function MenuEditForm() {
                                                                                                 "string"
                                                                                                         ? displayImage
                                                                                                         : displayImage.src
-                                                                                        } // Kiểm tra type trước khi dùng
+                                                                                        }
                                                                                         alt="Ảnh sản phẩm"
                                                                                         layout="fill"
                                                                                         objectFit="cover"
-                                                                                        onError={(e) => {
-                                                                                                // Xử lý nếu ảnh lỗi
-                                                                                                console.error(
-                                                                                                        "Image load error:",
-                                                                                                        e.target
-                                                                                                );
-                                                                                                // Set về ảnh mặc định nếu lỗi (đảm bảo CommonImages.yeye là string hoặc StaticImageData)
+                                                                                        onError={() => {
+                                                                                                const defaultImg =
+                                                                                                        CommonImages.yeye;
                                                                                                 setImagePreview(
-                                                                                                        typeof CommonImages.yeye ===
+                                                                                                        typeof defaultImg ===
                                                                                                                 "string"
-                                                                                                                ? CommonImages.yeye
-                                                                                                                : CommonImages
-                                                                                                                          .yeye
-                                                                                                                          .src
+                                                                                                                ? defaultImg
+                                                                                                                : defaultImg.src
                                                                                                 );
                                                                                         }}
                                                                                 />
@@ -889,14 +935,13 @@ export default function MenuEditForm() {
                                                                                                 {" "}
                                                                                                 <X className="w-3 h-3" />{" "}
                                                                                         </button>
-                                                                                )}{" "}
+                                                                                )}
                                                                         </div>
                                                                 )}
                                                         </div>{" "}
                                                 </div>
                                         </div>
                                 ) : (
-                                        // Hiển thị loading nếu chưa initialized và không có lỗi fetch ban đầu
                                         !productError && (
                                                 <p className="text-center text-gray-500 py-10">Đang chuẩn bị form...</p>
                                         )

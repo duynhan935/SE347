@@ -41,7 +41,6 @@ export const useProductStore = create<ProductState>((set) => ({
                 set({ loading: true, error: null });
                 try {
                         const res = await productApi.getProductsByRestaurantId(restaurantId);
-                        console.log(res.data);
                         set({ products: res.data || [], loading: false });
                 } catch (err: any) {
                         set({ error: err.message || "Không thể tải sản phẩm", loading: false });
@@ -49,7 +48,7 @@ export const useProductStore = create<ProductState>((set) => ({
         },
 
         fetchProductByProductId: async (productId: string) => {
-                set({ loading: true, error: null });
+                set({ loading: true, error: null, product: null });
                 try {
                         const res = await productApi.getProductById(productId);
                         set({ product: res.data || null, loading: false });
