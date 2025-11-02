@@ -146,7 +146,7 @@ export default function LoginPage() {
                                         <button
                                                 type="submit"
                                                 disabled={loading}
-                                                className="w-full py-3 px-4 bg-brand-purple text-white font-semibold rounded-md hover:bg-brand-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-purple transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full py-3 px-4 bg-brand-purple text-white font-semibold rounded-md hover:bg-brand-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-purple transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                         >
                                                 {loading ? "Signing In..." : "Sign In"}
                                         </button>
@@ -174,7 +174,7 @@ export default function LoginPage() {
                                 <p className="mt-6 text-center text-sm text-gray-600">
                                         Don&apos;t have an account?{" "}
                                         <Link
-                                                href="/auth/register"
+                                                href="register"
                                                 className="font-semibold text-brand-purple hover:underline"
                                         >
                                                 Sign Up

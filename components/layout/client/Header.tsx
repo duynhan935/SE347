@@ -80,14 +80,18 @@ export default function Header() {
                                                                 <DropdownMenuItem className="cursor-pointer">
                                                                         <Link href="/contact">Contact</Link>
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem className="cursor-pointer">
-                                                                        <Link href="/admin">Admin</Link>
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem className="cursor-pointer">
-                                                                        <Link href="/merchant/testmerchantid">
-                                                                                Merchant
-                                                                        </Link>
-                                                                </DropdownMenuItem>
+                                                                {user?.role === "ADMIN" && (
+                                                                        <DropdownMenuItem className="cursor-pointer">
+                                                                                <Link href="/admin">Admin</Link>
+                                                                        </DropdownMenuItem>
+                                                                )}
+                                                                {user?.role === "MERCHANT" && (
+                                                                        <DropdownMenuItem className="cursor-pointer">
+                                                                                <Link href={`/merchant/${user.id}`}>
+                                                                                        Merchant
+                                                                                </Link>
+                                                                        </DropdownMenuItem>
+                                                                )}
                                                         </DropdownMenuContent>
                                                 </DropdownMenu>
                                         </nav>

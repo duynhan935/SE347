@@ -23,6 +23,7 @@ interface AuthState {
         logout: () => void;
         setTokens: (access: string, refresh: string) => void;
         fetchProfile: () => Promise<void>;
+        updateProfile: (userData: { username: string; phone: string }) => Promise<boolean>;
         initializeAuth: () => void;
         clearError: () => void;
         resendVerificationEmail: (email: string) => Promise<boolean>;
@@ -98,6 +99,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 } catch (err: any) {
                         console.error("Failed to fetch user profile:", err);
                         set({ error: "Failed to load user profile.", user: null, isAuthenticated: false });
+                }
+        },
+
+        updateProfile: async (userData) => {
+                if (!get().user?.id) {
+                        return false;
+                }
+                set({ loading: true, error: null });
+                try {
+                        const updatedUser = await authApi.updateUser(get().user!.id, userData);
+                        set({ user: updatedUser, loading: false });
+                        return true;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } catch (err: any) {
+                        const errorMessage = err.response?.data?.message || err.message || "Failed to update profile";
+                        set({ error: errorMessage, loading: false });
+                        return false;
                 }
         },
 

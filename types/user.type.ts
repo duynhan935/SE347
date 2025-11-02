@@ -14,6 +14,12 @@ export interface Address {
         latitude: number;
 }
 
+export interface AddressRequest {
+        location: string;
+        longitude: number;
+        latitude: number;
+}
+
 export interface UserUpdateAfterLogin {
         phone: string;
         defaultAddress: string;

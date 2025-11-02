@@ -2,7 +2,7 @@
 
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 interface ProtectedRouteProps {
@@ -12,11 +12,17 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, allowedRoles, requireAuth = true }: ProtectedRouteProps) {
+        const [mounted, setMounted] = useState(false);
         const { isAuthenticated, user, loading } = useAuthStore();
         const router = useRouter();
         const pathname = usePathname();
 
         useEffect(() => {
+                setMounted(true);
+        }, []);
+
+        useEffect(() => {
+                if (!mounted) return;
                 // Don't redirect while loading
                 if (loading) return;
 
@@ -36,7 +42,12 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
                                 return;
                         }
                 }
-        }, [isAuthenticated, user, loading, allowedRoles, requireAuth, router, pathname]);
+        }, [mounted, isAuthenticated, user, loading, allowedRoles, requireAuth, router, pathname]);
+
+        // Don't render anything until mounted to avoid hydration mismatch
+        if (!mounted) {
+                return null;
+        }
 
         // Show loading state while checking auth
         if (loading) {
