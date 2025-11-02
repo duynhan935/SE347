@@ -1,10 +1,10 @@
 "use client";
 
 import { User } from "@/app/(admin)/admin/types/types";
+import { authApi } from "@/lib/api/authApi";
 import { Edit, Plus, Search, Trash } from "lucide-react";
 import { useMemo, useState } from "react";
-// import { adminApi } from "@/lib/api/adminApi";
-// import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import UserFormModal from "./UserFormModal";
 
 export default function UserList({ initialUsers }: { initialUsers: User[] }) {
@@ -89,13 +89,13 @@ export default function UserList({ initialUsers }: { initialUsers: User[] }) {
                         return;
                 }
                 try {
-                        // await adminApi.deleteUser(userId);
+                        await authApi.deleteUser(userId);
                         setUsers((prev) => prev.filter((user) => user.id !== userId));
-                        // toast.success("User deleted successfully!");
+                        toast.success("User deleted successfully!");
                         console.log(`Đã xóa user ${userId}`);
                 } catch (error) {
                         console.error("Failed to delete user", error);
-                        // toast.error("Failed to delete user.");
+                        toast.error("Failed to delete user.");
                 }
         };
 

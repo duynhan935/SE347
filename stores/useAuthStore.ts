@@ -12,19 +12,21 @@ interface AuthState {
         error: string | null;
 
         // Actions
-        login: (credentials: { email?: string; password?: string }) => Promise<boolean>;
+        login: (credentials: { username: string; password: string }) => Promise<boolean>;
         register: (userData: {
                 username: string;
                 email: string;
-                password?: string;
-                confirmPassword?: string;
-                role?: "USER" | "MERCHANT" | "ADMIN";
+                password: string;
+                confirmPassword: string;
+                role: string;
         }) => Promise<boolean>;
         logout: () => void;
         setTokens: (access: string, refresh: string) => void;
         fetchProfile: () => Promise<void>;
+        updateProfile: (userData: { username: string; phone: string }) => Promise<boolean>;
         initializeAuth: () => void;
         clearError: () => void;
+        resendVerificationEmail: (email: string) => Promise<boolean>;
 }
 
 const getInitialTokens = (): { accessToken: string | null; refreshToken: string | null } => {
@@ -90,12 +92,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                         return;
                 }
                 try {
-                        const userData = await authApi.fetchUserProfile(get().user?.id || "");
+                        // Use getUserByAccessToken endpoint which extracts user from token automatically
+                        const userData = await authApi.getUserByAccessToken();
                         set({ user: userData, error: null });
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } catch (err: any) {
                         console.error("Failed to fetch user profile:", err);
                         set({ error: "Failed to load user profile.", user: null, isAuthenticated: false });
+                }
+        },
+
+        updateProfile: async (userData) => {
+                if (!get().user?.id) {
+                        return false;
+                }
+                set({ loading: true, error: null });
+                try {
+                        const updatedUser = await authApi.updateUser(get().user!.id, userData);
+                        set({ user: updatedUser, loading: false });
+                        return true;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } catch (err: any) {
+                        const errorMessage = err.response?.data?.message || err.message || "Failed to update profile";
+                        set({ error: errorMessage, loading: false });
+                        return false;
                 }
         },
 
@@ -123,5 +143,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         clearError: () => {
                 set({ error: null });
+        },
+
+        resendVerificationEmail: async (email: string) => {
+                set({ loading: true, error: null });
+                try {
+                        await authApi.resendVerificationEmail(email);
+                        set({ loading: false });
+                        return true;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } catch (err: any) {
+                        const errorMessage =
+                                err.response?.data?.message || err.message || "Failed to resend verification email";
+                        set({ error: errorMessage, loading: false });
+                        return false;
+                }
         },
 }));

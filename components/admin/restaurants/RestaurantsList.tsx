@@ -10,7 +10,6 @@ import Pagination from "@/components/client/Pagination";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export default function RestaurantList() {
-        // Hooks từ store (giữ nguyên)
         const {
                 restaurants,
                 loading,
@@ -21,7 +20,6 @@ export default function RestaurantList() {
                 deleteRestaurant,
         } = useRestaurantStore();
 
-        // State cho modal và search (giữ nguyên)
         const [searchTerm, setSearchTerm] = useState("");
         const [isModalOpen, setIsModalOpen] = useState(false);
         const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);

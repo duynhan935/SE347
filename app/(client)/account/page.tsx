@@ -1,17 +1,12 @@
 "use client";
 import Button from "@/components/Button";
 import EditProfileModal from "@/components/client/Account/EditProfileModal";
-import { Heart, Mail, PackageCheck, ShoppingBag } from "lucide-react";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { Heart, Loader2, Mail, PackageCheck, ShoppingBag } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-// Giả lập dữ liệu người dùng và hoạt động
-const user = {
-        name: "Peter Moor",
-        email: "peter.moor@example.com",
-        avatar: "https://placehold.co/100x100/EFE8D8/333?text=P",
-};
-
+// Stats and orders are still dummy data since backend might not have these yet
 const stats = [
         { name: "Total Orders", value: "17", icon: ShoppingBag },
         { name: "Last Order Status", value: "Delivered", icon: PackageCheck },
@@ -25,6 +20,34 @@ const recentOrders = [
 
 export default function ProfilePage() {
         const [isModalOpen, setIsModalOpen] = useState(false);
+        const [mounted, setMounted] = useState(false);
+        const { user, fetchProfile, loading } = useAuthStore();
+
+        useEffect(() => {
+                setMounted(true);
+                // Fetch user profile data
+                fetchProfile();
+        }, [fetchProfile]);
+        if (!mounted || loading) {
+                return (
+                        <div className="flex items-center justify-center min-h-screen">
+                                <Loader2 className="animate-spin text-brand-purple" />
+                        </div>
+                );
+        }
+
+        if (!user) {
+                return (
+                        <div className="text-center py-12">
+                                <p className="text-gray-500">No user data available</p>
+                        </div>
+                );
+        }
+
+        // Generate avatar from username
+        const avatarInitial = user.username.charAt(0).toUpperCase();
+        const avatarUrl = `https://placehold.co/100x100/EFE8D8/333?text=${avatarInitial}`;
+
         return (
                 <>
                         <div className="space-y-8">
@@ -32,7 +55,7 @@ export default function ProfilePage() {
                                 <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md transition-all duration-300 hover:shadow-xl flex flex-col sm:flex-row items-center gap-6">
                                         <div className="relative w-24 h-24 flex-shrink-0">
                                                 <Image
-                                                        src={user.avatar}
+                                                        src={avatarUrl}
                                                         alt="User Avatar"
                                                         fill
                                                         className="rounded-full object-cover"
@@ -41,7 +64,7 @@ export default function ProfilePage() {
                                         <div className="text-center sm:text-left flex-grow">
                                                 <p className="text-sm text-gray-500">Welcome back,</p>
                                                 <h1 className="text-2xl md:text-3xl font-bold text-brand-black">
-                                                        {user.name}
+                                                        {user.username}
                                                 </h1>
                                                 <p className="text-gray-600 flex items-center justify-center sm:justify-start gap-2 mt-1">
                                                         <Mail className="w-4 h-4" />
@@ -112,7 +135,15 @@ export default function ProfilePage() {
                                         </div>
                                 </div>
                         </div>
-                        <EditProfileModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} user={user} />
+                        <EditProfileModal
+                                isOpen={isModalOpen}
+                                onClose={() => setIsModalOpen(false)}
+                                user={{
+                                        name: user.username,
+                                        avatar: avatarUrl,
+                                        phone: user.phone,
+                                }}
+                        />
                 </>
         );
 }

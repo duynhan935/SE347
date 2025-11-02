@@ -1,10 +1,12 @@
 "use client";
 
 import Button from "@/components/Button";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { AnimatePresence, motion } from "framer-motion";
-import { Camera, X } from "lucide-react";
+import { Camera, Loader2, X } from "lucide-react";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 type EditProfileModalProps = {
         isOpen: boolean;
@@ -12,14 +14,25 @@ type EditProfileModalProps = {
         user: {
                 name: string;
                 avatar: string;
+                phone?: string | null;
         };
 };
 
 export default function EditProfileModal({ isOpen, onClose, user }: EditProfileModalProps) {
-        const [name, setName] = useState(user.name);
+        const [name, setName] = useState("");
+        const [phone, setPhone] = useState("");
         const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
         const [avatarFile, setAvatarFile] = useState<File | null>(null);
         const fileInputRef = useRef<HTMLInputElement>(null);
+        const { updateProfile, loading } = useAuthStore();
+
+        // Update fields when user changes and when modal opens
+        useEffect(() => {
+                setName(user.name || "");
+                setPhone(user.phone || "");
+                setAvatarPreview(null);
+                setAvatarFile(null);
+        }, [user.name, user.phone, isOpen]);
 
         const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 const file = e.target.files?.[0];
@@ -29,12 +42,32 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                 }
         };
 
-        const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
-                // Logic xử lý cập nhật profile (gọi API)
-                console.log("Updating profile:", { name, avatarFile });
-                alert("Profile update logic would run here.");
-                onClose(); // Đóng modal sau khi submit
+
+                // Validate required fields
+                if (!name.trim()) {
+                        toast.error("Username is required");
+                        return;
+                }
+
+                if (!phone.trim()) {
+                        toast.error("Phone is required");
+                        return;
+                }
+
+                try {
+                        const success = await updateProfile({ username: name, phone });
+                        if (success) {
+                                toast.success("Profile updated successfully!");
+                                onClose();
+                        } else {
+                                toast.error("Failed to update profile");
+                        }
+                } catch (error) {
+                        console.error("Error updating profile:", error);
+                        toast.error("Failed to update profile");
+                }
         };
 
         return (
@@ -102,7 +135,7 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                                                                                 htmlFor="name"
                                                                                 className="block text-sm font-medium text-gray-700 mb-1"
                                                                         >
-                                                                                Full Name
+                                                                                Username
                                                                         </label>
                                                                         <input
                                                                                 type="text"
@@ -112,6 +145,25 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                                                                                         setName(e.target.value)
                                                                                 }
                                                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple"
+                                                                                disabled={loading}
+                                                                        />
+                                                                </div>
+                                                                <div>
+                                                                        <label
+                                                                                htmlFor="phone"
+                                                                                className="block text-sm font-medium text-gray-700 mb-1"
+                                                                        >
+                                                                                Phone
+                                                                        </label>
+                                                                        <input
+                                                                                type="text"
+                                                                                id="phone"
+                                                                                value={phone}
+                                                                                onChange={(e) =>
+                                                                                        setPhone(e.target.value)
+                                                                                }
+                                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple"
+                                                                                disabled={loading}
                                                                         />
                                                                 </div>
                                                         </div>
@@ -122,6 +174,7 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                                                                         title="Cancel"
                                                                         onClickFunction={onClose}
                                                                         className="bg-gray-100 text-gray-800 hover:bg-gray-200 cursor-pointer"
+                                                                        disabled={loading}
                                                                 >
                                                                         Cancel
                                                                 </Button>
@@ -129,8 +182,13 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                                                                         type="submit"
                                                                         title="Save Changes"
                                                                         className="bg-brand-purple text-white hover:bg-brand-purple/90 cursor-pointer"
+                                                                        disabled={loading}
                                                                 >
-                                                                        Save Changes
+                                                                        {loading ? (
+                                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                                        ) : (
+                                                                                "Save Changes"
+                                                                        )}
                                                                 </Button>
                                                         </div>
                                                 </form>
