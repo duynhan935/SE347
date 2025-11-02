@@ -1,5 +1,6 @@
 import { useAuthStore } from "@/stores/useAuthStore";
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import { authApi } from "./api/authApi";
 
 // Tạo instance
 const api = axios.create({
@@ -8,6 +9,7 @@ const api = axios.create({
 });
 
 let failedQueue: { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }[] = []; // Queue for failed requests during refresh
+let isRefreshing = false; // Flag to prevent multiple refresh attempts
 
 const processQueue = (error: AxiosError | null, token: string | null = null) => {
         failedQueue.forEach((prom) => {
@@ -27,7 +29,7 @@ api.interceptors.request.use(
                 const accessToken = useAuthStore.getState().accessToken;
                 if (accessToken && config.headers) {
                         // Only add if the request isn't for refreshing the token itself
-                        if (!config.url?.includes("/auth/refresh")) {
+                        if (!config.url?.includes("/users/refreshtoken")) {
                                 config.headers["Authorization"] = `Bearer ${accessToken}`;
                         }
                 }
@@ -50,10 +52,70 @@ api.interceptors.request.use(
 //     }
 // );
 
-// 🧩 Interceptor xử lý lỗi toàn cục
+// 🧩 Interceptor xử lý lỗi toàn cục với auto refresh token
 api.interceptors.response.use(
         (response) => response,
-        (error) => {
+        async (error: AxiosError) => {
+                const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+                // Handle 401 Unauthorized - token expired
+                if (error.response?.status === 401 && !originalRequest._retry) {
+                        originalRequest._retry = true;
+
+                        const refreshToken = useAuthStore.getState().refreshToken;
+
+                        // If there's no refresh token, logout
+                        if (!refreshToken) {
+                                useAuthStore.getState().logout();
+                                return Promise.reject(error);
+                        }
+
+                        // If already refreshing, queue this request
+                        if (isRefreshing) {
+                                return new Promise((resolve, reject) => {
+                                        failedQueue.push({ resolve, reject });
+                                })
+                                        .then(() => {
+                                                const accessToken = useAuthStore.getState().accessToken;
+                                                if (originalRequest.headers) {
+                                                        originalRequest.headers[
+                                                                "Authorization"
+                                                        ] = `Bearer ${accessToken}`;
+                                                }
+                                                return api(originalRequest);
+                                        })
+                                        .catch((err) => {
+                                                return Promise.reject(err);
+                                        });
+                        }
+
+                        isRefreshing = true;
+
+                        try {
+                                // Try to refresh the token
+                                const newAccessToken = await authApi.refreshAccessToken(refreshToken);
+
+                                // Update the store with new access token
+                                useAuthStore.getState().setTokens(newAccessToken, refreshToken);
+
+                                // Process queued requests
+                                processQueue(null, newAccessToken);
+
+                                // Retry original request with new token
+                                if (originalRequest.headers) {
+                                        originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+                                }
+                                return api(originalRequest);
+                        } catch (refreshError) {
+                                // If refresh fails, logout and reject
+                                processQueue(refreshError as AxiosError, null);
+                                useAuthStore.getState().logout();
+                                return Promise.reject(refreshError);
+                        } finally {
+                                isRefreshing = false;
+                        }
+                }
+
                 const status = error.response?.status;
                 const data = error.response?.data;
 
@@ -63,9 +125,9 @@ api.interceptors.response.use(
                 console.log("➡️ Status:", status ?? "Unknown");
 
                 // Nếu backend có trả về errorCode/message
-                if (data?.errorCode || data?.message) {
-                        console.log("➡️ Error Code:", data.errorCode);
-                        console.log("➡️ Message:", data.message);
+                if (data && typeof data === "object" && ("errorCode" in data || "message" in data)) {
+                        console.log("➡️ Error Code:", "errorCode" in data ? data.errorCode : "N/A");
+                        console.log("➡️ Message:", "message" in data ? data.message : "N/A");
                 } else {
                         console.log("➡️ Raw Error:", error.message);
                 }
@@ -76,10 +138,6 @@ api.interceptors.response.use(
                 switch (status) {
                         case 400:
                                 console.error("Bad Request – Kiểm tra dữ liệu gửi đi");
-                                break;
-                        case 401:
-                                console.error("Unauthorized – Token hết hạn hoặc không hợp lệ");
-                                // Có thể gọi logout() hoặc redirect login tại đây
                                 break;
                         case 404:
                                 console.error("Not Found – Không tìm thấy tài nguyên");
