@@ -3,18 +3,14 @@
 import OrderList from "@/components/admin/orders/OrderList";
 import RestaurantList from "@/components/admin/restaurants/RestaurantsList";
 import UserList from "@/components/admin/users/UserList";
-import { authApi } from "@/lib/api/authApi";
-import { Loader2, ShoppingCart, Users, Utensils } from "lucide-react";
-import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
-import { User as AdminUser, Order } from "./types/types";
+import { ShoppingCart, Users, Utensils } from "lucide-react";
+import { useState } from "react";
+import { Order } from "./types/types";
 
 type Tab = "users" | "restaurants" | "orders";
 
 export default function AdminPage() {
         const [activeTab, setActiveTab] = useState<Tab>("users");
-        const [users, setUsers] = useState<AdminUser[]>([]);
-        const [loading, setLoading] = useState(true);
 
         // Dummy orders data - moved inside component to avoid hydration issues
         const dummyOrders: Order[] = [
@@ -44,31 +40,8 @@ export default function AdminPage() {
                 },
         ];
 
-        // Fetch users from API
-        useEffect(() => {
-                const fetchUsers = async () => {
-                        try {
-                                setLoading(true);
-                                const data = await authApi.getAllUsers();
-                                // Map backend User to AdminUser format
-                                const mappedUsers: AdminUser[] = data.map((user) => ({
-                                        id: user.id,
-                                        name: user.username,
-                                        email: user.email,
-                                        role: user.role as "ADMIN" | "USER" | "MERCHANT",
-                                        createdAt: new Date().toISOString(), // Backend doesn't return createdAt
-                                }));
-                                setUsers(mappedUsers);
-                        } catch (error) {
-                                console.error("Failed to fetch users:", error);
-                                toast.error("Failed to load users");
-                        } finally {
-                                setLoading(false);
-                        }
-                };
-
-                fetchUsers();
-        }, []);
+        // Note: UserList now fetches users internally, so we don't need to fetch here
+        // This useEffect can be removed, but keeping it for now in case it's used elsewhere
 
         const tabs = [
                 { id: "users" as Tab, label: "Users", icon: Users },
@@ -112,14 +85,7 @@ export default function AdminPage() {
 
                                 {/* Tab Content */}
                                 <div className="bg-white rounded-lg shadow-sm">
-                                        {activeTab === "users" &&
-                                                (loading ? (
-                                                        <div className="flex items-center justify-center p-12">
-                                                                <Loader2 className="animate-spin text-brand-purple" />
-                                                        </div>
-                                                ) : (
-                                                        <UserList initialUsers={users} />
-                                                ))}
+                                        {activeTab === "users" && <UserList />}
                                         {activeTab === "restaurants" && <RestaurantList />}
                                         {activeTab === "orders" && <OrderList initialOrders={dummyOrders} />}
                                 </div>

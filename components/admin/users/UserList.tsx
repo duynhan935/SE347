@@ -1,27 +1,47 @@
 "use client";
 
-import { User } from "@/app/(admin)/admin/types/types";
 import { authApi } from "@/lib/api/authApi";
-import { Edit, Plus, Search, Trash } from "lucide-react";
-import { useMemo, useState } from "react";
+import { User } from "@/types";
+import { Edit, Loader2, Search, Trash } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import UserFormModal from "./UserFormModal";
 
-export default function UserList({ initialUsers }: { initialUsers: User[] }) {
-        const [users, setUsers] = useState<User[]>(initialUsers);
+export default function UserList() {
+        const [users, setUsers] = useState<User[]>([]);
         const [searchTerm, setSearchTerm] = useState("");
+        const [loading, setLoading] = useState(true);
 
         // 3. State quản lý modal
         const [isModalOpen, setIsModalOpen] = useState(false);
         // State lưu user đang được edit (hoặc null nếu là "add new")
         const [currentUser, setCurrentUser] = useState<User | null>(null);
 
+        // Fetch users from API
+        useEffect(() => {
+                fetchUsers();
+        }, []);
+
+        const fetchUsers = async () => {
+                setLoading(true);
+                try {
+                        const data = await authApi.getAllUsers();
+                        setUsers(data);
+                } catch (error) {
+                        console.error("Failed to fetch users:", error);
+                        const errorMessage = error instanceof Error ? error.message : "Failed to load users";
+                        toast.error(errorMessage);
+                } finally {
+                        setLoading(false);
+                }
+        };
+
         // Logic tìm kiếm (giữ nguyên)
         const filteredUsers = useMemo(() => {
                 if (!searchTerm) return users;
                 return users.filter(
                         (user) =>
-                                user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                 user.email.toLowerCase().includes(searchTerm.toLowerCase())
                 );
         }, [users, searchTerm]);
@@ -38,49 +58,38 @@ export default function UserList({ initialUsers }: { initialUsers: User[] }) {
         };
 
         // 5. Hàm xử lý logic Save (Create/Update)
-        const handleSaveUser = async (formData: { name: string; email: string; role: User["role"] }) => {
+        const handleSaveUser = async (formData: { username: string; phone: string }) => {
                 if (currentUser) {
                         // --- Chế độ UPDATE ---
                         try {
-                                // Giả lập gọi API
-                                // await adminApi.updateUser(currentUser.id, formData);
-
-                                // Cập nhật state UI
-                                const updatedUser = { ...currentUser, ...formData };
+                                const updatedUser = await authApi.updateUser(currentUser.id, {
+                                        username: formData.username,
+                                        phone: formData.phone || "",
+                                });
                                 setUsers((prev) => prev.map((u) => (u.id === currentUser.id ? updatedUser : u)));
-                                // toast.success("User updated successfully!");
-                                console.log("Updated user:", updatedUser);
+                                toast.success("User updated successfully!");
                         } catch (error) {
                                 console.error("Failed to update user", error);
-                                // toast.error("Failed to update user.");
+                                let errorMessage = "Failed to update user";
+                                if (error instanceof Error) {
+                                        errorMessage = error.message;
+                                } else if (typeof error === "object" && error !== null && "response" in error) {
+                                        const axiosError = error as { response?: { data?: { message?: string } } };
+                                        errorMessage = axiosError.response?.data?.message || errorMessage;
+                                }
+                                toast.error(errorMessage);
                         }
                 } else {
                         // --- Chế độ CREATE ---
-                        try {
-                                // Giả lập ID và ngày tạo
-                                const newId = `user_${Date.now()}`;
-                                const newUser: User = {
-                                        id: newId,
-                                        createdAt: new Date().toISOString(),
-                                        ...formData,
-                                };
-
-                                // Giả lập gọi API
-                                // const response = await adminApi.createUser(formData);
-                                // const newUserFromApi = response.data;
-
-                                // Cập nhật state UI
-                                setUsers((prev) => [newUser, ...prev]);
-                                // toast.success("User created successfully!");
-                                console.log("Created new user:", newUser);
-                        } catch (error) {
-                                console.error("Failed to create user", error);
-                                // toast.error("Failed to create user.");
-                        }
+                        // Note: Backend doesn't have create user endpoint in user-service
+                        // Admin might need to use register endpoint or a separate admin service
+                        toast.error("Create user functionality is not available. Please use the register page.");
                 }
 
                 // Tự động đóng modal sau khi lưu
                 handleCloseModal();
+                // Refresh users list
+                fetchUsers();
         };
 
         // Logic Xóa (giữ nguyên)
@@ -92,12 +101,26 @@ export default function UserList({ initialUsers }: { initialUsers: User[] }) {
                         await authApi.deleteUser(userId);
                         setUsers((prev) => prev.filter((user) => user.id !== userId));
                         toast.success("User deleted successfully!");
-                        console.log(`Đã xóa user ${userId}`);
                 } catch (error) {
                         console.error("Failed to delete user", error);
-                        toast.error("Failed to delete user.");
+                        let errorMessage = "Failed to delete user";
+                        if (error instanceof Error) {
+                                errorMessage = error.message;
+                        } else if (typeof error === "object" && error !== null && "response" in error) {
+                                const axiosError = error as { response?: { data?: { message?: string } } };
+                                errorMessage = axiosError.response?.data?.message || errorMessage;
+                        }
+                        toast.error(errorMessage);
                 }
         };
+
+        if (loading) {
+                return (
+                        <div className="bg-white p-6 rounded-lg shadow-sm flex items-center justify-center min-h-[400px]">
+                                <Loader2 className="w-8 h-8 animate-spin text-brand-purple" />
+                        </div>
+                );
+        }
 
         return (
                 <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -114,14 +137,14 @@ export default function UserList({ initialUsers }: { initialUsers: User[] }) {
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                 </div>
 
-                                {/* 6. Thay đổi <Link> thành <button> để mở modal */}
-                                <button
+                                {/* Note: Add User functionality disabled as backend doesn't have admin create endpoint */}
+                                {/* <button
                                         onClick={() => handleOpenModal(null)} // Mở modal ở chế độ "Add"
                                         className="flex items-center gap-2 bg-brand-purple text-white px-4 py-2 rounded-lg font-semibold hover:bg-brand-purple/90 transition-colors cursor-pointer"
                                 >
                                         <Plus className="w-5 h-5" />
                                         Add User
-                                </button>
+                                </button> */}
                         </div>
 
                         <div className="overflow-x-auto">
@@ -138,7 +161,7 @@ export default function UserList({ initialUsers }: { initialUsers: User[] }) {
                                                                 Role
                                                         </th>
                                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                                Created At
+                                                                Phone
                                                         </th>
                                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Actions
@@ -146,50 +169,65 @@ export default function UserList({ initialUsers }: { initialUsers: User[] }) {
                                                 </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
-                                                {filteredUsers.map((user) => (
-                                                        <tr key={user.id}>
-                                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                                        {user.name}
-                                                                </td>
-                                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                                        {user.email}
-                                                                </td>
-                                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                                        <span
-                                                                                className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                                                                        user.role === "ADMIN"
-                                                                                                ? "bg-red-100 text-red-800"
-                                                                                                : user.role ===
-                                                                                                  "MERCHANT"
-                                                                                                ? "bg-blue-100 text-blue-800"
-                                                                                                : "bg-gray-100 text-gray-800"
-                                                                                }`}
-                                                                        >
-                                                                                {user.role}
-                                                                        </span>
-                                                                </td>
-                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                        {new Date(user.createdAt).toLocaleDateString()}
-                                                                </td>
-                                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                                        <button
-                                                                                title="Edit User"
-                                                                                onClick={() => handleOpenModal(user)}
-                                                                                className="text-indigo-600 hover:text-indigo-900 mr-4 cursor-pointer    "
-                                                                        >
-                                                                                <Edit className="w-5 h-5 inline-block" />
-                                                                        </button>
-
-                                                                        <button
-                                                                                title="Delete User"
-                                                                                onClick={() => handleDelete(user.id)}
-                                                                                className="text-red-600 hover:text-red-900 cursor-pointer"
-                                                                        >
-                                                                                <Trash className="w-5 h-5 inline-block" />
-                                                                        </button>
+                                                {filteredUsers.length === 0 ? (
+                                                        <tr>
+                                                                <td
+                                                                        colSpan={5}
+                                                                        className="px-6 py-8 text-center text-gray-500"
+                                                                >
+                                                                        No users found
                                                                 </td>
                                                         </tr>
-                                                ))}
+                                                ) : (
+                                                        filteredUsers.map((user) => (
+                                                                <tr key={user.id}>
+                                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                                                {user.username}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                                                {user.email}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                                                <span
+                                                                                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                                                                                user.role === "ADMIN"
+                                                                                                        ? "bg-red-100 text-red-800"
+                                                                                                        : user.role ===
+                                                                                                          "MERCHANT"
+                                                                                                        ? "bg-blue-100 text-blue-800"
+                                                                                                        : "bg-gray-100 text-gray-800"
+                                                                                        }`}
+                                                                                >
+                                                                                        {user.role}
+                                                                                </span>
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                                                {user.phone || "N/A"}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                                                <button
+                                                                                        title="Edit User"
+                                                                                        onClick={() =>
+                                                                                                handleOpenModal(user)
+                                                                                        }
+                                                                                        className="text-indigo-600 hover:text-indigo-900 mr-4 cursor-pointer    "
+                                                                                >
+                                                                                        <Edit className="w-5 h-5 inline-block" />
+                                                                                </button>
+
+                                                                                <button
+                                                                                        title="Delete User"
+                                                                                        onClick={() =>
+                                                                                                handleDelete(user.id)
+                                                                                        }
+                                                                                        className="text-red-600 hover:text-red-900 cursor-pointer"
+                                                                                >
+                                                                                        <Trash className="w-5 h-5 inline-block" />
+                                                                                </button>
+                                                                        </td>
+                                                                </tr>
+                                                        ))
+                                                )}
                                         </tbody>
                                 </table>
                         </div>

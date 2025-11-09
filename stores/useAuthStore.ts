@@ -24,9 +24,10 @@ interface AuthState {
         setTokens: (access: string, refresh: string) => void;
         fetchProfile: () => Promise<void>;
         updateProfile: (userData: { username: string; phone: string }) => Promise<boolean>;
-        initializeAuth: () => void;
+        initializeAuth: () => Promise<void>;
         clearError: () => void;
         resendVerificationEmail: (email: string) => Promise<boolean>;
+        handleOAuthLogin: (accessToken: string) => Promise<boolean>;
 }
 
 const getInitialTokens = (): { accessToken: string | null; refreshToken: string | null } => {
@@ -65,8 +66,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } catch (err: any) {
+                        const errorCode = err.response?.data?.errorCode;
                         const errorMessage = err.response?.data?.message || err.message || "Login failed";
-                        set({ error: errorMessage, loading: false, isAuthenticated: false });
+
+                        // Store error code and message for handling
+                        set({
+                                error: errorCode ? `${errorCode}: ${errorMessage}` : errorMessage,
+                                loading: false,
+                                isAuthenticated: false,
+                        });
+
+                        // Re-throw error so login page can handle INACTIVATED_ACCOUNT specifically
+                        if (errorCode === "INACTIVATED_ACCOUNT") {
+                                throw err;
+                        }
+
                         return false;
                 }
         },
@@ -87,18 +101,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
 
         fetchProfile: async () => {
-                if (!get().isAuthenticated || !get().accessToken) {
-                        set({ user: null });
+                const accessToken = get().accessToken;
+                // Check token directly instead of isAuthenticated flag
+                if (!accessToken) {
+                        set({ user: null, isAuthenticated: false });
                         return;
                 }
                 try {
                         // Use getUserByAccessToken endpoint which extracts user from token automatically
                         const userData = await authApi.getUserByAccessToken();
-                        set({ user: userData, error: null });
+                        set({ user: userData, error: null, isAuthenticated: true });
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } catch (err: any) {
                         console.error("Failed to fetch user profile:", err);
+                        // If token is invalid, clear everything
                         set({ error: "Failed to load user profile.", user: null, isAuthenticated: false });
+                        // Clear invalid tokens
+                        if (typeof window !== "undefined") {
+                                localStorage.removeItem("accessToken");
+                                localStorage.removeItem("refreshToken");
+                        }
                 }
         },
 
@@ -130,14 +152,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 console.log("User logged out.");
         },
 
-        initializeAuth: () => {
+        initializeAuth: async () => {
                 console.log("Initializing auth...");
                 const { accessToken, refreshToken } = getInitialTokens();
                 if (accessToken && refreshToken) {
-                        set({ accessToken, refreshToken, isAuthenticated: true });
-                        get().fetchProfile();
+                        set({ accessToken, refreshToken, isAuthenticated: true, loading: true });
+                        // Fetch user profile to get current user data including role
+                        await get().fetchProfile();
+                        set({ loading: false });
                 } else {
-                        set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
+                        set({
+                                user: null,
+                                accessToken: null,
+                                refreshToken: null,
+                                isAuthenticated: false,
+                                loading: false,
+                        });
                 }
         },
 
@@ -148,14 +178,74 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         resendVerificationEmail: async (email: string) => {
                 set({ loading: true, error: null });
                 try {
+                        console.log("Sending verification email to:", email);
                         await authApi.resendVerificationEmail(email);
+                        console.log("Verification email sent successfully");
+                        set({ loading: false, error: null });
+                        return true;
+                } catch (err) {
+                        console.error("Resend verification email error:", err);
+                        let errorMessage = "Failed to send verification email";
+
+                        if (err && typeof err === "object" && "response" in err) {
+                                const axiosError = err as {
+                                        response?: {
+                                                status?: number;
+                                                data?: { message?: string; errorCode?: string };
+                                        };
+                                };
+
+                                console.error("Axios error details:", {
+                                        status: axiosError.response?.status,
+                                        data: axiosError.response?.data,
+                                });
+
+                                errorMessage = axiosError.response?.data?.message || errorMessage;
+
+                                // Handle specific error cases
+                                if (
+                                        axiosError.response?.data?.errorCode === "USER_NOT_FOUND" ||
+                                        errorMessage.toLowerCase().includes("not found") ||
+                                        errorMessage.toLowerCase().includes("user not found")
+                                ) {
+                                        errorMessage = "Email not found. Please check your email address.";
+                                } else if (
+                                        errorMessage.toLowerCase().includes("already activated") ||
+                                        errorMessage.toLowerCase().includes("account is already")
+                                ) {
+                                        errorMessage = "This account is already activated. You can log in now.";
+                                } else if (axiosError.response?.status === 404) {
+                                        errorMessage = "Email not found. Please check your email address.";
+                                } else if (axiosError.response?.status === 400) {
+                                        errorMessage =
+                                                errorMessage || "Invalid request. Please check your email address.";
+                                }
+                        } else if (err instanceof Error) {
+                                errorMessage = err.message;
+                        }
+
+                        set({ error: errorMessage, loading: false });
+                        return false;
+                }
+        },
+
+        handleOAuthLogin: async (accessToken: string) => {
+                set({ loading: true, error: null });
+                try {
+                        // Set the access token (OAuth doesn't provide refresh token in this flow)
+                        // Store accessToken as both access and refresh for now
+                        // Backend should handle token refresh separately if needed
+                        get().setTokens(accessToken, accessToken);
+                        // Fetch user profile to complete login
+                        await get().fetchProfile();
                         set({ loading: false });
                         return true;
+                } catch (err) {
+                        console.error("OAuth login error:", err);
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } catch (err: any) {
                         const errorMessage =
-                                err.response?.data?.message || err.message || "Failed to resend verification email";
-                        set({ error: errorMessage, loading: false });
+                                (err as any).response?.data?.message || (err as any).message || "OAuth login failed";
+                        set({ error: errorMessage, loading: false, isAuthenticated: false });
                         return false;
                 }
         },

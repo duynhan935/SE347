@@ -1,9 +1,9 @@
 "use client";
 
-import { User } from "@/app/(admin)/admin/types/types"; // Giả định
-import { X } from "lucide-react";
+import { User } from "@/types";
+import { Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
-// import { toast } from "react-toastify"; // Giả định
+import toast from "react-hot-toast";
 
 // 1. Định nghĩa Props
 type UserFormModalProps = {
@@ -13,14 +13,14 @@ type UserFormModalProps = {
         // userToEdit = User: Chế độ "Edit"
         userToEdit: User | null;
         // Hàm onSave sẽ nhận dữ liệu form để component cha xử lý
-        onSave: (userData: { name: string; email: string; role: User["role"] }) => void;
+        onSave: (userData: { username: string; phone: string }) => void;
 };
 
 export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: UserFormModalProps) {
         // 2. State nội bộ của form
-        const [name, setName] = useState("");
-        const [email, setEmail] = useState("");
-        const [role, setRole] = useState<User["role"]>("USER");
+        const [username, setUsername] = useState("");
+        const [phone, setPhone] = useState("");
+        const [loading, setLoading] = useState(false);
 
         const isEditMode = userToEdit !== null;
         const title = isEditMode ? "Edit User" : "Add New User";
@@ -29,32 +29,36 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
         // Khi modal mở hoặc user để edit thay đổi -> cập nhật form
         useEffect(() => {
                 if (isOpen) {
-                        if (isEditMode) {
+                        if (isEditMode && userToEdit) {
                                 // Chế độ Edit: Nạp dữ liệu của user vào form
-                                setName(userToEdit.name);
-                                setEmail(userToEdit.email);
-                                setRole(userToEdit.role);
+                                setUsername(userToEdit.username || "");
+                                setPhone(userToEdit.phone || "");
                         } else {
                                 // Chế độ Add: Reset form
-                                setName("");
-                                setEmail("");
-                                setRole("USER");
+                                setUsername("");
+                                setPhone("");
                         }
                 }
         }, [isOpen, userToEdit, isEditMode]);
 
         // 4. Xử lý khi submit form
-        const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
 
-                if (!name || !email) {
-                        // toast.error("Please fill in all fields."); // Báo lỗi nếu cần
-                        alert("Please fill in all fields."); // Dùng tạm alert
+                if (!username.trim()) {
+                        toast.error("Username is required");
                         return;
                 }
 
-                // Gửi dữ liệu lên component cha (UserList)
-                onSave({ name, email, role });
+                setLoading(true);
+                try {
+                        // Gửi dữ liệu lên component cha (UserList)
+                        await onSave({ username: username.trim(), phone: phone.trim() });
+                } catch (error) {
+                        // Error handling is done in parent component
+                } finally {
+                        setLoading(false);
+                }
         };
 
         // 5. Nếu modal không mở (isOpen=false) -> không render gì cả
@@ -90,69 +94,108 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                                 <form onSubmit={handleSubmit} className="space-y-4">
                                         <div>
                                                 <label
-                                                        htmlFor="name"
+                                                        htmlFor="username"
                                                         className="block text-sm font-medium text-gray-700"
                                                 >
-                                                        Full Name
+                                                        Username <span className="text-red-500">*</span>
                                                 </label>
                                                 <input
-                                                        id="name"
+                                                        id="username"
                                                         type="text"
-                                                        value={name}
-                                                        onChange={(e) => setName(e.target.value)}
-                                                        className="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple"
+                                                        value={username}
+                                                        onChange={(e) => setUsername(e.target.value)}
+                                                        className="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple disabled:opacity-50 disabled:bg-gray-100"
+                                                        required
+                                                        disabled={loading}
                                                 />
                                         </div>
 
                                         <div>
                                                 <label
-                                                        htmlFor="email"
+                                                        htmlFor="phone"
                                                         className="block text-sm font-medium text-gray-700"
                                                 >
-                                                        Email
+                                                        Phone
                                                 </label>
                                                 <input
-                                                        id="email"
-                                                        type="email"
-                                                        value={email}
-                                                        onChange={(e) => setEmail(e.target.value)}
-                                                        className="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple"
+                                                        id="phone"
+                                                        type="tel"
+                                                        value={phone}
+                                                        onChange={(e) => setPhone(e.target.value)}
+                                                        className="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple disabled:opacity-50 disabled:bg-gray-100"
+                                                        placeholder="Enter phone number"
+                                                        disabled={loading}
                                                 />
                                         </div>
 
-                                        <div>
-                                                <label
-                                                        htmlFor="role"
-                                                        className="block text-sm font-medium text-gray-700"
-                                                >
-                                                        Role
-                                                </label>
-                                                <select
-                                                        id="role"
-                                                        value={role}
-                                                        onChange={(e) => setRole(e.target.value as User["role"])}
-                                                        className="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple"
-                                                >
-                                                        <option value="USER">User</option>
-                                                        <option value="MERCHANT">Merchant</option>
-                                                        <option value="ADMIN">Admin</option>
-                                                </select>
-                                        </div>
+                                        {/* Display read-only fields */}
+                                        {isEditMode && userToEdit && (
+                                                <>
+                                                        <div>
+                                                                <label
+                                                                        htmlFor="email"
+                                                                        className="block text-sm font-medium text-gray-700"
+                                                                >
+                                                                        Email
+                                                                </label>
+                                                                <input
+                                                                        id="email"
+                                                                        type="email"
+                                                                        value={userToEdit.email}
+                                                                        className="mt-1 w-full px-3 py-2 border rounded-lg bg-gray-100 cursor-not-allowed"
+                                                                        disabled
+                                                                        readOnly
+                                                                />
+                                                                <p className="mt-1 text-xs text-gray-500">
+                                                                        Email cannot be changed
+                                                                </p>
+                                                        </div>
+
+                                                        <div>
+                                                                <label
+                                                                        htmlFor="role"
+                                                                        className="block text-sm font-medium text-gray-700"
+                                                                >
+                                                                        Role
+                                                                </label>
+                                                                <input
+                                                                        id="role"
+                                                                        type="text"
+                                                                        value={userToEdit.role}
+                                                                        className="mt-1 w-full px-3 py-2 border rounded-lg bg-gray-100 cursor-not-allowed"
+                                                                        disabled
+                                                                        readOnly
+                                                                />
+                                                                <p className="mt-1 text-xs text-gray-500">
+                                                                        Role cannot be changed
+                                                                </p>
+                                                        </div>
+                                                </>
+                                        )}
 
                                         {/* Nút bấm */}
                                         <div className="flex justify-end gap-3 pt-4">
                                                 <button
                                                         type="button" // Quan trọng: type="button" để không submit form
                                                         onClick={onClose}
-                                                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+                                                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                                        disabled={loading}
                                                 >
                                                         Cancel
                                                 </button>
                                                 <button
                                                         type="submit"
-                                                        className="px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90"
+                                                        className="px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
+                                                        disabled={loading}
                                                 >
-                                                        Save
+                                                        {loading ? (
+                                                                <>
+                                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                                        Saving...
+                                                                </>
+                                                        ) : (
+                                                                "Save"
+                                                        )}
                                                 </button>
                                         </div>
                                 </form>
