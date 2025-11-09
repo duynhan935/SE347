@@ -24,12 +24,13 @@ interface PasswordUpdateRequest {
         confirmPassword: string;
 }
 
+// Backend Address response may include nested user object (circular reference)
 interface AddressResponse {
         id: string;
         location: string;
         longitude: number;
         latitude: number;
-        user: User;
+        user?: User | unknown; // Nested user object (we don't need it, but backend returns it)
 }
 
 interface RejectionRequest {
@@ -57,7 +58,9 @@ export const authApi = {
                 return response.data;
         },
         resendVerificationEmail: async (email: string) => {
-                const response = await api.post(`/users/email?email=${email}`);
+                // Encode email properly for URL
+                const encodedEmail = encodeURIComponent(email);
+                const response = await api.post(`/users/email?email=${encodedEmail}`);
                 return response.data;
         },
 
@@ -130,7 +133,68 @@ export const authApi = {
                 return response.data;
         },
         getUserAddresses: async (userId: string) => {
-                const response = await api.get<Address[]>(`/users/addresses/${userId}`);
-                return response.data;
+                try {
+                        // Request raw response to handle potential circular reference issues
+                        const response = await api.get(`/users/addresses/${userId}`, {
+                                responseType: "text", // Get raw text response
+                        });
+
+                        // Parse JSON manually to handle circular references
+                        let data: unknown;
+                        try {
+                                data = JSON.parse(response.data as string);
+                        } catch (parseError) {
+                                console.error("Failed to parse addresses JSON:", parseError);
+                                // Try to extract addresses from potentially corrupted JSON
+                                // If response.data is already an object (shouldn't happen with responseType: text)
+                                if (typeof response.data === "object" && response.data !== null) {
+                                        data = response.data;
+                                } else {
+                                        return [];
+                                }
+                        }
+
+                        // Handle null or undefined
+                        if (!data) {
+                                console.warn("getUserAddresses: Response data is null or undefined");
+                                return [];
+                        }
+
+                        // Check if data is an array
+                        if (Array.isArray(data)) {
+                                // Map to extract only address fields, removing nested user object to avoid circular reference
+                                try {
+                                        return data.map((addr: AddressResponse) => {
+                                                // Safely extract fields, handling potential undefined values
+                                                const address: Address = {
+                                                        id: addr?.id || "",
+                                                        location: addr?.location || "",
+                                                        longitude:
+                                                                typeof addr?.longitude === "number"
+                                                                        ? addr.longitude
+                                                                        : 0,
+                                                        latitude:
+                                                                typeof addr?.latitude === "number" ? addr.latitude : 0,
+                                                };
+                                                return address;
+                                        });
+                                } catch (mapError) {
+                                        console.error("Failed to map addresses:", mapError);
+                                        return [];
+                                }
+                        }
+
+                        // If data is not an array, log and return empty array
+                        console.warn(
+                                "getUserAddresses: Response data is not an array:",
+                                typeof data,
+                                Array.isArray(data)
+                        );
+                        return [];
+                } catch (error) {
+                        console.error("getUserAddresses: Error fetching addresses:", error);
+                        // Return empty array on any error
+                        return [];
+                }
         },
 };

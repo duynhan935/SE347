@@ -13,46 +13,65 @@ export default function LoginPage() {
         const [email, setEmail] = useState("");
         const [password, setPassword] = useState("");
         const [showPassword, setShowPassword] = useState(false);
-        const [showResendButton, setShowResendButton] = useState(false);
-        const [resendingEmail, setResendingEmail] = useState(false);
-        const { login, loading, error, resendVerificationEmail } = useAuthStore();
+        const { login, loading, error } = useAuthStore();
         const router = useRouter();
 
         const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
 
-                const success = await login({ username: email, password });
-                if (success) {
-                        toast.success("Login successful!");
-                        router.push("/");
-                } else {
-                        toast.error(error || "Login failed. Please check your credentials.");
-                        // Check if the error is about account not being activated
-                        if (
-                                error?.toLowerCase().includes("not activated") ||
-                                error?.toLowerCase().includes("activate")
-                        ) {
-                                setShowResendButton(true);
+                try {
+                        const success = await login({ username: email, password });
+                        if (success) {
+                                toast.success("Login successful!");
+                                router.push("/");
                         } else {
-                                setShowResendButton(false);
-                        }
-                }
-        };
+                                // Check if the error is about account not being activated
+                                const errorCode =
+                                        error?.includes("INACTIVATED_ACCOUNT") ||
+                                        error?.toLowerCase().includes("not activated") ||
+                                        error?.toLowerCase().includes("activate");
 
-        const handleResendVerification = async () => {
-                if (!email) {
-                        toast.error("Please enter your email first");
-                        return;
+                                if (errorCode) {
+                                        // Show notification and redirect to verify-email page
+                                        toast.error(
+                                                "Your account is not activated. Please verify your email to continue.",
+                                                {
+                                                        duration: 4000,
+                                                }
+                                        );
+                                        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+                                        return;
+                                }
+
+                                toast.error(error || "Login failed. Please check your credentials.");
+                        }
+                } catch (err) {
+                        // Handle axios error with errorCode (especially INACTIVATED_ACCOUNT)
+                        const axiosError = err as {
+                                response?: { data?: { errorCode?: string; message?: string } };
+                                message?: string;
+                        };
+                        const errorCode = axiosError?.response?.data?.errorCode;
+                        const errorMessage =
+                                axiosError?.response?.data?.message || axiosError?.message || "Login failed";
+
+                        // Check for INACTIVATED_ACCOUNT error code or message
+                        if (
+                                errorCode === "INACTIVATED_ACCOUNT" ||
+                                errorMessage.toLowerCase().includes("not activated") ||
+                                errorMessage.toLowerCase().includes("activate")
+                        ) {
+                                // Show notification and redirect to verify-email page
+                                toast.error("Your account is not activated. Please verify your email to continue.", {
+                                        duration: 2000,
+                                });
+                                router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+                                return;
+                        }
+
+                        // For other errors, show toast
+                        toast.error(errorMessage);
                 }
-                setResendingEmail(true);
-                const success = await resendVerificationEmail(email);
-                if (success) {
-                        toast.success("Verification email sent! Please check your inbox.");
-                        setShowResendButton(false);
-                } else {
-                        toast.error(error || "Failed to send verification email");
-                }
-                setResendingEmail(false);
         };
 
         return (
@@ -64,12 +83,15 @@ export default function LoginPage() {
 
                                 {/* --- Social Login --- */}
                                 <div className="space-y-3">
-                                        <button className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                        <a
+                                                href="http://localhost:8080/oauth2/authorization/google"
+                                                className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+                                        >
                                                 <FcGoogle size={22} />
                                                 <span className="text-sm font-medium text-gray-700">
                                                         Continue with Google
                                                 </span>
-                                        </button>
+                                        </a>
                                 </div>
 
                                 {/* --- Separator --- */}
@@ -92,10 +114,7 @@ export default function LoginPage() {
                                                         type="email"
                                                         id="email"
                                                         value={email}
-                                                        onChange={(e) => {
-                                                                setEmail(e.target.value);
-                                                                setShowResendButton(false);
-                                                        }}
+                                                        onChange={(e) => setEmail(e.target.value)}
                                                         required
                                                         className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition"
                                                         placeholder="you@example.com"
@@ -151,24 +170,6 @@ export default function LoginPage() {
                                                 {loading ? "Signing In..." : "Sign In"}
                                         </button>
                                 </form>
-
-                                {/* --- Resend Verification Email Button --- */}
-                                {showResendButton && (
-                                        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                                                <p className="text-sm text-yellow-800 mb-3">
-                                                        Your account is not activated yet. Please check your email or
-                                                        click below to resend the verification email.
-                                                </p>
-                                                <button
-                                                        type="button"
-                                                        onClick={handleResendVerification}
-                                                        disabled={resendingEmail || !email}
-                                                        className="w-full py-2 px-4 bg-yellow-600 text-white text-sm font-semibold rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                        {resendingEmail ? "Sending..." : "Resend Verification Email"}
-                                                </button>
-                                        </div>
-                                )}
 
                                 {/* --- Sign Up Link --- */}
                                 <p className="mt-6 text-center text-sm text-gray-600">

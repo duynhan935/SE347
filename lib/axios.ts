@@ -118,6 +118,13 @@ api.interceptors.response.use(
 
                 const status = error.response?.status;
                 const data = error.response?.data;
+                const errorCode = data && typeof data === "object" && "errorCode" in data ? data.errorCode : null;
+
+                // Skip logging for INACTIVATED_ACCOUNT (403) - it's handled by login page
+                if (status === 403 && errorCode === "INACTIVATED_ACCOUNT") {
+                        // Just reject without logging - login page will handle it
+                        return Promise.reject(error);
+                }
 
                 console.group("%c⚠️ API Error", "color:red; font-weight:bold;");
                 console.log("➡️ URL:", error.config?.url);
@@ -138,6 +145,9 @@ api.interceptors.response.use(
                 switch (status) {
                         case 400:
                                 console.error("Bad Request – Kiểm tra dữ liệu gửi đi");
+                                break;
+                        case 403:
+                                console.error("Forbidden – Không có quyền truy cập");
                                 break;
                         case 404:
                                 console.error("Not Found – Không tìm thấy tài nguyên");
