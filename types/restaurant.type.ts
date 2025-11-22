@@ -16,6 +16,7 @@ export interface RestaurantData {
 
 export interface Restaurant {
         id: string;
+        slug: string;
         resName: string;
         address: string;
         longitude: number;

@@ -21,8 +21,21 @@ export default function MenuCreateForm() {
                 error: categoryError,
         } = useCategoryStore();
         const { sizes, fetchAllSizes, createNewSize, loading: sizeLoading, error: sizeError } = useSizeStore();
-        const { getRestaurantByMerchantId } = useRestaurantStore();
-        const restaurantId = params.restaurantId as string;
+        const {
+                getRestaurantByMerchantId,
+                restaurant,
+                fetchRestaurantBySlug,
+                loading: restaurantLoading,
+        } = useRestaurantStore();
+        const slug = params.restaurantId as string; // Temporary: will be params.slug after folder rename
+
+        useEffect(() => {
+                if (slug && !restaurantLoading) {
+                        fetchRestaurantBySlug(slug);
+                }
+        }, [slug, fetchRestaurantBySlug, restaurantLoading]);
+
+        const restaurantId = restaurant?.id || slug;
         const { createNewProduct, loading: productLoading, error: productError } = useProductStore();
 
         const [productName, setProductName] = useState("");
@@ -38,15 +51,15 @@ export default function MenuCreateForm() {
         const [newSizeName, setNewSizeName] = useState("");
 
         useEffect(() => {
+                if (slug && !restaurantLoading) {
+                        fetchRestaurantBySlug(slug);
+                }
+        }, [slug, fetchRestaurantBySlug, restaurantLoading]);
+
+        useEffect(() => {
                 fetchAllCategories();
                 fetchAllSizes();
-                const merchantId = "testmerchantid";
-                if (merchantId && !restaurantId) {
-                        getRestaurantByMerchantId(merchantId);
-                } else if (!merchantId) {
-                        toast.error("Thiếu thông tin Merchant!");
-                }
-        }, [fetchAllCategories, fetchAllSizes, getRestaurantByMerchantId, restaurantId]);
+        }, [fetchAllCategories, fetchAllSizes]);
 
         const handleAddSizePrice = () => setSizePrices([...sizePrices, { sizeId: "", price: "" }]);
         const handleSizePriceChange = (index: number, field: keyof SizePrice, value: string) => {
@@ -122,7 +135,7 @@ export default function MenuCreateForm() {
                 if (!productName.trim()) return toast.error("Nhập tên sản phẩm!");
                 if (!categoryId) return toast.error("Chọn danh mục!");
                 if (!image) return toast.error("Chọn ảnh sản phẩm!");
-                if (!restaurantId) return toast.error("Lỗi: Thiếu ID nhà hàng!");
+                if (!restaurant?.id && !slug) return toast.error("Lỗi: Thiếu thông tin nhà hàng!");
                 const validSizePrices = sizePrices.filter(
                         (sp) => sp.sizeId && sp.price !== "" && Number(sp.price) >= 0
                 );
@@ -135,7 +148,7 @@ export default function MenuCreateForm() {
                         description: description.trim(),
                         categoryId,
                         available,
-                        restaurantId,
+                        restaurantId: restaurant?.id || slug,
                         sizeIds: validSizePrices.map((sp) => ({ sizeId: sp.sizeId, price: Number(sp.price) })),
                 };
 
@@ -182,7 +195,7 @@ export default function MenuCreateForm() {
                                         <div className="flex items-center gap-2 mb-4">
                                                 {" "}
                                                 <Link
-                                                        href={`/merchant/restaurant/${restaurantId}/menu-items`}
+                                                        href={`/merchant/restaurant/${slug}/menu-items`}
                                                         className="p-1 rounded hover:bg-gray-100"
                                                 >
                                                         {" "}

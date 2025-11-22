@@ -13,7 +13,7 @@ export const MenuItemCard = ({ item }: { item: Product }) => {
 
         return (
                 <Link
-                        href={`/food/${item.id}`}
+                        href={`/food/${item.slug}`}
                         className="block border rounded-lg overflow-hidden h-full group bg-white hover:shadow-xl transition-shadow"
                 >
                         <div className="relative w-full h-32">

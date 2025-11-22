@@ -10,6 +10,7 @@ export interface ProductSize {
 
 export interface Product {
         id: string;
+        slug: string;
         productName: string;
         description: string;
         imageURL: string | null | StaticImageData;

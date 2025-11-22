@@ -4,8 +4,9 @@ import { productApi } from "@/lib/api/productApi";
 import { Product } from "@/types"; // Giả sử types được export từ @/types
 import { notFound } from "next/navigation";
 
-export default async function FoodDetailPage({ params }: { params: { id: string } }) {
-        const foodResponse = await productApi.getProductById(params.id);
+export default async function FoodDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+        const { slug } = await params;
+        const foodResponse = await productApi.getProductBySlug(slug);
         const foodItem: Product | null = foodResponse.data;
         console.log(foodItem);
         if (!foodItem || !foodItem.restaurant) {

@@ -6,25 +6,26 @@ import { useEffect, useState } from "react";
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
         const [isInitialized, setIsInitialized] = useState(false);
         const initializeAuth = useAuthStore((state) => state.initializeAuth);
-        const loading = useAuthStore((state) => state.loading);
 
         useEffect(() => {
                 const init = async () => {
-                        // Always call initializeAuth - it will check for tokens internally
-                        await initializeAuth();
+                        // Check if tokens exist in localStorage first
+                        const hasTokens =
+                                typeof window !== "undefined" &&
+                                (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
+
+                        if (hasTokens) {
+                                // If tokens exist, initialize in background without blocking
+                                initializeAuth().catch(console.error);
+                        }
+
+                        // Mark as initialized immediately to allow navigation
                         setIsInitialized(true);
                 };
                 init();
         }, [initializeAuth]);
 
-        // Show loading while initializing auth or fetching user profile
-        if (!isInitialized || loading) {
-                return (
-                        <div className="min-h-screen flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-purple"></div>
-                        </div>
-                );
-        }
-
+        // Don't block navigation - allow app to render immediately
+        // Auth will be initialized in background
         return <>{children}</>;
 }

@@ -142,13 +142,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
 
         logout: () => {
-                set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, error: null });
+                // Clear all auth state synchronously
+                set({
+                        user: null,
+                        accessToken: null,
+                        refreshToken: null,
+                        isAuthenticated: false,
+                        error: null,
+                        loading: false,
+                });
                 if (typeof window !== "undefined") {
                         localStorage.removeItem("accessToken");
                         localStorage.removeItem("refreshToken");
                 }
-                // Optional: Redirect to login page
-                // window.location.href = '/auth/login';
                 console.log("User logged out.");
         },
 

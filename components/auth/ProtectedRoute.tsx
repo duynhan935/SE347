@@ -23,25 +23,37 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
 
         useEffect(() => {
                 if (!mounted) return;
-                // Don't redirect while loading
-                if (loading) return;
 
-                // If authentication is required
-                if (requireAuth && !isAuthenticated) {
-                        toast.error("Please login to access this page");
-                        router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
-                        return;
-                }
+                // Check auth in background without blocking
+                // Use a small delay to allow page to render first
+                const checkAuth = setTimeout(() => {
+                        // If authentication is required
+                        if (requireAuth && !loading && !isAuthenticated) {
+                                // Check if tokens exist - if yes, might still be loading
+                                const hasTokens =
+                                        typeof window !== "undefined" &&
+                                        (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
 
-                // If user is authenticated but roles are restricted
-                if (requireAuth && isAuthenticated && allowedRoles && user?.role) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        if (!allowedRoles.includes(user.role as any)) {
-                                toast.error("You don't have permission to access this page");
-                                router.push("/");
+                                // Only redirect if definitely not authenticated and no tokens
+                                if (!hasTokens) {
+                                        toast.error("Please login to access this page");
+                                        router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+                                }
                                 return;
                         }
-                }
+
+                        // If user is authenticated but roles are restricted
+                        if (requireAuth && !loading && isAuthenticated && allowedRoles && user?.role) {
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                if (!allowedRoles.includes(user.role as any)) {
+                                        toast.error("You don't have permission to access this page");
+                                        router.push("/");
+                                        return;
+                                }
+                        }
+                }, 100); // Small delay to allow page render first
+
+                return () => clearTimeout(checkAuth);
         }, [mounted, isAuthenticated, user, loading, allowedRoles, requireAuth, router, pathname]);
 
         // Don't render anything until mounted to avoid hydration mismatch
@@ -49,14 +61,8 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
                 return null;
         }
 
-        // Show loading state while checking auth
-        if (loading) {
-                return (
-                        <div className="min-h-screen flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-purple"></div>
-                        </div>
-                );
-        }
+        // Don't block with loading spinner - allow content to render
+        // Auth check happens in background
 
         // If auth is required but user is not authenticated
         if (requireAuth && !isAuthenticated) {

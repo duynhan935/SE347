@@ -1,4 +1,4 @@
-import { RestaurantDetail } from "@/app/(client)/restaurants/[id]/page";
+import { RestaurantDetail } from "@/app/(client)/restaurants/[slug]/page";
 import { Star } from "lucide-react";
 
 export const ReviewCard = ({ review }: { review: RestaurantDetail["reviews"][0] }) => {
