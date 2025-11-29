@@ -59,7 +59,14 @@ api.interceptors.response.use(
                 const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
                 // Handle 401 Unauthorized - token expired
+                // Skip token refresh for refresh token endpoint itself to avoid infinite loop
                 if (error.response?.status === 401 && !originalRequest._retry) {
+                        // If this is the refresh token endpoint itself, just logout
+                        if (originalRequest.url?.includes("/users/refreshtoken")) {
+                                useAuthStore.getState().logout();
+                                return Promise.reject(error);
+                        }
+
                         originalRequest._retry = true;
 
                         const refreshToken = useAuthStore.getState().refreshToken;
@@ -107,12 +114,11 @@ api.interceptors.response.use(
                                 }
                                 return api(originalRequest);
                         } catch (refreshError) {
-                                // If refresh fails, logout and reject
+                                // If refresh fails (401 or other error), logout and reject
+                                isRefreshing = false;
                                 processQueue(refreshError as AxiosError, null);
                                 useAuthStore.getState().logout();
                                 return Promise.reject(refreshError);
-                        } finally {
-                                isRefreshing = false;
                         }
                 }
 

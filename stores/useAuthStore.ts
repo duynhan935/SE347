@@ -104,18 +104,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 const accessToken = get().accessToken;
                 // Check token directly instead of isAuthenticated flag
                 if (!accessToken) {
-                        set({ user: null, isAuthenticated: false });
+                        set({ user: null, isAuthenticated: false, loading: false });
                         return;
                 }
                 try {
                         // Use getUserByAccessToken endpoint which extracts user from token automatically
                         const userData = await authApi.getUserByAccessToken();
-                        set({ user: userData, error: null, isAuthenticated: true });
+                        set({ user: userData, error: null, isAuthenticated: true, loading: false });
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } catch (err: any) {
                         console.error("Failed to fetch user profile:", err);
                         // If token is invalid, clear everything
-                        set({ error: "Failed to load user profile.", user: null, isAuthenticated: false });
+                        set({
+                                error: "Failed to load user profile.",
+                                user: null,
+                                isAuthenticated: false,
+                                loading: false,
+                        });
                         // Clear invalid tokens
                         if (typeof window !== "undefined") {
                                 localStorage.removeItem("accessToken");
@@ -142,7 +147,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
 
         logout: () => {
-                set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, error: null });
+                set({
+                        user: null,
+                        accessToken: null,
+                        refreshToken: null,
+                        isAuthenticated: false,
+                        error: null,
+                        loading: false,
+                });
                 if (typeof window !== "undefined") {
                         localStorage.removeItem("accessToken");
                         localStorage.removeItem("refreshToken");
@@ -157,9 +169,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 const { accessToken, refreshToken } = getInitialTokens();
                 if (accessToken && refreshToken) {
                         set({ accessToken, refreshToken, isAuthenticated: true, loading: true });
-                        // Fetch user profile to get current user data including role
-                        await get().fetchProfile();
-                        set({ loading: false });
+                        try {
+                                // Fetch user profile to get current user data including role
+                                await get().fetchProfile();
+                        } catch (err) {
+                                console.error("Error during auth initialization:", err);
+                                // If fetchProfile fails, it already clears tokens and sets loading: false
+                                // But we need to ensure state is consistent
+                                const currentState = get();
+                                if (currentState.loading) {
+                                        set({ loading: false });
+                                }
+                        }
                 } else {
                         set({
                                 user: null,
@@ -242,9 +263,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                         return true;
                 } catch (err) {
                         console.error("OAuth login error:", err);
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const axiosError = err as {
+                                response?: { data?: { message?: string } };
+                                message?: string;
+                        };
                         const errorMessage =
-                                (err as any).response?.data?.message || (err as any).message || "OAuth login failed";
+                                axiosError.response?.data?.message || axiosError.message || "OAuth login failed";
                         set({ error: errorMessage, loading: false, isAuthenticated: false });
                         return false;
                 }

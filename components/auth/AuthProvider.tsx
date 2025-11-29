@@ -10,9 +10,16 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
         useEffect(() => {
                 const init = async () => {
-                        // Always call initializeAuth - it will check for tokens internally
-                        await initializeAuth();
-                        setIsInitialized(true);
+                        try {
+                                // Always call initializeAuth - it will check for tokens internally
+                                await initializeAuth();
+                        } catch (err) {
+                                console.error("Auth initialization error:", err);
+                                // Even if there's an error, we should still set initialized to true
+                                // so the app doesn't get stuck in loading state
+                        } finally {
+                                setIsInitialized(true);
+                        }
                 };
                 init();
         }, [initializeAuth]);
