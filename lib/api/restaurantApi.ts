@@ -25,10 +25,6 @@ function buildRestaurantFormData(restaurantData: RestaurantData, imageFile?: Fil
 }
 
 export const restaurantApi = {
-<<<<<<< HEAD
-        getByRestaurantId: (restaurantId: string) => api.get<Restaurant>(`restaurant/${restaurantId}`),
-        getBySlug: (slug: string) => api.get<Restaurant>(`restaurant/${slug}`),
-=======
         getByRestaurantSlug: (slug: string) => {
                 // Next.js params.slug might still be encoded or partially encoded
                 // Decode it first to ensure we have the clean slug
@@ -54,7 +50,6 @@ export const restaurantApi = {
                 return api.get<Restaurant>(`restaurant/${encodedSlug}`);
         },
         getByRestaurantId: (restaurantId: string) => api.get<Restaurant>(`restaurant/admin/${restaurantId}`),
->>>>>>> 32ce0fdc0ef2d78bd63c29c4c7b93c7893975247
         getRestaurantByMerchantId: (merchantId: string) => api.get<Restaurant[]>(`/restaurant/merchant/${merchantId}`),
         getAllRestaurants: (params: URLSearchParams) => api.get<Restaurant[]>("/restaurant", { params: params }),
         createRestaurant: (restaurantData: RestaurantData, imageFile?: File) => {

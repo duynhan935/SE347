@@ -10,11 +10,7 @@ type RestaurantCardProps = {
 
 export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => (
         <Link
-<<<<<<< HEAD
-                href={`/restaurants/${restaurant.slug || restaurant.id}`}
-=======
                 href={`/restaurants/${restaurant.slug}`}
->>>>>>> 32ce0fdc0ef2d78bd63c29c4c7b93c7893975247
                 className="group block rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-white h-full flex flex-col"
         >
                 <div className="relative w-full h-48">

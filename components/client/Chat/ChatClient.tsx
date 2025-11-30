@@ -34,6 +34,52 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                 }
         }, []);
 
+        // Reload rooms if initialRoomId is provided but not in the list
+        useEffect(() => {
+                const reloadRoomsIfNeeded = async () => {
+                        if (initialRoomId && !rooms.find((r) => r.id === initialRoomId)) {
+                                try {
+                                        const response = await chatApi.getAllRoomsByUserId(currentUserId);
+                                        const updatedRooms = response.data || [];
+                                        setRooms(updatedRooms);
+
+                                        // If the room still doesn't exist, it might be very new
+                                        // Extract partner ID from roomId format: userId1_userId2
+                                        if (!updatedRooms.find((r) => r.id === initialRoomId)) {
+                                                const roomIdParts = initialRoomId.split("_");
+                                                if (roomIdParts.length === 2) {
+                                                        const partner =
+                                                                roomIdParts[0] === currentUserId
+                                                                        ? roomIdParts[1]
+                                                                        : roomIdParts[0];
+                                                        setPartnerId(partner);
+                                                        const info = await getPartnerInfo(partner);
+                                                        setPartnerName(info.name);
+                                                }
+                                        }
+                                } catch (error) {
+                                        console.error("Error reloading rooms:", error);
+                                        // Try to extract partner ID from roomId as fallback
+                                        if (initialRoomId) {
+                                                const roomIdParts = initialRoomId.split("_");
+                                                if (roomIdParts.length === 2) {
+                                                        const partner =
+                                                                roomIdParts[0] === currentUserId
+                                                                        ? roomIdParts[1]
+                                                                        : roomIdParts[0];
+                                                        setPartnerId(partner);
+                                                        getPartnerInfo(partner).then((info) =>
+                                                                setPartnerName(info.name)
+                                                        );
+                                                }
+                                        }
+                                }
+                        }
+                };
+
+                reloadRoomsIfNeeded();
+        }, [initialRoomId, currentUserId, rooms, getPartnerInfo]);
+
         // WebSocket hook
         const { isConnected, sendMessage } = useWebSocket({
                 roomId: selectedRoomId,
@@ -108,6 +154,19 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                         // Get partner name
                                         const info = await getPartnerInfo(partner);
                                         setPartnerName(info.name);
+                                } else if (selectedRoomId) {
+                                        // Room not in list yet (might be newly created)
+                                        // Extract partner ID from roomId format: userId1_userId2
+                                        const roomIdParts = selectedRoomId.split("_");
+                                        if (roomIdParts.length === 2) {
+                                                const partner =
+                                                        roomIdParts[0] === currentUserId
+                                                                ? roomIdParts[1]
+                                                                : roomIdParts[0];
+                                                setPartnerId(partner);
+                                                const info = await getPartnerInfo(partner);
+                                                setPartnerName(info.name);
+                                        }
                                 }
 
                                 // Mark messages as read

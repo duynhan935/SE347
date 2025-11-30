@@ -6,6 +6,8 @@ import { authApi } from "./api/authApi";
 const api = axios.create({
         baseURL: "http://localhost:8080/api", // backend của bạn
         timeout: 10000,
+        maxRedirects: 0, // Không tự động follow redirects (tránh redirect đến Docker hostname)
+        validateStatus: (status) => status < 500, // Chỉ throw error cho 5xx, không throw cho redirects
 });
 
 let failedQueue: { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }[] = []; // Queue for failed requests during refresh
@@ -89,6 +91,10 @@ api.interceptors.response.use(
                                                                 "Authorization"
                                                         ] = `Bearer ${accessToken}`;
                                                 }
+                                                // Ensure baseURL is correct (prevent redirects to Docker hostnames)
+                                                if (originalRequest.baseURL) {
+                                                        originalRequest.baseURL = "http://localhost:8080/api";
+                                                }
                                                 return api(originalRequest);
                                         })
                                         .catch((err) => {
@@ -109,8 +115,13 @@ api.interceptors.response.use(
                                 processQueue(null, newAccessToken);
 
                                 // Retry original request with new token
+                                // Ensure we use the correct baseURL and don't follow redirects to wrong URLs
                                 if (originalRequest.headers) {
                                         originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+                                }
+                                // Ensure baseURL is correct (prevent redirects to Docker hostnames)
+                                if (originalRequest.baseURL) {
+                                        originalRequest.baseURL = "http://localhost:8080/api";
                                 }
                                 return api(originalRequest);
                         } catch (refreshError) {
