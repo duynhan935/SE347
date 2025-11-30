@@ -9,18 +9,16 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
         useEffect(() => {
                 const init = async () => {
-                        // Check if tokens exist in localStorage first
-                        const hasTokens =
-                                typeof window !== "undefined" &&
-                                (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
-
-                        if (hasTokens) {
-                                // If tokens exist, initialize in background without blocking
-                                initializeAuth().catch(console.error);
+                        try {
+                                // Always call initializeAuth - it will check for tokens internally
+                                await initializeAuth();
+                        } catch (err) {
+                                console.error("Auth initialization error:", err);
+                                // Even if there's an error, we should still set initialized to true
+                                // so the app doesn't get stuck in loading state
+                        } finally {
+                                setIsInitialized(true);
                         }
-
-                        // Mark as initialized immediately to allow navigation
-                        setIsInitialized(true);
                 };
                 init();
         }, [initializeAuth]);
