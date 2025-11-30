@@ -1,4 +1,4 @@
-// File: app/(client)/restaurants/[id]/page.tsx
+// File: app/(client)/restaurants/[slug]/page.tsx
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { notFound } from "next/navigation";
 
@@ -10,15 +10,15 @@ import RestaurantMenu from "@/components/client/Restaurant/RestaurantMenu";
 import RestaurantNavTabs from "@/components/client/Restaurant/RestaurantNavTabs";
 import RestaurantReviews from "@/components/client/Restaurant/RestaurantReviews";
 
-export default async function RestaurantDetailPage({ params }: { params: { id: string } }) {
-        const [restaurantResponse, reviewsResponse] = await Promise.all([
-                restaurantApi.getByRestaurantId(params.id),
-                restaurantApi.getAllReviews(params.id),
-        ]);
+export default async function RestaurantDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+        const { slug } = await params;
+        const restaurantResponse = await restaurantApi.getByRestaurantSlug(slug);
         const restaurant = restaurantResponse.data;
-        const reviews = reviewsResponse.data;
 
         if (!restaurant) notFound();
+
+        const reviewsResponse = await restaurantApi.getAllReviews(restaurant.id);
+        const reviews = reviewsResponse.data;
 
         return (
                 <main className="bg-gray-50">

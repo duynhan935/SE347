@@ -7,9 +7,10 @@ import ListSetupModal from "@/components/merchant/common/ListSetupModal";
 import SearchFilter from "@/components/merchant/common/SearchFilter";
 import { useCategoryStore } from "@/stores/categoryStore";
 import { useProductStore } from "@/stores/useProductsStores";
+import { useRestaurantStore } from "@/stores/useRestaurantStore";
 import { ArrowDown, Loader2, Pencil } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const menuItemColumns = [
@@ -24,13 +25,13 @@ const menuItemColumns = [
 ];
 
 export default function MenuItemPage() {
-        const router = useRouter();
         const [openSetupModal, setOpenSetupModal] = useState(false);
         const [searchTerm, setSearchTerm] = useState("");
         const [categoryFilter, setCategoryFilter] = useState("all");
         const [statusFilter, setStatusFilter] = useState("all");
         const params = useParams();
-        const restaurantId = params.restaurantId as string;
+        const slug = params.restaurantId as string; // Temporary: will be params.slug after folder rename
+        const { restaurant, fetchRestaurantBySlug, loading: restaurantLoading } = useRestaurantStore();
         const {
                 products,
                 fetchProductsByRestaurantId,
@@ -40,9 +41,19 @@ export default function MenuItemPage() {
         const { categories, fetchAllCategories, loading: categoryLoading, error: categoryError } = useCategoryStore();
 
         useEffect(() => {
-                fetchProductsByRestaurantId(restaurantId);
-                fetchAllCategories();
-        }, [fetchProductsByRestaurantId, fetchAllCategories]);
+                // Fetch restaurant by slug first to get the ID
+                if (slug && !restaurantLoading) {
+                        fetchRestaurantBySlug(slug);
+                }
+        }, [slug, fetchRestaurantBySlug, restaurantLoading]);
+
+        useEffect(() => {
+                // Once we have restaurant, fetch products by its ID
+                if (restaurant?.id) {
+                        fetchProductsByRestaurantId(restaurant.id);
+                        fetchAllCategories();
+                }
+        }, [restaurant?.id, fetchProductsByRestaurantId, fetchAllCategories]);
 
         const filterOptions = useMemo(() => {
                 const validCategories = Array.isArray(categories) ? categories : [];
@@ -106,7 +117,7 @@ export default function MenuItemPage() {
                         sortable: false,
                         render: (_: any, item: any) => (
                                 <Link
-                                        href={`/merchant/restaurant/${restaurantId}/menu-items/${item.id}`}
+                                        href={`/merchant/restaurant/${slug}/menu-items/${item.id}`}
                                         className="inline-flex items-center justify-center px-3 py-1 text-sm text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition"
                                 >
                                         <Pencil size={14} className="mr-1" />
@@ -124,6 +135,7 @@ export default function MenuItemPage() {
                 setSearchTerm("");
                 setCategoryFilter("all");
                 setStatusFilter("all");
+                return;
         };
         const handleRowSelect = (selectedItems: any[]) => console.log("Selected items:", selectedItems);
         const handleSort = (columnKey: string, direction: SortDirection) =>
@@ -154,12 +166,21 @@ export default function MenuItemPage() {
 
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                                 <div className="flex flex-wrap justify-between items-center p-4 border-b border-gray-200 gap-4">
-                                        <ActionBar
-                                                restaurantId={restaurantId}
-                                                newLabel="Thêm món mới"
-                                                secondaryLabel="Hành động"
-                                                secondaryIcon={<ArrowDown size={14} />}
-                                        />
+                                        <div className="flex items-center gap-3">
+                                                <ActionBar
+                                                        restaurantId={restaurant?.id || slug}
+                                                        newLabel="Thêm món mới"
+                                                        secondaryLabel="Hành động"
+                                                        secondaryIcon={<ArrowDown size={14} />}
+                                                />
+                                                <Link
+                                                        href={`/merchant/restaurant/${slug}/settings`}
+                                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-2"
+                                                >
+                                                        <Pencil size={14} />
+                                                        Chỉnh sửa nhà hàng
+                                                </Link>
+                                        </div>
                                         <SearchFilter
                                                 searchPlaceholder="Tìm theo tên hoặc danh mục..."
                                                 filterOptions={filterOptions}

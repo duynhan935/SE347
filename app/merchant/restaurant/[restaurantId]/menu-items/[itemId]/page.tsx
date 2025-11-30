@@ -3,6 +3,7 @@
 import { CommonImages } from "@/constants";
 import { useCategoryStore } from "@/stores/categoryStore";
 import { useSizeStore } from "@/stores/sizeStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useProductStore } from "@/stores/useProductsStores";
 import { useRestaurantStore } from "@/stores/useRestaurantStore";
 import { Product, SizePrice } from "@/types";
@@ -27,7 +28,16 @@ export default function MenuEditForm() {
         const params = useParams();
         const router = useRouter();
         const productId = params.itemId as string;
-        const restaurantId = params.restaurantId as string;
+        const slug = params.restaurantId as string; // Temporary: will be params.slug after folder rename
+        const { restaurant, fetchRestaurantBySlug, loading: restaurantLoading } = useRestaurantStore();
+
+        useEffect(() => {
+                if (slug && !restaurantLoading) {
+                        fetchRestaurantBySlug(slug);
+                }
+        }, [slug, fetchRestaurantBySlug, restaurantLoading]);
+
+        const restaurantId = restaurant?.id || slug;
         const {
                 product,
                 fetchProductByProductId,
@@ -114,9 +124,12 @@ export default function MenuEditForm() {
                 [restaurantIdFromStore, router, productLoading]
         );
 
+        // Get merchant ID from auth store
+        const { user } = useAuthStore();
+        const merchantId = user?.role === "MERCHANT" ? user.id : null;
+
         // Fetch data ban đầu
         useEffect(() => {
-                const merchantId = "testmerchantid";
                 if (merchantId && !restaurantIdFromStore) {
                         getRestaurantByMerchantId(merchantId);
                 }
@@ -378,7 +391,7 @@ export default function MenuEditForm() {
                                         <div className="flex items-center gap-2 mb-4">
                                                 {" "}
                                                 <Link
-                                                        href={`/merchant/restaurant/${restaurantId}/menu-items`}
+                                                        href={`/merchant/restaurant/${slug}/menu-items`}
                                                         className="p-1 rounded hover:bg-gray-100"
                                                 >
                                                         {" "}

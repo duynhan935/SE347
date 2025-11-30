@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useRestaurantStore } from "@/stores/useRestaurantStore";
-import { Building, Loader2, MapPin, PlusCircle } from "lucide-react";
+import { Building, Loader2, MapPin, Pencil, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -35,11 +35,17 @@ export default function SelectRestaurantPage() {
                 }
         }, [merchantId, loggedInMerchantId, getRestaurantByMerchantId, restaurants, router]); // Thêm router
 
-        const handleRestaurantSelect = (restaurantId: string) => {
-                console.log("SelectPage: Setting selected restaurant:", restaurantId);
-                setSelectedRestaurantId(restaurantId);
+        const handleRestaurantSelect = (restaurant: { id: string; slug: string }) => {
+                console.log("SelectPage: Setting selected restaurant:", restaurant);
+                setSelectedRestaurantId(restaurant.id);
 
-                router.push(`/merchant/${merchantId}/restaurant/${restaurantId}/dashboard`);
+                router.push(`/merchant/restaurant/${restaurant.slug}/menu-items`);
+        };
+
+        const handleEditRestaurant = (e: React.MouseEvent, restaurant: { slug: string }) => {
+                // Stop event propagation to prevent card click
+                e.stopPropagation();
+                router.push(`/merchant/restaurant/${restaurant.slug}/settings`);
         };
 
         if (loading && restaurants.length === 0 && !error) {
@@ -80,11 +86,24 @@ export default function SelectRestaurantPage() {
                                 {restaurants.map((res) => (
                                         <Card
                                                 key={res.id}
-                                                className="hover:shadow-lg transition-shadow cursor-pointer border hover:border-orange-400 group"
-                                                onClick={() => handleRestaurantSelect(res.id)}
+                                                className="hover:shadow-lg transition-shadow cursor-pointer border hover:border-orange-400 group relative"
+                                                onClick={() => handleRestaurantSelect({ id: res.id, slug: res.slug })}
                                         >
+                                                {/* Edit Button */}
+                                                <button
+                                                        onClick={(e) => handleEditRestaurant(e, { slug: res.slug })}
+                                                        className="absolute top-3 right-3 p-2 rounded-md bg-white hover:bg-orange-50 border border-gray-200 hover:border-orange-300 shadow-sm transition-colors z-10"
+                                                        title="Edit Restaurant"
+                                                        aria-label="Edit restaurant"
+                                                >
+                                                        <Pencil
+                                                                size={16}
+                                                                className="text-gray-600 hover:text-orange-600"
+                                                        />
+                                                </button>
+
                                                 <CardHeader>
-                                                        <CardTitle className="flex justify-between items-center text-lg">
+                                                        <CardTitle className="flex justify-between items-center text-lg pr-10">
                                                                 {" "}
                                                                 <span className="truncate flex items-center gap-2 font-semibold">
                                                                         <Building

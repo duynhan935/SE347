@@ -2,7 +2,7 @@
 
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 function LoginSuccessContent() {
@@ -11,8 +11,12 @@ function LoginSuccessContent() {
         const { handleOAuthLogin } = useAuthStore();
         const [loading, setLoading] = useState(true);
         const [error, setError] = useState<string | null>(null);
+        const hasProcessed = useRef(false);
 
         useEffect(() => {
+                // Prevent multiple calls using ref
+                if (hasProcessed.current) return;
+
                 const token = searchParams.get("token");
 
                 if (!token) {
@@ -21,36 +25,50 @@ function LoginSuccessContent() {
                         toast.error("No token received. Please try logging in again.");
                         // Redirect to login after 3 seconds
                         setTimeout(() => {
-                                router.push("/login");
+                                router.replace("/login");
                         }, 3000);
                         return;
+                }
+
+                // Mark as processed immediately to prevent re-renders
+                hasProcessed.current = true;
+
+                // Clean up URL by removing token parameter immediately to prevent re-renders
+                if (typeof window !== "undefined") {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("token");
+                        window.history.replaceState({}, "", url.pathname);
                 }
 
                 // Handle OAuth login with token
                 const processOAuthLogin = async () => {
                         try {
                                 setLoading(true);
+
                                 const success = await handleOAuthLogin(token);
 
                                 if (success) {
-                                        toast.success("Login successful! Redirecting...");
-                                        // Redirect to home page
-                                        router.push("/");
+                                        toast.success("Login successful! Welcome back! 🎉", { duration: 2000 });
+                                        // Small delay to show success message
+                                        setTimeout(() => {
+                                                // Use replace to avoid adding to history
+                                                router.replace("/");
+                                        }, 500);
                                 } else {
                                         setError("Failed to complete login. Please try again.");
-                                        toast.error("Failed to complete login. Please try again.");
+                                        toast.error("Failed to complete login. Please try again.", { duration: 3000 });
                                         // Redirect to login after 3 seconds
                                         setTimeout(() => {
-                                                router.push("/login");
+                                                router.replace("/login");
                                         }, 3000);
                                 }
                         } catch (err) {
                                 console.error("OAuth login error:", err);
                                 setError("An error occurred during login. Please try again.");
-                                toast.error("An error occurred during login. Please try again.");
+                                toast.error("An error occurred during login. Please try again.", { duration: 3000 });
                                 // Redirect to login after 3 seconds
                                 setTimeout(() => {
-                                        router.push("/login");
+                                        router.replace("/login");
                                 }, 3000);
                         } finally {
                                 setLoading(false);
@@ -59,7 +77,7 @@ function LoginSuccessContent() {
 
                 processOAuthLogin();
                 // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [searchParams]);
+        }, []);
 
         return (
                 <section className="min-h-screen flex items-center justify-center bg-brand-yellowlight p-4">

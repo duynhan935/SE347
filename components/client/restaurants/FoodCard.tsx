@@ -15,7 +15,7 @@ export const FoodCard = ({ product }: FoodCardProps) => {
         return (
                 <Link
                         // 1. Link đến trang chi tiết food
-                        href={`/food/${product.id}`}
+                        href={`/food/${product.slug}`}
                         className="group block rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-white h-full flex flex-col"
                 >
                         <div className="relative w-full h-48">

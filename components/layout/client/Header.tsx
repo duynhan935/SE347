@@ -19,6 +19,7 @@ import toast from "react-hot-toast";
 export default function Header() {
         const [open, setOpen] = useState(false);
         const [mounted, setMounted] = useState(false);
+        const [isLoggingOut, setIsLoggingOut] = useState(false);
         const { isAuthenticated, user, logout } = useAuthStore();
         const router = useRouter();
 
@@ -26,10 +27,40 @@ export default function Header() {
                 setMounted(true);
         }, []);
 
-        const handleLogout = () => {
-                logout();
-                toast.success("Logged out successfully");
-                router.push("/");
+        const handleLogout = async () => {
+                // Prevent multiple clicks
+                if (isLoggingOut) return;
+
+                setIsLoggingOut(true);
+
+                // Close dropdown menu immediately for better UX
+                setOpen(false);
+
+                // Show loading toast
+                const loadingToast = toast.loading("Logging out...");
+
+                try {
+                        // Clear auth state
+                        logout();
+
+                        // Small delay to ensure state is cleared before navigation
+                        await new Promise((resolve) => setTimeout(resolve, 100));
+
+                        // Dismiss loading and show success
+                        toast.dismiss(loadingToast);
+                        toast.success("Logged out successfully! See you soon 👋", { duration: 3000 });
+
+                        // Navigate to home page
+                        router.replace("/");
+                } catch (error) {
+                        // Handle any logout errors
+                        toast.dismiss(loadingToast);
+                        toast.error("Failed to logout. Please try again.", { duration: 3000 });
+                        console.error("Logout error:", error);
+                } finally {
+                        // Reset logging out state after navigation
+                        setTimeout(() => setIsLoggingOut(false), 500);
+                }
         };
 
         return (
@@ -37,7 +68,7 @@ export default function Header() {
                         <div className="custom-container">
                                 <div className="max-w-7xl mx-auto flex items-center justify-between relative">
                                         {/* Logo */}
-                                        <Link href="/" className="flex items-center">
+                                        <Link href="/" prefetch={true} className="flex items-center">
                                                 <Image
                                                         src={Logo}
                                                         alt="FoodEats Logo"
@@ -52,12 +83,14 @@ export default function Header() {
                                         <nav className="hidden md:flex items-center space-x-8">
                                                 <Link
                                                         href="/app"
+                                                        prefetch={true}
                                                         className="text-brand-black text-p2 font-manrope hover:text-brand-purpledark"
                                                 >
                                                         Get the app
                                                 </Link>
                                                 <Link
                                                         href="/about"
+                                                        prefetch={true}
                                                         className="text-brand-black text-p2 font-manrope hover:text-brand-purpledark"
                                                 >
                                                         About
@@ -69,25 +102,38 @@ export default function Header() {
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent className="border border-brand-grey shadow-lg">
                                                                 <DropdownMenuItem className="cursor-pointer">
-                                                                        <Link href="/restaurants">Restaurants</Link>
+                                                                        <Link href="/restaurants" prefetch={true}>
+                                                                                Restaurants
+                                                                        </Link>
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem className="cursor-pointer">
-                                                                        <Link href="/cart">Cart</Link>
+                                                                        <Link href="/cart" prefetch={true}>
+                                                                                Cart
+                                                                        </Link>
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem className="cursor-pointer">
-                                                                        <Link href="/checkout">Checkout</Link>
+                                                                        <Link href="/checkout" prefetch={true}>
+                                                                                Checkout
+                                                                        </Link>
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem className="cursor-pointer">
-                                                                        <Link href="/contact">Contact</Link>
+                                                                        <Link href="/contact" prefetch={true}>
+                                                                                Contact
+                                                                        </Link>
                                                                 </DropdownMenuItem>
                                                                 {user?.role === "ADMIN" && (
                                                                         <DropdownMenuItem className="cursor-pointer">
-                                                                                <Link href="/admin">Admin</Link>
+                                                                                <Link href="/admin" prefetch={true}>
+                                                                                        Admin
+                                                                                </Link>
                                                                         </DropdownMenuItem>
                                                                 )}
                                                                 {user?.role === "MERCHANT" && (
                                                                         <DropdownMenuItem className="cursor-pointer">
-                                                                                <Link href={`/merchant/${user.id}`}>
+                                                                                <Link
+                                                                                        href={`/merchant/${user.id}`}
+                                                                                        prefetch={true}
+                                                                                >
                                                                                         Merchant
                                                                                 </Link>
                                                                         </DropdownMenuItem>
@@ -117,6 +163,7 @@ export default function Header() {
                                                                         <DropdownMenuItem>
                                                                                 <Link
                                                                                         href="/account"
+                                                                                        prefetch={true}
                                                                                         className="flex items-center w-full"
                                                                                 >
                                                                                         <User className="mr-2 h-4 w-4" />
@@ -127,6 +174,7 @@ export default function Header() {
                                                                                 <DropdownMenuItem>
                                                                                         <Link
                                                                                                 href="/admin"
+                                                                                                prefetch={true}
                                                                                                 className="flex items-center w-full"
                                                                                         >
                                                                                                 Admin Panel
@@ -137,6 +185,7 @@ export default function Header() {
                                                                                 <DropdownMenuItem>
                                                                                         <Link
                                                                                                 href={`/merchant/${user.id}`}
+                                                                                                prefetch={true}
                                                                                                 className="flex items-center w-full"
                                                                                         >
                                                                                                 Merchant Dashboard
@@ -155,7 +204,7 @@ export default function Header() {
                                                         </DropdownMenu>
                                                 ) : mounted && !isAuthenticated ? (
                                                         <>
-                                                                <Link href="/login">
+                                                                <Link href="/login" prefetch={true}>
                                                                         <Button
                                                                                 variant="ghost"
                                                                                 className="hover:text-brand-purpledark cursor-pointer font-semibold font-manrope text-button2"
@@ -163,7 +212,7 @@ export default function Header() {
                                                                                 Sign In
                                                                         </Button>
                                                                 </Link>
-                                                                <Link href="/register">
+                                                                <Link href="/register" prefetch={true}>
                                                                         <Button className="bg-brand-black hover:bg-brand-purpledark px-6 cursor-pointer font-semibold font-manrope text-button2 text-brand-white">
                                                                                 Sign Up
                                                                         </Button>
@@ -201,18 +250,21 @@ export default function Header() {
                                                 <nav className="flex flex-col items-start px-6 py-4 space-y-4">
                                                         <Link
                                                                 href="/app"
+                                                                prefetch={true}
                                                                 className="text-brand-black text-p2 font-manrope w-full py-2 hover:text-brand-purpledark"
                                                         >
                                                                 Get the app
                                                         </Link>
                                                         <Link
                                                                 href="/about"
+                                                                prefetch={true}
                                                                 className="text-brand-black text-p2 font-manrope w-full py-2 hover:text-brand-purpledark"
                                                         >
                                                                 About
                                                         </Link>
                                                         <Link
                                                                 href="/restaurants"
+                                                                prefetch={true}
                                                                 className="text-brand-black text-p2 font-manrope w-full py-2 hover:text-brand-purpledark"
                                                         >
                                                                 Restaurants
@@ -221,12 +273,14 @@ export default function Header() {
                                                                 <>
                                                                         <Link
                                                                                 href="/cart"
+                                                                                prefetch={true}
                                                                                 className="text-brand-black text-p2 font-manrope w-full py-2 hover:text-brand-purpledark"
                                                                         >
                                                                                 Cart
                                                                         </Link>
                                                                         <Link
                                                                                 href="/account"
+                                                                                prefetch={true}
                                                                                 className="text-brand-black text-p2 font-manrope w-full py-2 hover:text-brand-purpledark"
                                                                         >
                                                                                 My Account
@@ -234,6 +288,7 @@ export default function Header() {
                                                                         {user?.role === "ADMIN" && (
                                                                                 <Link
                                                                                         href="/admin"
+                                                                                        prefetch={true}
                                                                                         className="text-brand-black text-p2 font-manrope w-full py-2 hover:text-brand-purpledark"
                                                                                 >
                                                                                         Admin Panel
@@ -242,6 +297,7 @@ export default function Header() {
                                                                         {user?.role === "MERCHANT" && (
                                                                                 <Link
                                                                                         href={`/merchant/${user.id}`}
+                                                                                        prefetch={true}
                                                                                         className="text-brand-black text-p2 font-manrope w-full py-2 hover:text-brand-purpledark"
                                                                                 >
                                                                                         Merchant Dashboard
@@ -257,7 +313,11 @@ export default function Header() {
                                                         )}
                                                         {mounted && !isAuthenticated && (
                                                                 <>
-                                                                        <Link href="/login" className="w-full">
+                                                                        <Link
+                                                                                href="/login"
+                                                                                prefetch={true}
+                                                                                className="w-full"
+                                                                        >
                                                                                 <Button
                                                                                         variant="ghost"
                                                                                         className="w-full text-left hover:text-brand-purpledark cursor-pointer font-semibold font-manrope text-button2"
@@ -265,7 +325,11 @@ export default function Header() {
                                                                                         Sign In
                                                                                 </Button>
                                                                         </Link>
-                                                                        <Link href="/register" className="w-full">
+                                                                        <Link
+                                                                                href="/register"
+                                                                                prefetch={true}
+                                                                                className="w-full"
+                                                                        >
                                                                                 <Button className="w-full text-left bg-brand-black hover:bg-brand-purpledark px-6 cursor-pointer font-semibold font-manrope text-button2 text-brand-white">
                                                                                         Sign Up
                                                                                 </Button>
