@@ -1,4 +1,3 @@
-// File: app/(client)/restaurants/[id]/page.tsx
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { notFound } from "next/navigation";
 
@@ -11,14 +10,15 @@ import RestaurantNavTabs from "@/components/client/Restaurant/RestaurantNavTabs"
 import RestaurantReviews from "@/components/client/Restaurant/RestaurantReviews";
 
 export default async function RestaurantDetailPage({ params }: { params: { id: string } }) {
-        const [restaurantResponse, reviewsResponse] = await Promise.all([
-                restaurantApi.getByRestaurantId(params.id),
-                restaurantApi.getAllReviews(params.id),
-        ]);
+        // Use slug instead of ID - backend endpoint accepts slug
+        const restaurantResponse = await restaurantApi.getBySlug(params.id);
         const restaurant = restaurantResponse.data;
-        const reviews = reviewsResponse.data;
 
         if (!restaurant) notFound();
+
+        // Reviews API still uses restaurant ID, not slug
+        const reviewsResponse = await restaurantApi.getAllReviews(restaurant.id);
+        const reviews = reviewsResponse.data;
 
         return (
                 <main className="bg-gray-50">

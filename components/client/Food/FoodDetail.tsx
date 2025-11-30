@@ -31,7 +31,7 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
         return (
                 <div>
                         <Link
-                                href={`/restaurants/${restaurant.id}`}
+                                href={`/restaurants/${restaurant.slug || restaurant.id}`}
                                 className="inline-flex items-center gap-2 text-gray-600 hover:text-black font-semibold mb-8"
                         >
                                 <ChevronLeft className="w-5 h-5" />

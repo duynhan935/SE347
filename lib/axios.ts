@@ -132,6 +132,18 @@ api.interceptors.response.use(
                         return Promise.reject(error);
                 }
 
+                // Skip logging for 404 on chat rooms endpoint - user may not have rooms yet (normal case)
+                // Backend returns 404 instead of empty array when user has no rooms
+                if (
+                        status === 404 &&
+                        error.config?.url?.includes("/chat/rooms/") &&
+                        !error.config?.url?.includes("/messages") &&
+                        !error.config?.url?.includes("/unreadCount")
+                ) {
+                        // Just reject without logging - chat page will handle it gracefully
+                        return Promise.reject(error);
+                }
+
                 console.group("%c⚠️ API Error", "color:red; font-weight:bold;");
                 console.log("➡️ URL:", error.config?.url);
                 console.log("➡️ Method:", error.config?.method?.toUpperCase());

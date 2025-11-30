@@ -26,6 +26,7 @@ function buildRestaurantFormData(restaurantData: RestaurantData, imageFile?: Fil
 
 export const restaurantApi = {
         getByRestaurantId: (restaurantId: string) => api.get<Restaurant>(`restaurant/${restaurantId}`),
+        getBySlug: (slug: string) => api.get<Restaurant>(`restaurant/${slug}`),
         getRestaurantByMerchantId: (merchantId: string) => api.get<Restaurant[]>(`/restaurant/merchant/${merchantId}`),
         getAllRestaurants: (params: URLSearchParams) => api.get<Restaurant[]>("/restaurant", { params: params }),
         createRestaurant: (restaurantData: RestaurantData, imageFile?: File) => {
