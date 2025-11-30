@@ -163,23 +163,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
 
         initializeAuth: async () => {
-                console.log("Initializing auth...");
+                // Quick check - if no tokens, skip immediately
                 const { accessToken, refreshToken } = getInitialTokens();
-                if (accessToken && refreshToken) {
-                        set({ accessToken, refreshToken, isAuthenticated: true, loading: true });
-                        try {
-                                // Fetch user profile to get current user data including role
-                                await get().fetchProfile();
-                        } catch (err) {
-                                console.error("Error during auth initialization:", err);
-                                // If fetchProfile fails, it already clears tokens and sets loading: false
-                                // But we need to ensure state is consistent
-                                const currentState = get();
-                                if (currentState.loading) {
-                                        set({ loading: false });
-                                }
-                        }
-                } else {
+                if (!accessToken || !refreshToken) {
                         set({
                                 user: null,
                                 accessToken: null,
@@ -187,6 +173,39 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                                 isAuthenticated: false,
                                 loading: false,
                         });
+                        return;
+                }
+
+                // Set tokens immediately for faster UI response
+                set({ accessToken, refreshToken, isAuthenticated: true, loading: true });
+
+                try {
+                        // Fetch user profile in background - don't block if it fails
+                        // Use Promise.race with timeout to prevent hanging
+                        const profilePromise = get().fetchProfile();
+                        const timeoutPromise = new Promise<never>((_, reject) => {
+                                setTimeout(() => reject(new Error("Profile fetch timeout")), 10000);
+                        });
+
+                        await Promise.race([profilePromise, timeoutPromise]);
+                } catch (err) {
+                        // Silently handle errors - fetchProfile already handles cleanup
+                        // Check if it's a timeout error
+                        const isTimeout = err instanceof Error && err.message === "Profile fetch timeout";
+
+                        // Only log non-timeout errors in development, or if it's a real API error
+                        if (process.env.NODE_ENV === "development" && !isTimeout) {
+                                console.error("Error during auth initialization:", err);
+                        }
+
+                        // Ensure loading is cleared
+                        const currentState = get();
+                        if (currentState.loading) {
+                                set({ loading: false });
+                        }
+
+                        // If timeout, don't clear tokens - might just be slow network
+                        // fetchProfile will handle invalid token cleanup
                 }
         },
 

@@ -1,0 +1,22 @@
+{
+        // Auto forward ports khi có process chạy
+        "remote.autoForwardPorts": true,
+        "remote.autoForwardPortsSource": "hybrid",
+
+        // Cấu hình cho các port cụ thể
+        "remote.portsAttributes": {
+                "27017": {
+                        "label": "MongoDB",
+                        "onAutoForward": "notify",
+                        "protocol": "http"
+                },
+                "3056": {
+                        "label": "Node.js E-commerce API",
+                        "onAutoForward": "notify",
+                        "protocol": "http"
+                }
+        },
+
+        // Không yêu cầu xác nhận khi forward port
+        "remote.portsRequireAuthentication": false
+}

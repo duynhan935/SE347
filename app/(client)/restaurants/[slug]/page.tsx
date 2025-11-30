@@ -1,9 +1,9 @@
-// File: app/(client)/restaurants/[slug]/page.tsx
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { notFound } from "next/navigation";
 
 // -- Import các component --
 import ScrollReveal from "@/components/client/Animations/ScrollReveal";
+import RestaurantActions from "@/components/client/Restaurant/RestaurantActions";
 import RestaurantHero from "@/components/client/Restaurant/RestaurantHero";
 import RestaurantInfo from "@/components/client/Restaurant/RestaurantInfo";
 import RestaurantMenu from "@/components/client/Restaurant/RestaurantMenu";
@@ -25,33 +25,46 @@ export default async function RestaurantDetailPage({ params }: { params: Promise
                         <RestaurantHero restaurant={restaurant} />
                         <RestaurantNavTabs />
                         <div className="custom-container py-8 lg:py-12">
-                                <div className="w-full space-y-16">
-                                        <ScrollReveal>
-                                                <section id="menu" className="scroll-mt-24">
-                                                        <RestaurantMenu
-                                                                products={restaurant.products}
-                                                                categories={restaurant.cate}
-                                                        />
-                                                </section>
-                                        </ScrollReveal>
-                                        <ScrollReveal delay={0.1}>
-                                                <section id="about" className="scroll-mt-24">
-                                                        <RestaurantInfo
-                                                                name={restaurant.resName}
-                                                                about={"About restaurant"}
-                                                                address={restaurant.address}
-                                                                phone={restaurant.phone}
-                                                                openingTime={restaurant.openingTime}
-                                                                closingTime={restaurant.closingTime}
-                                                        />
-                                                </section>
-                                        </ScrollReveal>
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                        {/* Left column: Menu, About, Reviews */}
+                                        <div className="lg:col-span-2 space-y-16">
+                                                <ScrollReveal>
+                                                        <section id="menu" className="scroll-mt-24">
+                                                                <RestaurantMenu
+                                                                        products={restaurant.products}
+                                                                        categories={restaurant.cate}
+                                                                />
+                                                        </section>
+                                                </ScrollReveal>
+                                                <ScrollReveal delay={0.1}>
+                                                        <section id="about" className="scroll-mt-24">
+                                                                <RestaurantInfo
+                                                                        name={restaurant.resName}
+                                                                        about={"About restaurant"}
+                                                                        address={restaurant.address}
+                                                                        phone={restaurant.phone}
+                                                                        openingTime={restaurant.openingTime}
+                                                                        closingTime={restaurant.closingTime}
+                                                                />
+                                                        </section>
+                                                </ScrollReveal>
+                                                <ScrollReveal delay={0.2}>
+                                                        <section id="reviews" className="scroll-mt-24">
+                                                                <RestaurantReviews reviews={reviews || []} />
+                                                        </section>
+                                                </ScrollReveal>
+                                        </div>
 
-                                        <ScrollReveal delay={0.2}>
-                                                <section id="reviews" className="scroll-mt-24">
-                                                        <RestaurantReviews reviews={reviews || []} />
-                                                </section>
-                                        </ScrollReveal>
+                                        {/* Right column: Chat with restaurant (sticky) */}
+                                        <div className="lg:col-span-1">
+                                                <div className="sticky top-8">
+                                                        <ScrollReveal delay={0.05}>
+                                                                <section id="actions" className="scroll-mt-24">
+                                                                        <RestaurantActions restaurant={restaurant} />
+                                                                </section>
+                                                        </ScrollReveal>
+                                                </div>
+                                        </div>
                                 </div>
                         </div>
                 </main>

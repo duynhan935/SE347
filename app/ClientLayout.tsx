@@ -1,24 +1,20 @@
 "use client";
 
 import AuthProvider from "@/components/auth/AuthProvider";
+import Header from "@/components/header/Header";
 import Footer from "@/components/layout/client/Footer";
-import Header from "@/components/layout/client/Header";
 import { usePathname } from "next/navigation";
 import React from "react";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
         const pathname = usePathname();
-        
-        // Check if current path is an admin dashboard (admin, merchant, or manager)
-        const isAdminDashboard = pathname.startsWith("/admin") || 
-                                 pathname.startsWith("/merchant") || 
-                                 pathname.startsWith("/manager");
+        const isMerchant = pathname.includes("merchant");
 
         return (
                 <AuthProvider>
-                        {!isAdminDashboard && <Header />}
-                        <main>{children}</main>
-                        {!isAdminDashboard && <Footer />}
+                        {!isMerchant && <Header />}
+                        <main className="pt-16 lg:pt-20 bg-brand-white min-h-screen">{children}</main>
+                        {!isMerchant && <Footer />}
                 </AuthProvider>
         );
 }
