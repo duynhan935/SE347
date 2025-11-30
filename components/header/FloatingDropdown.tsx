@@ -13,27 +13,23 @@ interface FloatingDropdownProps {
 const dropdownVariants: Variants = {
         hidden: {
                 opacity: 0,
-                y: -8,
-                scale: 0.96,
+                y: -10,
+                scale: 0.95,
         },
         visible: {
                 opacity: 1,
                 y: 0,
                 scale: 1,
                 transition: {
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 30,
-                        mass: 0.8,
+                        duration: 0.2,
                 },
         },
         exit: {
                 opacity: 0,
-                y: -8,
-                scale: 0.96,
+                y: -10,
+                scale: 0.95,
                 transition: {
                         duration: 0.15,
-                        ease: "easeIn",
                 },
         },
 };
@@ -89,7 +85,7 @@ export default function FloatingDropdown({ children, trigger, align = "left", cl
                                                 initial="hidden"
                                                 animate="visible"
                                                 exit="exit"
-                                                className={`absolute top-full mt-3 ${getAlignClasses()} ${className} z-50`}
+                                                className={`absolute top-full mt-2 ${getAlignClasses()} ${className}`}
                                         >
                                                 {children}
                                         </motion.div>
