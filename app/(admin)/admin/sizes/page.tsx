@@ -1,10 +1,11 @@
 "use client";
 
 import { sizeApi } from "@/lib/api/sizeApi";
-import { Size } from "@/types";
+import { Size, SizeData } from "@/types";
 import { Loader2, Search, Edit, Trash, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import SizeFormModal from "@/components/admin/sizes/SizeFormModal";
 
 export default function SizesPage() {
 	const [sizes, setSizes] = useState<Size[]>([]);
@@ -27,6 +28,24 @@ export default function SizesPage() {
 			toast.error("Không thể tải danh sách sizes");
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const handleSaveSize = async (sizeData: SizeData) => {
+		try {
+			if (editingSize) {
+				await sizeApi.updateSize(editingSize.id, sizeData);
+				toast.success("Đã cập nhật size");
+			} else {
+				await sizeApi.createSize(sizeData);
+				toast.success("Đã thêm size mới");
+			}
+			setIsModalOpen(false);
+			setEditingSize(null);
+			fetchSizes();
+		} catch (error) {
+			console.error("Failed to save size:", error);
+			toast.error("Không thể lưu size");
 		}
 	};
 
@@ -148,7 +167,17 @@ export default function SizesPage() {
 				)}
 			</div>
 
-			{/* TODO: Add Modal for Create/Edit Size */}
+			{isModalOpen && (
+				<SizeFormModal
+					isOpen={isModalOpen}
+					onClose={() => {
+						setIsModalOpen(false);
+						setEditingSize(null);
+					}}
+					size={editingSize}
+					onSave={handleSaveSize}
+				/>
+			)}
 		</div>
 	);
 }

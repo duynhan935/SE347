@@ -1,10 +1,11 @@
 "use client";
 
 import { categoryApi } from "@/lib/api/categoryApi";
-import { Category } from "@/types";
+import { Category, CategoryData } from "@/types";
 import { Loader2, Search, Edit, Trash, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import CategoryFormModal from "@/components/admin/categories/CategoryFormModal";
 
 export default function CategoriesPage() {
 	const [categories, setCategories] = useState<Category[]>([]);
@@ -27,6 +28,24 @@ export default function CategoriesPage() {
 			toast.error("Không thể tải danh sách categories");
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const handleSaveCategory = async (categoryData: CategoryData) => {
+		try {
+			if (editingCategory) {
+				await categoryApi.updateCategory(editingCategory.id, categoryData);
+				toast.success("Đã cập nhật category");
+			} else {
+				await categoryApi.createCategory(categoryData);
+				toast.success("Đã thêm category mới");
+			}
+			setIsModalOpen(false);
+			setEditingCategory(null);
+			fetchCategories();
+		} catch (error) {
+			console.error("Failed to save category:", error);
+			toast.error("Không thể lưu category");
 		}
 	};
 
@@ -157,7 +176,17 @@ export default function CategoriesPage() {
 				)}
 			</div>
 
-			{/* TODO: Add Modal for Create/Edit Category */}
+			{isModalOpen && (
+				<CategoryFormModal
+					isOpen={isModalOpen}
+					onClose={() => {
+						setIsModalOpen(false);
+						setEditingCategory(null);
+					}}
+					category={editingCategory}
+					onSave={handleSaveCategory}
+				/>
+			)}
 		</div>
 	);
 }
