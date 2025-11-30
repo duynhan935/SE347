@@ -1,86 +1,182 @@
-import burgerImage from "@/assets/Restaurant/Burger.png";
 import { StaticImageData } from "next/image";
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { cartApi } from "@/lib/api/cartApi";
+import toast from "react-hot-toast";
 
 export interface CartItem {
-        id: number; // ID của món ăn
-        name: string;
-        price: number;
-        image: StaticImageData;
-        quantity: number;
-        restaurantId: number;
-        restaurantName: string;
+    id: string; // Changed from number to string for backend compatibility
+    name: string;
+    price: number;
+    image: string | StaticImageData;
+    quantity: number;
+    restaurantId: string; // Changed from number to string
+    restaurantName: string;
+    sizeId?: string;
+    sizeName?: string;
+    customizations?: string;
 }
 
 interface CartState {
-        items: CartItem[];
-        addItem: (itemToAdd: Omit<CartItem, "quantity">, quantity: number) => void;
-        removeItem: (itemId: number) => void;
-        updateQuantity: (itemId: number, quantity: number) => void;
-        clearCart: () => void;
+    items: CartItem[];
+    userId: string | null;
+    isLoading: boolean;
+
+    // Actions
+    setUserId: (userId: string | null) => void;
+    fetchCart: () => Promise<void>;
+    addItem: (itemToAdd: Omit<CartItem, "quantity">, quantity: number) => Promise<void>;
+    removeItem: (itemId: string, restaurantId: string) => Promise<void>;
+    updateQuantity: (itemId: string, restaurantId: string, quantity: number) => Promise<void>;
+    clearCart: () => Promise<void>;
+    clearRestaurant: (restaurantId: string) => Promise<void>;
 }
 
-const initialFakeItems: CartItem[] = [
-        {
-                id: 101,
-                name: "Eggs Benedict Burger",
-                price: 7.5,
-                image: burgerImage,
-                quantity: 2,
-                restaurantId: 1,
-                restaurantName: "The Burger Cafe",
-        },
-        {
-                id: 102,
-                name: "Classic Cheeseburger",
-                price: 9.99,
-                image: burgerImage,
-                quantity: 1,
-                restaurantId: 1,
-                restaurantName: "The Burger Cafe",
-        },
-        {
-                id: 201,
-                name: "Pepperoni Pizza",
-                price: 15.0,
-                image: burgerImage,
-                quantity: 1,
-                restaurantId: 2,
-                restaurantName: "Pizza Palace",
-        },
-];
+export const useCartStore = create<CartState>()(
+    persist(
+        (set, get) => ({
+            items: [],
+            userId: null,
+            isLoading: false,
 
-export const useCartStore = create<CartState>((set, get) => ({
-        items: initialFakeItems,
-
-        addItem: (itemToAdd, quantity) => {
-                const { items } = get();
-                const existingItem = items.find((item) => item.id === itemToAdd.id);
-
-                if (existingItem) {
-                        const updatedItems = items.map((item) =>
-                                item.id === itemToAdd.id ? { ...item, quantity: item.quantity + quantity } : item
-                        );
-                        set({ items: updatedItems });
-                } else {
-                        set({ items: [...items, { ...itemToAdd, quantity }] });
+            setUserId: (userId) => {
+                set({ userId });
+                if (userId) {
+                    get().fetchCart();
                 }
-        },
-        removeItem: (itemId) => {
-                set((state) => ({
-                        items: state.items.filter((item) => item.id !== itemId),
-                }));
-        },
-        updateQuantity: (itemId, quantity) => {
-                if (quantity <= 0) {
-                        get().removeItem(itemId);
-                } else {
-                        set((state) => ({
-                                items: state.items.map((item) => (item.id === itemId ? { ...item, quantity } : item)),
-                        }));
+            },
+
+            fetchCart: async () => {
+                const { userId } = get();
+                if (!userId) return;
+
+                try {
+                    set({ isLoading: true });
+                    const cart = await cartApi.getCart(userId);
+
+                    // Transform backend cart structure to store format
+                    const items: CartItem[] = [];
+                    cart.restaurants.forEach((restaurant) => {
+                        restaurant.items.forEach((item) => {
+                            items.push({
+                                id: item.productId,
+                                name: item.productName,
+                                price: item.price,
+                                quantity: item.quantity,
+                                image: item.imageURL || "",
+                                restaurantId: restaurant.restaurantId,
+                                restaurantName: restaurant.restaurantName,
+                                sizeId: item.sizeId,
+                                sizeName: item.sizeName,
+                                customizations: item.customizations,
+                            });
+                        });
+                    });
+
+                    set({ items });
+                } catch (error) {
+                    console.error("Failed to fetch cart:", error);
+                    toast.error("Failed to load cart");
+                } finally {
+                    set({ isLoading: false });
                 }
-        },
-        clearCart: () => {
-                set({ items: [] });
-        },
-}));
+            },
+
+            addItem: async (itemToAdd, quantity) => {
+                const { userId } = get();
+                if (!userId) {
+                    toast.error("Please login to add items to cart");
+                    return;
+                }
+
+                try {
+                    await cartApi.addItemToCart(userId, {
+                        restaurant: {
+                            restaurantId: itemToAdd.restaurantId,
+                            restaurantName: itemToAdd.restaurantName,
+                        },
+                        item: {
+                            productId: itemToAdd.id,
+                            productName: itemToAdd.name,
+                            price: itemToAdd.price,
+                            quantity,
+                            sizeId: itemToAdd.sizeId,
+                            sizeName: itemToAdd.sizeName,
+                            customizations: itemToAdd.customizations,
+                            imageURL: typeof itemToAdd.image === "string" ? itemToAdd.image : undefined,
+                        },
+                    });
+
+                    await get().fetchCart();
+                    toast.success("Item added to cart");
+                } catch (error) {
+                    console.error("Failed to add item:", error);
+                    toast.error("Failed to add item to cart");
+                }
+            },
+
+            removeItem: async (itemId, restaurantId) => {
+                const { userId } = get();
+                if (!userId) return;
+
+                try {
+                    await cartApi.removeItemFromCart(userId, restaurantId, itemId);
+                    await get().fetchCart();
+                    toast.success("Item removed from cart");
+                } catch (error) {
+                    console.error("Failed to remove item:", error);
+                    toast.error("Failed to remove item");
+                }
+            },
+
+            updateQuantity: async (itemId, restaurantId, quantity) => {
+                const { userId } = get();
+                if (!userId) return;
+
+                try {
+                    if (quantity <= 0) {
+                        await get().removeItem(itemId, restaurantId);
+                    } else {
+                        await cartApi.updateItemQuantity(userId, restaurantId, itemId, quantity);
+                        await get().fetchCart();
+                    }
+                } catch (error) {
+                    console.error("Failed to update quantity:", error);
+                    toast.error("Failed to update quantity");
+                }
+            },
+
+            clearCart: async () => {
+                const { userId } = get();
+                if (!userId) return;
+
+                try {
+                    await cartApi.clearCart(userId);
+                    set({ items: [] });
+                    toast.success("Cart cleared");
+                } catch (error) {
+                    console.error("Failed to clear cart:", error);
+                    toast.error("Failed to clear cart");
+                }
+            },
+
+            clearRestaurant: async (restaurantId) => {
+                const { userId } = get();
+                if (!userId) return;
+
+                try {
+                    await cartApi.clearRestaurant(userId, restaurantId);
+                    await get().fetchCart();
+                    toast.success("Restaurant items removed");
+                } catch (error) {
+                    console.error("Failed to clear restaurant:", error);
+                    toast.error("Failed to remove restaurant items");
+                }
+            },
+        }),
+        {
+            name: "cart-storage",
+            partialize: (state) => ({ userId: state.userId }),
+        }
+    )
+);

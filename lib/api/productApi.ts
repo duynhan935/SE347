@@ -60,6 +60,6 @@ export const productApi = {
         },
         updateProductStatus: (productId: string) => api.put<Product>(`/products/availability/${productId}`),
         deleteProduct: (productId: string) => api.delete(`/products/${productId}`),
-        deleteProductImage: (productId: string) => api.delete(`/product/image/${productId}`),
-        getAllReviews: (productId: string) => api.get<Review[]>(`/reviews/product/${productId}`),
+        deleteProductImage: (productId: string) => api.delete(`/products/image/${productId}`),
+        getAllReviews: (productId: string) => api.get<Review[]>(`/review?productId=${productId}`),
 };

@@ -8,8 +8,8 @@ export interface RestaurantData {
         longitude: number;
         latitude: number;
         rating?: number;
-        openingTime: string;
-        closingTime: string;
+        openingTime: string; // Format: "HH:mm" e.g. "09:00"
+        closingTime: string; // Format: "HH:mm" e.g. "22:00"
         phone: string;
         merchantId: string;
 }

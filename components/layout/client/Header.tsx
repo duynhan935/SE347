@@ -273,7 +273,7 @@ export default function Header() {
                                     )}
                                     {user?.role === "MERCHANT" && (
                                         <Link
-                                            href={`/merchant/${user.id}`}
+                                            href={`/merchant`}
                                             prefetch={true}
                                             className="text-brand-black text-p2 font-manrope w-full py-2 hover:text-brand-purpledark"
                                         >

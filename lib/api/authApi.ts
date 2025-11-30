@@ -85,7 +85,7 @@ export const authApi = {
                 return response.data;
         },
         getUserById: async (id: string) => {
-                const response = await api.get<User>(`/users/${id}`);
+                const response = await api.get<User>(`/users/admin/${id}`);
                 return response.data;
         },
         updateUser: async (id: string, userData: UserUpdateRequest) => {
