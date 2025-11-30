@@ -1,3 +1,7 @@
+<<<<<<< HEAD:app/(client)/restaurants/[id]/page.tsx
+=======
+// File: app/(client)/restaurants/[slug]/page.tsx
+>>>>>>> 32ce0fdc0ef2d78bd63c29c4c7b93c7893975247:app/(client)/restaurants/[slug]/page.tsx
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { notFound } from "next/navigation";
 
@@ -9,14 +13,23 @@ import RestaurantMenu from "@/components/client/Restaurant/RestaurantMenu";
 import RestaurantNavTabs from "@/components/client/Restaurant/RestaurantNavTabs";
 import RestaurantReviews from "@/components/client/Restaurant/RestaurantReviews";
 
+<<<<<<< HEAD:app/(client)/restaurants/[id]/page.tsx
 export default async function RestaurantDetailPage({ params }: { params: { id: string } }) {
         // Use slug instead of ID - backend endpoint accepts slug
         const restaurantResponse = await restaurantApi.getBySlug(params.id);
+=======
+export default async function RestaurantDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+        const { slug } = await params;
+        const restaurantResponse = await restaurantApi.getByRestaurantSlug(slug);
+>>>>>>> 32ce0fdc0ef2d78bd63c29c4c7b93c7893975247:app/(client)/restaurants/[slug]/page.tsx
         const restaurant = restaurantResponse.data;
 
         if (!restaurant) notFound();
 
+<<<<<<< HEAD:app/(client)/restaurants/[id]/page.tsx
         // Reviews API still uses restaurant ID, not slug
+=======
+>>>>>>> 32ce0fdc0ef2d78bd63c29c4c7b93c7893975247:app/(client)/restaurants/[slug]/page.tsx
         const reviewsResponse = await restaurantApi.getAllReviews(restaurant.id);
         const reviews = reviewsResponse.data;
 

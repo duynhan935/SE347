@@ -14,6 +14,7 @@ interface RestaurantState {
         error: string | null;
         selectedRestaurantId: string | null;
         fetchRestaurantById: (id: string) => Promise<void>;
+        fetchRestaurantBySlug: (slug: string) => Promise<void>;
         getRestaurantByMerchantId: (merchantId: string) => Promise<void>;
         getAllRestaurants: (params: URLSearchParams) => Promise<void>;
         setSelectedRestaurantId: (id: string | null) => void;
@@ -41,6 +42,30 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
                 set({ loading: true, error: null });
                 try {
                         const res = await restaurantApi.getByRestaurantId(id);
+                        const data = res.data;
+
+                        set({
+                                restaurant: data,
+                                products: data.products || [],
+                                categories: data.cate || [],
+                                loading: false,
+                        });
+
+                        if (data) {
+                                get().getAllReviews(data.id);
+                        }
+                } catch (err: any) {
+                        set({
+                                error: err.message || "Không thể tải dữ liệu nhà hàng",
+                                loading: false,
+                        });
+                }
+        },
+
+        fetchRestaurantBySlug: async (slug) => {
+                set({ loading: true, error: null });
+                try {
+                        const res = await restaurantApi.getByRestaurantSlug(slug);
                         const data = res.data;
 
                         set({

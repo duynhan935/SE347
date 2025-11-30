@@ -4,6 +4,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { LogOut, MapPin, Settings, ShoppingBag, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import toast from "react-hot-toast";
 
 const navLinks = [
@@ -17,11 +18,39 @@ export default function AccountSidebar() {
         const pathname = usePathname();
         const router = useRouter();
         const { logout } = useAuthStore();
+        const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-        const handleLogout = () => {
-                logout();
-                toast.success("Logged out successfully");
-                router.push("/login");
+        const handleLogout = async () => {
+                // Prevent multiple clicks
+                if (isLoggingOut) return;
+
+                setIsLoggingOut(true);
+
+                // Show loading toast
+                const loadingToast = toast.loading("Logging out...");
+
+                try {
+                        // Clear auth state
+                        logout();
+
+                        // Small delay to ensure state is cleared before navigation
+                        await new Promise((resolve) => setTimeout(resolve, 100));
+
+                        // Dismiss loading and show success
+                        toast.dismiss(loadingToast);
+                        toast.success("Logged out successfully! See you soon 👋", { duration: 3000 });
+
+                        // Navigate to login page
+                        router.replace("/login");
+                } catch (error) {
+                        // Handle any logout errors
+                        toast.dismiss(loadingToast);
+                        toast.error("Failed to logout. Please try again.", { duration: 3000 });
+                        console.error("Logout error:", error);
+                } finally {
+                        // Reset logging out state after navigation
+                        setTimeout(() => setIsLoggingOut(false), 500);
+                }
         };
 
         return (
