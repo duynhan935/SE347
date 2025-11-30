@@ -8,13 +8,17 @@ import React from "react";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
         const pathname = usePathname();
-        const isMerchant = pathname.includes("merchant");
+        
+        // Check if current path is an admin dashboard (admin, merchant, or manager)
+        const isAdminDashboard = pathname.startsWith("/admin") || 
+                                 pathname.startsWith("/merchant") || 
+                                 pathname.startsWith("/manager");
 
         return (
                 <AuthProvider>
-                        {!isMerchant && <Header />}
+                        {!isAdminDashboard && <Header />}
                         <main>{children}</main>
-                        {!isMerchant && <Footer />}
+                        {!isAdminDashboard && <Footer />}
                 </AuthProvider>
         );
 }

@@ -34,6 +34,8 @@ import {
     MessageCircleQuestionMark,
     Bell,
     ChartBar,
+    Moon,
+    Sun,
 } from "lucide-react";
 
 // Navigation icons
@@ -110,6 +112,8 @@ export {
     MessageCircleQuestionMark,
     Bell,
     ChartBar,
+    Moon,
+    Sun,
 };
 
 export const SocialIcons = {

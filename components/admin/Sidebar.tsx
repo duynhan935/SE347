@@ -1,0 +1,166 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, Users, Store, Utensils, Grid3x3, Ruler, Percent, Settings, ChevronDown, X } from "lucide-react";
+import { useState } from "react";
+
+interface MenuItem {
+	label: string;
+	icon: React.ElementType;
+	href?: string;
+	children?: { label: string; href: string }[];
+}
+
+const menuItems: MenuItem[] = [
+	{
+		label: "Dashboard",
+		icon: LayoutDashboard,
+		href: "/admin/dashboard",
+	},
+	{
+		label: "Quản lý Users",
+		icon: Users,
+		href: "/admin/users",
+	},
+	{
+		label: "Quản lý Merchants",
+		icon: Store,
+		href: "/admin/merchants",
+	},
+	{
+		label: "Quản lý Nhà hàng",
+		icon: Utensils,
+		href: "/admin/restaurants",
+	},
+	{
+		label: "Categories",
+		icon: Grid3x3,
+		href: "/admin/categories",
+	},
+	{
+		label: "Sizes",
+		icon: Ruler,
+		href: "/admin/sizes",
+	},
+	{
+		label: "Khuyến Mãi",
+		icon: Percent,
+		href: "/admin/promotions",
+	},
+	{
+		label: "Cài đặt",
+		icon: Settings,
+		href: "/admin/settings",
+	},
+];
+
+interface SidebarProps {
+	sidebarOpen: boolean;
+	setSidebarOpen: (open: boolean) => void;
+}
+
+export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
+	const pathname = usePathname();
+	const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+
+	return (
+		<>
+			{/* Overlay */}
+			{sidebarOpen && (
+				<div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
+			)}
+
+			{/* Sidebar */}
+			<aside
+				className={`fixed left-0 top-0 z-50 flex h-screen w-72 flex-col overflow-y-hidden bg-white dark:bg-gray-900 duration-300 ease-linear lg:static lg:translate-x-0 border-r border-gray-200 dark:border-gray-800 ${
+					sidebarOpen ? "translate-x-0" : "-translate-x-full"
+				}`}
+			>
+				{/* Logo */}
+				<div className="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
+					<Link href="/admin/dashboard" className="flex items-center gap-2">
+						<div className="w-10 h-10 bg-brand-yellow rounded-lg flex items-center justify-center">
+							<span className="text-white font-bold text-xl">A</span>
+						</div>
+						<span className="text-xl font-bold text-gray-900 dark:text-white">Admin Panel</span>
+					</Link>
+					<button
+						onClick={() => setSidebarOpen(false)}
+						className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300"
+					>
+						<X size={20} />
+					</button>
+				</div>
+
+				{/* Menu */}
+				<div className="no-scrollbar flex flex-col overflow-y-auto duration-300 ease-linear">
+					<nav className="mt-5 px-4 py-4 lg:mt-9 lg:px-6">
+						<div>
+							<h3 className="mb-4 ml-4 text-sm font-semibold text-gray-500 dark:text-gray-400">MENU</h3>
+							<ul className="mb-6 flex flex-col gap-1.5">
+								{menuItems.map((item) => {
+									const isActive = pathname === item.href;
+									const Icon = item.icon;
+
+									if (item.children) {
+										const isOpen = openSubmenu === item.label;
+										return (
+											<li key={item.label}>
+												<button
+													onClick={() => setOpenSubmenu(isOpen ? null : item.label)}
+													className="group relative flex w-full items-center gap-2.5 rounded-lg px-4 py-2 font-medium text-gray-700 dark:text-gray-300 duration-300 ease-in-out hover:bg-gray-100 dark:hover:bg-gray-800"
+												>
+													<Icon size={20} />
+													{item.label}
+													<ChevronDown
+														size={16}
+														className={`ml-auto transition-transform ${isOpen ? "rotate-180" : ""}`}
+													/>
+												</button>
+												{isOpen && (
+													<ul className="mt-2 ml-10 flex flex-col gap-1">
+														{item.children.map((child) => (
+															<li key={child.href}>
+																<Link
+																	href={child.href}
+																	className={`block rounded-md px-4 py-2 text-sm ${
+																		pathname === child.href
+																			? "bg-brand-yellow text-white"
+																			: "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+																	}`}
+																>
+																	{child.label}
+																</Link>
+															</li>
+														))}
+													</ul>
+												)}
+											</li>
+										);
+									}
+
+									return (
+										<li key={item.label}>
+											<Link
+												href={item.href!}
+												className={`group relative flex items-center gap-2.5 rounded-lg px-4 py-2 font-medium duration-300 ease-in-out ${
+													isActive
+														? "bg-brand-yellow text-white"
+														: "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+												}`}
+											>
+												<Icon size={20} />
+												{item.label}
+											</Link>
+										</li>
+									);
+								})}
+							</ul>
+						</div>
+					</nav>
+				</div>
+			</aside>
+		</>
+	);
+}
