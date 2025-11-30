@@ -1,17 +1,21 @@
 "use client";
 
-import { ThemeProvider } from "@/components/admin/ThemeProvider";
-import MerchantSidebar from "@/components/merchant/MerchantSidebar";
-import Header from "@/components/admin/Header";
 import { useState } from "react";
+import { ThemeProvider } from "@/components/admin/ThemeProvider";
+import ManagerSidebar from "@/components/manager/ManagerSidebar";
+import Header from "@/components/admin/Header";
 
-export default function MerchantLayout({ children }: { children: React.ReactNode }) {
+export default function ManagerLayout({
+	children,
+}: {
+	children: React.ReactNode;
+}) {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 
 	return (
 		<ThemeProvider>
 			<div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
-				<MerchantSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+				<ManagerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 				<div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
 					<Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 					<main className="flex-1 bg-gray-50 dark:bg-gray-900">
