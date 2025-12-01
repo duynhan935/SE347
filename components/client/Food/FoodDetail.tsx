@@ -6,6 +6,10 @@ import { ChevronLeft, Minus, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useCartStore } from "@/stores/cartStore";
+import { useAuthStore } from "@/stores/useAuthStore";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 type FoodDetailClientProps = {
     foodItem: Product;
@@ -13,7 +17,11 @@ type FoodDetailClientProps = {
 };
 
 export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientProps) {
+    const router = useRouter();
+    const { addItem } = useCartStore();
+    const { user } = useAuthStore();
     const [quantity, setQuantity] = useState(1);
+    const [specialInstructions, setSpecialInstructions] = useState("");
 
     const [selectedSize, setSelectedSize] = useState<ProductSize | undefined>(foodItem.productSizes?.[0]);
 
@@ -90,6 +98,8 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                             id="special-instructions"
                             rows={3}
                             placeholder="Add any request here"
+                            value={specialInstructions}
+                            onChange={(e) => setSpecialInstructions(e.target.value)}
                             className="w-full mt-2 p-3 border rounded-md focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition"
                         ></textarea>
 
@@ -114,6 +124,37 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                             </div>
 
                             <button
+                                onClick={async () => {
+                                    if (!user) {
+                                        toast.error("Please login to add items to cart");
+                                        router.push("/login");
+                                        return;
+                                    }
+
+                                    if (!selectedSize) {
+                                        toast.error("Please select a size");
+                                        return;
+                                    }
+
+                                    await addItem(
+                                        {
+                                            id: foodItem.id,
+                                            name: foodItem.productName,
+                                            price: selectedSize.price,
+                                            image: foodItem.imageURL || "/placeholder.png",
+                                            restaurantId: restaurant.id,
+                                            restaurantName: restaurant.resName,
+                                            sizeId: selectedSize.id,
+                                            sizeName: selectedSize.sizeName,
+                                            customizations: specialInstructions || undefined,
+                                        },
+                                        quantity
+                                    );
+
+                                    // Reset form
+                                    setQuantity(1);
+                                    setSpecialInstructions("");
+                                }}
                                 className="flex-grow bg-brand-black text-white font-bold py-3 px-6 rounded-md hover:bg-brand-black/90 transition cursor-pointer disabled:bg-gray-400"
                                 disabled={!selectedSize}
                             >
