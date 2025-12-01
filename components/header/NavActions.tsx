@@ -6,8 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import FloatingDropdown from "./FloatingDropdown";
 import CartDropdown from "./CartDropdown";
+import FloatingDropdown from "./FloatingDropdown";
 
 export default function NavActions() {
     const [mounted, setMounted] = useState(false);
@@ -92,7 +92,7 @@ export default function NavActions() {
 
                             {user?.role === "MERCHANT" && (
                                 <Link
-                                    href={`/merchant/${user.id}`}
+                                    href="/merchant"
                                     prefetch={true}
                                     className="flex items-center px-4 py-2.5 text-brand-black font-manrope text-p2 hover:bg-brand-yellowlight transition-colors"
                                 >

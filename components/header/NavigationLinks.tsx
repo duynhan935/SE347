@@ -83,7 +83,7 @@ export default function NavigationLinks() {
                                                 )}
                                                 {mounted && user?.role === "MERCHANT" && (
                                                         <Link
-                                                                href={`/merchant/${user.id}`}
+                                                                href="/merchant"
                                                                 prefetch={true}
                                                                 className="block px-4 py-2.5 text-brand-black font-manrope text-p2 hover:bg-brand-yellowlight transition-colors"
                                                         >
