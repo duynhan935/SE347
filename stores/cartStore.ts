@@ -39,7 +39,8 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
 
     const cartRecord = cart as Record<string, unknown>;
     const potentialData = cartRecord["data"];
-    const cartPayload = potentialData && typeof potentialData === "object" ? (potentialData as Record<string, unknown>) : cartRecord;
+    const cartPayload =
+        potentialData && typeof potentialData === "object" ? (potentialData as Record<string, unknown>) : cartRecord;
     const restaurants = cartPayload["restaurants"];
     if (!Array.isArray(restaurants)) {
         return null;
@@ -52,8 +53,10 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
         }
 
         const restaurantRecord = restaurant as Record<string, unknown>;
-        const restaurantId = typeof restaurantRecord["restaurantId"] === "string" ? restaurantRecord["restaurantId"] : "";
-        const restaurantName = typeof restaurantRecord["restaurantName"] === "string" ? restaurantRecord["restaurantName"] : "";
+        const restaurantId =
+            typeof restaurantRecord["restaurantId"] === "string" ? restaurantRecord["restaurantId"] : "";
+        const restaurantName =
+            typeof restaurantRecord["restaurantName"] === "string" ? restaurantRecord["restaurantName"] : "";
         const restaurantItems = restaurantRecord["items"];
 
         if (!Array.isArray(restaurantItems)) {
