@@ -5,6 +5,7 @@ import Header from "@/components/header/Header";
 import Footer from "@/components/layout/client/Footer";
 import { usePathname } from "next/navigation";
 import React from "react";
+import { useCartSync } from "@/lib/hooks/useCartSync";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -12,6 +13,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     const isAdmin = pathname.startsWith("/admin");
     const isManager = pathname.startsWith("/manager");
     const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/register");
+
+    // Sync cart with user authentication
+    useCartSync();
 
     // Show Header/Footer only for client pages (not admin/manager/merchant)
     const showHeaderFooter = !isMerchant && !isAdmin && !isManager && !isAuthPage;

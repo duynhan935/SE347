@@ -5,12 +5,12 @@ import { cartApi } from "@/lib/api/cartApi";
 import toast from "react-hot-toast";
 
 export interface CartItem {
-    id: string; // Changed from number to string for backend compatibility
+    id: string;
     name: string;
     price: number;
     image: string | StaticImageData;
     quantity: number;
-    restaurantId: string; // Changed from number to string
+    restaurantId: string;
     restaurantName: string;
     sizeId?: string;
     sizeName?: string;
@@ -54,24 +54,30 @@ export const useCartStore = create<CartState>()(
                     set({ isLoading: true });
                     const cart = await cartApi.getCart(userId);
 
+                    console.log("Fetched cart:", cart);
+
                     // Transform backend cart structure to store format
                     const items: CartItem[] = [];
-                    cart.restaurants.forEach((restaurant) => {
-                        restaurant.items.forEach((item) => {
-                            items.push({
-                                id: item.productId,
-                                name: item.productName,
-                                price: item.price,
-                                quantity: item.quantity,
-                                image: item.imageURL || "",
-                                restaurantId: restaurant.restaurantId,
-                                restaurantName: restaurant.restaurantName,
-                                sizeId: item.sizeId,
-                                sizeName: item.sizeName,
-                                customizations: item.customizations,
+
+                    // Check if cart data exists and has restaurants
+                    if (cart.data && cart.data.restaurants && Array.isArray(cart.data.restaurants)) {
+                        cart.data.restaurants.forEach((restaurant) => {
+                            restaurant.items.forEach((item) => {
+                                items.push({
+                                    id: item.productId,
+                                    name: item.productName,
+                                    price: item.price,
+                                    quantity: item.quantity,
+                                    image: item.imageURL || "",
+                                    restaurantId: restaurant.restaurantId,
+                                    restaurantName: restaurant.restaurantName,
+                                    sizeId: item.sizeId,
+                                    sizeName: item.sizeName,
+                                    customizations: item.customizations,
+                                });
                             });
                         });
-                    });
+                    }
 
                     set({ items });
                 } catch (error) {
