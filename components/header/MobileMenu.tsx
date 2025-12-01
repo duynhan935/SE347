@@ -177,7 +177,7 @@ export default function MobileMenu() {
                                                         {mounted && user?.role === "MERCHANT" && (
                                                                 <DropdownMenuItem>
                                                                         <Link
-                                                                                href={`/merchant/${user.id}`}
+                                                                                href="/merchant"
                                                                                 prefetch={true}
                                                                                 className="w-full font-manrope text-p2"
                                                                         >
@@ -225,7 +225,7 @@ export default function MobileMenu() {
                                                                 )}
                                                                 {user?.role === "MERCHANT" && (
                                                                         <Link
-                                                                                href={`/merchant/${user.id}`}
+                                                                                href="/merchant"
                                                                                 prefetch={true}
                                                                                 onClick={() => setOpen(false)}
                                                                                 className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors block"

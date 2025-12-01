@@ -67,6 +67,8 @@ export const restaurantApi = {
         return api.put<Restaurant>(`/restaurant/${restaurantId}`, formData);
     },
     updateRestaurantStatus: (restaurantId: string) => api.put<Restaurant>(`/restaurant/enable/${restaurantId}`),
+    createManagerForRestaurant: (restaurantId: string, payload: { username: string; email: string; password: string; confirmPassword: string }) =>
+        api.post<void>(`/restaurant/manager/${restaurantId}`, payload),
     deleteRestaurant: (restaurantId: string) => api.delete(`/restaurant/${restaurantId}`),
     deleteRestaurantImage: (restaurantId: string) => api.delete(`/restaurant/image/${restaurantId}`),
     getAllCategories: () => api.get<Category[]>(`/category`),

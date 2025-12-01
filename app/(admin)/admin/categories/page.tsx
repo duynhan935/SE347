@@ -1,11 +1,11 @@
 "use client";
 
+import CategoryFormModal from "@/components/admin/categories/CategoryFormModal";
 import { categoryApi } from "@/lib/api/categoryApi";
 import { Category, CategoryData } from "@/types";
-import { Loader2, Search, Edit, Trash, Plus } from "lucide-react";
+import { Edit, Loader2, Plus, Search, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import CategoryFormModal from "@/components/admin/categories/CategoryFormModal";
 
 export default function CategoriesPage() {
 	const [categories, setCategories] = useState<Category[]>([]);
@@ -118,7 +118,7 @@ export default function CategoriesPage() {
 							<thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
 								<tr>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-										ID
+										STT
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
 										Tên Category
@@ -129,13 +129,13 @@ export default function CategoriesPage() {
 								</tr>
 							</thead>
 							<tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-								{filteredCategories.map((category) => (
+								{filteredCategories.map((category, index) => (
 									<tr
 										key={category.id}
 										className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
 									>
 										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-											{category.id}
+											{index + 1}
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
 											<div className="text-sm font-medium text-gray-900 dark:text-white">

@@ -98,7 +98,7 @@ export default function LoginPage() {
         };
 
         return (
-                <section className="min-h-screen flex items-center justify-center bg-brand-yellowlight p-4 xl:-mt-10">
+                <section className="min-h-screen flex items-center justify-center bg-brand-yellowlight p-4">
                         <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-8">
                                 <h2 className="text-3xl font-bold text-center font-roboto-serif text-brand-black mb-6">
                                         Sign In

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { sizeApi } from "@/lib/api/sizeApi";
 import type { Size, SizeData } from "@/types";
-import { Loader2, Plus, Edit, Trash } from "lucide-react";
+import { Edit, Loader2, Plus, Trash } from "lucide-react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import SizeFormModal from "./SizeFormModal";
 
@@ -95,14 +95,15 @@ export default function SizesList() {
 
             {!loading && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {sizes.map((size) => (
+                    {sizes.map((size, index) => (
                         <div
                             key={size.id}
                             className="border rounded-lg p-4 hover:shadow-md transition-shadow flex justify-between items-center"
                         >
                             <div>
-                                <h3 className="font-semibold text-lg">{size.name}</h3>
-                                <p className="text-sm text-gray-500">ID: {size.id}</p>
+                                <h3 className="font-semibold text-lg">
+                                    {index + 1}. {size.name}
+                                </h3>
                             </div>
                             <div className="flex gap-2">
                                 <button
