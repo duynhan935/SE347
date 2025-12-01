@@ -169,13 +169,12 @@ export default function CheckoutPageClient({ backgroundImage }: { backgroundImag
                         userLat: latitude,
                         userLon: longitude,
                     };
-
                     return orderApi.createOrder(payload);
                 })
             );
 
             for (const [restId] of restaurantEntries) {
-                await clearRestaurant(restId);
+                await clearRestaurant(restId, { silent: true });
             }
 
             toast.success(`Successfully created ${orders.length} order(s)!`);

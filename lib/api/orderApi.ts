@@ -45,6 +45,17 @@ export const orderApi = {
         return response.data.data;
     },
 
+    // Get orders by user
+    getOrdersByUser: async (userId: string): Promise<{ orders: Order[]; pagination?: unknown }> => {
+        const response = await api.get<{ success: boolean; data: Order[]; pagination?: unknown }>(
+            `/orders/user/${userId}`
+        );
+        return {
+            orders: response.data.data,
+            pagination: response.data.pagination,
+        };
+    },
+
     // Get orders by merchant
     getOrdersByMerchant: async (merchantId: string): Promise<Order[]> => {
         // Note: Backend doesn't have direct merchant endpoint yet

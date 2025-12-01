@@ -26,160 +26,234 @@ interface CartState {
     setUserId: (userId: string | null) => void;
     fetchCart: () => Promise<void>;
     addItem: (itemToAdd: Omit<CartItem, "quantity">, quantity: number) => Promise<void>;
-    removeItem: (itemId: string, restaurantId: string) => Promise<void>;
+    removeItem: (itemId: string, restaurantId: string, options?: { silent?: boolean }) => Promise<void>;
     updateQuantity: (itemId: string, restaurantId: string, quantity: number) => Promise<void>;
-    clearCart: () => Promise<void>;
-    clearRestaurant: (restaurantId: string) => Promise<void>;
+    clearCart: (options?: { silent?: boolean }) => Promise<void>;
+    clearRestaurant: (restaurantId: string, options?: { silent?: boolean }) => Promise<void>;
 }
+
+const mapCartToItems = (cart: unknown): CartItem[] | null => {
+    if (!cart || typeof cart !== "object") {
+        return null;
+    }
+
+    const cartRecord = cart as Record<string, unknown>;
+    const potentialData = cartRecord["data"];
+    const cartPayload = potentialData && typeof potentialData === "object" ? (potentialData as Record<string, unknown>) : cartRecord;
+    const restaurants = cartPayload["restaurants"];
+    if (!Array.isArray(restaurants)) {
+        return null;
+    }
+
+    const items: CartItem[] = [];
+    restaurants.forEach((restaurant) => {
+        if (!restaurant || typeof restaurant !== "object") {
+            return;
+        }
+
+        const restaurantRecord = restaurant as Record<string, unknown>;
+        const restaurantId = typeof restaurantRecord["restaurantId"] === "string" ? restaurantRecord["restaurantId"] : "";
+        const restaurantName = typeof restaurantRecord["restaurantName"] === "string" ? restaurantRecord["restaurantName"] : "";
+        const restaurantItems = restaurantRecord["items"];
+
+        if (!Array.isArray(restaurantItems)) {
+            return;
+        }
+
+        restaurantItems.forEach((item) => {
+            if (!item || typeof item !== "object") {
+                return;
+            }
+
+            const itemRecord = item as Record<string, unknown>;
+            const productId = typeof itemRecord["productId"] === "string" ? itemRecord["productId"] : undefined;
+            const productName = typeof itemRecord["productName"] === "string" ? itemRecord["productName"] : undefined;
+            const price = typeof itemRecord["price"] === "number" ? itemRecord["price"] : undefined;
+            const quantity = typeof itemRecord["quantity"] === "number" ? itemRecord["quantity"] : undefined;
+
+            if (!productId || !productName || price === undefined || quantity === undefined) {
+                return;
+            }
+
+            const image = typeof itemRecord["imageURL"] === "string" ? itemRecord["imageURL"] : "";
+            const sizeId = typeof itemRecord["sizeId"] === "string" ? itemRecord["sizeId"] : undefined;
+            const sizeName = typeof itemRecord["sizeName"] === "string" ? itemRecord["sizeName"] : undefined;
+            const rawCustomizations = itemRecord["customizations"];
+            const customizations =
+                typeof rawCustomizations === "string" && rawCustomizations.trim().length > 0
+                    ? rawCustomizations
+                    : undefined;
+
+            items.push({
+                id: productId,
+                name: productName,
+                price,
+                quantity,
+                image,
+                restaurantId,
+                restaurantName,
+                sizeId,
+                sizeName,
+                customizations,
+            });
+        });
+    });
+
+    return items;
+};
 
 export const useCartStore = create<CartState>()(
     persist(
-        (set, get) => ({
-            items: [],
-            userId: null,
-            isLoading: false,
-
-            setUserId: (userId) => {
-                set({ userId });
-                if (userId) {
-                    get().fetchCart();
+        (set, get) => {
+            const updateItemsFromResponse = (cartResponse: unknown): boolean => {
+                const parsedItems = mapCartToItems(cartResponse);
+                if (parsedItems === null) {
+                    return false;
                 }
-            },
 
-            fetchCart: async () => {
-                const { userId } = get();
-                if (!userId) return;
+                set({ items: parsedItems });
+                return true;
+            };
 
-                try {
-                    set({ isLoading: true });
-                    const cart = await cartApi.getCart(userId);
+            return {
+                items: [],
+                userId: null,
+                isLoading: false,
 
-                    console.log("Fetched cart:", cart);
+                setUserId: (userId) => {
+                    set({ userId });
+                    if (userId) {
+                        get().fetchCart();
+                    }
+                },
 
-                    // Transform backend cart structure to store format
-                    const items: CartItem[] = [];
+                fetchCart: async () => {
+                    const { userId } = get();
+                    if (!userId) return;
 
-                    // Check if cart data exists and has restaurants
-                    if (cart.data && cart.data.restaurants && Array.isArray(cart.data.restaurants)) {
-                        cart.data.restaurants.forEach((restaurant) => {
-                            restaurant.items.forEach((item) => {
-                                items.push({
-                                    id: item.productId,
-                                    name: item.productName,
-                                    price: item.price,
-                                    quantity: item.quantity,
-                                    image: item.imageURL || "",
-                                    restaurantId: restaurant.restaurantId,
-                                    restaurantName: restaurant.restaurantName,
-                                    sizeId: item.sizeId,
-                                    sizeName: item.sizeName,
-                                    customizations: item.customizations,
-                                });
-                            });
+                    try {
+                        set({ isLoading: true });
+                        const cart = await cartApi.getCart(userId);
+                        if (!updateItemsFromResponse(cart)) {
+                            set({ items: [] });
+                        }
+                    } catch (error) {
+                        console.error("Failed to fetch cart:", error);
+                        toast.error("Failed to load cart");
+                    } finally {
+                        set({ isLoading: false });
+                    }
+                },
+
+                addItem: async (itemToAdd, quantity) => {
+                    const { userId } = get();
+                    if (!userId) {
+                        toast.error("Please login to add items to cart");
+                        return;
+                    }
+
+                    try {
+                        const cart = await cartApi.addItemToCart(userId, {
+                            restaurant: {
+                                restaurantId: itemToAdd.restaurantId,
+                                restaurantName: itemToAdd.restaurantName,
+                            },
+                            item: {
+                                productId: itemToAdd.id,
+                                productName: itemToAdd.name,
+                                price: itemToAdd.price,
+                                quantity,
+                                sizeId: itemToAdd.sizeId,
+                                sizeName: itemToAdd.sizeName,
+                                customizations: itemToAdd.customizations,
+                                imageURL: typeof itemToAdd.image === "string" ? itemToAdd.image : undefined,
+                            },
                         });
+
+                        if (!updateItemsFromResponse(cart)) {
+                            await get().fetchCart();
+                        }
+                        toast.success("Item added to cart");
+                    } catch (error) {
+                        console.error("Failed to add item:", error);
+                        toast.error("Failed to add item to cart");
                     }
+                },
 
-                    set({ items });
-                } catch (error) {
-                    console.error("Failed to fetch cart:", error);
-                    toast.error("Failed to load cart");
-                } finally {
-                    set({ isLoading: false });
-                }
-            },
+                removeItem: async (itemId, restaurantId, options) => {
+                    const { userId } = get();
+                    if (!userId) return;
 
-            addItem: async (itemToAdd, quantity) => {
-                const { userId } = get();
-                if (!userId) {
-                    toast.error("Please login to add items to cart");
-                    return;
-                }
-
-                try {
-                    await cartApi.addItemToCart(userId, {
-                        restaurant: {
-                            restaurantId: itemToAdd.restaurantId,
-                            restaurantName: itemToAdd.restaurantName,
-                        },
-                        item: {
-                            productId: itemToAdd.id,
-                            productName: itemToAdd.name,
-                            price: itemToAdd.price,
-                            quantity,
-                            sizeId: itemToAdd.sizeId,
-                            sizeName: itemToAdd.sizeName,
-                            customizations: itemToAdd.customizations,
-                            imageURL: typeof itemToAdd.image === "string" ? itemToAdd.image : undefined,
-                        },
-                    });
-
-                    await get().fetchCart();
-                    toast.success("Item added to cart");
-                } catch (error) {
-                    console.error("Failed to add item:", error);
-                    toast.error("Failed to add item to cart");
-                }
-            },
-
-            removeItem: async (itemId, restaurantId) => {
-                const { userId } = get();
-                if (!userId) return;
-
-                try {
-                    await cartApi.removeItemFromCart(userId, restaurantId, itemId);
-                    await get().fetchCart();
-                    toast.success("Item removed from cart");
-                } catch (error) {
-                    console.error("Failed to remove item:", error);
-                    toast.error("Failed to remove item");
-                }
-            },
-
-            updateQuantity: async (itemId, restaurantId, quantity) => {
-                const { userId } = get();
-                if (!userId) return;
-
-                try {
-                    if (quantity <= 0) {
-                        await get().removeItem(itemId, restaurantId);
-                    } else {
-                        await cartApi.updateItemQuantity(userId, restaurantId, itemId, quantity);
-                        await get().fetchCart();
+                    try {
+                        const cart = await cartApi.removeItemFromCart(userId, restaurantId, itemId);
+                        if (!updateItemsFromResponse(cart)) {
+                            await get().fetchCart();
+                        }
+                        if (!options?.silent) {
+                            toast.success("Item removed from cart");
+                        }
+                    } catch (error) {
+                        console.error("Failed to remove item:", error);
+                        toast.error("Failed to remove item");
                     }
-                } catch (error) {
-                    console.error("Failed to update quantity:", error);
-                    toast.error("Failed to update quantity");
-                }
-            },
+                },
 
-            clearCart: async () => {
-                const { userId } = get();
-                if (!userId) return;
+                updateQuantity: async (itemId, restaurantId, quantity) => {
+                    const { userId } = get();
+                    if (!userId) return;
 
-                try {
-                    await cartApi.clearCart(userId);
-                    set({ items: [] });
-                    toast.success("Cart cleared");
-                } catch (error) {
-                    console.error("Failed to clear cart:", error);
-                    toast.error("Failed to clear cart");
-                }
-            },
+                    try {
+                        if (quantity <= 0) {
+                            await get().removeItem(itemId, restaurantId, { silent: true });
+                        } else {
+                            const cart = await cartApi.updateItemQuantity(userId, restaurantId, itemId, quantity);
+                            if (!updateItemsFromResponse(cart)) {
+                                await get().fetchCart();
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Failed to update quantity:", error);
+                        toast.error("Failed to update quantity");
+                    }
+                },
 
-            clearRestaurant: async (restaurantId) => {
-                const { userId } = get();
-                if (!userId) return;
+                clearCart: async (options) => {
+                    const { userId } = get();
+                    if (!userId) return;
 
-                try {
-                    await cartApi.clearRestaurant(userId, restaurantId);
-                    await get().fetchCart();
-                    toast.success("Restaurant items removed");
-                } catch (error) {
-                    console.error("Failed to clear restaurant:", error);
-                    toast.error("Failed to remove restaurant items");
-                }
-            },
-        }),
+                    try {
+                        const cart = await cartApi.clearCart(userId);
+                        if (!updateItemsFromResponse(cart)) {
+                            set({ items: [] });
+                        }
+                        if (!options?.silent) {
+                            toast.success("Cart cleared");
+                        }
+                    } catch (error) {
+                        console.error("Failed to clear cart:", error);
+                        toast.error("Failed to clear cart");
+                    }
+                },
+
+                clearRestaurant: async (restaurantId, options) => {
+                    const { userId } = get();
+                    if (!userId) return;
+
+                    try {
+                        const cart = await cartApi.clearRestaurant(userId, restaurantId);
+                        if (!updateItemsFromResponse(cart)) {
+                            await get().fetchCart();
+                        }
+                        if (!options?.silent) {
+                            toast.success("Restaurant items removed");
+                        }
+                    } catch (error) {
+                        console.error("Failed to clear restaurant:", error);
+                        toast.error("Failed to remove restaurant items");
+                    }
+                },
+            };
+        },
         {
             name: "cart-storage",
             partialize: (state) => ({ userId: state.userId }),
