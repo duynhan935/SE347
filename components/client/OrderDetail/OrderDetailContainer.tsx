@@ -93,13 +93,19 @@ export default async function OrderDetailPageContainer({ params }: { params: { i
                                                                                         key={item.id}
                                                                                         className="flex items-start gap-4 pt-4 border-b pb-2 last:border-b-0"
                                                                                 >
-                                                                                        <Image
-                                                                                                src={item.image}
-                                                                                                alt={item.name}
-                                                                                                width={64}
-                                                                                                height={64}
-                                                                                                className="rounded-md object-cover"
-                                                                                        />
+                                                                                        {item.image && typeof item.image === "string" && item.image.trim() !== "" ? (
+                                                                                                <Image
+                                                                                                        src={item.image}
+                                                                                                        alt={item.name}
+                                                                                                        width={64}
+                                                                                                        height={64}
+                                                                                                        className="rounded-md object-cover"
+                                                                                                />
+                                                                                        ) : (
+                                                                                                <div className="w-[64px] h-[64px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+                                                                                                        No Image
+                                                                                                </div>
+                                                                                        )}
                                                                                         <div className="flex-grow">
                                                                                                 <p className="font-semibold">
                                                                                                         {item.name}

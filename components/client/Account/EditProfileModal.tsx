@@ -102,12 +102,24 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                                                 <form onSubmit={handleSubmit} className="p-6">
                                                         <div className="flex flex-col items-center gap-4 mb-6">
                                                                 <div className="relative w-28 h-28">
-                                                                        <Image
-                                                                                src={avatarPreview || user.avatar}
-                                                                                alt="Avatar preview"
-                                                                                fill
-                                                                                className="rounded-full object-cover border-2 border-red-500"
-                                                                        />
+                                                                        {(avatarPreview || user.avatar) &&
+                                                                        typeof (avatarPreview || user.avatar) ===
+                                                                                "string" &&
+                                                                        (avatarPreview || user.avatar).trim() !== "" ? (
+                                                                                <Image
+                                                                                        src={
+                                                                                                avatarPreview ||
+                                                                                                user.avatar
+                                                                                        }
+                                                                                        alt="Avatar preview"
+                                                                                        fill
+                                                                                        className="rounded-full object-cover border-2 border-red-500"
+                                                                                />
+                                                                        ) : (
+                                                                                <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs border-2 border-red-500">
+                                                                                        No Avatar
+                                                                                </div>
+                                                                        )}
                                                                         <button
                                                                                 title="Upload avatar"
                                                                                 type="button"
