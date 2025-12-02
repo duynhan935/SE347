@@ -24,10 +24,10 @@ export default function LoginPage() {
 
                 try {
                         const success = await login({ username: email, password });
-                        
+
                         // Dismiss loading toast
                         toast.dismiss(loadingToast);
-                        
+
                         if (success) {
                                 toast.success("Login successful! Welcome back! 🎉", { duration: 3000 });
                                 // Small delay before navigation to show success message
@@ -55,12 +55,14 @@ export default function LoginPage() {
                                         return;
                                 }
 
-                                toast.error(error || "Login failed. Please check your credentials.", { duration: 4000 });
+                                toast.error(error || "Login failed. Please check your credentials.", {
+                                        duration: 4000,
+                                });
                         }
                 } catch (err) {
                         // Dismiss loading toast
                         toast.dismiss(loadingToast);
-                        
+
                         // Handle axios error with errorCode (especially INACTIVATED_ACCOUNT)
                         const axiosError = err as {
                                 response?: { data?: { errorCode?: string; message?: string } };
@@ -87,12 +89,13 @@ export default function LoginPage() {
                         }
 
                         // For other errors, show toast with better message
-                        const displayMessage = errorMessage.includes("401") || errorMessage.includes("Unauthorized")
-                                ? "Invalid email or password. Please try again."
-                                : errorMessage.includes("Network") || errorMessage.includes("timeout")
-                                ? "Network error. Please check your connection and try again."
-                                : errorMessage;
-                        
+                        const displayMessage =
+                                errorMessage.includes("401") || errorMessage.includes("Unauthorized")
+                                        ? "Invalid email or password. Please try again."
+                                        : errorMessage.includes("Network") || errorMessage.includes("timeout")
+                                        ? "Network error. Please check your connection and try again."
+                                        : errorMessage;
+
                         toast.error(displayMessage, { duration: 4000 });
                 }
         };

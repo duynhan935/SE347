@@ -29,7 +29,7 @@ export const OrderSummary = ({ subtotal }: { subtotal: number }) => {
                 <span>${total.toFixed(2)}</span>
             </div>
             <Link
-                href="/checkout"
+                href="/payment"
                 className="block w-full mt-6 bg-brand-purple text-white font-bold py-3 rounded-md hover:bg-brand-purple/90 transition-colors text-center"
             >
                 Proceed to Check Out

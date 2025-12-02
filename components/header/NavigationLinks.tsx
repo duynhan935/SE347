@@ -59,7 +59,7 @@ export default function NavigationLinks() {
                                                         Cart
                                                 </Link>
                                                 <Link
-                                                        href="/checkout"
+                                                        href="/payment"
                                                         prefetch={true}
                                                         className="block px-4 py-2.5 text-brand-black font-manrope text-p2 hover:bg-brand-yellowlight transition-colors"
                                                 >

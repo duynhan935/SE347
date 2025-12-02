@@ -147,7 +147,7 @@ export default function MobileMenu() {
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem>
                                                                 <Link
-                                                                        href="/checkout"
+                                                                        href="/payment"
                                                                         prefetch={true}
                                                                         className="w-full font-manrope text-p2"
                                                                 >

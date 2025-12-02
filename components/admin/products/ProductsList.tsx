@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { productApi } from "@/lib/api/productApi";
-import { categoryApi } from "@/lib/api/categoryApi";
-import { sizeApi } from "@/lib/api/sizeApi";
-import { restaurantApi } from "@/lib/api/restaurantApi";
-import type { Product, ProductCreateData, Category, Size, Restaurant } from "@/types";
-import { Loader2, Plus, Search, Edit, Trash, CheckCircle, XCircle } from "lucide-react";
-import Image from "next/image";
-import ProductFormModal from "./ProductFormModal";
-import toast from "react-hot-toast";
 import Pagination from "@/components/client/Pagination";
+import { categoryApi } from "@/lib/api/categoryApi";
+import { productApi } from "@/lib/api/productApi";
+import { restaurantApi } from "@/lib/api/restaurantApi";
+import { sizeApi } from "@/lib/api/sizeApi";
+import type { Category, Product, ProductCreateData, Restaurant, Size } from "@/types";
+import { CheckCircle, Edit, Loader2, Plus, Search, Trash, XCircle } from "lucide-react";
+import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import ProductFormModal from "./ProductFormModal";
 
 export default function ProductsList() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -190,9 +190,9 @@ export default function ProductsList() {
                                     <tr key={product.id}>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="w-16 h-16 relative rounded-lg overflow-hidden">
-                                                {product.imageURL ? (
+                                                {product.imageURL && typeof product.imageURL === "string" && product.imageURL.trim() !== "" ? (
                                                     <Image
-                                                        src={product.imageURL as string}
+                                                        src={product.imageURL}
                                                         alt={product.productName}
                                                         fill
                                                         className="object-cover"
