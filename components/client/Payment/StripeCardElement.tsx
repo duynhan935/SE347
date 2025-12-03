@@ -1,6 +1,6 @@
 "use client";
 
-import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { CardCvcElement, CardExpiryElement, CardNumberElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -23,8 +23,8 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                         return;
                 }
 
-                const cardElement = elements.getElement(CardElement);
-                if (!cardElement) {
+                const cardNumberElement = elements.getElement(CardNumberElement);
+                if (!cardNumberElement) {
                         onPaymentError("Không tìm thấy form thẻ tín dụng.");
                         return;
                 }
@@ -35,7 +35,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                         // Confirm payment with Stripe
                         const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
                                 payment_method: {
-                                        card: cardElement,
+                                        card: cardNumberElement,
                                 },
                         });
 
@@ -76,13 +76,65 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
 
         return (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="border border-gray-300 rounded-lg p-4 bg-white">
-                                <CardElement options={cardElementOptions} />
+                        {/* Card Number */}
+                        <div className="space-y-2">
+                                <label htmlFor="card-number" className="block text-sm font-medium text-gray-700">
+                                        Số thẻ
+                                </label>
+                                <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-brand-purple focus-within:border-brand-purple transition-all">
+                                        <CardNumberElement
+                                                id="card-number"
+                                                options={{
+                                                        ...cardElementOptions,
+                                                        placeholder: "1234 5678 9012 3456",
+                                                }}
+                                        />
+                                </div>
                         </div>
+
+                        {/* Expiry Date and CVC */}
+                        <div className="grid grid-cols-2 gap-4">
+                                {/* Expiry Date */}
+                                <div className="space-y-2">
+                                        <label
+                                                htmlFor="card-expiry"
+                                                className="block text-sm font-medium text-gray-700"
+                                        >
+                                                Ngày hết hạn
+                                        </label>
+                                        <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-brand-purple focus-within:border-brand-purple transition-all">
+                                                <CardExpiryElement
+                                                        id="card-expiry"
+                                                        options={{
+                                                                ...cardElementOptions,
+                                                                placeholder: "MM/YY",
+                                                        }}
+                                                />
+                                        </div>
+                                </div>
+
+                                {/* CVC */}
+                                <div className="space-y-2">
+                                        <label htmlFor="card-cvc" className="block text-sm font-medium text-gray-700">
+                                                CVC
+                                        </label>
+                                        <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-brand-purple focus-within:border-brand-purple transition-all">
+                                                <CardCvcElement
+                                                        id="card-cvc"
+                                                        options={{
+                                                                ...cardElementOptions,
+                                                                placeholder: "123",
+                                                        }}
+                                                />
+                                        </div>
+                                </div>
+                        </div>
+
+                        {/* Submit Button */}
                         <button
                                 type="submit"
                                 disabled={!stripe || isProcessing}
-                                className="w-full bg-brand-purple text-white font-semibold py-2 px-4 rounded-lg hover:bg-brand-purple/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="w-full bg-brand-purple text-white font-semibold py-3 px-4 rounded-lg hover:bg-brand-purple/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-6"
                         >
                                 {isProcessing ? "Đang xử lý..." : "Xác nhận thanh toán"}
                         </button>

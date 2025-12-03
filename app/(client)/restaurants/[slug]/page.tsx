@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 // -- Import các component --
 import ScrollReveal from "@/components/client/Animations/ScrollReveal";
 import RestaurantActions from "@/components/client/Restaurant/RestaurantActions";
+import RestaurantBreadcrumb from "@/components/client/Restaurant/RestaurantBreadcrumb";
 import RestaurantHero from "@/components/client/Restaurant/RestaurantHero";
 import RestaurantInfo from "@/components/client/Restaurant/RestaurantInfo";
 import RestaurantMenu from "@/components/client/Restaurant/RestaurantMenu";
@@ -24,8 +25,11 @@ export default async function RestaurantDetailPage({ params }: { params: Promise
                 <main className="bg-gray-50">
                         <RestaurantHero restaurant={restaurant} />
                         <RestaurantNavTabs />
-                        <div className="custom-container py-8 lg:py-12">
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="custom-container">
+                                <RestaurantBreadcrumb restaurant={restaurant} />
+                        </div>
+                        <div className="custom-container ">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
                                         {/* Left column: Menu, About, Reviews */}
                                         <div className="lg:col-span-2 space-y-16">
                                                 <ScrollReveal>
