@@ -1,4 +1,6 @@
 // File: app/_components/client/Restaurant/RestaurantHero.tsx
+"use client";
+
 import { Restaurant } from "@/types";
 import { Star } from "lucide-react";
 import Image from "next/image";
@@ -16,6 +18,7 @@ export default function RestaurantHero({ restaurant }: { restaurant: Restaurant 
                                 priority
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+
                         <div className="absolute bottom-0 left-0 w-full">
                                 <div className="custom-container py-8 text-white">
                                         <h1 className="text-4xl lg:text-5xl font-bold font-roboto-serif">

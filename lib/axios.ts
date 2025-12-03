@@ -5,7 +5,7 @@ import { authApi } from "./api/authApi";
 // Tạo instance
 const api = axios.create({
         baseURL: "http://localhost:8080/api", // backend của bạn
-        timeout: 10000,
+        timeout: 30000, // Tăng timeout từ 10s lên 30s
         maxRedirects: 0, // Không tự động follow redirects (tránh redirect đến Docker hostname)
         validateStatus: (status) => status < 500, // Chỉ throw error cho 5xx, không throw cho redirects
 });
@@ -153,6 +153,16 @@ api.interceptors.response.use(
                 ) {
                         // Just reject without logging - chat page will handle it gracefully
                         return Promise.reject(error);
+                }
+
+                // Skip logging for timeout errors on certain endpoints - handled gracefully in stores
+                if (error.code === "ECONNABORTED") {
+                        const url = error.config?.url || "";
+                        // Skip logging for endpoints that handle timeout gracefully
+                        if (url.includes("/users/accesstoken") || url.includes("/cart/")) {
+                                // Just reject without logging - stores will handle it gracefully
+                                return Promise.reject(error);
+                        }
                 }
 
                 console.group("%c⚠️ API Error", "color:red; font-weight:bold;");

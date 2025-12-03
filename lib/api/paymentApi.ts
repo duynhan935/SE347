@@ -42,6 +42,11 @@ export const paymentApi = {
 
         // Get payment by order ID
         getPaymentByOrderId: async (orderId: string) => {
+                // Validate orderId before making request
+                if (!orderId || typeof orderId !== "string" || orderId === "undefined" || orderId === "null") {
+                        throw new Error(`Invalid orderId: ${orderId}. Order ID must be a valid string.`);
+                }
+
                 const response = await api.get<{ success: boolean; data: Payment }>(`/payments/order/${orderId}`);
                 return response.data.data;
         },
