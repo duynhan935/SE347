@@ -113,18 +113,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                         set({ user: userData, error: null, isAuthenticated: true, loading: false });
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } catch (err: any) {
-                        console.error("Failed to fetch user profile:", err);
-                        // If token is invalid, clear everything
-                        set({
-                                error: "Failed to load user profile.",
-                                user: null,
-                                isAuthenticated: false,
-                                loading: false,
-                        });
-                        // Clear invalid tokens
-                        if (typeof window !== "undefined") {
-                                localStorage.removeItem("accessToken");
-                                localStorage.removeItem("refreshToken");
+                        // Check if it's a timeout error
+                        const isTimeout = err.code === "ECONNABORTED" || err.message?.includes("timeout");
+
+                        // Only log non-timeout errors
+                        if (!isTimeout) {
+                                console.error("Failed to fetch user profile:", err);
+                        }
+
+                        // For timeout errors, don't clear tokens - might just be slow network
+                        // Only clear tokens for actual authentication errors (401, 403)
+                        const isAuthError = err.response?.status === 401 || err.response?.status === 403;
+
+                        if (isAuthError && !isTimeout) {
+                                // If token is invalid, clear everything
+                                set({
+                                        error: "Failed to load user profile.",
+                                        user: null,
+                                        isAuthenticated: false,
+                                        loading: false,
+                                });
+                                // Clear invalid tokens
+                                if (typeof window !== "undefined") {
+                                        localStorage.removeItem("accessToken");
+                                        localStorage.removeItem("refreshToken");
+                                }
+                        } else {
+                                // For timeout or other errors, just set loading to false
+                                // Keep tokens and authentication state
+                                set({ loading: false });
                         }
                 }
         },

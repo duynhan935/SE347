@@ -1,8 +1,8 @@
+import { cartApi } from "@/lib/api/cartApi";
 import { StaticImageData } from "next/image";
+import toast from "react-hot-toast";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { cartApi } from "@/lib/api/cartApi";
-import toast from "react-hot-toast";
 
 export interface CartItem {
     id: string;
@@ -141,8 +141,17 @@ export const useCartStore = create<CartState>()(
                             set({ items: [] });
                         }
                     } catch (error) {
-                        console.error("Failed to fetch cart:", error);
-                        toast.error("Failed to load cart");
+                        // Check if it's a timeout error
+                        const isTimeout = 
+                            (error as { code?: string; message?: string })?.code === "ECONNABORTED" ||
+                            (error as { message?: string })?.message?.includes("timeout");
+                        
+                        // Only log and show toast for non-timeout errors
+                        if (!isTimeout) {
+                            console.error("Failed to fetch cart:", error);
+                            toast.error("Failed to load cart");
+                        }
+                        // For timeout, silently fail - might just be slow network
                     } finally {
                         set({ isLoading: false });
                     }
