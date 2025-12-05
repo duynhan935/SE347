@@ -7,7 +7,7 @@ import { useCartStore, type CartItem } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { User as UserType } from "@/types";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { InputField } from "./InputField";
 import PaymentMethodSelector from "./PaymentMethodSelector";
@@ -106,9 +106,15 @@ export default function PaymentPageClient() {
                 orderNote: "",
         });
 
-        // Filter items by restaurant if restaurantId provided
-        const orderItems = restaurantId ? items.filter((item) => item.restaurantId === restaurantId) : items;
-        const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
+        // Filter items by restaurant if restaurantId provided - memoized for performance
+        const orderItems = useMemo(
+                () => (restaurantId ? items.filter((item) => item.restaurantId === restaurantId) : items),
+                [restaurantId, items]
+        );
+        const subtotal = useMemo(
+                () => orderItems.reduce((total, item) => total + item.price * item.quantity, 0),
+                [orderItems]
+        );
         const shipping = deliverStyle === "pickup" ? 0 : SHIPPING_FEE;
 
         useEffect(() => {
@@ -207,7 +213,7 @@ export default function PaymentPageClient() {
 
                         // Create order for each restaurant
                         const orders = await Promise.all(
-                                restaurantEntries.map(([restId, group]) => {
+                                restaurantEntries.map(async ([restId, group]) => {
                                         const payload: CreateOrderRequest = {
                                                 userId: extendedUser.id,
                                                 restaurantId: restId,
@@ -241,16 +247,44 @@ export default function PaymentPageClient() {
                                                 orderNote: formData.orderNote.trim()
                                                         ? formData.orderNote.trim()
                                                         : undefined,
+                                                // Only send location if delivery, otherwise send 0 to potentially bypass location-based validation
                                                 userLat:
-                                                        deliverStyle === "delivery"
-                                                                ? (latitude as number)
-                                                                : latitude ?? 0,
+                                                        deliverStyle === "delivery" && typeof latitude === "number"
+                                                                ? latitude
+                                                                : 0,
                                                 userLon:
-                                                        deliverStyle === "delivery"
-                                                                ? (longitude as number)
-                                                                : longitude ?? 0,
+                                                        deliverStyle === "delivery" && typeof longitude === "number"
+                                                                ? longitude
+                                                                : 0,
                                         };
-                                        return orderApi.createOrder(payload);
+                                        try {
+                                                return await orderApi.createOrder(payload);
+                                        } catch (orderError: unknown) {
+                                                // Re-throw with restaurant context for better error messages
+                                                const errorMessage =
+                                                        (orderError as { response?: { data?: { message?: string } } })
+                                                                ?.response?.data?.message ||
+                                                        (orderError as { message?: string })?.message ||
+                                                        "Failed to create order";
+
+                                                // If restaurant closed error, add more context
+                                                if (
+                                                        errorMessage.includes("Restaurant is currently closed") ||
+                                                        errorMessage.includes("currently closed")
+                                                ) {
+                                                        const now = new Date();
+                                                        const currentTime = now.toLocaleTimeString("vi-VN", {
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                                second: "2-digit",
+                                                                timeZone: "Asia/Ho_Chi_Minh",
+                                                        });
+                                                        throw new Error(
+                                                                `${errorMessage} (Thời gian hiện tại: ${currentTime}). Vui lòng đảm bảo thời gian hoạt động đã được cập nhật đúng và thử lại sau vài giây để backend cập nhật cache.`
+                                                        );
+                                                }
+                                                throw orderError;
+                                        }
                                 })
                         );
 
@@ -318,10 +352,42 @@ export default function PaymentPageClient() {
                                 toast.error(
                                         "Backend service timeout. Please check if all services are running and try again."
                                 );
-                        } else if (errorMessage.includes("Restaurant validation failed")) {
+                        } else if (
+                                errorMessage.includes("Restaurant is currently closed") ||
+                                errorMessage.includes("currently closed")
+                        ) {
+                                // Extract restaurant name if available
+                                const restaurantMatch = errorMessage.match(/Restaurant is currently closed: (.+)/);
+                                const restaurantName = restaurantMatch ? restaurantMatch[1] : "restaurant";
+
+                                // Get current time for debugging
+                                const now = new Date();
+                                const currentTime = now.toLocaleTimeString("vi-VN", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        timeZone: "Asia/Ho_Chi_Minh",
+                                });
+
                                 toast.error(
-                                        "Restaurant validation failed. Please check if restaurant service is available."
+                                        `Nhà hàng "${restaurantName}" hiện đang đóng cửa (Thời gian hiện tại: ${currentTime}). Vui lòng kiểm tra lại thời gian hoạt động trong phần quản lý nhà hàng hoặc thử lại sau.`,
+                                        {
+                                                duration: 8000,
+                                        }
                                 );
+                        } else if (errorMessage.includes("Restaurant validation failed")) {
+                                // Check if it's a closed restaurant error
+                                if (errorMessage.includes("closed")) {
+                                        toast.error(
+                                                "Nhà hàng hiện đang đóng cửa. Vui lòng kiểm tra lại thời gian hoạt động.",
+                                                {
+                                                        duration: 6000,
+                                                }
+                                        );
+                                } else {
+                                        toast.error(
+                                                "Restaurant validation failed. Please check if restaurant service is available."
+                                        );
+                                }
                         } else {
                                 toast.error(errorMessage);
                         }

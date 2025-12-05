@@ -7,81 +7,96 @@ import { Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 type FoodCardProps = {
         product: Product;
 };
 
-export const FoodCard = ({ product }: FoodCardProps) => {
+export const FoodCard = memo(({ product }: FoodCardProps) => {
         const router = useRouter();
         const { addItem } = useCartStore();
         const { user } = useAuthStore();
         const [isAdding, setIsAdding] = useState(false);
 
-        const displayPrice = product.productSizes?.[0]?.price;
-        const defaultSize = product.productSizes?.[0];
+        const displayPrice = useMemo(() => product.productSizes?.[0]?.price, [product.productSizes]);
+        const defaultSize = useMemo(() => product.productSizes?.[0], [product.productSizes]);
 
-        const handleAddToCart = async (e: React.MouseEvent) => {
-                e.preventDefault();
-                e.stopPropagation();
+        const handleAddToCart = useCallback(
+                async (e: React.MouseEvent) => {
+                        e.preventDefault();
+                        e.stopPropagation();
 
-                if (!user) {
-                        toast.error("Vui lòng đăng nhập để thêm vào giỏ hàng");
-                        router.push("/login");
-                        return;
-                }
+                        // Prevent multiple clicks
+                        if (isAdding) {
+                                return;
+                        }
 
-                if (!product.productSizes || product.productSizes.length === 0) {
-                        toast.error("Sản phẩm này không có size khả dụng");
-                        return;
-                }
+                        if (!user) {
+                                toast.error("Vui lòng đăng nhập để thêm vào giỏ hàng");
+                                router.push("/login");
+                                return;
+                        }
 
-                if (!product.restaurant?.id) {
-                        toast.error("Không tìm thấy thông tin nhà hàng");
-                        return;
-                }
+                        if (!product.productSizes || product.productSizes.length === 0) {
+                                toast.error("Sản phẩm này không có size khả dụng");
+                                return;
+                        }
 
-                setIsAdding(true);
-                try {
-                        await addItem(
-                                {
-                                        id: product.id,
-                                        name: product.productName,
-                                        price: defaultSize.price,
-                                        image: product.imageURL || "/placeholder.png",
-                                        restaurantId: product.restaurant.id,
-                                        restaurantName: product.restaurant.resName || "Unknown Restaurant",
-                                        sizeId: defaultSize.id,
-                                        sizeName: defaultSize.sizeName,
-                                },
-                                1
-                        );
-                        // Toast notification is handled by cartStore.addItem
-                } catch {
-                        toast.error("Không thể thêm vào giỏ hàng");
-                } finally {
-                        setIsAdding(false);
-                }
-        };
+                        if (!product.restaurant?.id) {
+                                toast.error("Không tìm thấy thông tin nhà hàng");
+                                return;
+                        }
 
-        const handleBuyNow = async (e: React.MouseEvent) => {
-                e.preventDefault();
-                e.stopPropagation();
+                        setIsAdding(true);
+                        try {
+                                await addItem(
+                                        {
+                                                id: product.id,
+                                                name: product.productName,
+                                                price: defaultSize.price,
+                                                image: product.imageURL || "/placeholder.png",
+                                                restaurantId: product.restaurant.id,
+                                                restaurantName: product.restaurant.resName || "Unknown Restaurant",
+                                                sizeId: defaultSize.id,
+                                                sizeName: defaultSize.sizeName,
+                                        },
+                                        1
+                                );
+                                // Toast notification is handled by cartStore.addItem
+                        } catch (error) {
+                                console.error("Failed to add to cart:", error);
+                                toast.error("Không thể thêm vào giỏ hàng");
+                        } finally {
+                                // Ensure state is reset even if there's an error
+                                setTimeout(() => {
+                                        setIsAdding(false);
+                                }, 300); // Small delay to prevent rapid clicks
+                        }
+                },
+                [isAdding, user, product, defaultSize, addItem, router]
+        );
 
-                if (!user) {
-                        toast.error("Vui lòng đăng nhập để mua hàng");
-                        router.push("/login");
-                        return;
-                }
+        const handleBuyNow = useCallback(
+                async (e: React.MouseEvent) => {
+                        e.preventDefault();
+                        e.stopPropagation();
 
-                // Add to cart first, then redirect to checkout
-                await handleAddToCart(e);
-                if (product.restaurant?.id) {
-                        router.push(`/payment?restaurantId=${product.restaurant.id}`);
-                }
-        };
+                        if (!user) {
+                                toast.error("Vui lòng đăng nhập để mua hàng");
+                                router.push("/login");
+                                return;
+                        }
+
+                        // Add to cart first, then redirect to checkout
+                        await handleAddToCart(e);
+                        if (product.restaurant?.id) {
+                                router.push(`/payment?restaurantId=${product.restaurant.id}`);
+                        }
+                },
+                [user, product, router, handleAddToCart]
+        );
 
         return (
                 <div className="group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
@@ -157,4 +172,6 @@ export const FoodCard = ({ product }: FoodCardProps) => {
                         </div>
                 </div>
         );
-};
+});
+
+FoodCard.displayName = "FoodCard";

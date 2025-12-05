@@ -1,12 +1,12 @@
 "use client";
 
+import Pagination from "@/components/client/Pagination";
 import { useProductStore } from "@/stores/useProductsStores";
 import { useRestaurantStore } from "@/stores/useRestaurantStore";
 import { Category } from "@/types";
 import { ChevronLeft, ChevronRight, Utensils } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
-import Pagination from "../Pagination";
 import { FoodCard } from "./FoodCard";
 import { RestaurantCard } from "./RestaurantCard";
 
@@ -158,7 +158,12 @@ export default function RestaurantList() {
                                                                   <FoodCard key={product.id} product={product} />
                                                           ))}
                                         </div>
-                                        <Pagination totalResults={totalResults} itemsPerPage={ITEMS_PER_PAGE} />
+                                        <Pagination
+                                                currentPage={Number(searchParams.get("page")) || 1}
+                                                totalPages={Math.ceil(totalResults / ITEMS_PER_PAGE)}
+                                                showInfo={true}
+                                                scrollToTop={true}
+                                        />
                                 </>
                         ) : (
                                 <p>No {title} found. Try adjusting your filters.</p>

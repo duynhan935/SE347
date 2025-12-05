@@ -1,7 +1,8 @@
 // File: app/auth/register/page.tsx
 "use client";
 
-import { Eye, EyeOff } from "lucide-react";
+import { MerchantRequestForm } from "@/components/auth/MerchantRequestForm";
+import { Eye, EyeOff, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -15,9 +16,9 @@ export default function SignUpPage() {
         const [email, setEmail] = useState("");
         const [password, setPassword] = useState("");
         const [confirmPassword, setConfirmPassword] = useState("");
-        const [role, setRole] = useState("USER");
         const [showPassword, setShowPassword] = useState(false);
         const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+        const [showMerchantForm, setShowMerchantForm] = useState(false);
         const { register, loading, error } = useAuthStore();
 
         const router = useRouter();
@@ -30,13 +31,19 @@ export default function SignUpPage() {
                         return;
                 }
 
-                const success = await register({ username, email, password, confirmPassword, role });
+                // Register as USER only
+                const success = await register({ username, email, password, confirmPassword, role: "USER" });
                 if (success) {
                         // Redirect to verify-email page with email in query params
                         router.push(`/verify-email?email=${encodeURIComponent(email)}`);
                 } else {
                         toast.error(error || "Registration failed. Please try again.");
                 }
+        };
+
+        const handleRegisterMerchant = () => {
+                // Open merchant form - user can fill all info there
+                setShowMerchantForm(true);
         };
 
         return (
@@ -168,41 +175,71 @@ export default function SignUpPage() {
                                                 </div>
                                         </div>
 
-                                        <div>
-                                                <label
-                                                        htmlFor="role"
-                                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                        <div className="flex gap-3">
+                                                <button
+                                                        type="submit"
+                                                        disabled={loading}
+                                                        className="flex-1 py-3 px-4 bg-brand-purple text-white font-semibold rounded-md hover:bg-brand-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-purple transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                        Account Type
-                                                </label>
-                                                <select
-                                                        id="role"
-                                                        value={role}
-                                                        onChange={(e) => setRole(e.target.value)}
-                                                        required
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition"
+                                                        {loading ? "Signing Up..." : "Sign Up"}
+                                                </button>
+                                                <button
+                                                        type="button"
+                                                        onClick={handleRegisterMerchant}
+                                                        disabled={loading}
+                                                        className="flex-1 py-3 px-4 bg-brand-black text-white font-semibold rounded-md hover:bg-brand-purpledark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-black transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                        <option value="USER">Customer</option>
-                                                        <option value="MERCHANT">Merchant</option>
-                                                </select>
+                                                        Register Merchant
+                                                </button>
                                         </div>
-
-                                        <button
-                                                type="submit"
-                                                disabled={loading}
-                                                className="w-full py-3 px-4 bg-brand-purple text-white font-semibold rounded-md hover:bg-brand-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-purple transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                                {loading ? "Signing Up..." : "Sign Up"}
-                                        </button>
                                 </form>
+
+                                {/* Merchant Request Form Dialog */}
+                                {showMerchantForm && (
+                                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                                                <div
+                                                        className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                >
+                                                        <div className="flex justify-between items-center mb-4">
+                                                                <h3 className="text-xl font-bold text-gray-900">
+                                                                        Đăng ký Merchant
+                                                                </h3>
+                                                                <button
+                                                                        onClick={() => {
+                                                                                setShowMerchantForm(false);
+                                                                        }}
+                                                                        className="text-gray-400 hover:text-gray-600"
+                                                                        aria-label="Close merchant registration form"
+                                                                        title="Close"
+                                                                >
+                                                                        <span className="sr-only">Close</span>
+                                                                        <X className="w-5 h-5" />
+                                                                </button>
+                                                        </div>
+                                                        <MerchantRequestForm
+                                                                initialEmail={email}
+                                                                initialUsername={username}
+                                                                onSuccess={() => {
+                                                                        setShowMerchantForm(false);
+                                                                        router.push(
+                                                                                `/verify-email?email=${encodeURIComponent(
+                                                                                        email
+                                                                                )}`
+                                                                        );
+                                                                }}
+                                                                onCancel={() => {
+                                                                        setShowMerchantForm(false);
+                                                                }}
+                                                        />
+                                                </div>
+                                        </div>
+                                )}
 
                                 {/* --- Sign In Link --- */}
                                 <p className="mt-6 text-center text-sm text-gray-600">
                                         Have an account?{" "}
-                                        <Link
-                                                href="/auth/login"
-                                                className="font-semibold text-brand-purple hover:underline"
-                                        >
+                                        <Link href="/login" className="font-semibold text-brand-purple hover:underline">
                                                 Sign In
                                         </Link>
                                 </p>

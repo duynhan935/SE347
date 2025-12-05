@@ -25,16 +25,17 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
                 if (!mounted) return;
 
                 // Check auth in background without blocking
-                // Use a small delay to allow page to render first
+                // Use a longer delay to allow auth initialization to complete
                 const checkAuth = setTimeout(() => {
                         // If authentication is required
                         if (requireAuth && !loading && !isAuthenticated) {
-                                // Check if tokens exist - if yes, might still be loading
+                                // Check if tokens exist - if yes, might still be loading or initializing
                                 const hasTokens =
                                         typeof window !== "undefined" &&
                                         (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
 
                                 // Only redirect if definitely not authenticated and no tokens
+                                // Give more time for auth initialization to complete
                                 if (!hasTokens) {
                                         toast.error("Please login to access this page");
                                         router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
@@ -51,7 +52,7 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
                                         return;
                                 }
                         }
-                }, 100); // Small delay to allow page render first
+                }, 500); // Longer delay to allow auth initialization to complete
 
                 return () => clearTimeout(checkAuth);
         }, [mounted, isAuthenticated, user, loading, allowedRoles, requireAuth, router, pathname]);
