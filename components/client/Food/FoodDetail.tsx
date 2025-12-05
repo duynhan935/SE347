@@ -22,6 +22,7 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
         const { user } = useAuthStore();
         const [quantity, setQuantity] = useState(1);
         const [specialInstructions, setSpecialInstructions] = useState("");
+        const [isAdding, setIsAdding] = useState(false);
 
         const [selectedSize, setSelectedSize] = useState<ProductSize | undefined>(foodItem.productSizes?.[0]);
 
@@ -164,6 +165,11 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
 
                                                         <button
                                                                 onClick={async () => {
+                                                                        // Prevent multiple clicks
+                                                                        if (isAdding) {
+                                                                                return;
+                                                                        }
+
                                                                         if (!user) {
                                                                                 toast.error(
                                                                                         "Please login to add items to cart"
@@ -177,34 +183,52 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                                                                                 return;
                                                                         }
 
-                                                                        await addItem(
-                                                                                {
-                                                                                        id: foodItem.id,
-                                                                                        name: foodItem.productName,
-                                                                                        price: selectedSize.price,
-                                                                                        image:
-                                                                                                foodItem.imageURL ||
-                                                                                                "/placeholder.png",
-                                                                                        restaurantId: restaurant.id,
-                                                                                        restaurantName:
-                                                                                                restaurant.resName,
-                                                                                        sizeId: selectedSize.id,
-                                                                                        sizeName: selectedSize.sizeName,
-                                                                                        customizations:
-                                                                                                specialInstructions ||
-                                                                                                undefined,
-                                                                                },
-                                                                                quantity
-                                                                        );
+                                                                        setIsAdding(true);
+                                                                        try {
+                                                                                await addItem(
+                                                                                        {
+                                                                                                id: foodItem.id,
+                                                                                                name: foodItem.productName,
+                                                                                                price: selectedSize.price,
+                                                                                                image:
+                                                                                                        foodItem.imageURL ||
+                                                                                                        "/placeholder.png",
+                                                                                                restaurantId:
+                                                                                                        restaurant.id,
+                                                                                                restaurantName:
+                                                                                                        restaurant.resName,
+                                                                                                sizeId: selectedSize.id,
+                                                                                                sizeName: selectedSize.sizeName,
+                                                                                                customizations:
+                                                                                                        specialInstructions ||
+                                                                                                        undefined,
+                                                                                        },
+                                                                                        quantity
+                                                                                );
 
-                                                                        // Reset form
-                                                                        setQuantity(1);
-                                                                        setSpecialInstructions("");
+                                                                                // Reset form
+                                                                                setQuantity(1);
+                                                                                setSpecialInstructions("");
+                                                                        } catch (error) {
+                                                                                console.error(
+                                                                                        "Failed to add to cart:",
+                                                                                        error
+                                                                                );
+                                                                                toast.error(
+                                                                                        "Failed to add item to cart"
+                                                                                );
+                                                                        } finally {
+                                                                                setTimeout(() => {
+                                                                                        setIsAdding(false);
+                                                                                }, 300);
+                                                                        }
                                                                 }}
-                                                                className="flex-grow bg-brand-black text-white font-bold py-3 px-6 rounded-md hover:bg-brand-black/90 transition cursor-pointer disabled:bg-gray-400"
-                                                                disabled={!selectedSize}
+                                                                className="flex-grow bg-brand-black text-white font-bold py-3 px-6 rounded-md hover:bg-brand-black/90 transition cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                                                disabled={!selectedSize || isAdding}
                                                         >
-                                                                Add to cart: ${totalPrice}
+                                                                {isAdding
+                                                                        ? "Đang thêm..."
+                                                                        : `Add to cart: $${totalPrice}`}
                                                         </button>
                                                 </div>
                                         </div>

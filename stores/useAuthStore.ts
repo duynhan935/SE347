@@ -48,7 +48,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
 
         setTokens: (access, refresh) => {
-                set({ accessToken: access, refreshToken: refresh, isAuthenticated: !!access });
+                // Set tokens and authentication state immediately
+                set({
+                        accessToken: access,
+                        refreshToken: refresh,
+                        isAuthenticated: !!access,
+                });
                 if (typeof window !== "undefined") {
                         localStorage.setItem("accessToken", access);
                         localStorage.setItem("refreshToken", refresh);
@@ -59,8 +64,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 set({ loading: true, error: null });
                 try {
                         const { accessToken, refreshToken } = await authApi.login(credentials);
+                        // Set tokens first to mark as authenticated immediately
                         get().setTokens(accessToken, refreshToken);
-                        await get().fetchProfile();
+                        // Fetch profile in background - don't block login success
+                        // Use Promise.race with timeout to prevent hanging
+                        const profilePromise = get().fetchProfile();
+                        const timeoutPromise = new Promise<void>((resolve) => {
+                                setTimeout(() => resolve(), 5000); // 5 second timeout
+                        });
+                        try {
+                                await Promise.race([profilePromise, timeoutPromise]);
+                        } catch (profileError) {
+                                // Log but don't fail login if profile fetch fails
+                                console.warn("Profile fetch failed during login:", profileError);
+                        }
                         set({ loading: false });
                         return true;
 

@@ -2,7 +2,6 @@
 
 import RestaurantFormModal from "@/components/admin/restaurants/RestaurantFormModal";
 import { restaurantApi } from "@/lib/api/restaurantApi";
-import { generateManagerCredentials } from "@/lib/utils/managerCredentials";
 import { Restaurant, RestaurantData } from "@/types";
 import { Ban, CheckCircle, Clock, Edit, Loader2, MapPin, Plus, Search, Trash } from "lucide-react";
 import Image from "next/image";
@@ -56,29 +55,18 @@ export default function RestaurantsPage() {
         };
 
         const handleToggleStatus = async (restaurant: Restaurant) => {
-                const togglingToActive = !restaurant.enabled;
-
                 try {
                         await restaurantApi.updateRestaurantStatus(restaurant.id);
-
-                        // Khi admin kích hoạt nhà hàng lần đầu (từ trạng thái chờ duyệt),
-                        // đồng thời tạo tài khoản manager cho nhà hàng đó (nếu chưa có).
-                        if (togglingToActive && !restaurant.managerId) {
-                                const creds = generateManagerCredentials(restaurant);
-
-                                await restaurantApi.createManagerForRestaurant(restaurant.id, {
-                                        username: creds.username,
-                                        email: creds.email,
-                                        password: creds.password,
-                                        confirmPassword: creds.password,
-                                });
-                        }
-
                         toast.success("Đã thay đổi trạng thái nhà hàng");
                         fetchRestaurants();
-                } catch (error) {
+                } catch (error: unknown) {
                         console.error("Failed to toggle status:", error);
-                        toast.error("Không thể thay đổi trạng thái nhà hàng");
+                        const errorMessage =
+                                error && typeof error === "object" && "response" in error
+                                        ? (error as { response?: { data?: { message?: string } } }).response?.data
+                                                  ?.message
+                                        : undefined;
+                        toast.error(errorMessage || "Không thể thay đổi trạng thái nhà hàng");
                 }
         };
 

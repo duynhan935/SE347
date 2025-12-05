@@ -30,10 +30,11 @@ export default function LoginPage() {
 
                         if (success) {
                                 toast.success("Login successful! Welcome back! 🎉", { duration: 3000 });
-                                // Small delay before navigation to show success message
+                                // Use replace instead of push to avoid back button issues
+                                // Small delay to ensure state is fully updated
                                 setTimeout(() => {
-                                        router.push("/");
-                                }, 500);
+                                        router.replace("/");
+                                }, 300);
                         } else {
                                 // Check if the error is about account not being activated
                                 const errorCode =
@@ -42,20 +43,32 @@ export default function LoginPage() {
                                         error?.toLowerCase().includes("activate");
 
                                 if (errorCode) {
-                                        // Show notification and redirect to verify-email page
-                                        toast.error(
-                                                "Your account is not activated. Please verify your email to continue.",
-                                                {
-                                                        duration: 4000,
-                                                }
-                                        );
-                                        setTimeout(() => {
-                                                router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-                                        }, 1000);
+                                        // Check if this might be a merchant account (check localStorage for pending restaurant)
+                                        const pendingRestaurant = localStorage.getItem(`pending_restaurant_${email}`);
+                                        if (pendingRestaurant) {
+                                                // This is likely a merchant account waiting for approval
+                                                toast.error(
+                                                        "Tài khoản merchant của bạn chưa được admin phê duyệt. Vui lòng chờ admin phê duyệt để có thể đăng nhập.",
+                                                        {
+                                                                duration: 5000,
+                                                        }
+                                                );
+                                        } else {
+                                                // This is likely a USER account that needs email verification
+                                                toast.error(
+                                                        "Tài khoản của bạn chưa được kích hoạt. Vui lòng xác minh email để tiếp tục.",
+                                                        {
+                                                                duration: 4000,
+                                                        }
+                                                );
+                                                setTimeout(() => {
+                                                        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+                                                }, 1000);
+                                        }
                                         return;
                                 }
 
-                                toast.error(error || "Login failed. Please check your credentials.", {
+                                toast.error(error || "Đăng nhập thất bại. Vui lòng kiểm tra thông tin đăng nhập.", {
                                         duration: 4000,
                                 });
                         }
@@ -65,35 +78,70 @@ export default function LoginPage() {
 
                         // Handle axios error with errorCode (especially INACTIVATED_ACCOUNT)
                         const axiosError = err as {
-                                response?: { data?: { errorCode?: string; message?: string } };
+                                response?: {
+                                        status?: number;
+                                        data?: { errorCode?: string; message?: string };
+                                };
                                 message?: string;
                         };
                         const errorCode = axiosError?.response?.data?.errorCode;
                         const errorMessage =
                                 axiosError?.response?.data?.message || axiosError?.message || "Login failed";
+                        const statusCode = axiosError?.response?.status;
 
-                        // Check for INACTIVATED_ACCOUNT error code or message
+                        // Check for INACTIVATED_ACCOUNT error code (403) or message
                         if (
                                 errorCode === "INACTIVATED_ACCOUNT" ||
+                                statusCode === 403 ||
                                 errorMessage.toLowerCase().includes("not activated") ||
                                 errorMessage.toLowerCase().includes("activate")
                         ) {
-                                // Show notification and redirect to verify-email page
-                                toast.error("Your account is not activated. Please verify your email to continue.", {
-                                        duration: 4000,
-                                });
-                                setTimeout(() => {
-                                        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-                                }, 1000);
+                                // Check if this might be a merchant account (check localStorage for pending restaurant)
+                                const pendingRestaurant = localStorage.getItem(`pending_restaurant_${email}`);
+                                if (pendingRestaurant) {
+                                        // This is likely a merchant account waiting for approval
+                                        toast.error(
+                                                "Tài khoản merchant của bạn chưa được admin phê duyệt. Vui lòng chờ admin phê duyệt để có thể đăng nhập.",
+                                                {
+                                                        duration: 5000,
+                                                }
+                                        );
+                                } else {
+                                        // This is likely a USER account that needs email verification
+                                        toast.error(
+                                                "Tài khoản của bạn chưa được kích hoạt. Vui lòng xác minh email để tiếp tục.",
+                                                {
+                                                        duration: 4000,
+                                                }
+                                        );
+                                        setTimeout(() => {
+                                                router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+                                        }, 1000);
+                                }
+                                return;
+                        }
+
+                        // For 401 Unauthorized errors, check if it might be account not activated
+                        if (statusCode === 401) {
+                                // Try to provide helpful message
+                                const displayMessage =
+                                        errorMessage.toLowerCase().includes("bad credentials") ||
+                                        errorMessage.toLowerCase().includes("invalid") ||
+                                        errorMessage.toLowerCase().includes("wrong password")
+                                                ? "Email hoặc mật khẩu không đúng. Vui lòng thử lại."
+                                                : errorMessage.toLowerCase().includes("account") ||
+                                                  errorMessage.toLowerCase().includes("enabled")
+                                                ? "Tài khoản của bạn chưa được kích hoạt. Vui lòng kiểm tra email để xác minh hoặc chờ admin phê duyệt."
+                                                : "Email hoặc mật khẩu không đúng. Vui lòng thử lại.";
+
+                                toast.error(displayMessage, { duration: 4000 });
                                 return;
                         }
 
                         // For other errors, show toast with better message
                         const displayMessage =
-                                errorMessage.includes("401") || errorMessage.includes("Unauthorized")
-                                        ? "Invalid email or password. Please try again."
-                                        : errorMessage.includes("Network") || errorMessage.includes("timeout")
-                                        ? "Network error. Please check your connection and try again."
+                                errorMessage.includes("Network") || errorMessage.includes("timeout")
+                                        ? "Lỗi kết nối. Vui lòng kiểm tra kết nối internet và thử lại."
                                         : errorMessage;
 
                         toast.error(displayMessage, { duration: 4000 });

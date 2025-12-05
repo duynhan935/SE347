@@ -1,4 +1,6 @@
 "use client";
+import { MerchantRequestForm } from "@/components/auth/MerchantRequestForm";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import {
         DropdownMenu,
@@ -9,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Logo } from "@/constants";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { ChevronDown, LogOut, Menu, User, X } from "lucide-react";
+import { ChevronDown, LogOut, Menu, Store, User, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -20,6 +22,7 @@ export default function Header() {
         const [open, setOpen] = useState(false);
         const [mounted, setMounted] = useState(false);
         const [isLoggingOut, setIsLoggingOut] = useState(false);
+        const [showMerchantForm, setShowMerchantForm] = useState(false);
         const { isAuthenticated, user, logout } = useAuthStore();
         const router = useRouter();
 
@@ -95,12 +98,29 @@ export default function Header() {
                                                 >
                                                         About
                                                 </Link>
+                                                {(!mounted ||
+                                                        !isAuthenticated ||
+                                                        (user?.role !== "MERCHANT" && user?.role !== "ADMIN")) && (
+                                                        <button
+                                                                onClick={() => {
+                                                                        if (mounted && isAuthenticated) {
+                                                                                setShowMerchantForm(true);
+                                                                        } else {
+                                                                                router.push("/register");
+                                                                        }
+                                                                }}
+                                                                className="text-brand-black text-p2 font-manrope hover:text-brand-purpledark flex items-center gap-1"
+                                                        >
+                                                                <Store className="h-4 w-4" />
+                                                                Đăng ký Merchant
+                                                        </button>
+                                                )}
                                                 <DropdownMenu>
                                                         <DropdownMenuTrigger className="flex items-center text-brand-black cursor-pointer text-p2 font-manrope">
                                                                 Page
                                                                 <ChevronDown className="ml-1 h-4 w-4" />
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent className="border border-brand-grey shadow-lg">
+                                                        <DropdownMenuContent className="border border-brand-grey shadow-lg !max-h-[500px] overflow-y-auto">
                                                                 <DropdownMenuItem className="cursor-pointer">
                                                                         <Link href="/restaurants" prefetch={true}>
                                                                                 Restaurants
@@ -121,6 +141,24 @@ export default function Header() {
                                                                                 Contact
                                                                         </Link>
                                                                 </DropdownMenuItem>
+                                                                {mounted &&
+                                                                        isAuthenticated &&
+                                                                        user?.role !== "MERCHANT" &&
+                                                                        user?.role !== "ADMIN" && (
+                                                                                <DropdownMenuItem
+                                                                                        onClick={() =>
+                                                                                                setShowMerchantForm(
+                                                                                                        true
+                                                                                                )
+                                                                                        }
+                                                                                        className="cursor-pointer"
+                                                                                >
+                                                                                        <div className="flex items-center">
+                                                                                                <Store className="mr-2 h-4 w-4" />
+                                                                                                Đăng ký Merchant
+                                                                                        </div>
+                                                                                </DropdownMenuItem>
+                                                                        )}
                                                                 {user?.role === "ADMIN" && (
                                                                         <DropdownMenuItem className="cursor-pointer">
                                                                                 <Link href="/admin" prefetch={true}>
@@ -144,6 +182,7 @@ export default function Header() {
 
                                         {/* Auth Buttons */}
                                         <div className="hidden md:flex items-center space-x-3">
+                                                {mounted && isAuthenticated && <NotificationBell />}
                                                 {mounted && isAuthenticated ? (
                                                         <DropdownMenu>
                                                                 <DropdownMenuTrigger className="flex items-center space-x-2 cursor-pointer">
@@ -192,6 +231,22 @@ export default function Header() {
                                                                                         </Link>
                                                                                 </DropdownMenuItem>
                                                                         )}
+                                                                        {mounted &&
+                                                                                isAuthenticated &&
+                                                                                user?.role !== "MERCHANT" &&
+                                                                                user?.role !== "ADMIN" && (
+                                                                                        <DropdownMenuItem
+                                                                                                onClick={() =>
+                                                                                                        setShowMerchantForm(
+                                                                                                                true
+                                                                                                        )
+                                                                                                }
+                                                                                                className="cursor-pointer"
+                                                                                        >
+                                                                                                <Store className="mr-2 h-4 w-4" />
+                                                                                                Trở thành Merchant
+                                                                                        </DropdownMenuItem>
+                                                                                )}
                                                                         <DropdownMenuSeparator />
                                                                         <DropdownMenuItem
                                                                                 onClick={handleLogout}
@@ -262,6 +317,25 @@ export default function Header() {
                                                         >
                                                                 About
                                                         </Link>
+                                                        {(!mounted ||
+                                                                !isAuthenticated ||
+                                                                (user?.role !== "MERCHANT" &&
+                                                                        user?.role !== "ADMIN")) && (
+                                                                <button
+                                                                        onClick={() => {
+                                                                                setOpen(false);
+                                                                                if (mounted && isAuthenticated) {
+                                                                                        setShowMerchantForm(true);
+                                                                                } else {
+                                                                                        router.push("/register");
+                                                                                }
+                                                                        }}
+                                                                        className="text-brand-black text-p2 font-manrope w-full py-2 text-left hover:text-brand-purpledark flex items-center gap-2"
+                                                                >
+                                                                        <Store className="h-4 w-4" />
+                                                                        Đăng ký Merchant
+                                                                </button>
+                                                        )}
                                                         <Link
                                                                 href="/restaurants"
                                                                 prefetch={true}
@@ -348,6 +422,41 @@ export default function Header() {
                                         )}
                                 </div>
                         </div>
+
+                        {/* Merchant Request Form Dialog */}
+                        {showMerchantForm && (
+                                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                                        <div
+                                                className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto"
+                                                onClick={(e) => e.stopPropagation()}
+                                        >
+                                                <div className="flex justify-between items-center mb-4">
+                                                        <h3 className="text-xl font-bold text-gray-900">
+                                                                Yêu cầu trở thành Merchant
+                                                        </h3>
+                                                        <button
+                                                                onClick={() => setShowMerchantForm(false)}
+                                                                className="text-gray-400 hover:text-gray-600"
+                                                                aria-label="Close merchant registration form"
+                                                                title="Close"
+                                                        >
+                                                                <X className="w-5 h-5" />
+                                                        </button>
+                                                </div>
+                                                <MerchantRequestForm
+                                                        initialEmail={user?.email || ""}
+                                                        initialUsername={user?.username || ""}
+                                                        onSuccess={() => {
+                                                                setShowMerchantForm(false);
+                                                                toast.success(
+                                                                        "Yêu cầu đã được gửi! Vui lòng kiểm tra email để xác nhận tài khoản và chờ admin phê duyệt."
+                                                                );
+                                                        }}
+                                                        onCancel={() => setShowMerchantForm(false)}
+                                                />
+                                        </div>
+                                </div>
+                        )}
                 </header>
         );
 }
