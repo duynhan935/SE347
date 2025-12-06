@@ -78,9 +78,10 @@ export default function PaymentPageClient() {
         const searchParams = useSearchParams();
         const restaurantId = searchParams.get("restaurantId");
 
-        const { items, clearRestaurant } = useCartStore();
+        const { items, clearRestaurant, setUserId, userId: cartUserId, isLoading: cartLoading } = useCartStore();
         const { user } = useAuthStore();
         const { coords, error: locationError } = useGeolocation();
+        const [cartFetched, setCartFetched] = useState(false);
 
         const extendedUser = (user as ExtendedUser | null) ?? null;
         const defaultAddress = extendedUser?.defaultAddress ?? null;
@@ -91,6 +92,7 @@ export default function PaymentPageClient() {
         const [deliverStyle, setDeliverStyle] = useState("delivery");
         const [createdOrderIds, setCreatedOrderIds] = useState<string[]>([]);
         const [createdOrders, setCreatedOrders] = useState<unknown[]>([]); // Store created orders data
+        const [successfulRestaurantIds, setSuccessfulRestaurantIds] = useState<string[]>([]); // Store successful restaurant IDs for cart clearing
         const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
         const [isProcessingCardPayment, setIsProcessingCardPayment] = useState(false);
         const [formData, setFormData] = useState({
@@ -117,6 +119,7 @@ export default function PaymentPageClient() {
         );
         const shipping = deliverStyle === "pickup" ? 0 : SHIPPING_FEE;
 
+        // Ensure cart is initialized and fetched
         useEffect(() => {
                 if (!extendedUser) {
                         toast.error("Please login to checkout");
@@ -124,11 +127,27 @@ export default function PaymentPageClient() {
                         return;
                 }
 
-                if (orderItems.length === 0) {
+                // Ensure userId is set in cart store (this will automatically fetch cart)
+                if (extendedUser.id && cartUserId !== extendedUser.id) {
+                        setUserId(extendedUser.id);
+                }
+
+                // Mark as fetched when cart loading is complete
+                if (cartUserId && !cartLoading && !cartFetched) {
+                        setCartFetched(true);
+                }
+        }, [extendedUser, cartUserId, cartLoading, setUserId, router, cartFetched]);
+
+        // Check if cart is empty after fetching (only after cart has been fetched and loaded)
+        useEffect(() => {
+                if (!extendedUser || cartLoading || !cartFetched) return;
+
+                // Only check if cart is empty after fetching is complete
+                if (orderItems.length === 0 && cartUserId) {
                         toast.error("Your cart is empty");
                         router.push("/cart");
                 }
-        }, [extendedUser, orderItems.length, router]);
+        }, [extendedUser, orderItems.length, cartUserId, cartFetched, cartLoading, router]);
 
         useEffect(() => {
                 if (locationError) {
@@ -212,7 +231,8 @@ export default function PaymentPageClient() {
                         const restaurantEntries = Object.entries(restaurantGroups);
 
                         // Create order for each restaurant
-                        const orders = await Promise.all(
+                        // Use Promise.allSettled to handle partial failures
+                        const orderResults = await Promise.allSettled(
                                 restaurantEntries.map(async ([restId, group]) => {
                                         const payload: CreateOrderRequest = {
                                                 userId: extendedUser.id,
@@ -257,36 +277,46 @@ export default function PaymentPageClient() {
                                                                 ? longitude
                                                                 : 0,
                                         };
-                                        try {
-                                                return await orderApi.createOrder(payload);
-                                        } catch (orderError: unknown) {
-                                                // Re-throw with restaurant context for better error messages
-                                                const errorMessage =
-                                                        (orderError as { response?: { data?: { message?: string } } })
-                                                                ?.response?.data?.message ||
-                                                        (orderError as { message?: string })?.message ||
-                                                        "Failed to create order";
-
-                                                // If restaurant closed error, add more context
-                                                if (
-                                                        errorMessage.includes("Restaurant is currently closed") ||
-                                                        errorMessage.includes("currently closed")
-                                                ) {
-                                                        const now = new Date();
-                                                        const currentTime = now.toLocaleTimeString("vi-VN", {
-                                                                hour: "2-digit",
-                                                                minute: "2-digit",
-                                                                second: "2-digit",
-                                                                timeZone: "Asia/Ho_Chi_Minh",
-                                                        });
-                                                        throw new Error(
-                                                                `${errorMessage} (Thời gian hiện tại: ${currentTime}). Vui lòng đảm bảo thời gian hoạt động đã được cập nhật đúng và thử lại sau vài giây để backend cập nhật cache.`
-                                                        );
-                                                }
-                                                throw orderError;
-                                        }
+                                        return await orderApi.createOrder(payload);
                                 })
                         );
+
+                        // Separate successful and failed orders
+                        const orders: unknown[] = [];
+                        const failedRestaurants: Array<{ name: string; error: string }> = [];
+
+                        orderResults.forEach((result, index) => {
+                                const [restId, group] = restaurantEntries[index];
+                                if (result.status === "fulfilled") {
+                                        orders.push(result.value);
+                                } else {
+                                        const error = result.reason;
+                                        const errorMessage =
+                                                (error as { response?: { data?: { message?: string } } })?.response
+                                                        ?.data?.message ||
+                                                (error as { message?: string })?.message ||
+                                                "Failed to create order";
+                                        failedRestaurants.push({
+                                                name: group.restaurantName || restId,
+                                                error: errorMessage,
+                                        });
+                                }
+                        });
+
+                        // If all orders failed, throw error
+                        if (orders.length === 0) {
+                                const errorMessages = failedRestaurants.map((f) => `${f.name}: ${f.error}`).join("; ");
+                                throw new Error(`Không thể tạo đơn hàng cho bất kỳ nhà hàng nào. ${errorMessages}`);
+                        }
+
+                        // If some orders failed, show warning but continue
+                        if (failedRestaurants.length > 0) {
+                                const failedNames = failedRestaurants.map((f) => f.name).join(", ");
+                                toast.error(
+                                        `Một số đơn hàng không thể tạo: ${failedNames}. Các đơn hàng khác đã được tạo thành công.`,
+                                        { duration: 6000 }
+                                );
+                        }
 
                         // Log orders for debugging
                         if (process.env.NODE_ENV === "development") {
@@ -329,9 +359,15 @@ export default function PaymentPageClient() {
                                 console.log("Extracted order IDs:", orderIds);
                         }
 
+                        // Save successful restaurant IDs for cart clearing
+                        const successfulRestIds = orders
+                                .map((order) => (order as { restaurantId?: string }).restaurantId)
+                                .filter((id): id is string => !!id && typeof id === "string");
+
                         // Save order data for payment step
                         setCreatedOrderIds(orderIds);
                         setCreatedOrders(orders as unknown[]);
+                        setSuccessfulRestaurantIds(successfulRestIds);
 
                         // Move to payment step
                         setCurrentStep("payment");
@@ -417,17 +453,17 @@ export default function PaymentPageClient() {
 
                 if (paymentMethod === "cash" || paymentMethod === "wallet") {
                         // Backend will create payment automatically via RabbitMQ
-                        // Clear cart and redirect
-                        for (const [restId] of Object.entries(
-                                orderItems.reduce((acc, item) => {
-                                        if (!acc[item.restaurantId]) {
-                                                acc[item.restaurantId] = [];
-                                        }
-                                        acc[item.restaurantId].push(item);
-                                        return acc;
-                                }, {} as Record<string, CartItem[]>)
-                        )) {
-                                await clearRestaurant(restId, { silent: true });
+                        // Clear cart only for successfully created orders
+                        if (successfulRestaurantIds.length > 0) {
+                                for (const restId of successfulRestaurantIds) {
+                                        await clearRestaurant(restId, { silent: true });
+                                }
+                        } else {
+                                // Fallback: clear all restaurants in orderItems if successfulRestaurantIds not available
+                                const restaurantIds = Array.from(new Set(orderItems.map((item) => item.restaurantId)));
+                                for (const restId of restaurantIds) {
+                                        await clearRestaurant(restId, { silent: true });
+                                }
                         }
 
                         toast.success(`Thanh toán thành công! Đã tạo ${createdOrderIds.length} đơn hàng.`);
@@ -479,17 +515,17 @@ export default function PaymentPageClient() {
 
         const handleStripePaymentSuccess = async () => {
                 try {
-                        // Clear cart
-                        const restaurantGroups = orderItems.reduce((acc, item) => {
-                                if (!acc[item.restaurantId]) {
-                                        acc[item.restaurantId] = [];
+                        // Clear cart only for successfully created orders
+                        if (successfulRestaurantIds.length > 0) {
+                                for (const restId of successfulRestaurantIds) {
+                                        await clearRestaurant(restId, { silent: true });
                                 }
-                                acc[item.restaurantId].push(item);
-                                return acc;
-                        }, {} as Record<string, CartItem[]>);
-
-                        for (const restId of Object.keys(restaurantGroups)) {
-                                await clearRestaurant(restId, { silent: true });
+                        } else {
+                                // Fallback: clear all restaurants in orderItems if successfulRestaurantIds not available
+                                const restaurantIds = Array.from(new Set(orderItems.map((item) => item.restaurantId)));
+                                for (const restId of restaurantIds) {
+                                        await clearRestaurant(restId, { silent: true });
+                                }
                         }
 
                         toast.success(`Thanh toán thành công! Đã tạo ${createdOrderIds.length} đơn hàng.`);

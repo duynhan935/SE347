@@ -13,7 +13,7 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children, allowedRoles, requireAuth = true }: ProtectedRouteProps) {
         const [mounted, setMounted] = useState(false);
-        const { isAuthenticated, user, loading } = useAuthStore();
+        const { isAuthenticated, user, loading, isLoggingOut } = useAuthStore();
         const router = useRouter();
         const pathname = usePathname();
 
@@ -23,39 +23,45 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
 
         useEffect(() => {
                 if (!mounted) return;
+                if (!requireAuth) return;
 
-                // Check auth in background without blocking
-                // Use a longer delay to allow auth initialization to complete
-                const checkAuth = setTimeout(() => {
-                        // If authentication is required
-                        if (requireAuth && !loading && !isAuthenticated) {
-                                // Check if tokens exist - if yes, might still be loading or initializing
-                                const hasTokens =
-                                        typeof window !== "undefined" &&
-                                        (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
+                // Check if tokens exist immediately (client-side only)
+                const hasTokens =
+                        typeof window !== "undefined" &&
+                        (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
 
-                                // Only redirect if definitely not authenticated and no tokens
-                                // Give more time for auth initialization to complete
-                                if (!hasTokens) {
-                                        toast.error("Please login to access this page");
-                                        router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
-                                }
+                // Fast path: If not loading and definitely not authenticated (no tokens and not authenticated)
+                // Redirect immediately without delay
+                if (!loading && !isAuthenticated && !hasTokens) {
+                        // Don't show toast if user is logging out (to avoid duplicate toasts)
+                        if (!isLoggingOut) {
+                                toast.error("Please login to access this page");
+                        }
+                        router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+                        return;
+                }
+
+                // Check role permissions immediately if authenticated
+                if (!loading && isAuthenticated && allowedRoles && user?.role) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        if (!allowedRoles.includes(user.role as any)) {
+                                toast.error("You don't have permission to access this page");
+                                router.push("/");
                                 return;
                         }
+                }
 
-                        // If user is authenticated but roles are restricted
-                        if (requireAuth && !loading && isAuthenticated && allowedRoles && user?.role) {
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                if (!allowedRoles.includes(user.role as any)) {
-                                        toast.error("You don't have permission to access this page");
-                                        router.push("/");
-                                        return;
-                                }
-                        }
-                }, 500); // Longer delay to allow auth initialization to complete
+                // Only delay if auth is still loading and tokens exist (might be initializing)
+                // This handles the case where auth store is still initializing from localStorage
+                if (loading && hasTokens) {
+                        // Wait for auth initialization to complete
+                        const checkAuth = setTimeout(() => {
+                                // This will re-run the effect when loading changes
+                        }, 100); // Small delay only for initialization check
 
-                return () => clearTimeout(checkAuth);
-        }, [mounted, isAuthenticated, user, loading, allowedRoles, requireAuth, router, pathname]);
+                        return () => clearTimeout(checkAuth);
+                }
+        }, [mounted, isAuthenticated, user, loading, allowedRoles, requireAuth, router, pathname, isLoggingOut]);
 
         // Don't render anything until mounted to avoid hydration mismatch
         if (!mounted) {

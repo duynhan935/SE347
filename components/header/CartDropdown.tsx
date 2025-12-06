@@ -1,5 +1,6 @@
 "use client";
 
+import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { ShoppingCart, X } from "lucide-react";
 import Image from "next/image";
@@ -55,6 +56,8 @@ export default function CartDropdown() {
                                                 <button
                                                         onClick={() => setIsOpen(false)}
                                                         className="text-gray-400 hover:text-gray-600 transition-colors"
+                                                        title="Close cart"
+                                                        aria-label="Close cart"
                                                 >
                                                         <X className="w-5 h-5" />
                                                 </button>
@@ -82,21 +85,47 @@ export default function CartDropdown() {
                                                                                 key={`${item.id}-${item.sizeId}`}
                                                                                 className="flex gap-3 p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors"
                                                                         >
-                                                                                {item.image &&
-                                                                                typeof item.image === "string" &&
-                                                                                item.image.trim() !== "" ? (
-                                                                                        <Image
-                                                                                                src={item.image}
-                                                                                                alt={item.name}
-                                                                                                width={60}
-                                                                                                height={60}
-                                                                                                className="rounded-md object-cover"
-                                                                                        />
-                                                                                ) : (
-                                                                                        <div className="w-[60px] h-[60px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
-                                                                                                No Image
-                                                                                        </div>
-                                                                                )}
+                                                                                {(() => {
+                                                                                        const imageUrl = getImageUrl(
+                                                                                                item.image
+                                                                                        );
+                                                                                        const finalImageUrl =
+                                                                                                imageUrl ||
+                                                                                                "/placeholder.png";
+
+                                                                                        if (
+                                                                                                finalImageUrl &&
+                                                                                                finalImageUrl !==
+                                                                                                        "/placeholder.png"
+                                                                                        ) {
+                                                                                                return (
+                                                                                                        <Image
+                                                                                                                src={
+                                                                                                                        finalImageUrl
+                                                                                                                }
+                                                                                                                alt={
+                                                                                                                        item.name
+                                                                                                                }
+                                                                                                                width={
+                                                                                                                        60
+                                                                                                                }
+                                                                                                                height={
+                                                                                                                        60
+                                                                                                                }
+                                                                                                                className="rounded-md object-cover"
+                                                                                                                unoptimized={finalImageUrl.startsWith(
+                                                                                                                        "http"
+                                                                                                                )}
+                                                                                                        />
+                                                                                                );
+                                                                                        } else {
+                                                                                                return (
+                                                                                                        <div className="w-[60px] h-[60px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+                                                                                                                No Image
+                                                                                                        </div>
+                                                                                                );
+                                                                                        }
+                                                                                })()}
                                                                                 <div className="flex-1 min-w-0">
                                                                                         <h4 className="font-semibold text-sm truncate">
                                                                                                 {item.name}
