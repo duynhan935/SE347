@@ -16,6 +16,7 @@ export default function RestaurantHero({ restaurant }: { restaurant: Restaurant 
                                 fill
                                 className="object-cover"
                                 priority
+                                unoptimized={!restaurant.imageURL || restaurant.imageURL === "/placeholder-banner.png"}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 

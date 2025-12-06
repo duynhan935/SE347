@@ -19,6 +19,7 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => (
                                 alt={restaurant.resName}
                                 fill
                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                unoptimized={!restaurant.imageURL || restaurant.imageURL === "/placeholder.png"}
                         />
 
                         <div className="absolute bottom-2 right-2 bg-white/80 text-gray-800 text-xs px-2 py-1 rounded-full backdrop-blur-sm font-semibold">

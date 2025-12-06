@@ -1,3 +1,4 @@
+import { getImageUrl } from "@/lib/utils";
 import { CartItem, useCartStore } from "@/stores/cartStore";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
@@ -7,19 +8,37 @@ export const CartItemRow = ({ item }: { item: CartItem }) => {
 
         return (
                 <div className="flex flex-col sm:flex-row items-center gap-4 py-4 border-b">
-                        {item.image && typeof item.image === "string" && item.image.trim() !== "" ? (
-                                <Image
-                                        src={item.image}
-                                        alt={item.name}
-                                        width={100}
-                                        height={100}
-                                        className="rounded-md object-cover"
-                                />
-                        ) : (
-                                <div className="w-[100px] h-[100px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
-                                        No Image
-                                </div>
-                        )}
+                        {(() => {
+                                const imageUrl = getImageUrl(item.image);
+                                console.log("[CartItemRow] Rendering item:", {
+                                        name: item.name,
+                                        itemImage: item.image,
+                                        imageUrl,
+                                        imageType: typeof item.image,
+                                });
+                                // Always try to display image, even if it's placeholder
+                                // getImageUrl will return "/placeholder.png" if image is invalid
+                                const finalImageUrl = imageUrl || "/placeholder.png";
+
+                                if (finalImageUrl && finalImageUrl !== "/placeholder.png") {
+                                        return (
+                                                <Image
+                                                        src={finalImageUrl}
+                                                        alt={item.name}
+                                                        width={100}
+                                                        height={100}
+                                                        className="rounded-md object-cover"
+                                                        unoptimized={finalImageUrl.startsWith("http")}
+                                                />
+                                        );
+                                } else {
+                                        return (
+                                                <div className="w-[100px] h-[100px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
+                                                        No Image
+                                                </div>
+                                        );
+                                }
+                        })()}
                         <div className="flex-grow text-center sm:text-left ">
                                 <p className="font-semibold text-lg">{item.name}</p>
                                 <p className="text-sm text-gray-500">${item.price.toFixed(2)}</p>

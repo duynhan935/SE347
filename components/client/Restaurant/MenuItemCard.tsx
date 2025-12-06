@@ -1,6 +1,7 @@
 // File: app/_components/client/Restaurant/MenuItemCard.tsx
 "use client";
 
+import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { type Product } from "@/types";
@@ -8,23 +9,40 @@ import { PlusCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 export const MenuItemCard = memo(({ item }: { item: Product }) => {
         const router = useRouter();
-        const { addItem } = useCartStore();
+        const addItem = useCartStore((state) => state.addItem);
+        const setUserId = useCartStore((state) => state.setUserId);
         const { user } = useAuthStore();
 
         const [isAdding, setIsAdding] = useState(false);
+        const [isMounted, setIsMounted] = useState(false);
+
+        // Ensure component is mounted (client-side only)
+        useEffect(() => {
+                setIsMounted(true);
+        }, []);
+
+        // Ensure userId is set in cart store when user is available
+        useEffect(() => {
+                if (isMounted && user?.id) {
+                        setUserId(user.id);
+                }
+        }, [isMounted, user?.id, setUserId]);
+        // Use the same image URL that's displayed on the card
+        const cardImageUrl = useMemo(() => getImageUrl(item.imageURL), [item.imageURL]);
+        const displayPrice = useMemo(() => item.productSizes?.[0]?.price, [item.productSizes]);
 
         const handleAddToCart = useCallback(
                 async (e: React.MouseEvent<HTMLButtonElement>) => {
                         e.preventDefault();
                         e.stopPropagation();
 
-                        // Prevent multiple clicks
-                        if (isAdding) {
+                        // Prevent multiple clicks or if not mounted
+                        if (isAdding || !isMounted || !addItem) {
                                 return;
                         }
 
@@ -42,14 +60,28 @@ export const MenuItemCard = memo(({ item }: { item: Product }) => {
                         // Use first size as default
                         const defaultSize = item.productSizes[0];
 
+                        if (!defaultSize) {
+                                toast.error("No default size found");
+                                return;
+                        }
+
                         setIsAdding(true);
                         try {
+                                // Use the same image URL that's displayed on the card
+                                console.log("[MenuItemCard] Adding to cart:", {
+                                        productId: item.id,
+                                        productName: item.productName,
+                                        originalImageURL: item.imageURL,
+                                        cardImageUrl: cardImageUrl,
+                                        imageURLType: typeof item.imageURL,
+                                });
+
                                 await addItem(
                                         {
                                                 id: item.id,
                                                 name: item.productName,
                                                 price: defaultSize.price,
-                                                image: item.imageURL || "/placeholder.png",
+                                                image: cardImageUrl, // Use the same image as displayed on card
                                                 restaurantId: item.restaurant?.id || "",
                                                 restaurantName: item.restaurant?.resName || "Unknown Restaurant",
                                                 sizeId: defaultSize.id,
@@ -66,10 +98,8 @@ export const MenuItemCard = memo(({ item }: { item: Product }) => {
                                 }, 300);
                         }
                 },
-                [isAdding, user, item, addItem, router]
+                [isAdding, isMounted, user, item, cardImageUrl, addItem, router]
         );
-
-        const displayPrice = useMemo(() => item.productSizes?.[0]?.price, [item.productSizes]);
 
         return (
                 <Link
@@ -78,10 +108,11 @@ export const MenuItemCard = memo(({ item }: { item: Product }) => {
                 >
                         <div className="relative w-full h-32">
                                 <Image
-                                        src={item.imageURL || "/placeholder.png"}
+                                        src={cardImageUrl}
                                         alt={item.productName}
                                         fill
                                         className="object-cover group-hover:scale-105 transition-transform"
+                                        unoptimized={!item.imageURL || cardImageUrl === "/placeholder.png"}
                                 />
                         </div>
                         <div className="p-4 flex flex-col flex-grow">
@@ -94,14 +125,18 @@ export const MenuItemCard = memo(({ item }: { item: Product }) => {
                                                 {item.productSizes.length > 1 ? "From " : ""}
                                                 {displayPrice ? `$${displayPrice.toFixed(2)}` : "N/A"}
                                         </p>
-                                        <button
-                                                onClick={handleAddToCart}
-                                                disabled={isAdding}
-                                                className="text-brand-purple hover:text-brand-purple/80 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                title="Add to Cart"
-                                        >
-                                                <PlusCircle className={`w-7 h-7 ${isAdding ? "animate-pulse" : ""}`} />
-                                        </button>
+                                        {isMounted && (
+                                                <button
+                                                        onClick={handleAddToCart}
+                                                        disabled={isAdding || !isMounted}
+                                                        className="text-brand-purple hover:text-brand-purple/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        title="Add to Cart"
+                                                >
+                                                        <PlusCircle
+                                                                className={`w-7 h-7 ${isAdding ? "animate-pulse" : ""}`}
+                                                        />
+                                                </button>
+                                        )}
                                 </div>
                         </div>
                 </Link>

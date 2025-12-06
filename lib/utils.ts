@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
+import { StaticImageData } from "next/image";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -40,4 +41,22 @@ export function decodeJWT(token: string): JWTDecodedPayload | null {
 export function getUsernameFromToken(token: string): string | null {
         const decoded = decodeJWT(token);
         return decoded?.sub || decoded?.username || null;
+}
+
+/**
+ * Extracts image URL string from imageURL (handles string, StaticImageData, or null)
+ * This ensures we use the same image source that's being displayed
+ */
+export function getImageUrl(imageURL: string | null | StaticImageData, fallback: string = "/placeholder.png"): string {
+        if (!imageURL) {
+                return fallback;
+        }
+        if (typeof imageURL === "string") {
+                return imageURL || fallback;
+        }
+        // StaticImageData has a 'src' property
+        if (typeof imageURL === "object" && "src" in imageURL) {
+                return imageURL.src || fallback;
+        }
+        return fallback;
 }

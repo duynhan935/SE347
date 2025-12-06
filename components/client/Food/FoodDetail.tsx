@@ -1,6 +1,7 @@
 "use client";
 
 // 1. Import thêm ProductSize
+import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Product, ProductSize, Restaurant } from "@/types";
@@ -71,11 +72,16 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 p-4 lg:p-0">
                                 <div>
                                         <Image
-                                                src={foodItem.imageURL || "/default-food-image.png"}
+                                                src={getImageUrl(foodItem.imageURL, "/default-food-image.png")}
                                                 alt={foodItem.productName}
                                                 width={600}
                                                 height={600}
                                                 className="w-full h-auto object-cover rounded-lg shadow-md"
+                                                unoptimized={
+                                                        !foodItem.imageURL ||
+                                                        getImageUrl(foodItem.imageURL, "/default-food-image.png") ===
+                                                                "/default-food-image.png"
+                                                }
                                         />
                                 </div>
 
@@ -190,9 +196,9 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                                                                                                 id: foodItem.id,
                                                                                                 name: foodItem.productName,
                                                                                                 price: selectedSize.price,
-                                                                                                image:
-                                                                                                        foodItem.imageURL ||
-                                                                                                        "/placeholder.png",
+                                                                                                image: getImageUrl(
+                                                                                                        foodItem.imageURL
+                                                                                                ),
                                                                                                 restaurantId:
                                                                                                         restaurant.id,
                                                                                                 restaurantName:

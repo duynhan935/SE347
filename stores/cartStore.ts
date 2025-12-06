@@ -1,4 +1,5 @@
 import { cartApi } from "@/lib/api/cartApi";
+import { getImageUrl } from "@/lib/utils";
 import { StaticImageData } from "next/image";
 import toast from "react-hot-toast";
 import { create } from "zustand";
@@ -85,7 +86,26 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
                                 return;
                         }
 
-                        const image = typeof itemRecord["imageURL"] === "string" ? itemRecord["imageURL"] : "";
+                        const imageURL = itemRecord["imageURL"];
+                        console.log("[CartStore] Parsing item imageURL:", {
+                                productId,
+                                productName,
+                                imageURL,
+                                imageURLType: typeof imageURL,
+                                imageURLValue: imageURL,
+                        });
+                        // Use imageURL if it exists and is not empty, otherwise use placeholder
+                        // Always ensure we have a valid image URL string
+                        let image = "/placeholder.png";
+                        if (
+                                imageURL !== undefined &&
+                                imageURL !== null &&
+                                typeof imageURL === "string" &&
+                                imageURL.trim() !== ""
+                        ) {
+                                image = imageURL.trim();
+                        }
+                        console.log("[CartStore] Final image value:", image);
                         const sizeId = typeof itemRecord["sizeId"] === "string" ? itemRecord["sizeId"] : undefined;
                         const sizeName =
                                 typeof itemRecord["sizeName"] === "string" ? itemRecord["sizeName"] : undefined;
@@ -132,9 +152,38 @@ export const useCartStore = create<CartState>()(
                                 isLoading: false,
 
                                 setUserId: (userId) => {
-                                        set({ userId });
-                                        if (userId) {
-                                                get().fetchCart();
+                                        const currentUserId = get().userId;
+                                        // Only update if userId changed
+                                        if (currentUserId !== userId) {
+                                                set({ userId });
+                                                if (userId) {
+                                                        // Fetch cart asynchronously (don't await to avoid blocking)
+                                                        // This ensures cart is loaded when user navigates to cart/payment pages
+                                                        // If cart doesn't exist yet (404), it will be silently handled
+                                                        get()
+                                                                .fetchCart()
+                                                                .catch((error) => {
+                                                                        // Silently handle errors - cart might not exist yet (normal for new users)
+                                                                        // Cart will be created automatically when first item is added
+                                                                        const isNotFound =
+                                                                                (
+                                                                                        error as {
+                                                                                                response?: {
+                                                                                                        status?: number;
+                                                                                                };
+                                                                                        }
+                                                                                )?.response?.status === 404;
+                                                                        if (!isNotFound) {
+                                                                                console.warn(
+                                                                                        "Failed to fetch cart after setUserId:",
+                                                                                        error
+                                                                                );
+                                                                        }
+                                                                });
+                                                } else {
+                                                        // Clear items when userId is null
+                                                        set({ items: [] });
+                                                }
                                         }
                                 },
 
@@ -155,10 +204,27 @@ export const useCartStore = create<CartState>()(
                                                                 "ECONNABORTED" ||
                                                         (error as { message?: string })?.message?.includes("timeout");
 
+                                                // Check if cart doesn't exist yet (404 or similar)
+                                                const isNotFound =
+                                                        (error as { response?: { status?: number } })?.response
+                                                                ?.status === 404 ||
+                                                        (error as { message?: string })?.message?.includes(
+                                                                "not found"
+                                                        ) ||
+                                                        (error as { message?: string })?.message?.includes("Not found");
+
+                                                // Silently handle not found errors (cart will be created when adding first item)
+                                                // This is normal for new users who haven't added anything to cart yet
+                                                if (isNotFound) {
+                                                        set({ items: [] });
+                                                        return; // Don't show error for new users - cart will be created on first add
+                                                }
+
                                                 // Only log and show toast for non-timeout errors
                                                 if (!isTimeout) {
                                                         console.error("Failed to fetch cart:", error);
-                                                        toast.error("Failed to load cart");
+                                                        // Don't show toast for initial fetch (might be called automatically)
+                                                        // Only show toast if user explicitly tries to view cart
                                                 }
                                                 // For timeout, silently fail - might just be slow network
                                         } finally {
@@ -167,13 +233,60 @@ export const useCartStore = create<CartState>()(
                                 },
 
                                 addItem: async (itemToAdd, quantity) => {
-                                        const { userId } = get();
+                                        let { userId } = get();
+
+                                        // If userId is not set, try to get it from auth store
                                         if (!userId) {
-                                                toast.error("Please login to add items to cart");
-                                                return;
+                                                try {
+                                                        // Dynamic import to avoid circular dependency
+                                                        const { useAuthStore: authStore } = await import(
+                                                                "@/stores/useAuthStore"
+                                                        );
+                                                        const authState = authStore.getState();
+                                                        if (authState.user?.id) {
+                                                                userId = authState.user.id;
+                                                                set({ userId });
+                                                                // Fetch cart first to ensure it exists (setUserId already calls fetchCart, but we call it explicitly here to ensure it completes)
+                                                                try {
+                                                                        await get().fetchCart();
+                                                                } catch (fetchError) {
+                                                                        // If fetch fails, continue anyway - backend will create cart if needed
+                                                                        console.warn(
+                                                                                "Failed to fetch cart before adding item, continuing anyway:",
+                                                                                fetchError
+                                                                        );
+                                                                }
+                                                        } else {
+                                                                toast.error("Please login to add items to cart");
+                                                                return;
+                                                        }
+                                                } catch (error) {
+                                                        console.error("Failed to get user from auth store:", error);
+                                                        toast.error("Please login to add items to cart");
+                                                        return;
+                                                }
                                         }
 
                                         try {
+                                                // Get image URL - itemToAdd.image should already be processed from FoodCard/MenuItemCard
+                                                // but we'll process it again to handle both string and StaticImageData cases
+                                                const imageUrlToSend = getImageUrl(itemToAdd.image);
+                                                // Always send imageURL to backend, even if it's a placeholder
+                                                // Backend will handle empty/placeholder values, but we need to send it
+                                                // This ensures the cart uses the same image as displayed on the card
+                                                const finalImageURL =
+                                                        imageUrlToSend && imageUrlToSend.trim() !== ""
+                                                                ? imageUrlToSend.trim()
+                                                                : "/placeholder.png";
+
+                                                console.log("[CartStore] Adding item to cart:", {
+                                                        productId: itemToAdd.id,
+                                                        productName: itemToAdd.name,
+                                                        originalImage: itemToAdd.image,
+                                                        imageUrlToSend,
+                                                        finalImageURL,
+                                                });
+
                                                 const cart = await cartApi.addItemToCart(userId, {
                                                         restaurant: {
                                                                 restaurantId: itemToAdd.restaurantId,
@@ -187,12 +300,14 @@ export const useCartStore = create<CartState>()(
                                                                 sizeId: itemToAdd.sizeId,
                                                                 sizeName: itemToAdd.sizeName,
                                                                 customizations: itemToAdd.customizations,
-                                                                imageURL:
-                                                                        typeof itemToAdd.image === "string"
-                                                                                ? itemToAdd.image
-                                                                                : undefined,
+                                                                imageURL: finalImageURL,
                                                         },
                                                 });
+
+                                                console.log(
+                                                        "[CartStore] Cart response:",
+                                                        JSON.stringify(cart, null, 2)
+                                                );
 
                                                 if (!updateItemsFromResponse(cart)) {
                                                         await get().fetchCart();
