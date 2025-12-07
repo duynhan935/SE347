@@ -8,7 +8,9 @@ import { ChevronLeft, ChevronRight, Utensils } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { FoodCard } from "./FoodCard";
+import { FoodCardSkeleton } from "./FoodCardSkeleton";
 import { RestaurantCard } from "./RestaurantCard";
+import { RestaurantCardSkeleton } from "./RestaurantCardSkeleton";
 
 const categoryIcons: { [key: string]: string } = {
         Burger: "🍔",
@@ -49,7 +51,6 @@ export default function RestaurantList() {
                 getAllCategories();
         }, [getAllRestaurants, getAllCategories, fetchAllProducts, searchType, searchParams]);
 
-        if (loading || productsLoading) return <p>Đang tải...</p>;
         const handleCategoryClick = (categoryName: string) => {
                 const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
                 if (activeCategory === categoryName) {
@@ -135,10 +136,35 @@ export default function RestaurantList() {
                         {/* --- List Header & Grid --- */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                                 <h2 className="text-xl font-bold">
-                                        {totalResults} {title} Found
+                                        {loading || productsLoading ? (
+                                                <span className="inline-block h-6 w-32 bg-gray-200 rounded animate-pulse"></span>
+                                        ) : (
+                                                `${totalResults} ${title} Found`
+                                        )}
                                 </h2>
                         </div>
-                        {items && items.length > 0 ? (
+
+                        {/* Loading state with skeletons */}
+                        {(loading || productsLoading) && (
+                                <div
+                                        className={`grid gap-6 ${
+                                                searchType === "restaurants"
+                                                        ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+                                                        : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                                        }`}
+                                >
+                                        {Array.from({ length: 6 }).map((_, index) =>
+                                                searchType === "restaurants" ? (
+                                                        <RestaurantCardSkeleton key={`restaurant-skeleton-${index}`} />
+                                                ) : (
+                                                        <FoodCardSkeleton key={`food-skeleton-${index}`} />
+                                                )
+                                        )}
+                                </div>
+                        )}
+
+                        {/* Content when loaded */}
+                        {!loading && !productsLoading && items && items.length > 0 && (
                                 <>
                                         <div
                                                 className={`grid gap-6 ${
@@ -165,8 +191,13 @@ export default function RestaurantList() {
                                                 scrollToTop={true}
                                         />
                                 </>
-                        ) : (
-                                <p>No {title} found. Try adjusting your filters.</p>
+                        )}
+
+                        {/* Empty state */}
+                        {!loading && !productsLoading && (!items || items.length === 0) && (
+                                <div className="text-center py-12">
+                                        <p className="text-gray-500 text-lg">No {title} found. Try adjusting your filters.</p>
+                                </div>
                         )}
                 </div>
         );

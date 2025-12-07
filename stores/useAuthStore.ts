@@ -10,6 +10,7 @@ interface AuthState {
         isAuthenticated: boolean;
         loading: boolean;
         error: string | null;
+        isLoggingOut: boolean;
 
         // Actions
         login: (credentials: { username: string; password: string }) => Promise<boolean>;
@@ -46,6 +47,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: !!getInitialTokens().accessToken,
         loading: false,
         error: null,
+        isLoggingOut: false,
 
         setTokens: (access, refresh) => {
                 // Set tokens and authentication state immediately
@@ -188,10 +190,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                         isAuthenticated: false,
                         error: null,
                         loading: false,
+                        isLoggingOut: true,
                 });
                 if (typeof window !== "undefined") {
                         localStorage.removeItem("accessToken");
                         localStorage.removeItem("refreshToken");
+                        // Reset isLoggingOut after a short delay
+                        setTimeout(() => {
+                                set({ isLoggingOut: false });
+                        }, 2000);
                 }
                 console.log("User logged out.");
         },

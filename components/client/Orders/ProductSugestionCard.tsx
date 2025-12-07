@@ -1,3 +1,4 @@
+import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { Star } from "lucide-react";
 import Image, { StaticImageData } from "next/image";
@@ -17,8 +18,11 @@ export const ProductSuggestionCard = ({ product }: { product: SuggestedProduct }
 
         const handleAddToCart = () => {
                 const itemToAdd = {
-                        ...product,
-                        restaurantId: 3,
+                        id: product.id.toString(),
+                        name: product.name,
+                        price: product.price,
+                        image: getImageUrl(product.image),
+                        restaurantId: "3",
                         restaurantName: "The Burger Shop",
                 };
                 addItem(itemToAdd, 1);

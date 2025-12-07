@@ -1,5 +1,6 @@
 "use client";
 
+import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Product } from "@/types";
@@ -7,7 +8,7 @@ import { Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 type FoodCardProps = {
@@ -16,20 +17,36 @@ type FoodCardProps = {
 
 export const FoodCard = memo(({ product }: FoodCardProps) => {
         const router = useRouter();
-        const { addItem } = useCartStore();
+        const addItem = useCartStore((state) => state.addItem);
+        const setUserId = useCartStore((state) => state.setUserId);
         const { user } = useAuthStore();
         const [isAdding, setIsAdding] = useState(false);
+        const [isMounted, setIsMounted] = useState(false);
+
+        // Ensure component is mounted (client-side only)
+        useEffect(() => {
+                setIsMounted(true);
+        }, []);
+
+        // Ensure userId is set in cart store when user is available
+        useEffect(() => {
+                if (isMounted && user?.id) {
+                        setUserId(user.id);
+                }
+        }, [isMounted, user?.id, setUserId]);
 
         const displayPrice = useMemo(() => product.productSizes?.[0]?.price, [product.productSizes]);
         const defaultSize = useMemo(() => product.productSizes?.[0], [product.productSizes]);
+        // Use the same image URL that's displayed on the card
+        const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
 
         const handleAddToCart = useCallback(
                 async (e: React.MouseEvent) => {
                         e.preventDefault();
                         e.stopPropagation();
 
-                        // Prevent multiple clicks
-                        if (isAdding) {
+                        // Prevent multiple clicks or if not mounted
+                        if (isAdding || !isMounted || !addItem) {
                                 return;
                         }
 
@@ -49,14 +66,28 @@ export const FoodCard = memo(({ product }: FoodCardProps) => {
                                 return;
                         }
 
+                        if (!defaultSize) {
+                                toast.error("Không tìm thấy size mặc định");
+                                return;
+                        }
+
                         setIsAdding(true);
                         try {
+                                // Use the same image URL that's displayed on the card
+                                console.log("[FoodCard] Adding to cart:", {
+                                        productId: product.id,
+                                        productName: product.productName,
+                                        originalImageURL: product.imageURL,
+                                        cardImageUrl: cardImageUrl,
+                                        imageURLType: typeof product.imageURL,
+                                });
+
                                 await addItem(
                                         {
                                                 id: product.id,
                                                 name: product.productName,
                                                 price: defaultSize.price,
-                                                image: product.imageURL || "/placeholder.png",
+                                                image: cardImageUrl, // Use the same image as displayed on card
                                                 restaurantId: product.restaurant.id,
                                                 restaurantName: product.restaurant.resName || "Unknown Restaurant",
                                                 sizeId: defaultSize.id,
@@ -75,7 +106,7 @@ export const FoodCard = memo(({ product }: FoodCardProps) => {
                                 }, 300); // Small delay to prevent rapid clicks
                         }
                 },
-                [isAdding, user, product, defaultSize, addItem, router]
+                [isAdding, isMounted, user, product, defaultSize, cardImageUrl, addItem, router]
         );
 
         const handleBuyNow = useCallback(
@@ -105,10 +136,11 @@ export const FoodCard = memo(({ product }: FoodCardProps) => {
                                 {/* Image Section - Same as RestaurantCard */}
                                 <div className="relative w-full h-48">
                                         <Image
-                                                src={product.imageURL || "/placeholder.png"}
+                                                src={cardImageUrl}
                                                 alt={product.productName}
                                                 fill
                                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                unoptimized={!product.imageURL || cardImageUrl === "/placeholder.png"}
                                         />
 
                                         {/* Delivery time badge */}
@@ -152,24 +184,26 @@ export const FoodCard = memo(({ product }: FoodCardProps) => {
                         </Link>
 
                         {/* Action Buttons - Outside Link, prevent navigation */}
-                        <div className="px-4 pb-4 pt-2 border-t border-gray-100">
-                                <div className="flex items-center gap-2">
-                                        <button
-                                                onClick={handleAddToCart}
-                                                disabled={isAdding}
-                                                className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                                {isAdding ? "Đang thêm..." : "Thêm vào giỏ"}
-                                        </button>
-                                        <button
-                                                onClick={handleBuyNow}
-                                                disabled={isAdding}
-                                                className="flex-1 px-3 py-2 text-sm font-medium text-white bg-brand-purple hover:bg-brand-purple/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                                Mua ngay
-                                        </button>
+                        {isMounted && (
+                                <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+                                        <div className="flex items-center gap-2">
+                                                <button
+                                                        onClick={handleAddToCart}
+                                                        disabled={isAdding || !isMounted}
+                                                        className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                        {isAdding ? "Đang thêm..." : "Thêm vào giỏ"}
+                                                </button>
+                                                <button
+                                                        onClick={handleBuyNow}
+                                                        disabled={isAdding || !isMounted}
+                                                        className="flex-1 px-3 py-2 text-sm font-medium text-white bg-brand-purple hover:bg-brand-purple/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                        Mua ngay
+                                                </button>
+                                        </div>
                                 </div>
-                        </div>
+                        )}
                 </div>
         );
 });
