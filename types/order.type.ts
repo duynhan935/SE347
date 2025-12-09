@@ -1,45 +1,64 @@
 export enum OrderStatus {
-	PENDING = "PENDING",
-	CONFIRMED = "CONFIRMED",
-	PREPARING = "PREPARING",
-	READY = "READY",
-	DELIVERING = "DELIVERING",
-	DELIVERED = "DELIVERED",
-	CANCELLED = "CANCELLED",
+    PENDING = "pending",
+    CONFIRMED = "confirmed",
+    PREPARING = "preparing",
+    READY = "ready",
+    DELIVERING = "delivering", // Note: Backend bạn gửi chưa thấy enum này, nhưng frontend có thể giữ để map UI
+    DELIVERED = "completed", // Backend dùng 'completed'
+    CANCELLED = "cancelled",
 }
 
 export interface OrderItem {
-	id: string;
-	productId: string;
-	productName: string;
-	quantity: number;
-	price: number;
-	size?: string;
-	note?: string;
+    productId: string;
+    productName: string;
+    quantity: number;
+    price: number;
+    customizations?: string;
+}
+
+// Type cho Address Object từ Backend
+export interface DeliveryAddress {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
 }
 
 export interface Order {
-	id: string;
-	orderCode: string;
-	customerId: string;
-	customerName: string;
-	customerPhone: string;
-	restaurantId: string;
-	restaurantName: string;
-	merchantId: string;
-	items: OrderItem[];
-	subtotal: number;
-	deliveryFee: number;
-	discount: number;
-	totalPrice: number;
-	status: OrderStatus;
-	paymentMethod: string;
-	paymentStatus: "PENDING" | "PAID" | "FAILED";
-	deliveryAddress: string;
-	note?: string;
-	createdAt: string;
-	updatedAt?: string;
-	deliveredAt?: string;
-	cancelledAt?: string;
-	cancelReason?: string;
+    _id?: string; // MongoDB ID
+    orderId: string; // ID đơn hàng (VD: ORD123...)
+    userId: string;
+
+    // Thông tin khách hàng (Backend có thể populate hoặc không)
+    user?: {
+        _id: string;
+        fullName?: string;
+        username?: string;
+        phone?: string;
+        phoneNumber?: string;
+    };
+    customerName?: string; // Fallback
+    customerPhone?: string; // Fallback
+
+    restaurantId: string;
+    restaurantName: string;
+    items: OrderItem[];
+
+    totalAmount: number;
+    deliveryFee: number;
+    discount: number;
+    finalAmount: number; // Tổng tiền cuối cùng
+
+    status: OrderStatus | string;
+    paymentMethod: "cash" | "card" | "wallet";
+    paymentStatus: "pending" | "processing" | "completed" | "failed" | "refunded";
+
+    // Sửa lại type cho đúng với thực tế backend trả về là Object
+    deliveryAddress: DeliveryAddress | string;
+
+    orderNote?: string;
+    cancellationReason?: string;
+    createdAt: string;
+    updatedAt?: string;
+    slug?: string;
 }

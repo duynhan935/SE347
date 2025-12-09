@@ -4,553 +4,424 @@ import { orderApi } from "@/lib/api/orderApi";
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { Order, OrderStatus } from "@/types/order.type";
-import { CheckCircle, Package, RefreshCw, XCircle } from "lucide-react";
+import { Order, DeliveryAddress } from "@/types/order.type";
+import { CheckCircle, Package, RefreshCw, XCircle, MapPin, Phone, User, Clock, Store, DollarSign } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
+// Helper format tiền tệ
+const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
+};
+
 export default function MerchantOrdersPage() {
-        const { user } = useAuthStore();
-        const [orders, setOrders] = useState<Order[]>([]);
-        const [loading, setLoading] = useState(true);
-        const [filterStatus, setFilterStatus] = useState<OrderStatus | "ALL">("ALL");
-        const [restaurantIds, setRestaurantIds] = useState<string[]>([]);
-        const [rejectReason, setRejectReason] = useState<{ [orderId: string]: string }>({});
-        const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null);
+    const { user } = useAuthStore();
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [filterStatus, setFilterStatus] = useState<string>("ALL");
+    const [restaurantIds, setRestaurantIds] = useState<string[]>([]);
+    const [rejectReason, setRejectReason] = useState<{ [orderId: string]: string }>({});
+    const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null);
 
-        // Get restaurant IDs for socket connection
-        useEffect(() => {
-                const fetchRestaurants = async () => {
-                        if (!user?.id) return;
-                        try {
-                                const response = await restaurantApi.getRestaurantByMerchantId(user.id);
-                                const restaurants = response.data || [];
-                                const ids = restaurants
-                                        .map((r: { id?: string; _id?: string }) => r.id || r._id || "")
-                                        .filter(Boolean);
-                                setRestaurantIds(ids);
-                        } catch (error) {
-                                console.error("Failed to fetch restaurants:", error);
-                        }
-                };
-                fetchRestaurants();
-        }, [user?.id]);
+    // 1. Lấy danh sách ID nhà hàng từ Data bạn gửi
+    useEffect(() => {
+        const fetchRestaurants = async () => {
+            if (!user?.id) return;
+            try {
+                const response = await restaurantApi.getRestaurantByMerchantId(user.id);
+                // Xử lý data trả về (mảng nhà hàng)
+                const restaurants = Array.isArray(response.data) ? response.data : (response.data as any)?.data || [];
 
-        // Connect to socket for each restaurant
-        useOrderSocket({
-                restaurantId: restaurantIds[0] || null, // Join first restaurant room (backend supports multiple)
-                onNewOrder: (notification) => {
-                        toast.success(`Đơn hàng mới: ${notification.data.orderId}`, {
-                                icon: "🔔",
-                        });
-                        fetchOrders(); // Refresh orders
-                },
-        });
-
-        const fetchOrders = useCallback(async () => {
-                if (!user?.id) return;
-
-                try {
-                        setLoading(true);
-                        const merchantOrders = await orderApi.getOrdersByMerchant(user.id);
-                        setOrders(merchantOrders);
-                } catch (error) {
-                        console.error("Failed to fetch orders:", error);
-                        toast.error("Không thể tải danh sách đơn hàng");
-                        setOrders([]);
-                } finally {
-                        setLoading(false);
-                }
-        }, [user?.id]);
-
-        useEffect(() => {
-                if (user?.id) {
-                        fetchOrders();
-                }
-        }, [user?.id, filterStatus, fetchOrders]);
-
-        const handleAcceptOrder = async (order: Order) => {
-                const orderId = (order as Order & { orderId?: string }).orderId || order.id;
-                try {
-                        await orderApi.acceptOrder(orderId);
-                        toast.success("Đã chấp nhận đơn hàng thành công");
-                        // Refresh orders immediately
-                        await fetchOrders();
-                        // Also refresh after a short delay to ensure backend has processed
-                        setTimeout(() => {
-                                fetchOrders();
-                        }, 1000);
-                } catch (error: unknown) {
-                        console.error("Failed to accept order:", error);
-                        const errorMessage =
-                                error && typeof error === "object" && "response" in error
-                                        ? (error as { response?: { data?: { message?: string } } }).response?.data
-                                                  ?.message
-                                        : undefined;
-                        toast.error(errorMessage || "Không thể chấp nhận đơn hàng");
-                }
+                // Lấy ID: Data bạn gửi dùng trường "id"
+                const ids = restaurants.map((r: any) => r.id).filter(Boolean);
+                setRestaurantIds(ids);
+            } catch (error) {
+                console.error("Failed to fetch restaurants:", error);
+            }
         };
+        fetchRestaurants();
+    }, [user?.id]);
 
-        const handleRejectOrder = async (order: Order) => {
-                const orderId = (order as Order & { orderId?: string }).orderId || order.id;
-                const reason = rejectReason[orderId]?.trim();
-                if (!reason) {
-                        toast.error("Vui lòng nhập lý do từ chối");
-                        return;
-                }
+    // 2. Fetch Orders
+    const fetchOrders = useCallback(async () => {
+        if (!user?.id) return;
+        try {
+            if (orders.length === 0) setLoading(true);
+            const merchantOrders = await orderApi.getOrdersByMerchant(user.id);
+            setOrders(merchantOrders);
+        } catch (error) {
+            console.error("Failed to fetch orders:", error);
+            // Không toast lỗi ở đây để tránh spam nếu auto refresh
+        } finally {
+            setLoading(false);
+        }
+    }, [user?.id]); // Bỏ orders.length để tránh loop
 
-                try {
-                        await orderApi.rejectOrder(orderId, reason);
-                        toast.success("Đã từ chối đơn hàng");
-                        setShowRejectDialog(null);
-                        setRejectReason((prev) => {
-                                const next = { ...prev };
-                                delete next[orderId];
-                                return next;
-                        });
-                        // Refresh orders immediately
-                        await fetchOrders();
-                        // Also refresh after a short delay to ensure backend has processed
-                        setTimeout(() => {
-                                fetchOrders();
-                        }, 1000);
-                } catch (error: unknown) {
-                        console.error("Failed to reject order:", error);
-                        const errorMessage =
-                                error && typeof error === "object" && "response" in error
-                                        ? (error as { response?: { data?: { message?: string } } }).response?.data
-                                                  ?.message
-                                        : undefined;
-                        toast.error(errorMessage || "Không thể từ chối đơn hàng");
-                }
-        };
+    // 3. Socket
+    useOrderSocket({
+        restaurantId: restaurantIds[0] || null,
+        onNewOrder: (notification) => {
+            toast.success(`Đơn mới: ${notification.data.orderId}`, { icon: "🔔" });
+            fetchOrders();
+        },
+        onOrderStatusUpdate: () => fetchOrders(),
+    });
 
-        const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
-                try {
-                        await orderApi.updateOrderStatus(orderId, newStatus);
-                        toast.success("Cập nhật trạng thái đơn hàng thành công");
-                        fetchOrders();
-                } catch (error) {
-                        console.error("Failed to update order status:", error);
-                        toast.error("Không thể cập nhật trạng thái đơn hàng");
-                }
-        };
+    useEffect(() => {
+        fetchOrders();
+    }, [fetchOrders]);
 
-        // Normalize status for comparison (backend uses lowercase, frontend uses uppercase)
-        const normalizeStatus = (status: string): OrderStatus => {
-                const upperStatus = status.toUpperCase();
-                return upperStatus as OrderStatus;
-        };
+    // --- Helpers ---
 
-        const filteredOrders =
-                filterStatus === "ALL"
-                        ? orders
-                        : orders.filter((order) => normalizeStatus(order.status) === filterStatus);
+    // Xử lý địa chỉ (Object hoặc String)
+    const formatAddress = (address: DeliveryAddress | string | undefined) => {
+        if (!address) return "Chưa cập nhật";
+        if (typeof address === "string") return address;
 
-        const getStatusColor = (status: string) => {
-                const normalizedStatus = normalizeStatus(status);
-                switch (normalizedStatus) {
-                        case OrderStatus.PENDING:
-                                return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-                        case OrderStatus.CONFIRMED:
-                                return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-                        case OrderStatus.PREPARING:
-                                return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
-                        case OrderStatus.READY:
-                                return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-                        case OrderStatus.DELIVERING:
-                                return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
-                        case OrderStatus.DELIVERED:
-                                return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200";
-                        case OrderStatus.CANCELLED:
-                                return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-                        default:
-                                return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
-                }
-        };
+        // Nếu là object { street, city... }
+        const parts = [address.street, address.city, address.state].filter(Boolean);
 
-        const getStatusLabel = (status: string) => {
-                const normalizedStatus = normalizeStatus(status);
-                const labels: Record<OrderStatus, string> = {
-                        [OrderStatus.PENDING]: "Chờ xử lý",
-                        [OrderStatus.CONFIRMED]: "Đã xác nhận",
-                        [OrderStatus.PREPARING]: "Đang chuẩn bị",
-                        [OrderStatus.READY]: "Sẵn sàng",
-                        [OrderStatus.DELIVERING]: "Đang giao",
-                        [OrderStatus.DELIVERED]: "Đã giao",
-                        [OrderStatus.CANCELLED]: "Đã hủy",
-                };
-                return labels[normalizedStatus] || status;
-        };
+        return parts.length > 0 ? parts.join(", ") : "Địa chỉ không hợp lệ";
+    };
 
-        const getNextStatus = (currentStatus: string): OrderStatus | null => {
-                const normalizedStatus = normalizeStatus(currentStatus);
-                switch (normalizedStatus) {
-                        case OrderStatus.PENDING:
-                                return OrderStatus.CONFIRMED;
-                        case OrderStatus.CONFIRMED:
-                                return OrderStatus.PREPARING;
-                        case OrderStatus.PREPARING:
-                                return OrderStatus.READY;
-                        case OrderStatus.READY:
-                                return OrderStatus.DELIVERING;
-                        case OrderStatus.DELIVERING:
-                                return OrderStatus.DELIVERED;
-                        default:
-                                return null;
-                }
-        };
+    // Chuẩn hóa status về chữ thường để so sánh
+    const normalizeStatus = (status: string) => status.toLowerCase();
 
-        return (
-                <div className="space-y-6">
-                        {/* Header */}
-                        <div className="flex items-center justify-between">
-                                <div>
-                                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                                                Quản Lý Đơn Hàng
-                                        </h1>
-                                        <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                                Quản lý và theo dõi các đơn hàng của bạn
-                                        </p>
-                                </div>
-                                <button
-                                        onClick={fetchOrders}
-                                        disabled={loading}
-                                        className="flex items-center gap-2 px-4 py-2 bg-brand-yellow hover:bg-brand-yellow/90 text-white rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                        <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
-                                        Làm mới
-                                </button>
-                        </div>
+    // Map status backend sang hiển thị
+    const getStatusLabel = (status: string) => {
+        const s = normalizeStatus(status);
+        switch (s) {
+            case "pending":
+                return "Chờ xác nhận";
+            case "confirmed":
+                return "Đã nhận đơn";
+            case "preparing":
+                return "Đang nấu";
+            case "ready":
+                return "Đã xong món";
+            case "delivering":
+                return "Đang giao";
+            case "completed":
+                return "Hoàn thành";
+            case "cancelled":
+                return "Đã hủy";
+            default:
+                return status;
+        }
+    };
 
-                        {/* Stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Tổng đơn hàng</p>
-                                        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                                {orders.length}
-                                        </p>
-                                </div>
-                                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Chờ xử lý</p>
-                                        <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
-                                                {orders.filter((o) => o.status === OrderStatus.PENDING).length}
-                                        </p>
-                                </div>
-                                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Đang chuẩn bị</p>
-                                        <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
-                                                {orders.filter((o) => o.status === OrderStatus.PREPARING).length}
-                                        </p>
-                                </div>
-                                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Đã hoàn thành</p>
-                                        <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-                                                {orders.filter((o) => o.status === OrderStatus.DELIVERED).length}
-                                        </p>
-                                </div>
-                        </div>
+    const getStatusColor = (status: string) => {
+        const s = normalizeStatus(status);
+        switch (s) {
+            case "pending":
+                return "bg-yellow-100 text-yellow-800 border-yellow-200";
+            case "confirmed":
+                return "bg-blue-100 text-blue-800 border-blue-200";
+            case "preparing":
+                return "bg-purple-100 text-purple-800 border-purple-200";
+            case "completed":
+                return "bg-green-100 text-green-800 border-green-200";
+            case "cancelled":
+                return "bg-red-100 text-red-800 border-red-200";
+            default:
+                return "bg-gray-100 text-gray-800 border-gray-200";
+        }
+    };
 
-                        {/* Filters */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                                <div className="flex items-center gap-4 flex-wrap">
-                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                Lọc theo:
-                                        </span>
-                                        {(["ALL", ...Object.values(OrderStatus)] as const).map((status) => (
-                                                <button
-                                                        key={status}
-                                                        onClick={() => setFilterStatus(status)}
-                                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                                                filterStatus === status
-                                                                        ? "bg-brand-yellow text-white"
-                                                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                                                        }`}
-                                                >
-                                                        {status === "ALL" ? "Tất cả" : getStatusLabel(status)}
-                                                </button>
-                                        ))}
-                                </div>
-                        </div>
+    // Logic chuyển trạng thái tiếp theo
+    const getNextStatus = (current: string): string | null => {
+        const s = normalizeStatus(current);
+        if (s === "pending") return "confirmed";
+        if (s === "confirmed") return "preparing";
+        if (s === "preparing") return "ready";
+        if (s === "ready") return "completed"; // Hoặc delivering tùy quy trình
+        return null;
+    };
 
-                        {/* Orders Table */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                                {loading ? (
-                                        <div className="p-8 text-center">
-                                                <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
-                                                <p className="text-gray-600 dark:text-gray-400 mt-2">
-                                                        Đang tải đơn hàng...
-                                                </p>
-                                        </div>
-                                ) : filteredOrders.length === 0 ? (
-                                        <div className="p-8 text-center">
-                                                <Package className="h-12 w-12 mx-auto text-gray-400" />
-                                                <p className="text-gray-600 dark:text-gray-400 mt-2">
-                                                        Chưa có đơn hàng nào
-                                                </p>
-                                        </div>
-                                ) : (
-                                        <div className="overflow-x-auto">
-                                                <table className="w-full">
-                                                        <thead className="bg-gray-50 dark:bg-gray-700">
-                                                                <tr>
-                                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                                Mã đơn
-                                                                        </th>
-                                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                                Khách hàng
-                                                                        </th>
-                                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                                Sản phẩm
-                                                                        </th>
-                                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                                Tổng tiền
-                                                                        </th>
-                                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                                Trạng thái
-                                                                        </th>
-                                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                                Thanh toán
-                                                                        </th>
-                                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                                Thời gian
-                                                                        </th>
-                                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                                Hành động
-                                                                        </th>
-                                                                </tr>
-                                                        </thead>
-                                                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                                                {filteredOrders.map((order) => {
-                                                                        const normalizedStatus = normalizeStatus(
-                                                                                order.status
-                                                                        );
-                                                                        const nextStatus = getNextStatus(order.status);
-                                                                        return (
-                                                                                <tr
-                                                                                        key={order.id}
-                                                                                        className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                                                                                >
-                                                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                                                                        {order.orderCode ||
-                                                                                                                order.id}
-                                                                                                </div>
-                                                                                        </td>
-                                                                                        <td className="px-6 py-4">
-                                                                                                <div className="text-sm text-gray-900 dark:text-white">
-                                                                                                        {
-                                                                                                                order.customerName
-                                                                                                        }
-                                                                                                </div>
-                                                                                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                                                                        {
-                                                                                                                order.customerPhone
-                                                                                                        }
-                                                                                                </div>
-                                                                                        </td>
-                                                                                        <td className="px-6 py-4">
-                                                                                                <div className="text-sm text-gray-900 dark:text-white">
-                                                                                                        {
-                                                                                                                order
-                                                                                                                        .items
-                                                                                                                        .length
-                                                                                                        }{" "}
-                                                                                                        món
-                                                                                                </div>
-                                                                                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                                                                        {order.items
-                                                                                                                .slice(
-                                                                                                                        0,
-                                                                                                                        2
-                                                                                                                )
-                                                                                                                .map(
-                                                                                                                        (
-                                                                                                                                item
-                                                                                                                        ) =>
-                                                                                                                                item.productName
-                                                                                                                )
-                                                                                                                .join(
-                                                                                                                        ", "
-                                                                                                                )}
-                                                                                                        {order.items
-                                                                                                                .length >
-                                                                                                                2 &&
-                                                                                                                "..."}
-                                                                                                </div>
-                                                                                        </td>
-                                                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                                                                        $
-                                                                                                        {order.totalPrice.toFixed(
-                                                                                                                2
-                                                                                                        )}
-                                                                                                </div>
-                                                                                        </td>
-                                                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                                                                <span
-                                                                                                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                                                                                                                normalizedStatus
-                                                                                                        )}`}
-                                                                                                >
-                                                                                                        {getStatusLabel(
-                                                                                                                normalizedStatus
-                                                                                                        )}
-                                                                                                </span>
-                                                                                        </td>
-                                                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                                                                <span
-                                                                                                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                                                                                order.paymentStatus ===
-                                                                                                                "PAID"
-                                                                                                                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                                                                                                        : order.paymentStatus ===
-                                                                                                                          "FAILED"
-                                                                                                                        ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                                                                                                                        : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                                                                                                        }`}
-                                                                                                >
-                                                                                                        {order.paymentStatus ===
-                                                                                                        "PAID"
-                                                                                                                ? "Đã thanh toán"
-                                                                                                                : order.paymentStatus ===
-                                                                                                                  "FAILED"
-                                                                                                                ? "Thất bại"
-                                                                                                                : "Chờ thanh toán"}
-                                                                                                </span>
-                                                                                        </td>
-                                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                                                                {new Date(
-                                                                                                        order.createdAt
-                                                                                                ).toLocaleString(
-                                                                                                        "vi-VN"
-                                                                                                )}
-                                                                                        </td>
-                                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                                                                {normalizeStatus(
-                                                                                                        order.status
-                                                                                                ) ===
-                                                                                                OrderStatus.PENDING ? (
-                                                                                                        <div className="flex items-center gap-2">
-                                                                                                                <button
-                                                                                                                        onClick={() =>
-                                                                                                                                handleAcceptOrder(
-                                                                                                                                        order
-                                                                                                                                )
-                                                                                                                        }
-                                                                                                                        className="flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-xs font-medium"
-                                                                                                                >
-                                                                                                                        <CheckCircle className="h-4 w-4" />
-                                                                                                                        Chấp
-                                                                                                                        nhận
-                                                                                                                </button>
-                                                                                                                <button
-                                                                                                                        onClick={() => {
-                                                                                                                                const orderId =
-                                                                                                                                        (
-                                                                                                                                                order as Order & {
-                                                                                                                                                        orderId?: string;
-                                                                                                                                                }
-                                                                                                                                        )
-                                                                                                                                                .orderId ||
-                                                                                                                                        order.id;
-                                                                                                                                setShowRejectDialog(
-                                                                                                                                        orderId
-                                                                                                                                );
-                                                                                                                        }}
-                                                                                                                        className="flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-xs font-medium"
-                                                                                                                >
-                                                                                                                        <XCircle className="h-4 w-4" />
-                                                                                                                        Từ
-                                                                                                                        chối
-                                                                                                                </button>
-                                                                                                        </div>
-                                                                                                ) : nextStatus ? (
-                                                                                                        <button
-                                                                                                                onClick={() =>
-                                                                                                                        handleUpdateStatus(
-                                                                                                                                order.id,
-                                                                                                                                nextStatus
-                                                                                                                        )
-                                                                                                                }
-                                                                                                                className="text-brand-yellow hover:text-brand-yellow/80"
-                                                                                                        >
-                                                                                                                Cập nhật
-                                                                                                        </button>
-                                                                                                ) : (
-                                                                                                        <span className="text-gray-400">
-                                                                                                                —
-                                                                                                        </span>
-                                                                                                )}
-                                                                                        </td>
-                                                                                </tr>
-                                                                        );
-                                                                })}
-                                                        </tbody>
-                                                </table>
-                                        </div>
-                                )}
-                        </div>
+    // --- Actions ---
 
-                        {/* Reject Dialog */}
-                        {showRejectDialog && (
-                                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                                                        Từ chối đơn hàng
-                                                </h3>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                                        Vui lòng nhập lý do từ chối đơn hàng này:
-                                                </p>
-                                                <textarea
-                                                        value={rejectReason[showRejectDialog] || ""}
-                                                        onChange={(e) =>
-                                                                setRejectReason((prev) => ({
-                                                                        ...prev,
-                                                                        [showRejectDialog]: e.target.value,
-                                                                }))
-                                                        }
-                                                        placeholder="Ví dụ: Hết nguyên liệu, quán đóng cửa..."
-                                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow mb-4"
-                                                        rows={4}
-                                                />
-                                                <div className="flex gap-3 justify-end">
-                                                        <button
-                                                                onClick={() => {
-                                                                        setShowRejectDialog(null);
-                                                                        setRejectReason((prev) => {
-                                                                                const next = { ...prev };
-                                                                                delete next[showRejectDialog];
-                                                                                return next;
-                                                                        });
-                                                                }}
-                                                                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                                                        >
-                                                                Hủy
-                                                        </button>
-                                                        <button
-                                                                onClick={() => {
-                                                                        const order = orders.find((o) => {
-                                                                                const oId =
-                                                                                        (
-                                                                                                o as Order & {
-                                                                                                        orderId?: string;
-                                                                                                }
-                                                                                        ).orderId || o.id;
-                                                                                return oId === showRejectDialog;
-                                                                        });
-                                                                        if (order) {
-                                                                                handleRejectOrder(order);
-                                                                        }
-                                                                }}
-                                                                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                                                        >
-                                                                Xác nhận từ chối
-                                                        </button>
-                                                </div>
-                                        </div>
-                                </div>
-                        )}
+    const updateLocalOrder = (orderId: string, updates: Partial<Order>) => {
+        setOrders((prev) => prev.map((o) => (o.orderId === orderId ? { ...o, ...updates } : o)));
+    };
+
+    const handleAcceptOrder = async (order: Order) => {
+        const oldStatus = order.status;
+        updateLocalOrder(order.orderId, { status: "confirmed" });
+
+        try {
+            await orderApi.acceptOrder(order.orderId);
+            toast.success("Đã nhận đơn hàng");
+        } catch (error: any) {
+            updateLocalOrder(order.orderId, { status: oldStatus }); // Revert
+            toast.error(error?.response?.data?.message || "Lỗi nhận đơn");
+        }
+    };
+
+    const handleRejectOrder = async () => {
+        if (!showRejectDialog) return;
+        const reason = rejectReason[showRejectDialog];
+        if (!reason) return toast.error("Cần nhập lý do");
+
+        // Tìm order đang xử lý
+        const order = orders.find((o) => o.orderId === showRejectDialog);
+        if (!order) return;
+
+        const oldStatus = order.status;
+        updateLocalOrder(order.orderId, { status: "cancelled" });
+        setShowRejectDialog(null);
+
+        try {
+            await orderApi.rejectOrder(order.orderId, reason);
+            toast.success("Đã từ chối đơn");
+        } catch (error) {
+            updateLocalOrder(order.orderId, { status: oldStatus });
+            toast.error("Lỗi từ chối đơn");
+        }
+    };
+
+    const handleNextStatus = async (order: Order) => {
+        const next = getNextStatus(order.status as string);
+        if (!next) return;
+
+        const oldStatus = order.status;
+        updateLocalOrder(order.orderId, { status: next });
+
+        try {
+            await orderApi.updateOrderStatus(order.orderId, next);
+            toast.success(`Cập nhật: ${getStatusLabel(next)}`);
+        } catch (error) {
+            updateLocalOrder(order.orderId, { status: oldStatus });
+            toast.error("Lỗi cập nhật trạng thái");
+        }
+    };
+
+    // Filter logic
+    const filteredOrders =
+        filterStatus === "ALL"
+            ? orders
+            : orders.filter((o) => normalizeStatus(o.status as string) === normalizeStatus(filterStatus));
+
+    return (
+        <div className="space-y-6 p-4 md:p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+            <div className="flex flex-col md:flex-row justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Đơn Hàng</h1>
+                    <p className="text-gray-500">Quản lý đơn hàng từ {restaurantIds.length} nhà hàng</p>
                 </div>
-        );
+                <button
+                    onClick={fetchOrders}
+                    className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 flex items-center gap-2"
+                >
+                    <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Làm mới
+                </button>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex overflow-x-auto gap-2 pb-2">
+                {["ALL", "pending", "confirmed", "preparing", "completed", "cancelled"].map((status) => (
+                    <button
+                        key={status}
+                        onClick={() => setFilterStatus(status)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                            filterStatus === status
+                                ? "bg-yellow-500 text-white"
+                                : "bg-white text-gray-600 border hover:bg-gray-50"
+                        }`}
+                    >
+                        {status === "ALL" ? "Tất cả" : getStatusLabel(status)}
+                        <span className="ml-2 bg-black/10 px-2 py-0.5 rounded-full text-xs">
+                            {status === "ALL"
+                                ? orders.length
+                                : orders.filter((o) => normalizeStatus(o.status as string) === status).length}
+                        </span>
+                    </button>
+                ))}
+            </div>
+
+            {/* Table */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl border shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-50 dark:bg-gray-700 text-gray-500 font-medium border-b">
+                            <tr>
+                                <th className="px-6 py-4">Mã Đơn / Quán</th>
+                                <th className="px-6 py-4">Khách Hàng</th>
+                                <th className="px-6 py-4">Chi Tiết Món</th>
+                                <th className="px-6 py-4">Tổng Tiền</th>
+                                <th className="px-6 py-4">Trạng Thái</th>
+                                <th className="px-6 py-4 text-right">Hành Động</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                            {filteredOrders.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                        <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                        Chưa có đơn hàng nào
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredOrders.map((order) => (
+                                    <tr key={order.orderId} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                        <td className="px-6 py-4">
+                                            <div className="font-medium text-gray-900 dark:text-white">
+                                                #{order.orderId.slice(-6)}
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                                <Store className="w-3 h-3" /> {order.restaurantName}
+                                            </div>
+                                            <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                                                <Clock className="w-3 h-3" />{" "}
+                                                {new Date(order.createdAt).toLocaleTimeString("vi-VN", {
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="font-medium flex items-center gap-1">
+                                                <User className="w-3 h-3 text-gray-400" />
+                                                {/* Fallback tên khách */}
+                                                {order.customerName ||
+                                                    order.user?.fullName ||
+                                                    order.user?.username ||
+                                                    "Khách vãng lai"}
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                                <Phone className="w-3 h-3" />
+                                                {order.customerPhone ||
+                                                    order.user?.phone ||
+                                                    order.user?.phoneNumber ||
+                                                    "---"}
+                                            </div>
+                                            <div
+                                                className="text-xs text-gray-500 mt-1 flex items-center gap-1 truncate max-w-[150px]"
+                                                title={
+                                                    typeof order.deliveryAddress === "string"
+                                                        ? order.deliveryAddress
+                                                        : "Địa chỉ"
+                                                }
+                                            >
+                                                <MapPin className="w-3 h-3" />
+                                                {formatAddress(order.deliveryAddress)}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="space-y-1 max-h-[80px] overflow-y-auto custom-scrollbar">
+                                                {order.items.map((item, idx) => (
+                                                    <div key={idx} className="flex justify-between gap-2">
+                                                        <span className="text-gray-600 dark:text-gray-300">
+                                                            <span className="font-bold text-gray-900 dark:text-white">
+                                                                x{item.quantity}
+                                                            </span>{" "}
+                                                            {item.productName}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {order.orderNote && (
+                                                <div className="text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded mt-1 border border-orange-100">
+                                                    Note: {order.orderNote}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="font-bold text-gray-900 dark:text-white">
+                                                {formatCurrency(order.finalAmount)}
+                                            </div>
+                                            <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                                                <DollarSign className="w-3 h-3" />
+                                                {order.paymentMethod === "cod" ? "Tiền mặt" : order.paymentMethod}
+                                            </div>
+                                            <span
+                                                className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                                                    order.paymentStatus === "completed" ||
+                                                    order.paymentStatus === "paid" // Backend dùng 'paid' hoặc 'completed'
+                                                        ? "bg-green-50 text-green-700 border-green-200"
+                                                        : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                                }`}
+                                            >
+                                                {order.paymentStatus === "pending"
+                                                    ? "Chưa thanh toán"
+                                                    : "Đã thanh toán"}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                                                    order.status as string
+                                                )}`}
+                                            >
+                                                {getStatusLabel(order.status as string)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {normalizeStatus(order.status as string) === "pending" ? (
+                                                <div className="flex gap-2 justify-end">
+                                                    <button
+                                                        onClick={() => handleAcceptOrder(order)}
+                                                        className="p-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200 transition"
+                                                        title="Chấp nhận"
+                                                    >
+                                                        <CheckCircle className="w-5 h-5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setShowRejectDialog(order.orderId)}
+                                                        className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
+                                                        title="Từ chối"
+                                                    >
+                                                        <XCircle className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            ) : getNextStatus(order.status as string) ? (
+                                                <button
+                                                    onClick={() => handleNextStatus(order)}
+                                                    className="text-blue-600 hover:underline text-xs font-medium"
+                                                >
+                                                    Chuyển:{" "}
+                                                    {getStatusLabel(getNextStatus(order.status as string) || "")}
+                                                </button>
+                                            ) : (
+                                                <span className="text-gray-400">-</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Reject Modal */}
+            {showRejectDialog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 animate-in zoom-in-95">
+                        <h3 className="text-lg font-bold mb-2">Từ chối đơn hàng?</h3>
+                        <textarea
+                            className="w-full border rounded p-2 mb-4 text-sm dark:bg-gray-700"
+                            placeholder="Lý do từ chối..."
+                            rows={3}
+                            value={rejectReason[showRejectDialog] || ""}
+                            onChange={(e) => setRejectReason({ ...rejectReason, [showRejectDialog]: e.target.value })}
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => setShowRejectDialog(null)}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleRejectOrder}
+                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                                Xác nhận
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
