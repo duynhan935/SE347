@@ -42,7 +42,13 @@ export const MenuItemCard = memo(({ item }: { item: Product }) => {
                         e.stopPropagation();
 
                         // Prevent multiple clicks or if not mounted
-                        if (isAdding || !isMounted || !addItem) {
+                        if (isAdding || !isMounted) {
+                                return;
+                        }
+
+                        // Ensure addItem is available (should always be, but double-check)
+                        if (typeof addItem !== "function") {
+                                console.warn("[MenuItemCard] addItem is not available yet");
                                 return;
                         }
 
@@ -125,18 +131,17 @@ export const MenuItemCard = memo(({ item }: { item: Product }) => {
                                                 {item.productSizes.length > 1 ? "From " : ""}
                                                 {displayPrice ? `$${displayPrice.toFixed(2)}` : "N/A"}
                                         </p>
-                                        {isMounted && (
-                                                <button
-                                                        onClick={handleAddToCart}
-                                                        disabled={isAdding || !isMounted}
-                                                        className="text-brand-purple hover:text-brand-purple/80 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        title="Add to Cart"
-                                                >
-                                                        <PlusCircle
-                                                                className={`w-7 h-7 ${isAdding ? "animate-pulse" : ""}`}
-                                                        />
-                                                </button>
-                                        )}
+                                        <button
+                                                onClick={handleAddToCart}
+                                                disabled={isAdding || !isMounted}
+                                                className="text-brand-purple hover:text-brand-purple/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                title="Add to Cart"
+                                                aria-label="Add to Cart"
+                                        >
+                                                <PlusCircle
+                                                        className={`w-7 h-7 ${isAdding ? "animate-pulse" : ""}`}
+                                                />
+                                        </button>
                                 </div>
                         </div>
                 </Link>

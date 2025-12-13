@@ -1,12 +1,21 @@
+"use client";
+
 import burger from "@/assets/HomePage/burger.png";
 import noodle from "@/assets/HomePage/noodles.png";
 import partner from "@/assets/HomePage/partner.svg";
 import pizza from "@/assets/HomePage/pizza.png";
 import Button from "@/components/Button";
+import { MerchantRequestForm } from "@/components/auth/MerchantRequestForm";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
 const FeaturesAction = () => {
+        const [showMerchantForm, setShowMerchantForm] = useState(false);
+        const { user } = useAuthStore();
         return (
                 <div className="mt-[54px] grid grid-cols-1 lg:grid-cols-2 gap-x-[30px] gap-y-8 lg:gap-y-0">
                         <div className="w-full group">
@@ -72,13 +81,51 @@ const FeaturesAction = () => {
                                                         delivery service with us.
                                                 </p>
                                         </div>
-                                        <Link href="#" className="flex items-center justify-center mt-auto">
-                                                <Button className="mt-[38px] bg-brand-purple text-white font-manrope font-semibold leading-[30px] hover:bg-brand-purple/80 cursor-pointer group-hover:scale-120 transition-all duration-500">
+                                        <div className="flex items-center justify-center mt-auto">
+                                                <Button
+                                                        onClickFunction={() => setShowMerchantForm(true)}
+                                                        className="mt-[38px] bg-brand-purple text-white font-manrope font-semibold leading-[30px] hover:bg-brand-purple/80 cursor-pointer group-hover:scale-120 transition-all duration-500"
+                                                >
                                                         Learn More
                                                 </Button>
-                                        </Link>
+                                        </div>
                                 </div>
                         </div>
+
+                        {/* Merchant Request Form Dialog */}
+                        {showMerchantForm && (
+                                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                                        <div
+                                                className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto"
+                                                onClick={(e) => e.stopPropagation()}
+                                        >
+                                                <div className="flex justify-between items-center mb-4">
+                                                        <h3 className="text-xl font-bold text-gray-900">
+                                                                Yêu cầu trở thành Merchant
+                                                        </h3>
+                                                        <button
+                                                                onClick={() => setShowMerchantForm(false)}
+                                                                className="text-gray-400 hover:text-gray-600"
+                                                                aria-label="Close merchant registration form"
+                                                                title="Close"
+                                                        >
+                                                                <X className="w-5 h-5" />
+                                                        </button>
+                                                </div>
+                                                <MerchantRequestForm
+                                                        initialEmail={user?.email || ""}
+                                                        initialUsername={user?.username || ""}
+                                                        onSuccess={() => {
+                                                                setShowMerchantForm(false);
+                                                                toast.success(
+                                                                        "Yêu cầu đã được gửi! Vui lòng kiểm tra email để xác nhận tài khoản và chờ admin phê duyệt."
+                                                                );
+                                                        }}
+                                                        onCancel={() => setShowMerchantForm(false)}
+                                                />
+                                        </div>
+                                </div>
+                        )}
                 </div>
         );
 };

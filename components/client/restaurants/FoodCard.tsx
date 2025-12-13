@@ -46,7 +46,13 @@ export const FoodCard = memo(({ product }: FoodCardProps) => {
                         e.stopPropagation();
 
                         // Prevent multiple clicks or if not mounted
-                        if (isAdding || !isMounted || !addItem) {
+                        if (isAdding || !isMounted) {
+                                return;
+                        }
+
+                        // Ensure addItem is available (should always be, but double-check)
+                        if (typeof addItem !== "function") {
+                                console.warn("[FoodCard] addItem is not available yet");
                                 return;
                         }
 
@@ -114,19 +120,45 @@ export const FoodCard = memo(({ product }: FoodCardProps) => {
                         e.preventDefault();
                         e.stopPropagation();
 
+                        // Prevent multiple clicks or if not mounted
+                        if (isAdding || !isMounted) {
+                                return;
+                        }
+
+                        // Ensure addItem is available
+                        if (typeof addItem !== "function") {
+                                console.warn("[FoodCard] addItem is not available yet");
+                                return;
+                        }
+
                         if (!user) {
                                 toast.error("Vui lòng đăng nhập để mua hàng");
                                 router.push("/login");
                                 return;
                         }
 
+                        if (!product.restaurant?.id) {
+                                toast.error("Không tìm thấy thông tin nhà hàng");
+                                return;
+                        }
+
                         // Add to cart first, then redirect to checkout
-                        await handleAddToCart(e);
-                        if (product.restaurant?.id) {
+                        setIsAdding(true);
+                        try {
+                                await handleAddToCart(e);
+                                // Small delay to ensure item is added to store
+                                await new Promise((resolve) => setTimeout(resolve, 500));
                                 router.push(`/payment?restaurantId=${product.restaurant.id}`);
+                        } catch (error) {
+                                console.error("Failed to add to cart in Buy Now:", error);
+                                toast.error("Không thể thêm vào giỏ hàng");
+                        } finally {
+                                setTimeout(() => {
+                                        setIsAdding(false);
+                                }, 300);
                         }
                 },
-                [user, product, router, handleAddToCart]
+                [isAdding, isMounted, addItem, user, product, router, handleAddToCart]
         );
 
         return (
@@ -184,26 +216,24 @@ export const FoodCard = memo(({ product }: FoodCardProps) => {
                         </Link>
 
                         {/* Action Buttons - Outside Link, prevent navigation */}
-                        {isMounted && (
-                                <div className="px-4 pb-4 pt-2 border-t border-gray-100">
-                                        <div className="flex items-center gap-2">
-                                                <button
-                                                        onClick={handleAddToCart}
-                                                        disabled={isAdding || !isMounted}
-                                                        className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                        {isAdding ? "Đang thêm..." : "Thêm vào giỏ"}
-                                                </button>
-                                                <button
-                                                        onClick={handleBuyNow}
-                                                        disabled={isAdding || !isMounted}
-                                                        className="flex-1 px-3 py-2 text-sm font-medium text-white bg-brand-purple hover:bg-brand-purple/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                        Mua ngay
-                                                </button>
-                                        </div>
+                        <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+                                <div className="flex items-center gap-2">
+                                        <button
+                                                onClick={handleAddToCart}
+                                                disabled={isAdding || !isMounted}
+                                                className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                                {isAdding ? "Đang thêm..." : "Thêm vào giỏ"}
+                                        </button>
+                                        <button
+                                                onClick={handleBuyNow}
+                                                disabled={isAdding || !isMounted}
+                                                className="flex-1 px-3 py-2 text-sm font-medium text-white bg-brand-purple hover:bg-brand-purple/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                                Mua ngay
+                                        </button>
                                 </div>
-                        )}
+                        </div>
                 </div>
         );
 });

@@ -1,6 +1,6 @@
+import CustomToaster from "@/components/ui/CustomToaster";
 import type { Metadata } from "next";
 import { Manrope, Roboto_Serif } from "next/font/google";
-import { Toaster } from "react-hot-toast";
 import ClientLayout from "./ClientLayout";
 import "./globals.css";
 
@@ -30,7 +30,7 @@ export default function RootLayout({
                 <html lang="en">
                         <body className={`${robotoSerif.variable} ${manrope.variable}`}>
                                 <ClientLayout>{children}</ClientLayout>
-                                <Toaster position="top-right" />
+                                <CustomToaster />
                         </body>
                 </html>
         );

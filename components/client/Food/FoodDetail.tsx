@@ -9,7 +9,7 @@ import { ChevronRight, Home, Minus, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 type FoodDetailClientProps = {
@@ -24,8 +24,14 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
         const [quantity, setQuantity] = useState(1);
         const [specialInstructions, setSpecialInstructions] = useState("");
         const [isAdding, setIsAdding] = useState(false);
+        const [isMounted, setIsMounted] = useState(false);
 
         const [selectedSize, setSelectedSize] = useState<ProductSize | undefined>(foodItem.productSizes?.[0]);
+
+        // Ensure component is mounted (client-side only)
+        useEffect(() => {
+                setIsMounted(true);
+        }, []);
 
         const handleDecrement = () => {
                 setQuantity((prev) => Math.max(1, prev - 1));
@@ -34,6 +40,62 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
         const handleIncrement = () => {
                 setQuantity((prev) => prev + 1);
         };
+
+        const handleAddToCart = useCallback(
+                async () => {
+                        // Prevent multiple clicks or if not mounted
+                        if (isAdding || !isMounted) {
+                                return;
+                        }
+
+                        // Ensure addItem is available (should always be, but double-check)
+                        if (typeof addItem !== "function") {
+                                console.warn("[FoodDetail] addItem is not available yet");
+                                return;
+                        }
+
+                        if (!user) {
+                                toast.error("Please login to add items to cart");
+                                router.push("/login");
+                                return;
+                        }
+
+                        if (!selectedSize) {
+                                toast.error("Please select a size");
+                                return;
+                        }
+
+                        setIsAdding(true);
+                        try {
+                                await addItem(
+                                        {
+                                                id: foodItem.id,
+                                                name: foodItem.productName,
+                                                price: selectedSize.price,
+                                                image: getImageUrl(foodItem.imageURL),
+                                                restaurantId: restaurant.id,
+                                                restaurantName: restaurant.resName,
+                                                sizeId: selectedSize.id,
+                                                sizeName: selectedSize.sizeName,
+                                                customizations: specialInstructions || undefined,
+                                        },
+                                        quantity
+                                );
+
+                                // Reset form
+                                setQuantity(1);
+                                setSpecialInstructions("");
+                        } catch (error) {
+                                console.error("Failed to add to cart:", error);
+                                toast.error("Failed to add item to cart");
+                        } finally {
+                                setTimeout(() => {
+                                        setIsAdding(false);
+                                }, 300);
+                        }
+                },
+                [isAdding, isMounted, addItem, user, selectedSize, foodItem, restaurant, quantity, specialInstructions, router]
+        );
 
         const currentPrice = selectedSize?.price ?? 0;
         const totalPrice = (currentPrice * quantity).toFixed(2);
@@ -169,73 +231,22 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                                                                 </button>
                                                         </div>
 
-                                                        <button
-                                                                onClick={async () => {
-                                                                        // Prevent multiple clicks
-                                                                        if (isAdding) {
-                                                                                return;
-                                                                        }
-
-                                                                        if (!user) {
-                                                                                toast.error(
-                                                                                        "Please login to add items to cart"
-                                                                                );
-                                                                                router.push("/login");
-                                                                                return;
-                                                                        }
-
-                                                                        if (!selectedSize) {
-                                                                                toast.error("Please select a size");
-                                                                                return;
-                                                                        }
-
-                                                                        setIsAdding(true);
-                                                                        try {
-                                                                                await addItem(
-                                                                                        {
-                                                                                                id: foodItem.id,
-                                                                                                name: foodItem.productName,
-                                                                                                price: selectedSize.price,
-                                                                                                image: getImageUrl(
-                                                                                                        foodItem.imageURL
-                                                                                                ),
-                                                                                                restaurantId:
-                                                                                                        restaurant.id,
-                                                                                                restaurantName:
-                                                                                                        restaurant.resName,
-                                                                                                sizeId: selectedSize.id,
-                                                                                                sizeName: selectedSize.sizeName,
-                                                                                                customizations:
-                                                                                                        specialInstructions ||
-                                                                                                        undefined,
-                                                                                        },
-                                                                                        quantity
-                                                                                );
-
-                                                                                // Reset form
-                                                                                setQuantity(1);
-                                                                                setSpecialInstructions("");
-                                                                        } catch (error) {
-                                                                                console.error(
-                                                                                        "Failed to add to cart:",
-                                                                                        error
-                                                                                );
-                                                                                toast.error(
-                                                                                        "Failed to add item to cart"
-                                                                                );
-                                                                        } finally {
-                                                                                setTimeout(() => {
-                                                                                        setIsAdding(false);
-                                                                                }, 300);
-                                                                        }
-                                                                }}
-                                                                className="flex-grow bg-brand-black text-white font-bold py-3 px-6 rounded-md hover:bg-brand-black/90 transition cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                                                disabled={!selectedSize || isAdding}
-                                                        >
-                                                                {isAdding
-                                                                        ? "Đang thêm..."
-                                                                        : `Add to cart: $${totalPrice}`}
-                                                        </button>
+                                                        {isMounted && (
+                                                                <button
+                                                                        onClick={handleAddToCart}
+                                                                        className="flex-grow bg-brand-black text-white font-bold py-3 px-6 rounded-md hover:bg-brand-black/90 transition cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                                                        disabled={!selectedSize || isAdding || !isMounted}
+                                                                >
+                                                                        {isAdding
+                                                                                ? "Đang thêm..."
+                                                                                : `Add to cart: $${totalPrice}`}
+                                                                </button>
+                                                        )}
+                                                        {!isMounted && (
+                                                                <div className="flex-grow bg-gray-400 text-white font-bold py-3 px-6 rounded-md text-center">
+                                                                        Loading...
+                                                                </div>
+                                                        )}
                                                 </div>
                                         </div>
                                 </div>
