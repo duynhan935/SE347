@@ -40,8 +40,7 @@ export default function MerchantDashboard() {
         };
     }, [user?.id]);
 
-    const formatVnd = (amount: number) =>
-        new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(amount);
+    const formatVnd = (amount: number) => new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(amount);
 
     const growthLabel = useMemo(() => {
         const v = statsState.revenueGrowthPercent ?? 0;

@@ -74,7 +74,7 @@ export const merchantApi = {
         const restaurants = Array.isArray(restaurantsRes.data)
             ? restaurantsRes.data
             : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ((restaurantsRes.data as any)?.data ?? []);
+              (restaurantsRes.data as any)?.data ?? [];
 
         const totalRestaurants = Array.isArray(restaurants) ? restaurants.length : 0;
         const activeRestaurants = Array.isArray(restaurants)
@@ -105,7 +105,12 @@ export const merchantApi = {
             const paymentStatus = (o?.paymentStatus ?? "").toString();
             if (status !== "completed") return sum;
             if (paymentStatus !== "paid" && paymentStatus !== "completed") return sum;
-            const amount = typeof o?.finalAmount === "number" ? o.finalAmount : typeof o?.totalAmount === "number" ? o.totalAmount : 0;
+            const amount =
+                typeof o?.finalAmount === "number"
+                    ? o.finalAmount
+                    : typeof o?.totalAmount === "number"
+                    ? o.totalAmount
+                    : 0;
             return sum + amount;
         }, 0);
 
@@ -125,7 +130,12 @@ export const merchantApi = {
                 const paymentStatus = (o?.paymentStatus ?? "").toString();
                 if (status !== "completed") return sum;
                 if (paymentStatus !== "paid" && paymentStatus !== "completed") return sum;
-                const amount = typeof o?.finalAmount === "number" ? o.finalAmount : typeof o?.totalAmount === "number" ? o.totalAmount : 0;
+                const amount =
+                    typeof o?.finalAmount === "number"
+                        ? o.finalAmount
+                        : typeof o?.totalAmount === "number"
+                        ? o.totalAmount
+                        : 0;
                 return sum + amount;
             }, 0);
 
@@ -135,8 +145,8 @@ export const merchantApi = {
             previousMonthRevenue > 0
                 ? ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100
                 : currentMonthRevenue > 0
-                  ? 100
-                  : 0;
+                ? 100
+                : 0;
 
         return {
             totalRestaurants,
