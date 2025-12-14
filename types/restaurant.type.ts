@@ -27,7 +27,6 @@ export interface Restaurant {
     phone: string;
     imageURL: string | null | StaticImageData;
     merchantId: string;
-    managerId?: string;
     enabled: boolean;
     totalReview: number;
     distance: number;

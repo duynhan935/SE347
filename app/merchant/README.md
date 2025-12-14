@@ -21,7 +21,7 @@ app/merchant/
 ├── menu/
 │   └── page.tsx              # Quản lý menu
 └── manage/
-    ├── staff/
+    ├── (removed)
     │   └── page.tsx          # Quản lý nhân viên
     └── settings/
         └── page.tsx          # Cài đặt
@@ -29,34 +29,33 @@ app/merchant/
 
 ## Tính năng
 
-- ✅ Dashboard với thống kê tổng quan
-- ✅ Quản lý đơn hàng
-- ✅ Quản lý đặt bàn
-- ✅ Quản lý khách hàng
-- ✅ Quản lý nhà hàng
-- ✅ Quản lý menu
-- ✅ Quản lý nhân viên
-- ✅ Cài đặt
-- ✅ Dark mode
-- ✅ Responsive design
+-   ✅ Dashboard với thống kê tổng quan
+-   ✅ Quản lý đơn hàng
+-   ✅ Quản lý đặt bàn
+-   ✅ Quản lý khách hàng
+-   ✅ Quản lý nhà hàng
+-   ✅ Quản lý menu
+-   ✅ Quản lý nhân viên
+-   ✅ Cài đặt
+-   ✅ Dark mode
+-   ✅ Responsive design
 
 ## Routes
 
-- `/merchant` - Dashboard
-- `/merchant/orders` - Orders
-- `/merchant/reservations` - Reservations
-- `/merchant/customers` - Customers
-- `/merchant/restaurants` - Restaurants list
-- `/merchant/restaurants/create` - Create new restaurant
-- `/merchant/menu` - Menu management
-- `/merchant/manage/staff` - Staff management
-- `/merchant/manage/settings` - Settings
+-   `/merchant` - Dashboard
+-   `/merchant/orders` - Orders
+-   `/merchant/reservations` - Reservations
+-   `/merchant/customers` - Customers
+-   `/merchant/restaurants` - Restaurants list
+-   `/merchant/restaurants/create` - Create new restaurant
+-   `/merchant/menu` - Menu management
+-   `/merchant/manage/settings` - Settings
 
 ## TODO
 
-- [ ] Kết nối API thật
-- [ ] Thêm tính năng tìm kiếm và lọc
-- [ ] Thêm pagination
-- [ ] Thêm form validation
-- [ ] Thêm chức năng upload ảnh
-- [ ] Thêm analytics và reports
+-   [ ] Kết nối API thật
+-   [ ] Thêm tính năng tìm kiếm và lọc
+-   [ ] Thêm pagination
+-   [ ] Thêm form validation
+-   [ ] Thêm chức năng upload ảnh
+-   [ ] Thêm analytics và reports

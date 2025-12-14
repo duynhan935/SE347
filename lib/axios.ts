@@ -8,6 +8,7 @@ const api = axios.create({
         timeout: 30000, // Tăng timeout từ 10s lên 30s
         maxRedirects: 0, // Không tự động follow redirects (tránh redirect đến Docker hostname)
         validateStatus: (status) => status < 500, // Chỉ throw error cho 5xx, không throw cho redirects
+        withCredentials: true, // needed for HttpOnly refreshToken cookie
 });
 
 let failedQueue: { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }[] = []; // Queue for failed requests during refresh
@@ -71,14 +72,6 @@ api.interceptors.response.use(
 
                         originalRequest._retry = true;
 
-                        const refreshToken = useAuthStore.getState().refreshToken;
-
-                        // If there's no refresh token, logout
-                        if (!refreshToken) {
-                                useAuthStore.getState().logout();
-                                return Promise.reject(error);
-                        }
-
                         // If already refreshing, queue this request
                         if (isRefreshing) {
                                 return new Promise((resolve, reject) => {
@@ -106,10 +99,10 @@ api.interceptors.response.use(
 
                         try {
                                 // Try to refresh the token
-                                const newAccessToken = await authApi.refreshAccessToken(refreshToken);
+                                const newAccessToken = await authApi.refreshAccessToken();
 
                                 // Update the store with new access token
-                                useAuthStore.getState().setTokens(newAccessToken, refreshToken);
+                                useAuthStore.getState().setAccessToken(newAccessToken);
 
                                 // Process queued requests
                                 processQueue(null, newAccessToken);
@@ -126,10 +119,11 @@ api.interceptors.response.use(
                                 return api(originalRequest);
                         } catch (refreshError) {
                                 // If refresh fails (401 or other error), logout and reject
-                                isRefreshing = false;
                                 processQueue(refreshError as AxiosError, null);
                                 useAuthStore.getState().logout();
                                 return Promise.reject(refreshError);
+                        } finally {
+                                isRefreshing = false;
                         }
                 }
 

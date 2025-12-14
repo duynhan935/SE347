@@ -4,7 +4,6 @@ export enum UserRole {
 	USER = "USER",
 	ADMIN = "ADMIN",
 	MERCHANT = "MERCHANT",
-	MANAGER = "MANAGER",
 }
 
 export interface User {
@@ -12,7 +11,7 @@ export interface User {
 	username: string;
 	email: string;
 	enabled: boolean;
-	role: "ADMIN" | "MERCHANT" | "USER" | "MANAGER";
+	role: "ADMIN" | "MERCHANT" | "USER";
 	phone?: string | null;
 	avatar?: string | StaticImageData;
 	createdAt?: string;
@@ -35,20 +34,12 @@ export interface Merchant extends User {
 	rejectedReason?: string;
 }
 
-export interface Manager extends User {
-	role: "MANAGER";
-	restaurantId: string;
-	merchantId: string;
-	assignedAt: string;
-}
-
 export interface UserStats {
 	totalUsers: number;
 	activeUsers: number;
 	newUsersThisMonth: number;
 	totalMerchants: number;
 	pendingMerchants: number;
-	totalManagers: number;
 }
 
 export interface Address {

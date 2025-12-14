@@ -1,7 +1,10 @@
 "use client";
 
 import { authApi } from "@/lib/api/authApi";
+import api from "@/lib/axios";
+import { restaurantApi } from "@/lib/api/restaurantApi";
 import { User } from "@/types";
+import { Order } from "@/types/order.type";
 import {
         AlertCircle,
         Clock,
@@ -67,44 +70,42 @@ function StatsCard({ title, value, icon: Icon, trend, trendUp, color }: StatsCar
         );
 }
 
-// Mock data for charts
-const platformGrowthData = [
-        { name: "T1", users: 850, merchants: 28, restaurants: 95 },
-        { name: "T2", users: 920, merchants: 32, restaurants: 108 },
-        { name: "T3", users: 1050, merchants: 35, restaurants: 125 },
-        { name: "T4", users: 980, merchants: 33, restaurants: 118 },
-        { name: "T5", users: 1180, merchants: 38, restaurants: 135 },
-        { name: "T6", users: 1350, merchants: 42, restaurants: 148 },
-        { name: "T7", users: 1520, merchants: 45, restaurants: 156 },
-        { name: "T8", users: 1420, merchants: 43, restaurants: 152 },
-        { name: "T9", users: 1580, merchants: 47, restaurants: 168 },
-        { name: "T10", users: 1720, merchants: 52, restaurants: 185 },
-        { name: "T11", users: 1850, merchants: 56, restaurants: 198 },
-        { name: "T12", users: 2100, merchants: 62, restaurants: 215 },
-];
+type GrowthPoint = { name: string; users: number; merchants: number; restaurants: number };
+type RevenuePoint = { name: string; revenue: number };
+type TopMerchantPoint = { name: string; restaurants: number; revenue: number };
 
-const revenueData = [
-        { name: "T1", revenue: 285000000 },
-        { name: "T2", revenue: 320000000 },
-        { name: "T3", revenue: 398000000 },
-        { name: "T4", revenue: 365000000 },
-        { name: "T5", revenue: 445000000 },
-        { name: "T6", revenue: 520000000 },
-        { name: "T7", revenue: 585000000 },
-        { name: "T8", revenue: 542000000 },
-        { name: "T9", revenue: 615000000 },
-        { name: "T10", revenue: 680000000 },
-        { name: "T11", revenue: 725000000 },
-        { name: "T12", revenue: 820000000 },
-];
+const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const monthLabel = (d: Date) => `T${d.getMonth() + 1}`;
 
-const topMerchantsData = [
-        { name: "Merchant A", restaurants: 12, revenue: 185000000 },
-        { name: "Merchant B", restaurants: 9, revenue: 152000000 },
-        { name: "Merchant C", restaurants: 8, revenue: 128000000 },
-        { name: "Merchant D", restaurants: 6, revenue: 95000000 },
-        { name: "Merchant E", restaurants: 5, revenue: 78000000 },
-];
+const buildLastNMonths = (n: number) => {
+        const now = new Date();
+        const months: Date[] = [];
+        for (let i = n - 1; i >= 0; i--) {
+                months.push(new Date(now.getFullYear(), now.getMonth() - i, 1));
+        }
+        return months;
+};
+
+const isPaidForRevenue = (paymentStatus: unknown) => {
+        const s = (paymentStatus ?? "").toString();
+        return s === "paid" || s === "completed";
+};
+
+const getOrderFinalAmount = (o: any) => {
+        if (typeof o?.finalAmount === "number") return o.finalAmount;
+        if (typeof o?.totalAmount === "number") return o.totalAmount;
+        return 0;
+};
+
+const getOrderCreatedAt = (o: any) => {
+        if (!o?.createdAt) return null;
+        const d = new Date(o.createdAt);
+        return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const getOrderRestaurantId = (o: any) => {
+        return o?.restaurantId ?? o?.restaurant?.id ?? null;
+};
 
 export default function AdminDashboard() {
         const [stats, setStats] = useState({
@@ -119,6 +120,10 @@ export default function AdminDashboard() {
         const [pendingMerchantRequests, setPendingMerchantRequests] = useState<User[]>([]);
         const [loading, setLoading] = useState(true);
 
+        const [platformGrowthData, setPlatformGrowthData] = useState<GrowthPoint[]>([]);
+        const [revenueData, setRevenueData] = useState<RevenuePoint[]>([]);
+        const [topMerchantsData, setTopMerchantsData] = useState<TopMerchantPoint[]>([]);
+
         useEffect(() => {
                 fetchDashboardData();
         }, []);
@@ -126,26 +131,162 @@ export default function AdminDashboard() {
         const fetchDashboardData = async () => {
                 setLoading(true);
                 try {
-                        // Fetch all users
+                        // Users
                         const users = await authApi.getAllUsers();
+
+                        // Restaurants
+                        const restaurantsRes = await restaurantApi.getAllRestaurants(new URLSearchParams());
+                        const restaurants = Array.isArray(restaurantsRes.data)
+                                ? restaurantsRes.data
+                                : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                  ((restaurantsRes.data as any)?.data ?? []);
+
+                        // Orders (Admin) - page through to compute totals + monthly series
+                        const allOrders: Order[] = [];
+                        let page = 1;
+                        const limit = 100;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        let totalPages: number | null = null;
+                        const maxPages = 50;
+                        while ((totalPages === null || page <= totalPages) && page <= maxPages) {
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                const res = await api.get<any>("/orders", { params: { page, limit } });
+                                const data = res.data;
+                                const ordersPage = Array.isArray(data?.data)
+                                        ? data.data
+                                        : Array.isArray(data)
+                                          ? data
+                                          : [];
+                                allOrders.push(...ordersPage);
+                                if (ordersPage.length === 0) break;
+                                if (data?.pagination?.totalPages) {
+                                        totalPages = Number(data.pagination.totalPages);
+                                } else {
+                                        // Fallback: stop if less than limit
+                                        totalPages = ordersPage.length < limit ? page : page + 1;
+                                }
+                                if (ordersPage.length < limit) break;
+                                page++;
+                        }
 
                         // Calculate stats
                         const totalUsers = users.filter((u) => u.role === "USER").length;
                         const totalMerchants = users.filter((u) => u.role === "MERCHANT" && u.enabled).length;
-                        const pendingMerchants = users.filter((u) => u.role === "MERCHANT" && !u.enabled);
+                        const pendingMerchants = await authApi.getMerchantRequests();
+
+                        const totalRestaurants = Array.isArray(restaurants) ? restaurants.length : 0;
+                        const activeRestaurants = Array.isArray(restaurants)
+                                ? restaurants.filter((r: any) => r?.enabled === true).length
+                                : 0;
+
+                        const totalOrders = allOrders.length;
+                        const totalRevenue = allOrders.reduce((sum, o: any) => {
+                                const status = (o?.status ?? "").toString();
+                                if (status !== "completed") return sum;
+                                if (!isPaidForRevenue(o?.paymentStatus)) return sum;
+                                return sum + getOrderFinalAmount(o);
+                        }, 0);
 
                         setStats({
                                 totalUsers,
                                 totalMerchants,
                                 pendingMerchants: pendingMerchants.length,
-                                totalRestaurants: 156, // TODO: Fetch from restaurant API
-                                activeRestaurants: 142, // TODO: Fetch from restaurant API
-                                totalRevenue: 125000, // TODO: Fetch from order API
-                                totalOrders: 3456, // TODO: Fetch from order API
+                                totalRestaurants,
+                                activeRestaurants,
+                                totalRevenue,
+                                totalOrders,
                         });
 
                         // Set pending merchant requests (latest 5)
                         setPendingMerchantRequests(pendingMerchants.slice(0, 5));
+
+                        // Charts: last 12 months
+                        const months = buildLastNMonths(12);
+
+                        const usersByMonth = new Map<string, { users: number; merchants: number }>();
+                        for (const m of months) usersByMonth.set(monthKey(m), { users: 0, merchants: 0 });
+
+                        users.forEach((u: any) => {
+                                const createdAt = u?.createdAt ? new Date(u.createdAt) : null;
+                                if (!createdAt || Number.isNaN(createdAt.getTime())) return;
+                                const key = monthKey(new Date(createdAt.getFullYear(), createdAt.getMonth(), 1));
+                                const bucket = usersByMonth.get(key);
+                                if (!bucket) return;
+                                if (u.role === "USER") bucket.users += 1;
+                                if (u.role === "MERCHANT") bucket.merchants += 1;
+                        });
+
+                        const revenueByMonth = new Map<string, number>();
+                        for (const m of months) revenueByMonth.set(monthKey(m), 0);
+                        allOrders.forEach((o: any) => {
+                                const createdAt = getOrderCreatedAt(o);
+                                if (!createdAt) return;
+                                const key = monthKey(new Date(createdAt.getFullYear(), createdAt.getMonth(), 1));
+                                if (!revenueByMonth.has(key)) return;
+                                const status = (o?.status ?? "").toString();
+                                if (status !== "completed") return;
+                                if (!isPaidForRevenue(o?.paymentStatus)) return;
+                                revenueByMonth.set(key, (revenueByMonth.get(key) ?? 0) + getOrderFinalAmount(o));
+                        });
+
+                        setPlatformGrowthData(
+                                months.map((m) => {
+                                        const key = monthKey(m);
+                                        const bucket = usersByMonth.get(key) ?? { users: 0, merchants: 0 };
+                                        return {
+                                                name: monthLabel(m),
+                                                users: bucket.users,
+                                                merchants: bucket.merchants,
+                                                restaurants: totalRestaurants, // no createdAt available for restaurants
+                                        };
+                                })
+                        );
+
+                        setRevenueData(
+                                months.map((m) => ({
+                                        name: monthLabel(m),
+                                        revenue: revenueByMonth.get(monthKey(m)) ?? 0,
+                                }))
+                        );
+
+                        // Top merchants by revenue (completed + paid)
+                        const restaurantToMerchant = new Map<string, string>();
+                        const restaurantsByMerchant = new Map<string, number>();
+                        (Array.isArray(restaurants) ? restaurants : []).forEach((r: any) => {
+                                if (!r?.id || !r?.merchantId) return;
+                                restaurantToMerchant.set(r.id, r.merchantId);
+                                restaurantsByMerchant.set(r.merchantId, (restaurantsByMerchant.get(r.merchantId) ?? 0) + 1);
+                        });
+
+                        const revenueByMerchant = new Map<string, number>();
+                        allOrders.forEach((o: any) => {
+                                const status = (o?.status ?? "").toString();
+                                if (status !== "completed") return;
+                                if (!isPaidForRevenue(o?.paymentStatus)) return;
+                                const resId = getOrderRestaurantId(o);
+                                if (!resId) return;
+                                const merchantId = restaurantToMerchant.get(resId);
+                                if (!merchantId) return;
+                                revenueByMerchant.set(merchantId, (revenueByMerchant.get(merchantId) ?? 0) + getOrderFinalAmount(o));
+                        });
+
+                        const userById = new Map<string, any>();
+                        users.forEach((u: any) => {
+                                if (u?.id) userById.set(u.id, u);
+                        });
+
+                        const top = Array.from(revenueByMerchant.entries())
+                                .sort((a, b) => b[1] - a[1])
+                                .slice(0, 5)
+                                .map(([merchantId, revenue]) => {
+                                        const u = userById.get(merchantId);
+                                        return {
+                                                name: u?.username || merchantId,
+                                                restaurants: restaurantsByMerchant.get(merchantId) ?? 0,
+                                                revenue,
+                                        };
+                                });
+                        setTopMerchantsData(top);
                 } catch (error) {
                         console.error("Failed to fetch dashboard data:", error);
                         toast.error("Không thể tải dữ liệu dashboard");
@@ -190,7 +331,7 @@ export default function AdminDashboard() {
                                 />
                                 <StatsCard
                                         title="Tổng doanh thu"
-                                        value={`${(stats.totalRevenue / 1000).toFixed(0)}K`}
+                                        value={new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(stats.totalRevenue)}
                                         icon={DollarSign}
                                         trend="18% so với tháng trước"
                                         trendUp={true}

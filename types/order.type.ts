@@ -3,8 +3,7 @@ export enum OrderStatus {
     CONFIRMED = "confirmed",
     PREPARING = "preparing",
     READY = "ready",
-    DELIVERING = "delivering", // Note: Backend bạn gửi chưa thấy enum này, nhưng frontend có thể giữ để map UI
-    DELIVERED = "completed", // Backend dùng 'completed'
+    COMPLETED = "completed",
     CANCELLED = "cancelled",
 }
 

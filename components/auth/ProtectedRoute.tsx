@@ -28,7 +28,7 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
                 // Check if tokens exist immediately (client-side only)
                 const hasTokens =
                         typeof window !== "undefined" &&
-                        (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
+                        !!localStorage.getItem("accessToken");
 
                 // Fast path: If not loading and definitely not authenticated (no tokens and not authenticated)
                 // Redirect immediately without delay

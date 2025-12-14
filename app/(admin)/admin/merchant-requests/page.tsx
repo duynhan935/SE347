@@ -19,23 +19,8 @@ export default function MerchantRequestsPage() {
         const fetchMerchantRequests = async () => {
                 setLoading(true);
                 try {
-                        const users = await authApi.getAllUsers();
-                        console.log("All users:", users);
-
-                        // Filter users with role MERCHANT and not enabled (pending approval)
-                        const pendingMerchants = users.filter((u) => {
-                                const isMerchant = u.role === "MERCHANT";
-                                const isPending = u.enabled === false;
-                                if (isMerchant) {
-                                        console.log(
-                                                `Merchant found: ${u.username}, email: ${u.email}, enabled: ${u.enabled}, pending: ${isPending}`
-                                        );
-                                }
-                                return isMerchant && isPending;
-                        });
-
-                        console.log("Pending merchants:", pendingMerchants);
-                        setRequests(pendingMerchants);
+                                                const pendingMerchants = await authApi.getMerchantRequests();
+                                                setRequests(pendingMerchants);
                 } catch (error) {
                         console.error("Failed to fetch merchant requests:", error);
                         toast.error("Không thể tải danh sách yêu cầu merchant");
