@@ -95,6 +95,7 @@ export default function PaymentPageClient() {
         const [successfulRestaurantIds, setSuccessfulRestaurantIds] = useState<string[]>([]); // Store successful restaurant IDs for cart clearing
         const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
         const [isProcessingCardPayment, setIsProcessingCardPayment] = useState(false);
+        const [isPaymentCompleted, setIsPaymentCompleted] = useState(false); // Flag to prevent cart empty check after payment
         const [formData, setFormData] = useState({
                 name: extendedUser?.username || "",
                 phone: extendedUser?.phoneNumber || extendedUser?.phone || "",
@@ -139,15 +140,16 @@ export default function PaymentPageClient() {
         }, [extendedUser, cartUserId, cartLoading, setUserId, router, cartFetched]);
 
         // Check if cart is empty after fetching (only after cart has been fetched and loaded)
+        // Skip this check if payment has been completed to avoid showing error toast after successful payment
         useEffect(() => {
-                if (!extendedUser || cartLoading || !cartFetched) return;
+                if (!extendedUser || cartLoading || !cartFetched || isPaymentCompleted) return;
 
                 // Only check if cart is empty after fetching is complete
                 if (orderItems.length === 0 && cartUserId) {
                         toast.error("Your cart is empty");
                         router.push("/cart");
                 }
-        }, [extendedUser, orderItems.length, cartUserId, cartFetched, cartLoading, router]);
+        }, [extendedUser, orderItems.length, cartUserId, cartFetched, cartLoading, isPaymentCompleted, router]);
 
         useEffect(() => {
                 if (locationError) {
@@ -452,6 +454,9 @@ export default function PaymentPageClient() {
                         }, 0) || calculatedTotal;
 
                 if (paymentMethod === "cash" || paymentMethod === "wallet") {
+                        // Mark payment as completed to prevent cart empty check
+                        setIsPaymentCompleted(true);
+                        
                         // Backend will create payment automatically via RabbitMQ
                         // Clear cart only for successfully created orders
                         if (successfulRestaurantIds.length > 0) {
@@ -515,6 +520,9 @@ export default function PaymentPageClient() {
 
         const handleStripePaymentSuccess = async () => {
                 try {
+                        // Mark payment as completed to prevent cart empty check
+                        setIsPaymentCompleted(true);
+                        
                         // Clear cart only for successfully created orders
                         if (successfulRestaurantIds.length > 0) {
                                 for (const restId of successfulRestaurantIds) {

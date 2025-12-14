@@ -182,8 +182,8 @@ export default function Header() {
 
                                         {/* Auth Buttons */}
                                         <div className="hidden md:flex items-center space-x-3">
-                                                {mounted && isAuthenticated && <NotificationBell />}
-                                                {mounted && isAuthenticated ? (
+                                                {mounted && isAuthenticated && user && <NotificationBell />}
+                                                {mounted && isAuthenticated && user ? (
                                                         <DropdownMenu>
                                                                 <DropdownMenuTrigger className="flex items-center space-x-2 cursor-pointer">
                                                                         <div className="w-8 h-8 bg-brand-purple rounded-full flex items-center justify-center">
@@ -343,7 +343,7 @@ export default function Header() {
                                                         >
                                                                 Restaurants
                                                         </Link>
-                                                        {mounted && isAuthenticated && (
+                                                        {mounted && isAuthenticated && user && (
                                                                 <>
                                                                         <Link
                                                                                 href="/cart"

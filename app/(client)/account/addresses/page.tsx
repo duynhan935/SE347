@@ -9,11 +9,12 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function AddressesPage() {
-        const { user } = useAuthStore();
+        const { user, loading: authLoading } = useAuthStore();
         const [addresses, setAddresses] = useState<Address[]>([]);
         const [loading, setLoading] = useState(true);
         const [isAdding, setIsAdding] = useState(false);
         const [submitting, setSubmitting] = useState(false);
+        const [mounted, setMounted] = useState(false);
         const [newAddress, setNewAddress] = useState<AddressRequest>({
                 location: "",
                 longitude: 0,
@@ -21,11 +22,15 @@ export default function AddressesPage() {
         });
 
         useEffect(() => {
-                if (user?.id) {
+                setMounted(true);
+        }, []);
+
+        useEffect(() => {
+                if (mounted && user?.id && !authLoading) {
                         fetchAddresses();
                 }
                 // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [user?.id]);
+        }, [mounted, user?.id, authLoading]);
 
         const fetchAddresses = async () => {
                 if (!user?.id) return;
@@ -126,7 +131,7 @@ export default function AddressesPage() {
                 }
         };
 
-        if (loading) {
+        if (!mounted || authLoading || loading) {
                 return (
                         <div className="bg-white p-8 rounded-lg shadow-md flex items-center justify-center min-h-[400px]">
                                 <Loader2 className="w-8 h-8 animate-spin text-brand-purple" />

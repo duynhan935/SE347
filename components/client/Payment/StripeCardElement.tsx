@@ -2,7 +2,6 @@
 
 import { CardCvcElement, CardExpiryElement, CardNumberElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useState } from "react";
-import toast from "react-hot-toast";
 
 interface StripeCardElementProps {
         clientSecret: string;
@@ -46,7 +45,8 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                         }
 
                         if (paymentIntent && paymentIntent.status === "succeeded") {
-                                toast.success("Thanh toán thành công!");
+                                // Don't show toast here - let the parent component handle it
+                                // This prevents duplicate success toasts
                                 onPaymentSuccess();
                         } else {
                                 onPaymentError("Thanh toán chưa hoàn tất. Vui lòng thử lại.");

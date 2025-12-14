@@ -4,7 +4,7 @@ import Button from "@/components/Button";
 import { authApi } from "@/lib/api/authApi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function SettingsPage() {
@@ -13,7 +13,12 @@ export default function SettingsPage() {
         const [newPassword, setNewPassword] = useState("");
         const [confirmPassword, setConfirmPassword] = useState("");
         const [loading, setLoading] = useState(false);
-        const { user } = useAuthStore();
+        const [mounted, setMounted] = useState(false);
+        const { user, loading: authLoading } = useAuthStore();
+
+        useEffect(() => {
+                setMounted(true);
+        }, []);
 
         const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
@@ -42,14 +47,27 @@ export default function SettingsPage() {
                         toast.success("Password updated successfully!");
                         setNewPassword("");
                         setConfirmPassword("");
-                } catch (error: any) {
+                } catch (error) {
                         const errorMessage =
-                                error.response?.data?.message || error.message || "Failed to update password";
+                                (error && typeof error === "object" && "response" in error
+                                        ? (error as { response?: { data?: { message?: string } } }).response?.data
+                                                ?.message
+                                        : null) ||
+                                (error instanceof Error ? error.message : null) ||
+                                "Failed to update password";
                         toast.error(errorMessage);
                 } finally {
                         setLoading(false);
                 }
         };
+
+        if (!mounted || authLoading) {
+                return (
+                        <div className="bg-white p-8 rounded-lg shadow-md flex items-center justify-center min-h-[400px]">
+                                <Loader2 className="w-8 h-8 animate-spin text-brand-purple" />
+                        </div>
+                );
+        }
 
         return (
                 <div className="bg-white p-8 rounded-lg shadow-md space-y-8">

@@ -46,7 +46,7 @@ export default function NavActions() {
             <CartDropdown />
 
             {/* User Avatar / Auth Buttons */}
-            {mounted && isAuthenticated ? (
+            {mounted && isAuthenticated && user ? (
                 <FloatingDropdown
                     align="right"
                     className="w-56"
