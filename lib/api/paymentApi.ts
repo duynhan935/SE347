@@ -1,3 +1,4 @@
+import { CreatePaymentRequest, CreatePaymentResponse, Payment } from "@/types/payment.type";
 import api from "../axios";
 
 export interface Payment {
