@@ -2,9 +2,9 @@
 
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { Menu, MessageCircle, Package, ShoppingCart, User, X } from "lucide-react";
+import { Menu, MessageCircle, Package, ShoppingCart, User, UtensilsCrossed, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -12,9 +12,10 @@ export default function MobileMenu() {
         const [open, setOpen] = useState(false);
         const [mounted, setMounted] = useState(false);
         const [isLoggingOut, setIsLoggingOut] = useState(false);
-        const { isAuthenticated, user, logout } = useAuthStore();
+        const { isAuthenticated, user, logout, loading } = useAuthStore();
         const { items: cartItems } = useCartStore();
         const router = useRouter();
+        const pathname = usePathname();
 
         useEffect(() => {
                 setMounted(true);
@@ -48,17 +49,29 @@ export default function MobileMenu() {
                 <>
                         {/* Mobile Cart & Menu Button */}
                         <div className="flex lg:hidden items-center gap-3">
-                                {/* Cart Icon */}
-                                <Link href="/cart" prefetch={true} className="relative group">
-                                        <div className="relative p-2 rounded-full hover:bg-gray-50 transition-colors duration-200">
-                                                <ShoppingCart className="w-5 h-5 text-brand-grey group-hover:text-brand-black transition-colors" />
-                                                {cartItemCount > 0 && (
-                                                        <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">
-                                                                {cartItemCount > 9 ? "9+" : cartItemCount}
-                                                        </span>
-                                                )}
-                                        </div>
+                                {/* Đặt đồ ăn Icon - Hiển thị cho tất cả user */}
+                                <Link 
+                                        href="/restaurants" 
+                                        prefetch={true} 
+                                        className="relative p-2 rounded-full hover:bg-gray-50 transition-colors"
+                                        aria-label="Đặt đồ ăn"
+                                >
+                                        <UtensilsCrossed className={`w-5 h-5 ${pathname === "/restaurants" ? "text-brand-orange" : "text-brand-grey"}`} />
                                 </Link>
+
+                                {/* Cart Icon */}
+                                {isAuthenticated && user && !loading && (
+                                        <Link href="/cart" prefetch={true} className="relative group">
+                                                <div className="relative p-2 rounded-full hover:bg-gray-50 transition-colors duration-200">
+                                                        <ShoppingCart className="w-5 h-5 text-brand-grey group-hover:text-brand-black transition-colors" />
+                                                        {cartItemCount > 0 && (
+                                                                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">
+                                                                        {cartItemCount > 9 ? "9+" : cartItemCount}
+                                                                </span>
+                                                        )}
+                                                </div>
+                                        </Link>
+                                )}
 
                                 {/* Hamburger Menu Button */}
                                 <button
