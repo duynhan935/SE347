@@ -139,17 +139,17 @@ export default function ProfilePage() {
 
                                         const status = formatStatus(order.status || "pending");
 
-                                        // Ensure unique ID by combining orderId/slug with index and createdAt timestamp
-                                        const orderId = order.orderId || order.slug || `order-${index}`;
+                                        // Ensure unique ID by combining orderCode/id with index and createdAt timestamp
+                                        const orderId = order.orderId || `order-${index}`;
                                         const uniqueId = order.createdAt
                                                 ? `${orderId}-${new Date(order.createdAt).getTime()}`
                                                 : `${orderId}-${index}`;
 
                                         return {
                                                 id: uniqueId,
-                                                displayId: order.orderId || order.slug || `#${index + 1}`,
+                                                displayId: order.orderId || `#${index + 1}`,
                                                 date: orderDate,
-                                                total: `$${order.finalAmount?.toFixed(2) || "0.00"}`,
+                                                total: `$${Number(order.finalAmount || 0).toFixed(2)}`,
                                                 status,
                                                 statusClass: getStatusBadgeClass(status),
                                         };

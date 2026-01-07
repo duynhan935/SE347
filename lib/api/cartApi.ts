@@ -39,6 +39,12 @@ export interface Cart {
     updatedAt: string;
 }
 
+export interface CartResponse {
+    status: "success" | "error";
+    message: string;
+    data: Cart | null;
+}
+
 export interface AddItemToCartRequest {
     restaurant: Restaurant;
     item: Omit<CartItem, "subtotal">;
@@ -47,19 +53,19 @@ export interface AddItemToCartRequest {
 export const cartApi = {
     // Get user's cart
     getCart: async (userId: string) => {
-        const response = await api.get<Cart>(`/cart/${userId}`);
+        const response = await api.get<CartResponse>(`/cart/${userId}`);
         return response.data;
     },
 
     // Add item to cart
     addItemToCart: async (userId: string, data: AddItemToCartRequest) => {
-        const response = await api.post<Cart>(`/cart/${userId}`, data);
+        const response = await api.post<CartResponse>(`/cart/${userId}`, data);
         return response.data;
     },
 
     // Update item quantity
     updateItemQuantity: async (userId: string, restaurantId: string, productId: string, quantity: number) => {
-        const response = await api.patch<Cart>(`/cart/${userId}/restaurant/${restaurantId}/item/${productId}`, {
+        const response = await api.patch<CartResponse>(`/cart/${userId}/restaurant/${restaurantId}/item/${productId}`, {
             quantity,
         });
         return response.data;
@@ -67,19 +73,19 @@ export const cartApi = {
 
     // Remove item from cart
     removeItemFromCart: async (userId: string, restaurantId: string, productId: string) => {
-        const response = await api.delete<Cart>(`/cart/${userId}/restaurant/${restaurantId}/item/${productId}`);
+        const response = await api.delete<CartResponse>(`/cart/${userId}/restaurant/${restaurantId}/item/${productId}`);
         return response.data;
     },
 
     // Clear restaurant from cart
     clearRestaurant: async (userId: string, restaurantId: string) => {
-        const response = await api.delete<Cart>(`/cart/${userId}/restaurant/${restaurantId}`);
+        const response = await api.delete<CartResponse>(`/cart/${userId}/restaurant/${restaurantId}`);
         return response.data;
     },
 
     // Clear entire cart
     clearCart: async (userId: string) => {
-        const response = await api.delete<Cart>(`/cart/${userId}`);
+        const response = await api.delete<CartResponse>(`/cart/${userId}`);
         return response.data;
     },
 };

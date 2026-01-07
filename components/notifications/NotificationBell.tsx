@@ -78,7 +78,7 @@ export function NotificationBell() {
                                                         title: "Đơn hàng đã được chấp nhận",
                                                         message: `Đơn hàng ${orderId} đã được nhà hàng chấp nhận và đang được chuẩn bị.`,
                                                         orderId,
-                                                        restaurantName: order.restaurant.name,
+                                                        restaurantName: order.restaurant?.name,
                                                 });
                                         } else if (
                                                 previousStatus === "pending" &&
@@ -87,13 +87,9 @@ export function NotificationBell() {
                                                 useNotificationStore.getState().addNotification({
                                                         type: "ORDER_REJECTED",
                                                         title: "Đơn hàng đã bị từ chối",
-                                                        message: `Đơn hàng ${orderId} đã bị nhà hàng từ chối.${
-                                                                order.cancellationReason
-                                                                        ? ` Lý do: ${order.cancellationReason}`
-                                                                        : ""
-                                                        }`,
+                                                        message: `Đơn hàng ${orderId} đã bị nhà hàng từ chối.`,
                                                         orderId,
-                                                        restaurantName: order.restaurant.name,
+                                                        restaurantName: order.restaurant?.name,
                                                 });
                                         }
                                 }

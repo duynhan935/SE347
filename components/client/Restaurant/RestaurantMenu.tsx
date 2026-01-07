@@ -16,7 +16,7 @@ export default function RestaurantMenu({ products, categories }: MenuProps) {
         const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, "-");
         const groupedMenu = categories.map((category) => ({
                 categoryName: category.cateName,
-                items: products.filter((p) => p.categoryId?.toString() === category.cateId?.toString()),
+                        items: products.filter((p) => p.categoryId?.toString() === category.id?.toString()),
         }));
 
         return (
@@ -26,7 +26,7 @@ export default function RestaurantMenu({ products, categories }: MenuProps) {
                                 <div className="flex gap-3 overflow-x-auto scrollbar-hide">
                                         {categories.map((category) => (
                                                 <a
-                                                        key={category.cateId}
+                                                                                key={category.id}
                                                         href={`#${slugify(category.cateName)}`}
                                                         className="px-4 py-2 bg-gray-100 rounded-full text-sm font-semibold whitespace-nowrap hover:bg-gray-200"
                                                 >

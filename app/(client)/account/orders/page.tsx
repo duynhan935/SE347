@@ -89,8 +89,8 @@ export default function OrderHistoryPage() {
                                           })
                                         : "N/A";
 
-                                const status = formatStatus(order.status || "pending");
-                                const orderId = order.orderId || order.slug || `order-${index}`;
+                                const status = formatStatus(order.status || OrderStatus.PENDING);
+                                const orderId = order.orderId || `order-${index}`;
                                 const uniqueKey = order.createdAt
                                         ? `${orderId}-${new Date(order.createdAt).getTime()}`
                                         : `${orderId}-${index}`;
@@ -98,9 +98,9 @@ export default function OrderHistoryPage() {
                                 return {
                                         id: order.orderId,
                                         uniqueKey,
-                                        displayId: order.orderId || order.slug || `#${index + 1}`,
+                                        displayId: order.orderId || `#${index + 1}`,
                                         date: orderDate,
-                                        total: `$${order.finalAmount?.toFixed(2) || "0.00"}`,
+                                        total: `$${Number(order.finalAmount || 0).toFixed(2)}`,
                                         status,
                                         statusClass: getStatusBadgeClass(status),
                                         orderCode: order.orderId,

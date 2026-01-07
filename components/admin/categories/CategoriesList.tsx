@@ -134,6 +134,7 @@ export default function CategoriesList() {
 
                         {isModalOpen && (
                                 <CategoryFormModal
+                                        isOpen={isModalOpen}
                                         category={currentCategory}
                                         onSave={handleSaveCategory}
                                         onClose={handleCloseModal}
