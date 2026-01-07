@@ -1,76 +1,48 @@
-import burgerImage from "@/assets/Restaurant/Burger.png";
-import Image, { StaticImageData } from "next/image";
 import { notFound } from "next/navigation";
 import { OrderSummary } from "./OrderSummary";
+import { orderApi } from "@/lib/api/orderApi";
+import { Order } from "@/types/order.type";
 
-type OrderItem = {
-        id: string;
-        productId: number;
-        name: string;
-        shopName: string;
-        price: number;
-        image: StaticImageData;
-        quantity: number;
-        note?: string;
+type DisplayOrderItem = {
+                id: string;
+                name: string;
+                shopName: string;
+                price: number;
+                quantity: number;
+                note?: string;
 };
-
-type Order = {
-        id: number;
-        date: string;
-        items: OrderItem[];
-};
-
-const fakeOrders: Order[] = [
-        {
-                id: 1,
-                date: "2025-09-25",
-                items: [
-                        {
-                                id: "12345678910",
-                                productId: 101,
-                                name: "Burger",
-                                shopName: "Burger Shop",
-                                price: 30,
-                                image: burgerImage,
-                                quantity: 2,
-                                note: "No cheese, No meat",
-                        },
-                        {
-                                id: "12345678911",
-                                productId: 301,
-                                name: "Burger",
-                                shopName: "Burger Shop",
-                                price: 30,
-                                image: burgerImage,
-                                quantity: 2,
-                                note: "No Duy Nhan",
-                        },
-                ],
-        },
-];
-
-async function fetchOrderById(id: string): Promise<Order | undefined> {
-        const orderId = Number(id);
-        return fakeOrders.find((order) => order.id === orderId);
-}
 
 export default async function OrderDetailPageContainer({ params }: { params: { id: string } }) {
-        const order = await fetchOrderById(params.id);
+                let order: Order | null = null;
+                try {
+                                order = await orderApi.getOrderById(params.id);
+                } catch {
+                                order = null;
+                }
 
         if (!order) {
                 notFound();
         }
 
-        const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
+                const displayItems: DisplayOrderItem[] = order.items.map((item, index) => ({
+                                id: `${order.orderId}-${item.productId}-${index}`,
+                                name: item.productName,
+                                shopName: order.restaurant?.name || "Restaurant",
+                                price: item.price,
+                                quantity: item.quantity,
+                                note: item.customizations,
+                }));
 
-        const groupedItems = order.items.reduce((acc, item) => {
+                const totalItems = displayItems.reduce((sum, item) => sum + item.quantity, 0);
+
+                const groupedItems = displayItems.reduce((acc, item) => {
                 const { shopName } = item;
                 if (!acc[shopName]) {
                         acc[shopName] = [];
                 }
                 acc[shopName].push(item);
                 return acc;
-        }, {} as Record<string, OrderItem[]>);
+                }, {} as Record<string, DisplayOrderItem[]>);
 
         return (
                 <div className="custom-container p-3 sm:p-1 md:p-12">
@@ -93,25 +65,15 @@ export default async function OrderDetailPageContainer({ params }: { params: { i
                                                                                         key={item.id}
                                                                                         className="flex items-start gap-4 pt-4 border-b pb-2 last:border-b-0"
                                                                                 >
-                                                                                        {item.image && typeof item.image === "string" && item.image.trim() !== "" ? (
-                                                                                                <Image
-                                                                                                        src={item.image}
-                                                                                                        alt={item.name}
-                                                                                                        width={64}
-                                                                                                        height={64}
-                                                                                                        className="rounded-md object-cover"
-                                                                                                />
-                                                                                        ) : (
-                                                                                                <div className="w-[64px] h-[64px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
-                                                                                                        No Image
-                                                                                                </div>
-                                                                                        )}
+                                                                                                                                <div className="w-[64px] h-[64px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+                                                                                                                                                No Image
+                                                                                                                                </div>
                                                                                         <div className="flex-grow">
                                                                                                 <p className="font-semibold">
                                                                                                         {item.name}
                                                                                                 </p>
                                                                                                 <p className="text-sm text-gray-500">
-                                                                                                        {item.note}
+                                                                                                                                                                {item.note}
                                                                                                 </p>
                                                                                         </div>
                                                                                         <div className="text-right">

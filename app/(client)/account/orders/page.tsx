@@ -91,20 +91,20 @@ export default function OrderHistoryPage() {
                                         : "N/A";
 
                                 const status = formatStatus(order.status || OrderStatus.PENDING);
-                                const orderId = order.orderCode || order.id || `order-${index}`;
+                                const orderId = order.orderId || `order-${index}`;
                                 const uniqueKey = order.createdAt
                                         ? `${orderId}-${new Date(order.createdAt).getTime()}`
                                         : `${orderId}-${index}`;
 
                                 return {
-                                        id: order.id,
+                                        id: order.orderId,
                                         uniqueKey,
-                                        displayId: order.orderCode || order.id || `#${index + 1}`,
+                                        displayId: order.orderId || `#${index + 1}`,
                                         date: orderDate,
-                                        total: `$${order.totalPrice?.toFixed(2) || "0.00"}`,
+                                        total: `$${Number(order.finalAmount || 0).toFixed(2)}`,
                                         status,
                                         statusClass: getStatusBadgeClass(status),
-                                        orderCode: order.orderCode,
+                                        orderCode: order.orderId,
                                 };
                         });
 

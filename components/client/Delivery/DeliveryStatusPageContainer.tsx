@@ -1,7 +1,7 @@
-import burgerImage from "@/assets/Restaurant/Burger.png";
-import Image, { StaticImageData } from "next/image";
 import { notFound } from "next/navigation";
 import { OrderStatusSidebar } from "./OrderStatusSidebar";
+import { orderApi } from "@/lib/api/orderApi";
+import { Order } from "@/types/order.type";
 
 type StatusType = "Pending" | "Success" | "Cancel";
 
@@ -13,80 +13,72 @@ type OrderStatus = {
         estimatedTime: number;
 };
 
-type OrderItem = {
-        id: string;
-        name: string;
-        shopName: string;
-        price: number;
-        image: StaticImageData;
-        quantity: number;
-        note?: string;
+type DisplayOrderItem = {
+                id: string;
+                name: string;
+                shopName: string;
+                price: number;
+                quantity: number;
+                note?: string;
 };
-
-type Order = {
-        id: number;
-        date: string;
-        items: OrderItem[];
-        status: OrderStatus;
-};
-
-const fakeOrders: Order[] = [
-        {
-                id: 1,
-                date: "2025-09-25",
-                items: [
-                        {
-                                id: "12345678910",
-                                name: "Burger",
-                                shopName: "Burger Shop",
-                                price: 30,
-                                image: burgerImage,
-                                quantity: 2,
-                                note: "No cheese, No meat",
-                        },
-                        {
-                                id: "12345678911",
-                                name: "Burger",
-                                shopName: "Burger Shop",
-                                price: 30,
-                                image: burgerImage,
-                                quantity: 2,
-                                note: "No Duy Nhan",
-                        },
-                ],
-
-                status: {
-                        orderValidate: "Pending",
-                        orderReceived: "Success",
-                        restaurantStatus: "Cancel",
-                        deliveryStatus: "Pending",
-                        estimatedTime: 45,
-                },
-        },
-];
-
-async function fetchOrderById(id: string): Promise<Order | undefined> {
-        const orderId = Number(id);
-        return fakeOrders.find((order) => order.id === orderId);
-}
 
 export default async function OrderStatusPage({ params }: { params: { id: string } }) {
-        const order = await fetchOrderById(params.id);
+                let order: Order | null = null;
+                try {
+                                order = await orderApi.getOrderById(params.id);
+                } catch {
+                                order = null;
+                }
 
         if (!order) {
                 notFound();
         }
 
-        const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
+                const displayItems: DisplayOrderItem[] = order.items.map((item, index) => ({
+                                id: `${order.orderId}-${item.productId}-${index}`,
+                                name: item.productName,
+                                shopName: order.restaurant?.name || "Restaurant",
+                                price: item.price,
+                                quantity: item.quantity,
+                                note: item.customizations,
+                }));
 
-        const groupedItems = order.items.reduce((acc, item) => {
-                const { shopName } = item;
+                const totalItems = displayItems.reduce((sum, item) => sum + item.quantity, 0);
+
+                const status: OrderStatus = (() => {
+                                const isCancelled = order.status === "cancelled";
+                                const isReceived = order.status !== "pending";
+                                const isRestaurantDone =
+                                                order.status === "preparing" ||
+                                                order.status === "ready" ||
+                                                order.status === "delivering" ||
+                                                order.status === "delivered";
+                                const isDelivering = order.status === "delivering" || order.status === "delivered";
+
+                                const estimatedTime = (() => {
+                                                if (!order.estimatedDeliveryTime) return 0;
+                                                const eta = new Date(order.estimatedDeliveryTime).getTime();
+                                                if (Number.isNaN(eta)) return 0;
+                                                return Math.max(0, Math.round((eta - Date.now()) / 60000));
+                                })();
+
+                                return {
+                                                orderValidate: "Success",
+                                                orderReceived: isCancelled ? "Cancel" : isReceived ? "Success" : "Pending",
+                                                restaurantStatus: isCancelled ? "Cancel" : isRestaurantDone ? "Success" : "Pending",
+                                                deliveryStatus: isCancelled ? "Cancel" : isDelivering ? "Success" : "Pending",
+                                                estimatedTime,
+                                };
+                })();
+
+                const groupedItems = displayItems.reduce((acc, item) => {
+                                const { shopName } = item;
                 if (!acc[shopName]) {
                         acc[shopName] = [];
                 }
                 acc[shopName].push(item);
                 return acc;
-        }, {} as Record<string, OrderItem[]>);
+                }, {} as Record<string, DisplayOrderItem[]>);
 
         return (
                 <div className="custom-container py-12">
@@ -109,22 +101,9 @@ export default async function OrderStatusPage({ params }: { params: { id: string
                                                                                         key={item.id}
                                                                                         className="flex items-start gap-4 pt-4 border-b pb-2 last:border-b-0"
                                                                                 >
-                                                                                        {item.image &&
-                                                                                        typeof item.image ===
-                                                                                                "string" &&
-                                                                                        item.image.trim() !== "" ? (
-                                                                                                <Image
-                                                                                                        src={item.image}
-                                                                                                        alt={item.name}
-                                                                                                        width={64}
-                                                                                                        height={64}
-                                                                                                        className="rounded-md object-cover"
-                                                                                                />
-                                                                                        ) : (
-                                                                                                <div className="w-[64px] h-[64px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
-                                                                                                        No Image
-                                                                                                </div>
-                                                                                        )}
+                                                                                                                        <div className="w-[64px] h-[64px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+                                                                                                                                                No Image
+                                                                                                                        </div>
                                                                                         <div className="flex-grow">
                                                                                                 <p className="font-semibold">
                                                                                                         {item.name}
@@ -155,9 +134,9 @@ export default async function OrderStatusPage({ params }: { params: { id: string
                                 </div>
 
                                 {/* Cột phải: Thông tin trạng thái đơn hàng */}
-                                <div className="lg:col-span-1">
-                                        <OrderStatusSidebar status={order.status} />
-                                </div>
+                                                                                                        <div className="lg:col-span-1">
+                                                                                                                        <OrderStatusSidebar status={status} />
+                                                                                                        </div>
                         </div>
                 </div>
         );

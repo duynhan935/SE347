@@ -1,7 +1,12 @@
-import { RestaurantDetail } from "@/app/(client)/restaurants/[slug]/page";
 import { Star } from "lucide-react";
 
-export const ReviewCard = ({ review }: { review: RestaurantDetail["reviews"][0] }) => {
+type ReviewCardData = {
+        rating: number;
+        author: string;
+        text: string;
+};
+
+export const ReviewCard = ({ review }: { review: ReviewCardData }) => {
         return (
                 <div className="border-b pb-4">
                         <div className="flex items-center gap-1 mb-1">

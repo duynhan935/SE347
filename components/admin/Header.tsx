@@ -35,7 +35,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
 				{/* Left side */}
 				<div className="flex items-center gap-2 sm:gap-4 lg:hidden">
 					<button
-						onClick={() => setSidebarOpen(!sidebarOpen)}
+						onClick={() => setSidebarOpen?.(!sidebarOpen)}
 						className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300"
 					>
 						<Menu size={24} />

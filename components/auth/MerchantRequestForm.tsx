@@ -114,14 +114,15 @@ export function MerchantRequestForm({
 
                         // Step 2: Get userId by fetching all users and finding the newly registered one
                         // Note: This is a workaround since backend doesn't return userId in register response
-                        let userId: string | null = null;
-                        try {
-                                const users = await authApi.getAllUsers();
-                                const newUser = users.find((u) => u.email === email && u.role === "MERCHANT");
-                                if (newUser) {
-                                        userId = newUser.id;
-                                }
-                        } catch (userError) {
+                                                        let userId: string | null = null;
+                                                        try {
+                                                                        const usersPage = await authApi.getAllUsers();
+                                                                        const users = Array.isArray(usersPage?.content) ? usersPage.content : [];
+                                                                        const newUser = users.find((u) => u.email === email && u.role === "MERCHANT");
+                                                                        if (newUser) {
+                                                                                        userId = newUser.id;
+                                                                        }
+                                                        } catch (userError) {
                                 console.log("Could not fetch users to get userId:", userError);
                                 // If we can't get userId, we'll store restaurant info for later
                         }

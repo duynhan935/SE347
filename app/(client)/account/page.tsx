@@ -141,16 +141,16 @@ export default function ProfilePage() {
                                         const status = formatStatus(order.status || OrderStatus.PENDING);
 
                                         // Ensure unique ID by combining orderCode/id with index and createdAt timestamp
-                                        const orderId = order.orderCode || order.id || `order-${index}`;
+                                        const orderId = order.orderId || `order-${index}`;
                                         const uniqueId = order.createdAt
                                                 ? `${orderId}-${new Date(order.createdAt).getTime()}`
                                                 : `${orderId}-${index}`;
 
                                         return {
                                                 id: uniqueId,
-                                                displayId: order.orderCode || order.id || `#${index + 1}`,
+                                                displayId: order.orderId || `#${index + 1}`,
                                                 date: orderDate,
-                                                total: `$${order.totalPrice?.toFixed(2) || "0.00"}`,
+                                                total: `$${Number(order.finalAmount || 0).toFixed(2)}`,
                                                 status,
                                                 statusClass: getStatusBadgeClass(status),
                                         };

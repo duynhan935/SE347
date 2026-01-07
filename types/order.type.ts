@@ -1,45 +1,58 @@
+// Mirrors back-end `orderResponseDTO` (order-service)
 export enum OrderStatus {
-	PENDING = "PENDING",
-	CONFIRMED = "CONFIRMED",
-	PREPARING = "PREPARING",
-	READY = "READY",
-	DELIVERING = "DELIVERING",
-	DELIVERED = "DELIVERED",
-	CANCELLED = "CANCELLED",
+    PENDING = "pending",
+    CONFIRMED = "confirmed",
+    PREPARING = "preparing",
+    READY = "ready",
+    DELIVERING = "delivering",
+    DELIVERED = "delivered",
+    CANCELLED = "cancelled",
+}
+
+export type PaymentMethod = "cash" | "card" | "wallet";
+
+export type PaymentStatus = "pending" | "paid" | "completed" | "failed" | "refunded";
+
+export interface DeliveryAddress {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+}
+
+export interface OrderRestaurantRef {
+    id: string;
+    name: string;
 }
 
 export interface OrderItem {
-	id: string;
-	productId: string;
-	productName: string;
-	quantity: number;
-	price: number;
-	size?: string;
-	note?: string;
+    productId: string;
+    productName: string;
+    quantity: number;
+    price: number;
+    customizations?: string;
 }
 
 export interface Order {
-	id: string;
-	orderCode: string;
-	customerId: string;
-	customerName: string;
-	customerPhone: string;
-	restaurantId: string;
-	restaurantName: string;
-	merchantId: string;
-	items: OrderItem[];
-	subtotal: number;
-	deliveryFee: number;
-	discount: number;
-	totalPrice: number;
-	status: OrderStatus;
-	paymentMethod: string;
-	paymentStatus: "PENDING" | "PAID" | "FAILED";
-	deliveryAddress: string;
-	note?: string;
-	createdAt: string;
-	updatedAt?: string;
-	deliveredAt?: string;
-	cancelledAt?: string;
-	cancelReason?: string;
+    orderId: string;
+    slug: string;
+    userId: string;
+    restaurant: OrderRestaurantRef;
+    items: OrderItem[];
+    deliveryAddress: DeliveryAddress;
+    totalAmount: number;
+    discount: number;
+    deliveryFee: number;
+    tax: number;
+    finalAmount: number;
+    paymentMethod: PaymentMethod;
+    status: OrderStatus;
+    paymentStatus: PaymentStatus;
+    estimatedDeliveryTime?: string;
+    actualDeliveryTime?: string | null;
+    orderNote?: string;
+    rating?: number | null;
+    review?: string;
+    createdAt: string;
+    updatedAt: string;
 }

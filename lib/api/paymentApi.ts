@@ -1,15 +1,23 @@
 import api from "../axios";
 
 export interface Payment {
-        _id: string;
+        id: string;
+        paymentId: string;
         orderId: string;
         userId: string;
-        amount: number;
+        amount: string | number;
         currency: string;
-        paymentMethod: string;
+        paymentMethod: "cash" | "card" | "wallet";
+        paymentGateway?: string;
+        transactionId?: string | null;
         status: "pending" | "processing" | "completed" | "failed" | "refunded";
-        stripePaymentIntentId?: string;
-        metadata?: Record<string, unknown>;
+        failureReason?: string | null;
+        refundAmount?: string | number;
+        refundReason?: string | null;
+        refundTransactionId?: string | null;
+        metadata?: Record<string, unknown> | null;
+        processedAt?: string | null;
+        refundedAt?: string | null;
         createdAt: string;
         updatedAt: string;
 }
@@ -23,14 +31,18 @@ export interface CreatePaymentRequest {
         metadata?: Record<string, unknown>;
 }
 
+export interface CardPaymentInitData {
+        clientSecret: string;
+        paymentId: string;
+        status: string;
+}
+
+export type CreatePaymentData = CardPaymentInitData | Payment;
+
 export interface CreatePaymentResponse {
         success: boolean;
         message: string;
-        data: {
-                clientSecret?: string;
-                paymentId: string;
-                status: string;
-        };
+        data: CreatePaymentData;
 }
 
 export const paymentApi = {
@@ -53,14 +65,19 @@ export const paymentApi = {
 
         // Get payment by ID
         getPaymentById: async (paymentId: string) => {
-                const response = await api.get<Payment>(`/payments/${paymentId}`);
-                return response.data;
+                const response = await api.get<{ success: boolean; data: Payment }>(`/payments/${paymentId}`);
+                return response.data.data;
         },
 
         // Get user payments
         getUserPayments: async (userId: string) => {
-                const response = await api.get<Payment[]>(`/payments/user/${userId}`);
-                return response.data;
+                const response = await api.get<{ success: boolean; data?: Payment[]; pagination?: unknown }>(
+                        `/payments/user/${userId}`
+                );
+                return {
+                        payments: Array.isArray(response.data.data) ? response.data.data : [],
+                        pagination: response.data.pagination,
+                };
         },
 
         // Refund payment

@@ -497,9 +497,16 @@ export default function PaymentPageClient() {
                                         currency: "USD",
                                 });
 
-                                // Extract clientSecret from response
-                                if (paymentResponse.data?.clientSecret) {
-                                        setStripeClientSecret(paymentResponse.data.clientSecret);
+                                                                // Extract clientSecret from response (card payments only)
+                                                                const paymentData = paymentResponse.data;
+                                                                if (
+                                                                                paymentData &&
+                                                                        typeof paymentData === "object" &&
+                                                                        "clientSecret" in paymentData &&
+                                                                        typeof (paymentData as { clientSecret?: unknown }).clientSecret === "string" &&
+                                                                        (paymentData as { clientSecret: string }).clientSecret.length > 0
+                                                                ) {
+                                                                                setStripeClientSecret((paymentData as { clientSecret: string }).clientSecret);
                                         toast.dismiss();
                                         toast.success("Đã sẵn sàng thanh toán!");
                                 } else {

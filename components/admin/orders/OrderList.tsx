@@ -1,6 +1,6 @@
 "use client";
 
-import { Order } from "@/app/(admin)/admin/types/types"; // Giả định
+import { Order } from "@/types/order.type";
 import { Edit, Eye, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -12,9 +12,9 @@ export default function OrderList({ initialOrders }: { initialOrders: Order[] })
                 if (!searchTerm) return orders;
                 return orders.filter(
                         (order) =>
-                                order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                order.restaurantName.toLowerCase().includes(searchTerm.toLowerCase())
+                                order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                order.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                order.restaurant?.name?.toLowerCase().includes(searchTerm.toLowerCase())
                 );
         }, [orders, searchTerm]);
 
@@ -51,7 +51,7 @@ export default function OrderList({ initialOrders }: { initialOrders: Order[] })
                                                                 Order ID
                                                         </th>
                                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                                                Customer
+                                                                User
                                                         </th>
                                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                                                 Restaurant
@@ -69,29 +69,27 @@ export default function OrderList({ initialOrders }: { initialOrders: Order[] })
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
                                                 {filteredOrders.map((order) => (
-                                                        <tr key={order.id}>
+                                                        <tr key={order.orderId}>
                                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                                        {order.id.substring(0, 8)}...
+                                                                        {order.orderId.substring(0, 8)}...
                                                                 </td>
                                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                                        {order.customerName}
+                                                                        {order.userId.substring(0, 8)}...
                                                                 </td>
                                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                                        {order.restaurantName}
+                                                                        {order.restaurant?.name}
                                                                 </td>
                                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                                        ${order.totalPrice.toFixed(2)}
+                                                                        ${Number(order.finalAmount).toFixed(2)}
                                                                 </td>
                                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                                         <span
                                                                                 className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                                                                        order.status === "DELIVERED"
+                                                                                        order.status === "delivered"
                                                                                                 ? "bg-green-100 text-green-800"
-                                                                                                : order.status ===
-                                                                                                  "PENDING"
+                                                                                                : order.status === "pending"
                                                                                                 ? "bg-yellow-100 text-yellow-800"
-                                                                                                : order.status ===
-                                                                                                  "CANCELLED"
+                                                                                                : order.status === "cancelled"
                                                                                                 ? "bg-red-100 text-red-800"
                                                                                                 : "bg-blue-100 text-blue-800"
                                                                                 }`}
@@ -102,7 +100,7 @@ export default function OrderList({ initialOrders }: { initialOrders: Order[] })
                                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                                         <button
                                                                                 onClick={() =>
-                                                                                        handleUpdateStatus(order.id)
+                                                                                        handleUpdateStatus(order.orderId)
                                                                                 }
                                                                                 className="text-indigo-600 hover:text-indigo-900 mr-4"
                                                                                 title="Update Status"
@@ -110,7 +108,7 @@ export default function OrderList({ initialOrders }: { initialOrders: Order[] })
                                                                                 <Edit className="w-5 h-5 inline-block" />
                                                                         </button>
                                                                         <Link
-                                                                                href={`/admin/order/${order.id}`} // Link đến trang chi tiết
+                                                                                href={`/admin/order/${order.orderId}`} // Link đến trang chi tiết
                                                                                 className="text-gray-600 hover:text-gray-900"
                                                                                 title="View Details"
                                                                         >

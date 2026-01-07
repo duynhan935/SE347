@@ -132,7 +132,14 @@ export default function SizesList() {
                 </div>
             )}
 
-            {isModalOpen && <SizeFormModal size={currentSize} onSave={handleSaveSize} onClose={handleCloseModal} />}
+            {isModalOpen && (
+                <SizeFormModal
+                    isOpen={isModalOpen}
+                    size={currentSize}
+                    onSave={handleSaveSize}
+                    onClose={handleCloseModal}
+                />
+            )}
         </div>
     );
 }

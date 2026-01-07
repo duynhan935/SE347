@@ -35,7 +35,7 @@ export default function RestaurantList() {
         const currentPage = Number(searchParams.get("page")) || 1;
 
         useEffect(() => {
-                getAllRestaurants();
+                        getAllRestaurants(new URLSearchParams());
         }, [getAllRestaurants]);
 
         // Logic filter (giữ nguyên)
@@ -56,6 +56,8 @@ export default function RestaurantList() {
                                 res.address.toLowerCase().includes(searchTerm.toLowerCase())
                 );
         }, [restaurants, searchTerm, pathname, router, searchParams]);
+
+        const totalPages = Math.max(1, Math.ceil(filteredRestaurants.length / ITEMS_PER_PAGE));
 
         // Logic cắt (slice) dữ liệu cho trang hiện tại (giữ nguyên)
         const paginatedRestaurants = useMemo(() => {
@@ -255,11 +257,8 @@ export default function RestaurantList() {
                                                 </table>
                                         </div>
 
-                                        {/* 4. Render component Pagination với props mới */}
-                                        <Pagination
-                                                totalResults={filteredRestaurants.length}
-                                                itemsPerPage={ITEMS_PER_PAGE}
-                                        />
+                                                                        {/* 4. Render component Pagination với props mới */}
+                                                                        <Pagination currentPage={currentPage} totalPages={totalPages} />
                                 </>
                         )}
 
