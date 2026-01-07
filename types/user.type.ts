@@ -15,6 +15,10 @@ export interface User {
 	role: "ADMIN" | "MERCHANT" | "USER" | "MANAGER";
 	phone?: string | null;
 	avatar?: string | StaticImageData;
+	slug?: string;
+	authProvider?: string; // e.g., "LOCAL", "GOOGLE", "FACEBOOK"
+	verificationCode?: string;
+	activatedAt?: string;
 	createdAt?: string;
 	updatedAt?: string;
 }

@@ -2,7 +2,7 @@
 
 import { orderApi } from "@/lib/api/orderApi";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { Order, OrderStatus } from "@/types/order.type";
+import { Order } from "@/types/order.type";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -28,15 +28,14 @@ export default function OrderHistoryPage() {
         // Format status for display
         const formatStatus = (status: string): string => {
                 const statusMap: Record<string, string> = {
-                        [OrderStatus.PENDING]: "Pending",
-                        [OrderStatus.CONFIRMED]: "Confirmed",
-                        [OrderStatus.PREPARING]: "Preparing",
-                        [OrderStatus.READY]: "Ready",
-                        [OrderStatus.DELIVERING]: "Delivering",
-                        [OrderStatus.DELIVERED]: "Delivered",
-                        [OrderStatus.CANCELLED]: "Cancelled",
+                        pending: "Pending",
+                        confirmed: "Confirmed",
+                        preparing: "Preparing",
+                        ready: "Ready",
+                        completed: "Completed",
+                        cancelled: "Cancelled",
                 };
-                return statusMap[status] || status;
+                return statusMap[status.toLowerCase()] || status;
         };
 
         // Get status badge color classes
@@ -90,21 +89,21 @@ export default function OrderHistoryPage() {
                                           })
                                         : "N/A";
 
-                                const status = formatStatus(order.status || OrderStatus.PENDING);
-                                const orderId = order.orderCode || order.id || `order-${index}`;
+                                const status = formatStatus(order.status || "pending");
+                                const orderId = order.orderId || order.slug || `order-${index}`;
                                 const uniqueKey = order.createdAt
                                         ? `${orderId}-${new Date(order.createdAt).getTime()}`
                                         : `${orderId}-${index}`;
 
                                 return {
-                                        id: order.id,
+                                        id: order.orderId,
                                         uniqueKey,
-                                        displayId: order.orderCode || order.id || `#${index + 1}`,
+                                        displayId: order.orderId || order.slug || `#${index + 1}`,
                                         date: orderDate,
-                                        total: `$${order.totalPrice?.toFixed(2) || "0.00"}`,
+                                        total: `$${order.finalAmount?.toFixed(2) || "0.00"}`,
                                         status,
                                         statusClass: getStatusBadgeClass(status),
-                                        orderCode: order.orderCode,
+                                        orderCode: order.orderId,
                                 };
                         });
 
@@ -171,14 +170,12 @@ export default function OrderHistoryPage() {
                                                                 >
                                                                         {order.status}
                                                                 </span>
-                                                                {order.orderCode && (
-                                                                        <Link
-                                                                                href={`/orders/${order.id}`}
-                                                                                className="text-sm font-semibold text-brand-purple hover:underline"
-                                                                        >
-                                                                                View Details
-                                                                        </Link>
-                                                                )}
+                                                                <Link
+                                                                        href={`/orders/${order.id}`}
+                                                                        className="text-sm font-semibold text-brand-purple hover:underline"
+                                                                >
+                                                                        View Details
+                                                                </Link>
                                                         </div>
                                                 </div>
                                         ))}

@@ -134,17 +134,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 } catch (err: any) {
                         // Check if it's a timeout error
                         const isTimeout = err.code === "ECONNABORTED" || err.message?.includes("timeout");
+                        
+                        // Check if it's a network error (backend not accessible)
+                        const isNetworkError = err.code === "ERR_NETWORK" || err.message === "Network Error" || !err.response;
 
-                        // Only log non-timeout errors
-                        if (!isTimeout) {
+                        // Only log errors that have a response from server (not network/infrastructure errors)
+                        // Network errors usually mean backend is not running or not accessible
+                        if (!isTimeout && !isNetworkError && err.response) {
                                 console.error("Failed to fetch user profile:", err);
                         }
 
-                        // For timeout errors, don't clear tokens - might just be slow network
+                        // For timeout or network errors, don't clear tokens - might just be backend not running
                         // Only clear tokens for actual authentication errors (401, 403)
                         const isAuthError = err.response?.status === 401 || err.response?.status === 403;
 
-                        if (isAuthError && !isTimeout) {
+                        if (isAuthError && !isTimeout && !isNetworkError) {
                                 // If token is invalid, clear everything
                                 set({
                                         error: "Failed to load user profile.",
@@ -158,8 +162,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                                         localStorage.removeItem("refreshToken");
                                 }
                         } else {
-                                // For timeout or other errors, just set loading to false
-                                // Keep tokens and authentication state
+                                // For timeout, network errors, or other errors, just set loading to false
+                                // Keep tokens and authentication state (might be valid, just backend not accessible)
                                 set({ loading: false });
                         }
                 }
@@ -233,9 +237,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                         // Silently handle errors - fetchProfile already handles cleanup
                         // Check if it's a timeout error
                         const isTimeout = err instanceof Error && err.message === "Profile fetch timeout";
+                        
+                        // Check if it's a network error (backend not accessible)
+                        const axiosError = err as { code?: string; message?: string; response?: unknown };
+                        const isNetworkError = axiosError.code === "ERR_NETWORK" || axiosError.message === "Network Error" || !axiosError.response;
 
-                        // Only log non-timeout errors in development, or if it's a real API error
-                        if (process.env.NODE_ENV === "development" && !isTimeout) {
+                        // Only log errors that have a response from server (not network/infrastructure errors)
+                        // Network errors usually mean backend is not running - this is expected in some cases
+                        if (process.env.NODE_ENV === "development" && !isTimeout && !isNetworkError) {
                                 console.error("Error during auth initialization:", err);
                         }
 
@@ -245,7 +254,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                                 set({ loading: false });
                         }
 
-                        // If timeout, don't clear tokens - might just be slow network
+                        // If timeout or network error, don't clear tokens - might just be backend not running
                         // fetchProfile will handle invalid token cleanup
                 }
         },

@@ -70,7 +70,7 @@ export default function MerchantOrdersPage() {
         }, [user?.id, filterStatus, fetchOrders]);
 
         const handleAcceptOrder = async (order: Order) => {
-                const orderId = (order as Order & { orderId?: string }).orderId || order.id;
+                const orderId = order.orderId;
                 try {
                         await orderApi.acceptOrder(orderId);
                         toast.success("Đã chấp nhận đơn hàng thành công");
@@ -92,7 +92,7 @@ export default function MerchantOrdersPage() {
         };
 
         const handleRejectOrder = async (order: Order) => {
-                const orderId = (order as Order & { orderId?: string }).orderId || order.id;
+                const orderId = order.orderId;
                 const reason = rejectReason[orderId]?.trim();
                 if (!reason) {
                         toast.error("Vui lòng nhập lý do từ chối");
@@ -136,33 +136,25 @@ export default function MerchantOrdersPage() {
                 }
         };
 
-        // Normalize status for comparison (backend uses lowercase, frontend uses uppercase)
-        const normalizeStatus = (status: string): OrderStatus => {
-                const upperStatus = status.toUpperCase();
-                return upperStatus as OrderStatus;
-        };
-
         const filteredOrders =
                 filterStatus === "ALL"
                         ? orders
-                        : orders.filter((order) => normalizeStatus(order.status) === filterStatus);
+                        : orders.filter((order) => order.status === filterStatus);
 
         const getStatusColor = (status: string) => {
-                const normalizedStatus = normalizeStatus(status);
-                switch (normalizedStatus) {
-                        case OrderStatus.PENDING:
+                const statusLower = status.toLowerCase();
+                switch (statusLower) {
+                        case "pending":
                                 return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-                        case OrderStatus.CONFIRMED:
+                        case "confirmed":
                                 return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-                        case OrderStatus.PREPARING:
+                        case "preparing":
                                 return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
-                        case OrderStatus.READY:
+                        case "ready":
                                 return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-                        case OrderStatus.DELIVERING:
-                                return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
-                        case OrderStatus.DELIVERED:
+                        case "completed":
                                 return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200";
-                        case OrderStatus.CANCELLED:
+                        case "cancelled":
                                 return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
                         default:
                                 return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
@@ -170,32 +162,29 @@ export default function MerchantOrdersPage() {
         };
 
         const getStatusLabel = (status: string) => {
-                const normalizedStatus = normalizeStatus(status);
-                const labels: Record<OrderStatus, string> = {
-                        [OrderStatus.PENDING]: "Chờ xử lý",
-                        [OrderStatus.CONFIRMED]: "Đã xác nhận",
-                        [OrderStatus.PREPARING]: "Đang chuẩn bị",
-                        [OrderStatus.READY]: "Sẵn sàng",
-                        [OrderStatus.DELIVERING]: "Đang giao",
-                        [OrderStatus.DELIVERED]: "Đã giao",
-                        [OrderStatus.CANCELLED]: "Đã hủy",
+                const statusLower = status.toLowerCase();
+                const labels: Record<string, string> = {
+                        pending: "Chờ xử lý",
+                        confirmed: "Đã xác nhận",
+                        preparing: "Đang chuẩn bị",
+                        ready: "Sẵn sàng",
+                        completed: "Hoàn thành",
+                        cancelled: "Đã hủy",
                 };
-                return labels[normalizedStatus] || status;
+                return labels[statusLower] || status;
         };
 
         const getNextStatus = (currentStatus: string): OrderStatus | null => {
-                const normalizedStatus = normalizeStatus(currentStatus);
-                switch (normalizedStatus) {
-                        case OrderStatus.PENDING:
-                                return OrderStatus.CONFIRMED;
-                        case OrderStatus.CONFIRMED:
-                                return OrderStatus.PREPARING;
-                        case OrderStatus.PREPARING:
-                                return OrderStatus.READY;
-                        case OrderStatus.READY:
-                                return OrderStatus.DELIVERING;
-                        case OrderStatus.DELIVERING:
-                                return OrderStatus.DELIVERED;
+                const statusLower = currentStatus.toLowerCase();
+                switch (statusLower) {
+                        case "pending":
+                                return "confirmed";
+                        case "confirmed":
+                                return "preparing";
+                        case "preparing":
+                                return "ready";
+                        case "ready":
+                                return "completed";
                         default:
                                 return null;
                 }
@@ -234,19 +223,19 @@ export default function MerchantOrdersPage() {
                                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Chờ xử lý</p>
                                         <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
-                                                {orders.filter((o) => o.status === OrderStatus.PENDING).length}
+                                                {orders.filter((o) => o.status === "pending").length}
                                         </p>
                                 </div>
                                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Đang chuẩn bị</p>
                                         <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
-                                                {orders.filter((o) => o.status === OrderStatus.PREPARING).length}
+                                                {orders.filter((o) => o.status === "preparing").length}
                                         </p>
                                 </div>
                                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Đã hoàn thành</p>
                                         <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-                                                {orders.filter((o) => o.status === OrderStatus.DELIVERED).length}
+                                                {orders.filter((o) => o.status === "completed").length}
                                         </p>
                                 </div>
                         </div>
@@ -257,7 +246,7 @@ export default function MerchantOrdersPage() {
                                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Lọc theo:
                                         </span>
-                                        {(["ALL", ...Object.values(OrderStatus)] as const).map((status) => (
+                                        {(["ALL", "pending", "confirmed", "preparing", "ready", "completed", "cancelled"] as const).map((status) => (
                                                 <button
                                                         key={status}
                                                         onClick={() => setFilterStatus(status)}
@@ -322,165 +311,102 @@ export default function MerchantOrdersPage() {
                                                         </thead>
                                                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                                                 {filteredOrders.map((order) => {
-                                                                        const normalizedStatus = normalizeStatus(
-                                                                                order.status
-                                                                        );
                                                                         const nextStatus = getNextStatus(order.status);
                                                                         return (
                                                                                 <tr
-                                                                                        key={order.id}
+                                                                                        key={order.orderId}
                                                                                         className="hover:bg-gray-50 dark:hover:bg-gray-700"
                                                                                 >
                                                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                                                                 <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                                                                        {order.orderCode ||
-                                                                                                                order.id}
+                                                                                                        {order.orderId || order.slug}
                                                                                                 </div>
                                                                                         </td>
                                                                                         <td className="px-6 py-4">
                                                                                                 <div className="text-sm text-gray-900 dark:text-white">
-                                                                                                        {
-                                                                                                                order.customerName
-                                                                                                        }
+                                                                                                        {order.restaurant.name}
                                                                                                 </div>
                                                                                                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                                                                        {
-                                                                                                                order.customerPhone
-                                                                                                        }
+                                                                                                        User ID: {order.userId}
                                                                                                 </div>
                                                                                         </td>
                                                                                         <td className="px-6 py-4">
                                                                                                 <div className="text-sm text-gray-900 dark:text-white">
-                                                                                                        {
-                                                                                                                order
-                                                                                                                        .items
-                                                                                                                        .length
-                                                                                                        }{" "}
-                                                                                                        món
+                                                                                                        {order.items.length} món
                                                                                                 </div>
                                                                                                 <div className="text-xs text-gray-500 dark:text-gray-400">
                                                                                                         {order.items
-                                                                                                                .slice(
-                                                                                                                        0,
-                                                                                                                        2
-                                                                                                                )
-                                                                                                                .map(
-                                                                                                                        (
-                                                                                                                                item
-                                                                                                                        ) =>
-                                                                                                                                item.productName
-                                                                                                                )
-                                                                                                                .join(
-                                                                                                                        ", "
-                                                                                                                )}
-                                                                                                        {order.items
-                                                                                                                .length >
-                                                                                                                2 &&
-                                                                                                                "..."}
+                                                                                                                .slice(0, 2)
+                                                                                                                .map((item) => item.productName)
+                                                                                                                .join(", ")}
+                                                                                                        {order.items.length > 2 && "..."}
                                                                                                 </div>
                                                                                         </td>
                                                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                                                                 <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                                                                        $
-                                                                                                        {order.totalPrice.toFixed(
-                                                                                                                2
-                                                                                                        )}
+                                                                                                        ${order.finalAmount.toFixed(2)}
                                                                                                 </div>
                                                                                         </td>
                                                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                                                                 <span
                                                                                                         className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                                                                                                                normalizedStatus
+                                                                                                                order.status
                                                                                                         )}`}
                                                                                                 >
-                                                                                                        {getStatusLabel(
-                                                                                                                normalizedStatus
-                                                                                                        )}
+                                                                                                        {getStatusLabel(order.status)}
                                                                                                 </span>
                                                                                         </td>
                                                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                                                                 <span
                                                                                                         className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                                                                                order.paymentStatus ===
-                                                                                                                "PAID"
+                                                                                                                order.paymentStatus === "completed"
                                                                                                                         ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                                                                                                        : order.paymentStatus ===
-                                                                                                                          "FAILED"
+                                                                                                                        : order.paymentStatus === "failed"
                                                                                                                         ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                                                                                                                         : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                                                                                                         }`}
                                                                                                 >
-                                                                                                        {order.paymentStatus ===
-                                                                                                        "PAID"
+                                                                                                        {order.paymentStatus === "completed"
                                                                                                                 ? "Đã thanh toán"
-                                                                                                                : order.paymentStatus ===
-                                                                                                                  "FAILED"
+                                                                                                                : order.paymentStatus === "failed"
                                                                                                                 ? "Thất bại"
                                                                                                                 : "Chờ thanh toán"}
                                                                                                 </span>
                                                                                         </td>
                                                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                                                                {new Date(
-                                                                                                        order.createdAt
-                                                                                                ).toLocaleString(
-                                                                                                        "vi-VN"
-                                                                                                )}
+                                                                                                {new Date(order.createdAt).toLocaleString("vi-VN")}
                                                                                         </td>
                                                                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                                                                {normalizeStatus(
-                                                                                                        order.status
-                                                                                                ) ===
-                                                                                                OrderStatus.PENDING ? (
+                                                                                                {order.status === "pending" ? (
                                                                                                         <div className="flex items-center gap-2">
                                                                                                                 <button
-                                                                                                                        onClick={() =>
-                                                                                                                                handleAcceptOrder(
-                                                                                                                                        order
-                                                                                                                                )
-                                                                                                                        }
+                                                                                                                        onClick={() => handleAcceptOrder(order)}
                                                                                                                         className="flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-xs font-medium"
                                                                                                                 >
                                                                                                                         <CheckCircle className="h-4 w-4" />
-                                                                                                                        Chấp
-                                                                                                                        nhận
+                                                                                                                        Chấp nhận
                                                                                                                 </button>
                                                                                                                 <button
                                                                                                                         onClick={() => {
-                                                                                                                                const orderId =
-                                                                                                                                        (
-                                                                                                                                                order as Order & {
-                                                                                                                                                        orderId?: string;
-                                                                                                                                                }
-                                                                                                                                        )
-                                                                                                                                                .orderId ||
-                                                                                                                                        order.id;
-                                                                                                                                setShowRejectDialog(
-                                                                                                                                        orderId
-                                                                                                                                );
+                                                                                                                                setShowRejectDialog(order.orderId);
                                                                                                                         }}
                                                                                                                         className="flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-xs font-medium"
                                                                                                                 >
                                                                                                                         <XCircle className="h-4 w-4" />
-                                                                                                                        Từ
-                                                                                                                        chối
+                                                                                                                        Từ chối
                                                                                                                 </button>
                                                                                                         </div>
                                                                                                 ) : nextStatus ? (
                                                                                                         <button
                                                                                                                 onClick={() =>
-                                                                                                                        handleUpdateStatus(
-                                                                                                                                order.id,
-                                                                                                                                nextStatus
-                                                                                                                        )
+                                                                                                                        handleUpdateStatus(order.orderId, nextStatus)
                                                                                                                 }
                                                                                                                 className="text-brand-yellow hover:text-brand-yellow/80"
                                                                                                         >
                                                                                                                 Cập nhật
                                                                                                         </button>
                                                                                                 ) : (
-                                                                                                        <span className="text-gray-400">
-                                                                                                                —
-                                                                                                        </span>
+                                                                                                        <span className="text-gray-400">—</span>
                                                                                                 )}
                                                                                         </td>
                                                                                 </tr>
@@ -531,13 +457,7 @@ export default function MerchantOrdersPage() {
                                                         <button
                                                                 onClick={() => {
                                                                         const order = orders.find((o) => {
-                                                                                const oId =
-                                                                                        (
-                                                                                                o as Order & {
-                                                                                                        orderId?: string;
-                                                                                                }
-                                                                                        ).orderId || o.id;
-                                                                                return oId === showRejectDialog;
+                                                                                return o.orderId === showRejectDialog;
                                                                         });
                                                                         if (order) {
                                                                                 handleRejectOrder(order);

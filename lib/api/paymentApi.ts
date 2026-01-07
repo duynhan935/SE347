@@ -1,37 +1,6 @@
+import { CreatePaymentRequest, CreatePaymentResponse, Payment } from "@/types/payment.type";
 import api from "../axios";
 
-export interface Payment {
-        _id: string;
-        orderId: string;
-        userId: string;
-        amount: number;
-        currency: string;
-        paymentMethod: string;
-        status: "pending" | "processing" | "completed" | "failed" | "refunded";
-        stripePaymentIntentId?: string;
-        metadata?: Record<string, unknown>;
-        createdAt: string;
-        updatedAt: string;
-}
-
-export interface CreatePaymentRequest {
-        orderId: string;
-        userId: string;
-        amount: number;
-        currency?: string;
-        paymentMethod: string;
-        metadata?: Record<string, unknown>;
-}
-
-export interface CreatePaymentResponse {
-        success: boolean;
-        message: string;
-        data: {
-                clientSecret?: string;
-                paymentId: string;
-                status: string;
-        };
-}
 
 export const paymentApi = {
         // Create payment

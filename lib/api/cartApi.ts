@@ -17,16 +17,24 @@ export interface Restaurant {
     restaurantName: string;
 }
 
+export interface RestaurantCart {
+    restaurantId: string;
+    restaurantName: string;
+    restaurantSlug?: string;
+    restaurantImage?: string;
+    items: CartItem[];
+    subtotal: number;
+    tax: number;
+    deliveryFee: number;
+    discount: number;
+    totalAmount: number;
+    notes?: string;
+    deliveryAddress?: string;
+}
+
 export interface Cart {
     userId: string;
-    restaurants: {
-        restaurantId: string;
-        restaurantName: string;
-        items: CartItem[];
-        subtotal: number;
-    }[];
-    totalItems: number;
-    totalAmount: number;
+    restaurants: RestaurantCart[];
     createdAt: string;
     updatedAt: string;
 }

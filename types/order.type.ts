@@ -1,45 +1,48 @@
-export enum OrderStatus {
-	PENDING = "PENDING",
-	CONFIRMED = "CONFIRMED",
-	PREPARING = "PREPARING",
-	READY = "READY",
-	DELIVERING = "DELIVERING",
-	DELIVERED = "DELIVERED",
-	CANCELLED = "CANCELLED",
-}
+import { PaymentMethod, PaymentStatus } from "./payment.type";
+
+export type OrderStatus = "pending" | "confirmed" | "preparing" | "ready" | "completed" | "cancelled";
 
 export interface OrderItem {
-	id: string;
 	productId: string;
 	productName: string;
 	quantity: number;
 	price: number;
-	size?: string;
-	note?: string;
+	customizations?: string;
+}
+
+export interface DeliveryAddress {
+	street: string;
+	city: string;
+	state: string;
+	zipCode: string;
+}
+
+export interface RestaurantInfo {
+	id: string;
+	name: string;
 }
 
 export interface Order {
-	id: string;
-	orderCode: string;
-	customerId: string;
-	customerName: string;
-	customerPhone: string;
-	restaurantId: string;
-	restaurantName: string;
-	merchantId: string;
+	orderId: string;
+	slug: string;
+	userId: string;
+	restaurant: RestaurantInfo;
 	items: OrderItem[];
-	subtotal: number;
-	deliveryFee: number;
+	totalAmount: number;
 	discount: number;
-	totalPrice: number;
+	deliveryFee: number;
+	tax: number;
+	finalAmount: number;
 	status: OrderStatus;
-	paymentMethod: string;
-	paymentStatus: "PENDING" | "PAID" | "FAILED";
-	deliveryAddress: string;
-	note?: string;
+	paymentMethod: PaymentMethod;
+	paymentStatus: PaymentStatus;
+	deliveryAddress: DeliveryAddress;
+	estimatedDeliveryTime?: string;
+	actualDeliveryTime?: string;
+	orderNote?: string;
+	cancellationReason?: string;
+	rating?: number;
+	review?: string;
 	createdAt: string;
-	updatedAt?: string;
-	deliveredAt?: string;
-	cancelledAt?: string;
-	cancelReason?: string;
+	updatedAt: string;
 }

@@ -14,6 +14,7 @@ export interface Product {
         productName: string;
         description: string;
         imageURL: string | null | StaticImageData;
+        publicID?: string; // Public ID for cloud image deletion
         categoryName: string;
         categoryId: string;
         volume: number;
@@ -22,6 +23,8 @@ export interface Product {
         totalReview: number;
         rating: number;
         productSizes: ProductSize[];
+        createdAt?: string;
+        updatedAt?: string;
 }
 
 export interface ProductData {

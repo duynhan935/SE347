@@ -1,4 +1,5 @@
 import { Logo, SocialIcons } from "@/constants";
+import { Store } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -74,12 +75,13 @@ export default function Footer() {
                                         </a>
                                     </li>
                                     <li>
-                                        <a
-                                            href="#"
-                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                        <Link
+                                            href="/register?type=merchant"
+                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors flex items-center gap-1"
                                         >
-                                            Become a Partner
-                                        </a>
+                                            <Store className="w-4 h-4" />
+                                            Bán hàng cùng FoodEats
+                                        </Link>
                                     </li>
                                 </ul>
                             </div>

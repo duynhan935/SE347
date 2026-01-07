@@ -26,6 +26,7 @@ export interface Restaurant {
     closingTime: string;
     phone: string;
     imageURL: string | null | StaticImageData;
+    publicID?: string; // Public ID for cloud image deletion
     merchantId: string;
     managerId?: string;
     enabled: boolean;

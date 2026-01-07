@@ -1,14 +1,8 @@
 "use client";
 
-import {
-        DropdownMenu,
-        DropdownMenuContent,
-        DropdownMenuItem,
-        DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { ChevronDown, Menu, ShoppingCart, User, X } from "lucide-react";
+import { Menu, MessageCircle, Package, ShoppingCart, User, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -102,94 +96,32 @@ export default function MobileMenu() {
                                 </div>
 
                                 <nav className="flex flex-col p-4 space-y-1">
-                                        {/* Navigation Links */}
-                                        <Link
-                                                href="/"
-                                                prefetch={true}
-                                                onClick={() => setOpen(false)}
-                                                className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors"
-                                        >
-                                                Home
-                                        </Link>
-                                        <Link
-                                                href="/about"
-                                                prefetch={true}
-                                                onClick={() => setOpen(false)}
-                                                className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors"
-                                        >
-                                                About
-                                        </Link>
+                                        {/* Main Actions - Chỉ hiện khi authenticated */}
+                                        {mounted && isAuthenticated && user && (
+                                                <>
+                                                        <Link
+                                                                href="/orders"
+                                                                prefetch={true}
+                                                                onClick={() => setOpen(false)}
+                                                                className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors flex items-center gap-2"
+                                                        >
+                                                                <Package className="w-5 h-5" />
+                                                                Đơn hàng của tôi
+                                                        </Link>
+                                                        <Link
+                                                                href="/chat"
+                                                                prefetch={true}
+                                                                onClick={() => setOpen(false)}
+                                                                className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors flex items-center gap-2"
+                                                        >
+                                                                <MessageCircle className="w-5 h-5" />
+                                                                Tin nhắn
+                                                        </Link>
+                                                </>
+                                        )}
 
-                                        {/* Menu Dropdown */}
-                                        <DropdownMenu>
-                                                <DropdownMenuTrigger className="flex items-center justify-between w-full text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors">
-                                                        Menu
-                                                        <ChevronDown className="h-4 w-4" />
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-56 border border-gray-100 shadow-lg rounded-xl">
-                                                        <DropdownMenuItem>
-                                                                <Link
-                                                                        href="/restaurants"
-                                                                        prefetch={true}
-                                                                        className="w-full font-manrope text-p2"
-                                                                >
-                                                                        Restaurants
-                                                                </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem>
-                                                                <Link
-                                                                        href="/cart"
-                                                                        prefetch={true}
-                                                                        className="w-full font-manrope text-p2"
-                                                                >
-                                                                        Cart
-                                                                </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem>
-                                                                <Link
-                                                                        href="/payment"
-                                                                        prefetch={true}
-                                                                        className="w-full font-manrope text-p2"
-                                                                >
-                                                                        Checkout
-                                                                </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem>
-                                                                <Link
-                                                                        href="/contact"
-                                                                        prefetch={true}
-                                                                        className="w-full font-manrope text-p2"
-                                                                >
-                                                                        Contact
-                                                                </Link>
-                                                        </DropdownMenuItem>
-                                                        {mounted && user?.role === "ADMIN" && (
-                                                                <DropdownMenuItem>
-                                                                        <Link
-                                                                                href="/admin"
-                                                                                prefetch={true}
-                                                                                className="w-full font-manrope text-p2"
-                                                                        >
-                                                                                Admin
-                                                                        </Link>
-                                                                </DropdownMenuItem>
-                                                        )}
-                                                        {mounted && user?.role === "MERCHANT" && (
-                                                                <DropdownMenuItem>
-                                                                        <Link
-                                                                                href="/merchant"
-                                                                                prefetch={true}
-                                                                                className="w-full font-manrope text-p2"
-                                                                        >
-                                                                                Merchant
-                                                                        </Link>
-                                                                </DropdownMenuItem>
-                                                        )}
-                                                </DropdownMenuContent>
-                                        </DropdownMenu>
-
-                                        {/* Auth Section */}
-                                        {mounted && isAuthenticated ? (
+                                        {/* Settings Section */}
+                                        {mounted && isAuthenticated && user && (
                                                 <>
                                                         <div className="border-t border-gray-100 pt-4 mt-4">
                                                                 <div className="flex items-center gap-3 px-4 py-2 mb-2">
@@ -201,7 +133,7 @@ export default function MobileMenu() {
                                                                                         {user?.username || "User"}
                                                                                 </p>
                                                                                 <p className="text-xs text-brand-grey font-manrope">
-                                                                                        {user?.role}
+                                                                                        {user?.email}
                                                                                 </p>
                                                                         </div>
                                                                 </div>
@@ -211,7 +143,15 @@ export default function MobileMenu() {
                                                                         onClick={() => setOpen(false)}
                                                                         className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors block"
                                                                 >
-                                                                        My Account
+                                                                        Hồ sơ cá nhân
+                                                                </Link>
+                                                                <Link
+                                                                        href="/account/addresses"
+                                                                        prefetch={true}
+                                                                        onClick={() => setOpen(false)}
+                                                                        className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors block"
+                                                                >
+                                                                        Địa chỉ giao hàng
                                                                 </Link>
                                                                 {user?.role === "ADMIN" && (
                                                                         <Link
@@ -237,11 +177,14 @@ export default function MobileMenu() {
                                                                         onClick={handleLogout}
                                                                         className="w-full text-left text-red-600 text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-red-50 transition-colors"
                                                                 >
-                                                                        Logout
+                                                                        Đăng xuất
                                                                 </button>
                                                         </div>
                                                 </>
-                                        ) : mounted && !isAuthenticated ? (
+                                        )}
+
+                                        {/* Not Authenticated */}
+                                        {mounted && !isAuthenticated && (
                                                 <>
                                                         <div className="border-t border-gray-100 pt-4 mt-4 space-y-2">
                                                                 <Link
@@ -262,7 +205,7 @@ export default function MobileMenu() {
                                                                 </Link>
                                                         </div>
                                                 </>
-                                        ) : null}
+                                        )}
                                 </nav>
                         </div>
                 </>

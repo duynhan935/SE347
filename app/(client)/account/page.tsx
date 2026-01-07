@@ -3,7 +3,7 @@ import Button from "@/components/Button";
 import EditProfileModal from "@/components/client/Account/EditProfileModal";
 import { orderApi } from "@/lib/api/orderApi";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { Order, OrderStatus } from "@/types/order.type";
+import { Order } from "@/types/order.type";
 import { Heart, Loader2, Mail, PackageCheck, ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -81,15 +81,14 @@ export default function ProfilePage() {
                         // Format status for display
                         const formatStatus = (status: string): string => {
                                 const statusMap: Record<string, string> = {
-                                        [OrderStatus.PENDING]: "Pending",
-                                        [OrderStatus.CONFIRMED]: "Confirmed",
-                                        [OrderStatus.PREPARING]: "Preparing",
-                                        [OrderStatus.READY]: "Ready",
-                                        [OrderStatus.DELIVERING]: "Delivering",
-                                        [OrderStatus.DELIVERED]: "Delivered",
-                                        [OrderStatus.CANCELLED]: "Cancelled",
+                                        pending: "Pending",
+                                        confirmed: "Confirmed",
+                                        preparing: "Preparing",
+                                        ready: "Ready",
+                                        completed: "Completed",
+                                        cancelled: "Cancelled",
                                 };
-                                return statusMap[status] || status;
+                                return statusMap[status.toLowerCase()] || status;
                         };
 
                         // Get status badge color classes
@@ -138,19 +137,19 @@ export default function ProfilePage() {
                                                   })
                                                 : "N/A";
 
-                                        const status = formatStatus(order.status || OrderStatus.PENDING);
+                                        const status = formatStatus(order.status || "pending");
 
-                                        // Ensure unique ID by combining orderCode/id with index and createdAt timestamp
-                                        const orderId = order.orderCode || order.id || `order-${index}`;
+                                        // Ensure unique ID by combining orderId/slug with index and createdAt timestamp
+                                        const orderId = order.orderId || order.slug || `order-${index}`;
                                         const uniqueId = order.createdAt
                                                 ? `${orderId}-${new Date(order.createdAt).getTime()}`
                                                 : `${orderId}-${index}`;
 
                                         return {
                                                 id: uniqueId,
-                                                displayId: order.orderCode || order.id || `#${index + 1}`,
+                                                displayId: order.orderId || order.slug || `#${index + 1}`,
                                                 date: orderDate,
-                                                total: `$${order.totalPrice?.toFixed(2) || "0.00"}`,
+                                                total: `$${order.finalAmount?.toFixed(2) || "0.00"}`,
                                                 status,
                                                 statusClass: getStatusBadgeClass(status),
                                         };

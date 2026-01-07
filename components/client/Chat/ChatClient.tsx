@@ -169,8 +169,16 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                         }
                                 }
 
-                                // Mark messages as read
-                                await chatApi.markMessagesAsRead(selectedRoomId, currentUserId);
+                                // Mark messages as read (only if there are messages)
+                                // Silently fail if no messages exist
+                                if (loadedMessages && loadedMessages.length > 0) {
+                                        try {
+                                                await chatApi.markMessagesAsRead(selectedRoomId, currentUserId);
+                                        } catch (readError) {
+                                                // Log but don't show error to user - not critical
+                                                console.warn("Failed to mark messages as read:", readError);
+                                        }
+                                }
                         } catch (error) {
                                 console.error("Error loading messages:", error);
                                 toast.error("Failed to load messages");
@@ -190,9 +198,35 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                 return;
                         }
 
+                        // Optimistic update: Add message to UI immediately
+                        const optimisticMessage: Message = {
+                                id: `temp-${Date.now()}`,
+                                roomId: selectedRoomId,
+                                senderId: currentUserId,
+                                receiverId,
+                                content,
+                                timestamp: new Date().toISOString(),
+                                read: false,
+                        };
+                        setMessages((prev) => [...prev, optimisticMessage]);
+
+                        // Update room's last message
+                        setRooms((prevRooms) =>
+                                prevRooms.map((room) =>
+                                        room.id === selectedRoomId
+                                                ? {
+                                                          ...room,
+                                                          lastMessage: content,
+                                                          lastMessageTime: new Date().toISOString(),
+                                                  }
+                                                : room
+                                )
+                        );
+
+                        // Send via WebSocket
                         sendMessage(content, receiverId);
                 },
-                [selectedRoomId, isConnected, sendMessage]
+                [selectedRoomId, isConnected, sendMessage, currentUserId]
         );
 
         // Handle room selection

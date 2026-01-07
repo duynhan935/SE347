@@ -164,7 +164,7 @@ export default function SearchBar() {
                                 <div className="relative w-full">
                                         <input
                                                 type="text"
-                                                placeholder="Search restaurants, dishes..."
+                                                placeholder="Tìm bún bò, trà sữa, gà rán..."
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                 onFocus={handleInputFocus}

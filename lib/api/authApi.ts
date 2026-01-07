@@ -80,6 +80,11 @@ export const authApi = {
                 // The backend returns message field with the new access token
                 return response.data.message;
         },
+        getOneTimeToken: async () => {
+                const response = await api.get<LoginResponse>("/users/one-time-token");
+                // Backend returns TokenResponse with accessToken field containing the one-time-token
+                return response.data.accessToken;
+        },
 
         // User endpoints
         getAllUsers: async () => {

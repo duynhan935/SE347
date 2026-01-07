@@ -62,7 +62,7 @@ export function NotificationBell() {
                         const currentStatusMap = new Map<string, OrderStatus>();
 
                         orders.forEach((order) => {
-                                const orderId = (order as { orderId?: string; id: string }).orderId || order.id;
+                                const orderId = order.orderId;
                                 const currentStatus = order.status;
                                 currentStatusMap.set(orderId, currentStatus);
 
@@ -70,43 +70,30 @@ export function NotificationBell() {
                                 const previousStatus = lastOrderCheckRef.current.get(orderId);
                                 if (previousStatus && previousStatus !== currentStatus) {
                                         if (
-                                                previousStatus === OrderStatus.PENDING &&
-                                                currentStatus === OrderStatus.CONFIRMED
+                                                previousStatus === "pending" &&
+                                                currentStatus === "confirmed"
                                         ) {
                                                 useNotificationStore.getState().addNotification({
                                                         type: "ORDER_ACCEPTED",
                                                         title: "Đơn hàng đã được chấp nhận",
                                                         message: `Đơn hàng ${orderId} đã được nhà hàng chấp nhận và đang được chuẩn bị.`,
                                                         orderId,
-                                                        restaurantName: order.restaurantName,
+                                                        restaurantName: order.restaurant.name,
                                                 });
                                         } else if (
-                                                previousStatus === OrderStatus.PENDING &&
-                                                currentStatus === OrderStatus.CANCELLED
+                                                previousStatus === "pending" &&
+                                                currentStatus === "cancelled"
                                         ) {
                                                 useNotificationStore.getState().addNotification({
                                                         type: "ORDER_REJECTED",
                                                         title: "Đơn hàng đã bị từ chối",
                                                         message: `Đơn hàng ${orderId} đã bị nhà hàng từ chối.${
-                                                                (
-                                                                        order as {
-                                                                                cancellationReason?: string;
-                                                                                cancelReason?: string;
-                                                                        }
-                                                                ).cancellationReason || order.cancelReason
-                                                                        ? ` Lý do: ${
-                                                                                  (
-                                                                                          order as {
-                                                                                                  cancellationReason?: string;
-                                                                                                  cancelReason?: string;
-                                                                                          }
-                                                                                  ).cancellationReason ||
-                                                                                  order.cancelReason
-                                                                          }`
+                                                                order.cancellationReason
+                                                                        ? ` Lý do: ${order.cancellationReason}`
                                                                         : ""
                                                         }`,
                                                         orderId,
-                                                        restaurantName: order.restaurantName,
+                                                        restaurantName: order.restaurant.name,
                                                 });
                                         }
                                 }

@@ -54,15 +54,6 @@ export const orderApi = {
                                 order = responseData as Order;
                         }
 
-                        // Normalize order: ensure 'id' field exists (backend may return 'orderId' instead)
-                        if (order && typeof order === "object") {
-                                const orderWithId = order as Order & { orderId?: string };
-                                // If order has orderId but no id, use orderId as id
-                                if (!orderWithId.id && orderWithId.orderId) {
-                                        orderWithId.id = orderWithId.orderId;
-                                }
-                        }
-
                         return order as Order;
                 } catch (error: unknown) {
                         // Re-throw error with better message for restaurant closed errors
@@ -161,7 +152,7 @@ export const orderApi = {
                         const uniqueOrders = Array.from(
                                 new Map(
                                         allOrders.map((order: Order) => [
-                                                order.id || (order as { orderId?: string }).orderId,
+                                                order.orderId,
                                                 order,
                                         ])
                                 ).values()
@@ -174,14 +165,9 @@ export const orderApi = {
                         });
                 } catch (error) {
                         console.error("Failed to get orders by merchant:", error);
-                        // Fallback: try to get all orders and filter (if user has permission)
-                        try {
-                                const allOrders = await orderApi.getAllOrders();
-                                return allOrders.filter((order) => order.merchantId === merchantId);
-                        } catch (fallbackError) {
-                                console.error("Fallback also failed:", fallbackError);
-                                return [];
-                        }
+                        // Fallback: cannot filter by merchantId as Order type doesn't include it
+                        // Return empty array to avoid returning orders from other merchants
+                        return [];
                 }
         },
 

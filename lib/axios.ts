@@ -7,6 +7,7 @@ const api = axios.create({
         baseURL: "http://localhost:8080/api", // backend của bạn
         timeout: 30000, // Tăng timeout từ 10s lên 30s
         maxRedirects: 0, // Không tự động follow redirects (tránh redirect đến Docker hostname)
+        
         validateStatus: (status) => status < 500, // Chỉ throw error cho 5xx, không throw cho redirects
 });
 
@@ -176,6 +177,11 @@ api.interceptors.response.use(
                         console.log("➡️ Message:", "message" in data ? data.message : "N/A");
                 } else {
                         console.log("➡️ Raw Error:", error.message);
+                }
+                
+                // Log full response data for debugging
+                if (data) {
+                        console.log("➡️ Response Data:", JSON.stringify(data, null, 2));
                 }
 
                 console.groupEnd();
