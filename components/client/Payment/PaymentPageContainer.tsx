@@ -78,7 +78,7 @@ export default function PaymentPageClient() {
         const searchParams = useSearchParams();
         const restaurantId = searchParams.get("restaurantId");
 
-        const { items, clearRestaurant, setUserId, userId: cartUserId, isLoading: cartLoading } = useCartStore();
+        const { items, clearRestaurant, setUserId, userId: cartUserId, isLoading: cartLoading, fetchCart } = useCartStore();
         const { user } = useAuthStore();
         const { coords, error: locationError } = useGeolocation();
         const [cartFetched, setCartFetched] = useState(false);
@@ -128,16 +128,28 @@ export default function PaymentPageClient() {
                         return;
                 }
 
-                // Ensure userId is set in cart store (this will automatically fetch cart)
+                // Ensure userId is set in cart store
                 if (extendedUser.id && cartUserId !== extendedUser.id) {
                         setUserId(extendedUser.id);
+                }
+
+                // Fetch cart when userId is set and matches current user
+                if (extendedUser.id && cartUserId === extendedUser.id && !cartFetched && !cartLoading) {
+                        fetchCart().catch((error) => {
+                                // Silently handle errors - cart might not exist yet or service unavailable
+                                const status = (error as { response?: { status?: number } })?.response?.status;
+                                if (status !== 404 && status !== 503) {
+                                        console.warn("Failed to fetch cart:", error);
+                                }
+                        });
+                        setCartFetched(true);
                 }
 
                 // Mark as fetched when cart loading is complete
                 if (cartUserId && !cartLoading && !cartFetched) {
                         setCartFetched(true);
                 }
-        }, [extendedUser, cartUserId, cartLoading, setUserId, router, cartFetched]);
+        }, [extendedUser, cartUserId, cartLoading, setUserId, router, cartFetched, fetchCart]);
 
         // Check if cart is empty after fetching (only after cart has been fetched and loaded)
         // Skip this check if payment has been completed to avoid showing error toast after successful payment

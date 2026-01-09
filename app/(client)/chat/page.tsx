@@ -9,7 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function ChatPage() {
-        const { user, isAuthenticated } = useAuthStore();
+        const { user, isAuthenticated, loading, accessToken } = useAuthStore();
         const [rooms, setRooms] = useState<ChatRoom[]>([]);
         const [isLoading, setIsLoading] = useState(true);
         const searchParams = useSearchParams();
@@ -26,7 +26,8 @@ export default function ChatPage() {
 
                         try {
                                 const response = await chatApi.getAllRoomsByUserId(user.id);
-                                setRooms(response.data || []);
+                                // Backend returns Page<ChatRoom>, extract content array
+                                setRooms(response.data?.content || []);
                         } catch (error) {
                                 // 404 means user has no rooms yet - this is normal
                                 // Backend returns 404 instead of empty array when no rooms found
@@ -47,6 +48,25 @@ export default function ChatPage() {
                 loadRooms();
         }, [user?.id]);
 
+        // Show loading while auth is initializing
+        if (loading) {
+                return (
+                        <div className="custom-container py-8">
+                                <div className="mb-6">
+                                        <h1 className="text-3xl font-bold text-gray-900">Messages</h1>
+                                        <p className="text-gray-600 mt-2">Chat with merchants and other users</p>
+                                </div>
+                                <div className="flex items-center justify-center h-[600px]">
+                                        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                                </div>
+                        </div>
+                );
+        }
+
+        // Check authentication: need both token and user object
+        // accessToken exists means user has logged in, but user might not be loaded yet
+        const isAuthReady = accessToken && user && isAuthenticated;
+
         return (
                 <div className="custom-container py-8">
                         <div className="mb-6">
@@ -54,7 +74,7 @@ export default function ChatPage() {
                                 <p className="text-gray-600 mt-2">Chat with merchants and other users</p>
                         </div>
 
-                        {!isAuthenticated || !user ? (
+                        {!isAuthReady ? (
                                 <div className="flex items-center justify-center h-[600px]">
                                         <p className="text-gray-500">Please log in to use chat</p>
                                 </div>

@@ -1,12 +1,28 @@
 "use client";
 
 import { CartItem, useCartStore } from "@/stores/cartStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import Link from "next/link";
+import { useEffect } from "react";
 import { CartItemRow } from "./CartItemRow";
 import { OrderSummary } from "./OrderSummary";
 
 export default function CartPageContainer() {
-        const items = useCartStore((state) => state.items);
+        const { user, isAuthenticated } = useAuthStore();
+        const { items, fetchCart, userId } = useCartStore();
+
+        // Fetch cart when component mounts and user is authenticated
+        useEffect(() => {
+                if (isAuthenticated && user?.id && userId === user.id) {
+                        fetchCart().catch((error) => {
+                                // Silently handle errors - cart might not exist yet or service unavailable
+                                const status = (error as { response?: { status?: number } })?.response?.status;
+                                if (status !== 404 && status !== 503) {
+                                        console.warn("Failed to fetch cart:", error);
+                                }
+                        });
+                }
+        }, [isAuthenticated, user?.id, userId, fetchCart]);
         const totalItems = items.reduce((total, item) => total + item.quantity, 0);
         const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
 
