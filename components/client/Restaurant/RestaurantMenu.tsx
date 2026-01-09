@@ -24,9 +24,9 @@ export default function RestaurantMenu({ products, categories }: MenuProps) {
                         <h2 className="text-3xl font-bold font-roboto-serif">Menu</h2>
                         <div className="py-4 border-b my-6">
                                 <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-                                        {categories.map((category) => (
+                                        {categories.map((category, index) => (
                                                 <a
-                                                                                key={category.id}
+                                                        key={category.id || `category-${index}`}
                                                         href={`#${slugify(category.cateName)}`}
                                                         className="px-4 py-2 bg-gray-100 rounded-full text-sm font-semibold whitespace-nowrap hover:bg-gray-200"
                                                 >
@@ -36,36 +36,35 @@ export default function RestaurantMenu({ products, categories }: MenuProps) {
                                 </div>
                         </div>
                         <div className="space-y-12">
-                                {groupedMenu.map(
-                                        (group) =>
-                                                group.items.length > 0 && (
-                                                        <div
-                                                                key={group.categoryName}
-                                                                id={slugify(group.categoryName)}
-                                                                className="scroll-mt-24"
+                                {groupedMenu
+                                        .filter((group) => group.items.length > 0)
+                                        .map((group, index) => (
+                                                <div
+                                                        key={`${group.categoryName}-${index}`}
+                                                        id={slugify(group.categoryName)}
+                                                        className="scroll-mt-24"
+                                                >
+                                                        <h3 className="text-2xl font-bold mb-6">
+                                                                {group.categoryName}
+                                                        </h3>
+                                                        <motion.div
+                                                                variants={listContainerVariants}
+                                                                initial="hidden"
+                                                                whileInView="visible"
+                                                                viewport={{ once: true, amount: 0.1 }}
+                                                                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
                                                         >
-                                                                <h3 className="text-2xl font-bold mb-6">
-                                                                        {group.categoryName}
-                                                                </h3>
-                                                                <motion.div
-                                                                        variants={listContainerVariants}
-                                                                        initial="hidden"
-                                                                        whileInView="visible"
-                                                                        viewport={{ once: true, amount: 0.1 }}
-                                                                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
-                                                                >
-                                                                        {group.items.map((item) => (
-                                                                                <motion.div
-                                                                                        key={item.id}
-                                                                                        variants={itemVariants}
-                                                                                >
-                                                                                        <MenuItemCard item={item} />
-                                                                                </motion.div>
-                                                                        ))}
-                                                                </motion.div>
-                                                        </div>
-                                                )
-                                )}
+                                                                {group.items.map((item) => (
+                                                                        <motion.div
+                                                                                key={item.id}
+                                                                                variants={itemVariants}
+                                                                        >
+                                                                                <MenuItemCard item={item} />
+                                                                        </motion.div>
+                                                                ))}
+                                                        </motion.div>
+                                                </div>
+                                        ))}
                         </div>
                 </div>
         );

@@ -157,29 +157,11 @@ export const useCartStore = create<CartState>()(
                                         if (currentUserId !== userId) {
                                                 set({ userId });
                                                 if (userId) {
-                                                        // Fetch cart asynchronously (don't await to avoid blocking)
-                                                        // This ensures cart is loaded when user navigates to cart/payment pages
-                                                        // If cart doesn't exist yet (404), it will be silently handled
-                                                        get()
-                                                                .fetchCart()
-                                                                .catch((error) => {
-                                                                        // Silently handle errors - cart might not exist yet (normal for new users)
-                                                                        // Cart will be created automatically when first item is added
-                                                                        const isNotFound =
-                                                                                (
-                                                                                        error as {
-                                                                                                response?: {
-                                                                                                        status?: number;
-                                                                                                };
-                                                                                        }
-                                                                                )?.response?.status === 404;
-                                                                        if (!isNotFound) {
-                                                                                console.warn(
-                                                                                        "Failed to fetch cart after setUserId:",
-                                                                                        error
-                                                                                );
-                                                                        }
-                                                                });
+                                                        // Don't auto-fetch cart here - fetch only when needed
+                                                        // Cart will be fetched when:
+                                                        // 1. User navigates to cart/checkout pages
+                                                        // 2. User adds item to cart
+                                                        // This prevents unnecessary API calls on every page load
                                                 } else {
                                                         // Clear items when userId is null
                                                         set({ items: [] });
@@ -213,6 +195,11 @@ export const useCartStore = create<CartState>()(
                                                         ) ||
                                                         (error as { message?: string })?.message?.includes("Not found");
 
+                                                // Check if service is unavailable (503)
+                                                const isServiceUnavailable =
+                                                        (error as { response?: { status?: number } })?.response
+                                                                ?.status === 503;
+
                                                 // Silently handle not found errors (cart will be created when adding first item)
                                                 // This is normal for new users who haven't added anything to cart yet
                                                 if (isNotFound) {
@@ -220,7 +207,13 @@ export const useCartStore = create<CartState>()(
                                                         return; // Don't show error for new users - cart will be created on first add
                                                 }
 
-                                                // Only log and show toast for non-timeout errors
+                                                // Silently handle service unavailable (503) - service might be down or starting up
+                                                if (isServiceUnavailable) {
+                                                        set({ items: [] });
+                                                        return; // Don't show error - service might be temporarily unavailable
+                                                }
+
+                                                // Only log and show toast for non-timeout, non-503 errors
                                                 if (!isTimeout) {
                                                         console.error("Failed to fetch cart:", error);
                                                         // Don't show toast for initial fetch (might be called automatically)

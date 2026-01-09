@@ -110,6 +110,11 @@ export const authApi = {
         // The backend returns message field with the new access token
         return response.data.message;
     },
+    getOneTimeToken: async () => {
+        const response = await api.get<{ accessToken: string }>("/users/one-time-token");
+        // Backend returns TokenResponse with accessToken field
+        return response.data.accessToken;
+    },
 
     // User endpoints
     // ✅ FIXED: Return PageableResponse instead of User[]
