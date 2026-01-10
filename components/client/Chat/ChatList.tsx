@@ -1,9 +1,10 @@
 "use client";
 
+import { useChatStore } from "@/stores/useChatStore";
 import { ChatRoom } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { MessageSquare } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ChatListProps {
         rooms: ChatRoom[];
@@ -21,28 +22,44 @@ export default function ChatList({
         onGetPartnerInfo,
 }: ChatListProps) {
         const [partnerInfoMap, setPartnerInfoMap] = useState<Record<string, { name: string; avatar?: string }>>({});
+        const getUnreadCountByRoom = useChatStore((state) => state.getUnreadCountByRoom);
+        const fetchedPartnerIdsRef = useRef<Set<string>>(new Set()); // Track which partners we've already fetched
 
         useEffect(() => {
                 const fetchPartnerInfo = async () => {
-                        const infoMap: Record<string, { name: string; avatar?: string }> = {};
+                        const infoMap: Record<string, { name: string; avatar?: string }> = { ...partnerInfoMap }; // Start with existing info
+                        const partnersToFetch: string[] = [];
+                        
+                        // First, identify which partners we need to fetch (only new ones)
                         for (const room of rooms) {
                                 const partnerId = room.user1Id === currentUserId ? room.user2Id : room.user1Id;
-                                if (!infoMap[partnerId] && onGetPartnerInfo) {
+                                // Only fetch if we don't already have it and haven't fetched it before
+                                if (!infoMap[partnerId] && !fetchedPartnerIdsRef.current.has(partnerId) && onGetPartnerInfo) {
+                                        partnersToFetch.push(partnerId);
+                                }
+                        }
+                        
+                        // Only fetch new partners
+                        if (partnersToFetch.length > 0 && onGetPartnerInfo) {
+                                for (const partnerId of partnersToFetch) {
+                                        fetchedPartnerIdsRef.current.add(partnerId);
                                         try {
                                                 const info = await onGetPartnerInfo(partnerId);
                                                 infoMap[partnerId] = info;
-                                        } catch (error) {
+                                        } catch {
                                                 infoMap[partnerId] = { name: "Unknown User" };
                                         }
                                 }
+                                setPartnerInfoMap(infoMap);
                         }
-                        setPartnerInfoMap(infoMap);
                 };
 
                 if (rooms.length > 0 && onGetPartnerInfo) {
                         fetchPartnerInfo();
                 }
-        }, [rooms, currentUserId, onGetPartnerInfo]);
+                // Only depend on rooms.length to detect NEW rooms, not when rooms update with new messages
+                // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [rooms.length, currentUserId, onGetPartnerInfo]);
 
         const getPartnerId = (room: ChatRoom) => {
                 return room.user1Id === currentUserId ? room.user2Id : room.user1Id;
@@ -76,29 +93,36 @@ export default function ChatList({
                                 ) : (
                                         <div className="divide-y divide-gray-100">
                                                 {rooms.map((room) => {
-                                                        const partnerId = getPartnerId(room);
                                                         const partnerName = getPartnerName(room);
                                                         const isSelected = selectedRoomId === room.id;
+                                                        const unreadCount = getUnreadCountByRoom(room.id);
 
                                                         return (
                                                                 <button
                                                                         key={room.id}
                                                                         onClick={() => onSelectRoom(room.id)}
-                                                                        className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
+                                                                        className={`w-full p-4 text-left hover:bg-gray-50 transition-colors relative ${
                                                                                 isSelected
                                                                                         ? "bg-blue-50 border-l-4 border-blue-500"
                                                                                         : ""
                                                                         }`}
                                                                 >
                                                                         <div className="flex items-start gap-3">
-                                                                                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                                                                                        {partnerName
-                                                                                                .charAt(0)
-                                                                                                .toUpperCase()}
+                                                                                <div className="relative flex-shrink-0">
+                                                                                        <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                                                                                                {partnerName
+                                                                                                        .charAt(0)
+                                                                                                        .toUpperCase()}
+                                                                                        </div>
+                                                                                        {unreadCount > 0 && !isSelected && (
+                                                                                                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                                                                                                        {unreadCount > 9 ? "9+" : unreadCount}
+                                                                                                </span>
+                                                                                        )}
                                                                                 </div>
                                                                                 <div className="flex-1 min-w-0">
                                                                                         <div className="flex items-center justify-between mb-1">
-                                                                                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                                                                                <p className={`text-sm font-semibold truncate ${unreadCount > 0 && !isSelected ? "font-bold" : "text-gray-900"}`}>
                                                                                                         {partnerName}
                                                                                                 </p>
                                                                                                 {room.lastMessageTime && (
@@ -110,7 +134,7 @@ export default function ChatList({
                                                                                                 )}
                                                                                         </div>
                                                                                         {room.lastMessage && (
-                                                                                                <p className="text-sm text-gray-600 truncate">
+                                                                                                <p className={`text-sm truncate ${unreadCount > 0 && !isSelected ? "font-medium text-gray-900" : "text-gray-600"}`}>
                                                                                                         {
                                                                                                                 room.lastMessage
                                                                                                         }

@@ -3,6 +3,7 @@
 import AuthProvider from "@/components/auth/AuthProvider";
 import Header from "@/components/header/Header";
 import Footer from "@/components/layout/client/Footer";
+import ChatProvider from "@/components/providers/ChatProvider";
 import { useCartSync } from "@/lib/hooks/useCartSync";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -29,9 +30,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
         return (
                 <AuthProvider>
-                        {showHeaderFooter && <Header />}
-                        <main className={mainClassName}>{children}</main>
-                        {showHeaderFooter && <Footer />}
+                        <ChatProvider>
+                                {showHeaderFooter && <Header />}
+                                <main className={mainClassName}>{children}</main>
+                                {showHeaderFooter && <Footer />}
+                        </ChatProvider>
                 </AuthProvider>
         );
 }

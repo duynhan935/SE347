@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getImageUrl } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useChatStore } from "@/stores/useChatStore";
 import { LogOut, MessageCircle, Package, Settings, Store, User, UtensilsCrossed, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,11 +23,16 @@ import CartDropdown from "./CartDropdown";
 
 export default function NavActions() {
         const { user, isAuthenticated, loading, logout } = useAuthStore();
+        // Subscribe to unread count map to trigger re-render when it changes
+        const unreadCountMap = useChatStore((state) => state.unreadCountMap);
         const [mounted, setMounted] = useState(false);
         const [showMerchantForm, setShowMerchantForm] = useState(false);
         const [isLoggingOut, setIsLoggingOut] = useState(false);
         const router = useRouter();
         const pathname = usePathname();
+        
+        // Calculate total unread chat messages count
+        const chatUnreadCount = Object.values(unreadCountMap).reduce((sum, count) => sum + count, 0);
 
         // Fix hydration mismatch
         useEffect(() => {
@@ -120,6 +126,28 @@ export default function NavActions() {
                                 </Link>
                         )}
 
+                        {/* Chat Messages - Show if authenticated */}
+                        {isAuthenticated && user && !loading && (
+                                <Link
+                                        href="/chat"
+                                        className={`relative p-2 rounded-full hover:bg-gray-50 transition-colors ${
+                                                pathname === "/chat" ? "text-brand-orange" : "text-brand-grey"
+                                        }`}
+                                        aria-label="Tin nhắn"
+                                        title="Tin nhắn"
+                                >
+                                        <MessageCircle className="w-5 h-5" />
+                                        {chatUnreadCount > 0 && (
+                                                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                                                        {chatUnreadCount > 9 ? "9+" : chatUnreadCount}
+                                                </span>
+                                        )}
+                                        {pathname === "/chat" && (
+                                                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-orange rounded-full" />
+                                        )}
+                                </Link>
+                        )}
+
                         {/* Cart - Show if authenticated and not loading */}
                         {isAuthenticated && user && !loading && <CartDropdown />}
 
@@ -159,9 +187,16 @@ export default function NavActions() {
                                                                 </Link>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem asChild>
-                                                                <Link href="/chat" className="flex items-center cursor-pointer">
-                                                                        <MessageCircle className="mr-2 h-4 w-4" />
-                                                                        <span>Tin nhắn</span>
+                                                                <Link href="/chat" className="flex items-center justify-between cursor-pointer w-full relative">
+                                                                        <div className="flex items-center">
+                                                                                <MessageCircle className="mr-2 h-4 w-4" />
+                                                                                <span>Tin nhắn</span>
+                                                                        </div>
+                                                                        {chatUnreadCount > 0 && (
+                                                                                <span className="ml-2 h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                                                                                        {chatUnreadCount > 9 ? "9+" : chatUnreadCount}
+                                                                                </span>
+                                                                        )}
                                                                 </Link>
                                                         </DropdownMenuItem>
                                                 </DropdownMenuGroup>
