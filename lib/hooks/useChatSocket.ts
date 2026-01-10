@@ -36,7 +36,6 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
 
                 // Don't reconnect if already connected
                 if (clientRef.current?.connected) {
-                        console.log("WebSocket already connected");
                         setIsConnected(true);
                         return;
                 }
@@ -44,12 +43,8 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                 isConnectingRef.current = true;
 
                 try {
-                        console.log("🔌 Connecting to WebSocket on login...");
                         const oneTimeToken = await authApi.getOneTimeToken();
-                        console.log("✅ One-time-token received");
-
                         const wsUrl = `ws://localhost:8080/ws?token=${encodeURIComponent(oneTimeToken)}`;
-                        console.log("🔗 WebSocket URL:", wsUrl);
 
                         const client = new Client({
                                 webSocketFactory: () => {
@@ -59,7 +54,6 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                                 heartbeatIncoming: 4000,
                                 heartbeatOutgoing: 4000,
                                 onConnect: () => {
-                                        console.log("✅ WebSocket connected successfully");
                                         setIsConnected(true);
                                         isConnectingRef.current = false;
 
@@ -69,7 +63,6 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                                                 if (!clientRef.current?.connected) return;
 
                                                 const destination = `/topic/room/${roomId}`;
-                                                console.log("🔄 Re-subscribing to:", destination);
 
                                                 const handler = messageHandlersRef.current.get(roomId);
                                                 if (handler) {
@@ -80,8 +73,8 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                                                                                 try {
                                                                                         const messageData: MessageDTO = JSON.parse(message.body);
                                                                                         handler(messageData);
-                                                                                } catch (error) {
-                                                                                        console.error("❌ Error parsing message:", error);
+                                                                                } catch {
+                                                                                        // Silent error handling
                                                                                 }
                                                                         }
                                                                 );
@@ -89,25 +82,21 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                                                                         roomId,
                                                                         unsubscribe: newSub.unsubscribe,
                                                                 });
-                                                                console.log("✅ Re-subscribed to room:", roomId);
-                                                        } catch (error) {
-                                                                console.error("❌ Error re-subscribing to room:", error);
+                                                        } catch {
+                                                                // Silent error handling
                                                         }
                                                 }
                                         });
                                 },
-                                onStompError: (frame) => {
-                                        console.error("❌ STOMP error:", frame);
+                                onStompError: () => {
                                         setIsConnected(false);
                                         isConnectingRef.current = false;
                                 },
                                 onWebSocketClose: () => {
-                                        console.log("🔌 WebSocket closed");
                                         setIsConnected(false);
                                         isConnectingRef.current = false;
                                 },
                                 onDisconnect: () => {
-                                        console.log("🔌 WebSocket disconnected");
                                         setIsConnected(false);
                                         isConnectingRef.current = false;
                                 },
@@ -115,8 +104,7 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
 
                         clientRef.current = client;
                         client.activate();
-                } catch (error) {
-                        console.error("❌ Failed to connect WebSocket:", error);
+                } catch {
                         setIsConnected(false);
                         isConnectingRef.current = false;
                 }
@@ -124,7 +112,6 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
 
         // Disconnect WebSocket when user logs out
         const disconnect = useCallback(() => {
-                console.log("🔌 Disconnecting WebSocket on logout...");
                 setIsConnected(false); // Set to false immediately
                 isConnectingRef.current = false;
                 
@@ -133,8 +120,8 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                         subscriptionsRef.current.forEach((sub) => {
                                 try {
                                         sub.unsubscribe();
-                                } catch (error) {
-                                        console.error("Error unsubscribing:", error);
+                                } catch {
+                                        // Silent error handling
                                 }
                         });
                         subscriptionsRef.current.clear();
@@ -143,8 +130,8 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                         // Disconnect client
                         try {
                                 clientRef.current.deactivate();
-                        } catch (error) {
-                                console.error("Error deactivating client:", error);
+                        } catch {
+                                // Silent error handling
                         }
                         clientRef.current = null;
                 }
@@ -154,13 +141,11 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
         const subscribeRoom = useCallback(
                 (roomId: string, onMessageReceived: (message: MessageDTO) => void) => {
                         if (!roomId) {
-                                console.warn("⚠️ Cannot subscribe: roomId is null");
                                 return () => {}; // Return empty unsubscribe function
                         }
 
                         // If already subscribed, just update handler
                         if (subscriptionsRef.current.has(roomId)) {
-                                console.log("🔄 Room already subscribed, updating handler:", roomId);
                                 messageHandlersRef.current.set(roomId, onMessageReceived);
                                 return subscriptionsRef.current.get(roomId)!.unsubscribe;
                         }
@@ -169,7 +154,6 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                         messageHandlersRef.current.set(roomId, onMessageReceived);
 
                         if (!clientRef.current?.connected) {
-                                console.warn("⚠️ WebSocket not connected yet, will subscribe when connected:", roomId);
                                 return () => {
                                         subscriptionsRef.current.delete(roomId);
                                         messageHandlersRef.current.delete(roomId);
@@ -177,17 +161,12 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                         }
 
                         const destination = `/topic/room/${roomId}`;
-                        console.log("📡 Subscribing to room:", destination);
 
                         try {
                                 const subscription = clientRef.current.subscribe(destination, (message: IMessage) => {
                                         try {
-                                                console.log("✅ Raw STOMP message received:", {
-                                                        destination: message.headers.destination,
-                                                        body: message.body,
-                                                });
                                                 const messageData: MessageDTO = JSON.parse(message.body);
-                                                console.log("✅ Parsed message data:", messageData);
+                                                console.log("📬 Received message:", messageData.content);
                                                 
                                                 // Call the stored handler for this room
                                                 const storedHandler = messageHandlersRef.current.get(roomId);
@@ -197,8 +176,8 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                                                         // Fallback: call the passed handler if stored handler not found
                                                         onMessageReceived(messageData);
                                                 }
-                                        } catch (error) {
-                                                console.error("❌ Error parsing message:", error);
+                                        } catch {
+                                                // Silent error handling
                                         }
                                 });
 
@@ -207,10 +186,8 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                                         unsubscribe: subscription.unsubscribe,
                                 });
 
-                                console.log("✅ Subscribed to room:", roomId);
                                 return subscription.unsubscribe;
-                        } catch (error) {
-                                console.error("❌ Error subscribing to room:", error);
+                        } catch {
                                 return () => {};
                         }
                 },
@@ -225,9 +202,8 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                                 subscription.unsubscribe();
                                 subscriptionsRef.current.delete(roomId);
                                 messageHandlersRef.current.delete(roomId);
-                                console.log("✅ Unsubscribed from room:", roomId);
-                        } catch (error) {
-                                console.error("❌ Error unsubscribing from room:", error);
+                        } catch {
+                                // Silent error handling
                         }
                 }
         }, []);
@@ -236,7 +212,6 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
         const sendMessage = useCallback(
                 (roomId: string, content: string, receiverId: string) => {
                         if (!clientRef.current?.connected || !userId) {
-                                console.error("❌ WebSocket not connected");
                                 return;
                         }
 
@@ -247,19 +222,14 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                                 content,
                         };
 
-                        console.log("📤 Sending message via WebSocket:", {
-                                destination: "/app/chat.sendMessage",
-                                message,
-                        });
-
                         try {
                                 clientRef.current.publish({
                                         destination: "/app/chat.sendMessage",
                                         body: JSON.stringify(message),
                                 });
-                                console.log("✅ Message sent successfully");
-                        } catch (error) {
-                                console.error("❌ Error sending message:", error);
+                                console.log("📤 Sent message:", content);
+                        } catch {
+                                // Silent error handling
                         }
                 },
                 [userId]
