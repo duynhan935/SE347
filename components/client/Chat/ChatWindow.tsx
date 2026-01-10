@@ -146,16 +146,6 @@ export default function ChatWindow({
                                         </div>
                                         <div className="flex-1">
                                                 <h3 className="font-semibold text-gray-900">{partnerName}</h3>
-                                                <div className="flex items-center gap-2">
-                                                        <div
-                                                                className={`w-2 h-2 rounded-full ${
-                                                                        isConnected ? "bg-green-500" : "bg-gray-400"
-                                                                }`}
-                                                        />
-                                                        <span className="text-xs text-gray-500">
-                                                                {isConnected ? "Online" : "Offline"}
-                                                        </span>
-                                                </div>
                                         </div>
                                 </div>
                         </div>
@@ -163,8 +153,7 @@ export default function ChatWindow({
                         {/* Messages */}
                         <div 
                                 ref={messagesContainerRef}
-                                className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
-                                style={{ minHeight: 0 }} // Ensure flex child can shrink
+                                className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 min-h-0"
                         >
                                 {isLoading && messages.length === 0 ? (
                                         <div className="flex items-center justify-center h-full min-h-[400px]">
