@@ -62,8 +62,7 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                         // Cache the result
                         partnerInfoCacheRef.current[partnerId] = info;
                         return info;
-                } catch (error) {
-                        console.error("Error fetching partner info:", error);
+                } catch {
                         const info = { name: `User ${partnerId.slice(0, 8)}`, fetched: true };
                         // Cache even on error to avoid repeated failed calls
                         partnerInfoCacheRef.current[partnerId] = info;
@@ -124,14 +123,13 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                                                         ? roomIdParts[1]
                                                                         : roomIdParts[0];
                                                         if (partner !== partnerId) {
-                                                                setPartnerId(partner);
-                                                                const info = await getPartnerInfo(partner);
-                                                                setPartnerName(info.name);
+                                                        setPartnerId(partner);
+                                                        const info = await getPartnerInfo(partner);
+                                                        setPartnerName(info.name);
                                                         }
                                                 }
                                         }
-                                } catch (error) {
-                                        console.error("Error reloading rooms:", error);
+                                } catch {
                                         // Try to extract partner ID from roomId as fallback
                                         if (initialRoomId && !partnerId) {
                                                 const roomIdParts = initialRoomId.split("_");
@@ -187,7 +185,6 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                         
                         // Check if this message was already processed (from direct subscription or event or backend load)
                         if (processedMessagesRef.current.has(messageKey)) {
-                                console.log("⚠️ Duplicate message detected (already processed via processedMessagesRef), ignoring:", message);
                                 return;
                         }
 
@@ -202,113 +199,65 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                 processedMessagesRef.current = new Set(recentKeys);
                         }
 
-                        console.log("✅ Message received from WebSocket for selected room:", message);
                         setMessages((prev) => {
-                                // CRITICAL: Check for exact duplicates FIRST (same content + sender + receiver + timestamp within 1 second)
-                                // This prevents React StrictMode or double renders from adding the same message twice
-                                const messageTime = new Date(message.timestamp || new Date()).getTime();
-                                const exactDuplicate = prev.find((m) => {
+                                const messageTimestamp = message.timestamp || new Date().toISOString();
+                                const messageTime = new Date(messageTimestamp).getTime();
+
+                                // Filter và kiểm tra duplicate dựa trên senderId, receiverId, content và timestamp
+                                // Nếu message đã tồn tại trong list thì không thêm duplicate
+                                const existingMessage = prev.find((m) => {
                                         const mTime = new Date(m.timestamp).getTime();
-                                        // Exact match: same content, sender, receiver, and timestamp within 1 second
+                                        const timeDiff = Math.abs(mTime - messageTime);
+                                        
+                                        // Match chính xác: cùng senderId, receiverId, content và timestamp trong cùng 1 giây
                                         return (
-                                                m.content === message.content &&
                                                 m.senderId === message.senderId &&
                                                 m.receiverId === message.receiverId &&
-                                                Math.abs(mTime - messageTime) < 1000 // 1 second for exact duplicate
+                                                m.content === message.content &&
+                                                timeDiff < 1000 // Cùng 1 giây = cùng 1 message
                                         );
                                 });
 
-                                if (exactDuplicate) {
-                                        console.log("⚠️ Exact duplicate message detected (same content + timestamp within 1s), ignoring:", message);
-                                        return prev; // Don't add duplicate
+                                // Nếu message đã tồn tại, không thêm duplicate
+                                if (existingMessage) {
+                                        return prev;
                                 }
 
-                                // If this is a message we sent (optimistic update case), find and replace the optimistic message
+                                // Nếu là message từ chính mình, tìm optimistic message để update thay vì thêm mới
                                 if (message.senderId === currentUserId) {
-                                        // Check if optimistic message exists (with temp- id and same content)
                                         const optimisticIndex = prev.findIndex(
                                                 (m) =>
                                                         m.id.startsWith("temp-") &&
-                                                        m.content === message.content &&
                                                         m.senderId === message.senderId &&
                                                         m.receiverId === message.receiverId &&
-                                                        // Check timestamp within 60 seconds (for optimistic messages)
-                                                        Math.abs(new Date(m.timestamp).getTime() - messageTime) < 60000
+                                                        m.content === message.content
                                         );
 
                                         if (optimisticIndex >= 0) {
-                                                console.log("🔄 Replacing optimistic message with real message from WebSocket");
-                                                // Replace optimistic message with real message from WebSocket
-                                                const newMessage: Message = {
-                                                        id: `temp-${Date.now()}`, // Use temp ID
-                                                        roomId: message.roomId,
-                                                        senderId: message.senderId,
-                                                        receiverId: message.receiverId,
-                                                        content: message.content,
-                                                        timestamp: message.timestamp || new Date().toISOString(),
-                                                        read: false,
-                                                };
+                                                // Update optimistic message với timestamp từ server
                                                 const updated = [...prev];
-                                                updated[optimisticIndex] = newMessage;
-                                                // Sort messages by timestamp (oldest first) to ensure correct order
+                                                updated[optimisticIndex] = {
+                                                        ...updated[optimisticIndex],
+                                                        timestamp: messageTimestamp,
+                                                };
+                                                // Sort lại theo timestamp
                                                 return updated.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-                                        }
-                                        
-                                        // If optimistic message not found, check if we already have this exact message
-                                        // (user might have sent the same message twice, or it was already processed)
-                                        const duplicateExists = prev.some((m) => {
-                                                const mTime = new Date(m.timestamp).getTime();
-                                                // Match by same content, sender, receiver, and similar timestamp (within 5 minutes)
-                                                // This catches duplicates even if timestamps differ slightly
-                                                return (
-                                                        m.content === message.content &&
-                                                        m.senderId === message.senderId &&
-                                                        m.receiverId === message.receiverId &&
-                                                        Math.abs(mTime - messageTime) < 300000 // 5 minutes window
-                                                );
-                                        });
-
-                                        if (duplicateExists) {
-                                                console.log("⚠️ Duplicate message detected (from us, already in list), ignoring:", message);
-                                                return prev;
-                                        }
-                                } else {
-                                        // For messages from others: check if exact duplicate exists
-                                        // Use stricter check: same content + sender + receiver + timestamp within 5 minutes
-                                        const duplicateExists = prev.some((m) => {
-                                                const mTime = new Date(m.timestamp).getTime();
-                                                // Match by same content, sender, receiver, and similar timestamp (within 5 minutes)
-                                                // This prevents duplicate messages from being added
-                                                return (
-                                                        m.content === message.content &&
-                                                        m.senderId === message.senderId &&
-                                                        m.receiverId === message.receiverId &&
-                                                        Math.abs(mTime - messageTime) < 300000 // 5 minutes window (for messages from others)
-                                                );
-                                        });
-
-                                        if (duplicateExists) {
-                                                console.log("⚠️ Duplicate message detected (from others, already in list), ignoring:", message);
-                                                // Message already exists in the list, don't add duplicate
-                                                return prev;
                                         }
                                 }
 
-                                // Convert MessageDTO to Message format
+                                // Thêm message mới vào list
                                 const newMessage: Message = {
-                                        id: `temp-${Date.now()}`, // Use temp ID, will be replaced if message has real ID from backend
+                                        id: `temp-${Date.now()}`,
                                         roomId: message.roomId,
                                         senderId: message.senderId,
                                         receiverId: message.receiverId,
                                         content: message.content,
-                                        timestamp: message.timestamp || new Date().toISOString(),
-                                        read: false, // Will be updated when loaded from backend
+                                        timestamp: messageTimestamp,
+                                        read: false,
                                 };
 
-                                console.log("➕ Adding new message from WebSocket");
-                                // If no match found, add as new message and sort by timestamp
+                                // Thêm message và sort theo timestamp
                                 const updated = [...prev, newMessage];
-                                // Sort messages by timestamp (oldest first) to ensure correct order
                                 return updated.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
                         });
                 },
@@ -325,11 +274,10 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
 
                 const handleGlobalMessage = (event: CustomEvent<MessageDTO>) => {
                         const message = event.detail;
-                        console.log("📬 Received message from ChatProvider event:", message, "Selected room:", selectedRoomIdRef.current);
+                        console.log("📬 Received message:", message.content);
                         
                         // Only handle messages for the currently selected room
                         if (message.roomId !== selectedRoomIdRef.current) {
-                                console.log("⏭️ Message is not for selected room, ignoring (roomId:", message.roomId, "selected:", selectedRoomIdRef.current, ")");
                                 return;
                         }
 
@@ -344,7 +292,6 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                         
                         // Check if we've already processed this exact message for this room
                         if (processedSet.has(messageKey)) {
-                                console.log("⚠️ Duplicate message detected (already processed for this room), ignoring:", message);
                                 return;
                         }
 
@@ -358,17 +305,14 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                 processedMessagesPerRoomRef.current.set(message.roomId, new Set(recentKeys));
                         }
 
-                        console.log("✅ Message is for selected room, processing through handleMessageReceived...");
                         // Call handleMessageReceived to update messages in ChatWindow
                         // processedMessagesRef (global) and processedMessagesPerRoomRef (per room) will prevent duplicates
                         handleMessageReceived(message);
                 };
 
-                console.log("👂 Adding listener for chat-message-received event for room:", selectedRoomId);
                 window.addEventListener("chat-message-received", handleGlobalMessage as EventListener);
 
                 return () => {
-                        console.log("🔇 Removing listener for chat-message-received event for room:", selectedRoomId);
                         window.removeEventListener("chat-message-received", handleGlobalMessage as EventListener);
                 };
         }, [selectedRoomId, handleMessageReceived]);
@@ -388,11 +332,9 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
 
                         // Prevent duplicate loads for the same room
                         if (lastLoadedRoomIdRef.current === selectedRoomId) {
-                                console.log("⏭️ Room already loaded, skipping duplicate load:", selectedRoomId);
                                 return;
                         }
 
-                        console.log("📥 Loading messages for room:", selectedRoomId);
                         lastLoadedRoomIdRef.current = selectedRoomId;
                         processedMessagesRef.current.clear(); // Clear global processed messages when switching rooms
                         // Clear processed messages for this room when loading messages
@@ -402,7 +344,6 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                 const response = await chatApi.getMessagesByRoomId(selectedRoomId, 0);
                                 // Backend returns Page<MessageFromBackend>, extract content array
                                 const loadedMessages = response.data?.content || [];
-                                console.log("📥 Loaded messages from backend:", loadedMessages.length);
                                 // Map messages to ensure roomId is always set (extract from room object if needed)
                                 const mappedMessages: Message[] = loadedMessages.map((msg) => ({
                                         id: msg.id,
@@ -422,7 +363,6 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                         const messageKey = `${msg.roomId}-${msg.content}-${msg.senderId}-${msg.receiverId}-${Math.floor(new Date(msg.timestamp).getTime() / 1000)}`;
                                         processedMessagesRef.current.add(messageKey);
                                 });
-                                console.log("✅ Loaded", sortedMessages.length, "messages and marked them as processed");
                                 
                                 // Set messages AFTER marking them as processed to ensure consistency
                                 // This ensures that if a WebSocket message arrives at the same time, it will be checked against processedMessagesRef
@@ -438,7 +378,7 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                         
                                         // Only update partnerId if it changed
                                         if (partner !== partnerId) {
-                                                setPartnerId(partner);
+                                        setPartnerId(partner);
                                         }
 
                                         // Get partner name (only if not cached)
@@ -446,8 +386,8 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                         if (cachedInfo?.fetched) {
                                                 setPartnerName(cachedInfo.name);
                                         } else {
-                                                const info = await getPartnerInfo(partner);
-                                                setPartnerName(info.name);
+                                        const info = await getPartnerInfo(partner);
+                                        setPartnerName(info.name);
                                         }
                                 } else if (selectedRoomId) {
                                         // Room not in list yet (might be newly created)
@@ -472,13 +412,11 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                                 // Reset unread count for this room
                                                 const { resetUnreadCount } = useChatStore.getState();
                                                 resetUnreadCount(selectedRoomId);
-                                        } catch (readError) {
-                                                // Log but don't show error to user - not critical
-                                                console.warn("Failed to mark messages as read:", readError);
+                                        } catch {
+                                                // Silent error handling - not critical
                                         }
                                 }
-                        } catch (error) {
-                                console.error("Error loading messages:", error);
+                        } catch {
                                 toast.error("Failed to load messages");
                                 // Reset ref on error so we can retry
                                 lastLoadedRoomIdRef.current = null;
@@ -548,15 +486,12 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                 // Backend returns roomId in correct format (sorted userIds)
                                 const response = await chatApi.getRoomId(currentUserId, receiverId);
                                 actualRoomId = response.data.roomId;
-                                console.log("✅ Room ID confirmed:", actualRoomId, "Selected:", selectedRoomId);
                                 
                                 // Update selectedRoomId if it's different (shouldn't happen, but just in case)
                                 if (actualRoomId !== selectedRoomId) {
-                                        console.warn("⚠️ RoomId mismatch! Using:", actualRoomId);
                                         setSelectedRoomId(actualRoomId);
                                 }
-                        } catch (error) {
-                                console.error("❌ Error ensuring room exists:", error);
+                        } catch {
                                 toast.error("Failed to create chat room. Please try again.");
                                 return; // Don't send message if room creation fails
                         }
@@ -583,7 +518,6 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                                 Math.abs(new Date(m.timestamp).getTime() - new Date(optimisticMessage.timestamp).getTime()) < 1000
                                 );
                                 if (exists) {
-                                        console.log("⚠️ Optimistic message already exists, skipping duplicate");
                                         return prev;
                                 }
                                 // Add optimistic message and sort
@@ -601,7 +535,7 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                         }
 
                         // Send via WebSocket with correct roomId
-                        console.log("📤 Sending message via WebSocket:", { content, receiverId, roomId: actualRoomId });
+                        console.log("📤 Sent message:", content);
                         sendMessageToSocket(actualRoomId, content, receiverId);
 
                         // Note: No need to reload messages manually here because:

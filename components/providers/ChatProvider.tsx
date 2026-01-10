@@ -56,7 +56,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
                 const loadRoomsAndSubscribe = async () => {
                         try {
-                                console.log("📥 Loading all rooms for user:", user.id);
                                 const response = await chatApi.getAllRoomsByUserId(user.id);
                                 const rooms: ChatRoom[] = response.data?.content || [];
                                 setRooms(rooms);
@@ -71,8 +70,8 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                                                         if (unreadCount > 0) {
                                                                 updateUnreadCount(room.id, unreadCount);
                                                         }
-                                                } catch (error) {
-                                                        console.error(`Error fetching unread count for room ${room.id}:`, error);
+                                                } catch {
+                                                        // Silent error handling
                                                 }
                                         })
                                 );
@@ -85,7 +84,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                                         
                                         // Check if this message was already processed (from WebSocket duplicate or previous processing)
                                         if (processedMessagesRef.current.has(messageKey)) {
-                                                console.log("⚠️ Duplicate message detected in ChatProvider (already processed), ignoring:", message);
                                                 return;
                                         }
                                         
@@ -99,7 +97,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                                                 processedMessagesRef.current = new Set(recentKeys);
                                         }
                                         
-                                        console.log("📨 Message received from room (global subscription):", message.roomId, message);
+                                        console.log("📬 Received message:", message.content);
                                         
                                         // Check if room exists in current rooms list
                                         const currentRooms = useChatStore.getState().rooms;
@@ -108,7 +106,6 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                                         // If room doesn't exist (new room created by another user), reload rooms from backend
                                         // Backend filters rooms with lastMessage IS NOT NULL, so new room will appear after first message
                                         if (!roomExists && !reloadingRoomsRef.current) {
-                                                console.log("🆕 New room detected (not in list), reloading rooms from backend:", message.roomId);
                                                 reloadingRoomsRef.current = true;
                                                 try {
                                                         const response = await chatApi.getAllRoomsByUserId(user.id);
@@ -118,12 +115,11 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                                                         // Subscribe to the new room if not already subscribed
                                                         const newRoom = updatedRooms.find((r) => r.id === message.roomId);
                                                         if (newRoom && !subscribedRoomsRef.current.has(message.roomId)) {
-                                                                console.log("📡 Subscribing to new room:", message.roomId);
                                                                 subscribedRoomsRef.current.add(message.roomId);
                                                                 subscribeRoom(message.roomId, handleRoomMessage);
                                                         }
-                                                } catch (error) {
-                                                        console.error("Error reloading rooms for new room:", error);
+                                                } catch {
+                                                        // Silent error handling
                                                 } finally {
                                                         reloadingRoomsRef.current = false;
                                                 }
@@ -144,12 +140,9 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                                         // This ensures real-time updates for the selected room without duplicate subscriptions
                                         // This is critical for real-time message updates - messages will appear immediately without refresh
                                         if (typeof window !== "undefined") {
-                                                console.log("📤 Dispatching chat-message-received event for room:", message.roomId, "Message:", message);
                                                 window.dispatchEvent(
                                                         new CustomEvent("chat-message-received", { detail: message })
                                                 );
-                                        } else {
-                                                console.warn("⚠️ Window is undefined, cannot dispatch chat-message-received event");
                                         }
                                         
                                         // Increment unread count if message is for current user
@@ -179,13 +172,12 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                                 // Subscribe to all rooms to receive messages
                                 rooms.forEach((room) => {
                                         if (!subscribedRoomsRef.current.has(room.id)) {
-                                                console.log("📡 Subscribing to all rooms - room:", room.id);
                                                 subscribedRoomsRef.current.add(room.id);
                                                 subscribeRoom(room.id, handleRoomMessage);
                                         }
                                 });
-                        } catch (error) {
-                                console.error("Error loading rooms:", error);
+                        } catch {
+                                // Silent error handling
                         }
                 };
 
