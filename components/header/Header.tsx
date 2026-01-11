@@ -40,7 +40,11 @@ export default function Header() {
                                         {/* Right: Navigation Links + Cart + User */}
                                         <div className="flex items-center gap-4 lg:gap-6 flex-shrink-0">
                                                 <NavigationLinks />
-                                                <NavActions />
+                                                {/* Desktop: Show NavActions (icons + user dropdown) */}
+                                                <div className="hidden lg:flex items-center gap-3 lg:gap-4">
+                                                        <NavActions />
+                                                </div>
+                                                {/* Mobile: Show MobileMenu (icons + hamburger menu) */}
                                                 <MobileMenu />
                                         </div>
                                 </div>

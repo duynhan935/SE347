@@ -1,6 +1,5 @@
 "use client";
 
-import { authApi } from "@/lib/api/authApi";
 import { MessageDTO } from "@/types";
 import { Client, IMessage } from "@stomp/stompjs";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -35,8 +34,9 @@ export function useWebSocket({ roomId, userId, onMessageReceived, onError }: Use
         const client = new Client({
             webSocketFactory: () => socket,
             reconnectDelay: 5000,
-            heartbeatIncoming: 4000,
-            heartbeatOutgoing: 4000,
+            // Server sends heartbeat every 20s, expects client response within 30s
+            heartbeatIncoming: 20000,
+            heartbeatOutgoing: 25000,
             onConnect: () => {
                 console.log("WebSocket connected");
                 setIsConnected(true);

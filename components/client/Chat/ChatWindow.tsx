@@ -13,6 +13,7 @@ interface ChatWindowProps {
         onSendMessage: (content: string, receiverId: string) => void;
         isConnected: boolean;
         isLoading?: boolean;
+        onMarkAsRead?: () => void; // Callback to mark messages as read
 }
 
 export default function ChatWindow({
@@ -23,6 +24,7 @@ export default function ChatWindow({
         onSendMessage,
         isConnected,
         isLoading = false,
+        onMarkAsRead,
 }: ChatWindowProps) {
         const [inputValue, setInputValue] = useState("");
         const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -31,6 +33,7 @@ export default function ChatWindow({
         const isInitialLoadRef = useRef(true);
         const lastMessageCountRef = useRef(0);
         const shouldAutoScrollRef = useRef(true);
+        const hasMarkedAsReadRef = useRef(false);
 
         // Check if user is near bottom of scroll container
         const isNearBottom = () => {
@@ -89,6 +92,24 @@ export default function ChatWindow({
                 }
         }, [messages, isLoading]);
 
+        // Mark messages as read when user interacts with chat window (click input, focus, etc.)
+        useEffect(() => {
+                if (!isLoading && onMarkAsRead && !hasMarkedAsReadRef.current) {
+                        // Mark as read when component is ready (after loading)
+                        const timer = setTimeout(() => {
+                                onMarkAsRead();
+                                hasMarkedAsReadRef.current = true;
+                        }, 300); // Small delay to ensure everything is loaded
+
+                        return () => clearTimeout(timer);
+                }
+        }, [isLoading, onMarkAsRead]);
+
+        // Reset hasMarkedAsReadRef when room changes (detected by partnerId change)
+        useEffect(() => {
+                hasMarkedAsReadRef.current = false;
+        }, [partnerId]);
+
         // Track scroll position to determine if user scrolled up
         useEffect(() => {
                 const container = messagesContainerRef.current;
@@ -129,9 +150,25 @@ export default function ChatWindow({
 
         const formatMessageTime = (timestamp: string) => {
                 try {
-                        const date = new Date(timestamp);
-                        return format(date, "HH:mm");
-                } catch {
+                        // Backend sends timestamp without timezone (LocalDateTime from Java)
+                        // Timestamp format: "2026-01-11T12:21:59" (no timezone)
+                        // Backend stores in UTC, so we need to parse it as UTC
+                        // If timestamp doesn't have timezone indicator, append 'Z' to treat as UTC
+                        let timestampToParse = timestamp.trim();
+                        
+                        // Check if timestamp already has timezone (ends with Z, +, or -)
+                        if (!timestampToParse.endsWith('Z') && 
+                            !timestampToParse.match(/[+-]\d{2}:\d{2}$/) && 
+                            !timestampToParse.match(/[+-]\d{4}$/)) {
+                                // Append 'Z' to treat as UTC
+                                timestampToParse = timestampToParse + 'Z';
+                        }
+                        
+                        const date = new Date(timestampToParse);
+                        const formatted = format(date, "HH:mm");
+                        return formatted;
+                } catch (error) {
+                        console.error("⏰ formatMessageTime - Error:", error, "timestamp:", timestamp);
                         return "";
                 }
         };
@@ -216,6 +253,20 @@ export default function ChatWindow({
                                                 value={inputValue}
                                                 onChange={(e) => setInputValue(e.target.value)}
                                                 onKeyPress={handleKeyPress}
+                                                onFocus={() => {
+                                                        // Mark as read when user clicks/focuses on input
+                                                        if (onMarkAsRead && !hasMarkedAsReadRef.current) {
+                                                                onMarkAsRead();
+                                                                hasMarkedAsReadRef.current = true;
+                                                        }
+                                                }}
+                                                onClick={() => {
+                                                        // Mark as read when user clicks on input
+                                                        if (onMarkAsRead && !hasMarkedAsReadRef.current) {
+                                                                onMarkAsRead();
+                                                                hasMarkedAsReadRef.current = true;
+                                                        }
+                                                }}
                                                 placeholder={isConnected ? "Type a message..." : "Connecting..."}
                                                 disabled={!isConnected}
                                                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
