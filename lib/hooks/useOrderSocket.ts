@@ -32,6 +32,16 @@ interface UseOrderSocketOptions {
 export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatusUpdate }: UseOrderSocketOptions) {
     const [isConnected, setIsConnected] = useState(false);
     const socketRef = useRef<Socket | null>(null);
+    const onNewOrderRef = useRef<UseOrderSocketOptions["onNewOrder"]>(onNewOrder);
+    const onOrderStatusUpdateRef = useRef<UseOrderSocketOptions["onOrderStatusUpdate"]>(onOrderStatusUpdate);
+
+    useEffect(() => {
+        onNewOrderRef.current = onNewOrder;
+    }, [onNewOrder]);
+
+    useEffect(() => {
+        onOrderStatusUpdateRef.current = onOrderStatusUpdate;
+    }, [onOrderStatusUpdate]);
 
     useEffect(() => {
         // Connect to order service socket (port 8082 from backend)
@@ -68,20 +78,20 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
         // Listen for new orders (merchant)
         socket.on("new-order", (notification: OrderNotification) => {
             console.log("[Order Socket] New order received:", notification);
-            onNewOrder?.(notification);
+            onNewOrderRef.current?.(notification);
         });
 
         // Listen for order status updates (user)
         socket.on("order-status-updated", (notification: OrderNotification) => {
             console.log("[Order Socket] Order status updated:", notification);
-            onOrderStatusUpdate?.(notification);
+            onOrderStatusUpdateRef.current?.(notification);
         });
 
         return () => {
             socket.disconnect();
             socketRef.current = null;
         };
-    }, [restaurantId, userId, onNewOrder, onOrderStatusUpdate]);
+    }, [restaurantId, userId]);
 
     return {
         isConnected,

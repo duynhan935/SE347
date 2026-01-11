@@ -451,6 +451,21 @@ export default function PaymentPageClient() {
                 (firstOrder as { id?: string; orderId?: string }).id ||
                 (firstOrder as { id?: string; orderId?: string }).orderId;
 
+            const firstOrderRestaurantId =
+                (firstOrder as { restaurantId?: string }).restaurantId ||
+                (firstOrder as { restaurant?: { id?: string } }).restaurant?.id;
+
+            const firstOrderTotal = Number(
+                (firstOrder as { finalAmount?: number; totalAmount?: number }).finalAmount ||
+                    (firstOrder as { finalAmount?: number; totalAmount?: number }).totalAmount ||
+                    totalAmount ||
+                    0
+            );
+
+            // Payment-service wallet crediting depends on metadata. Provide it explicitly from FE.
+            // NOTE: Payment-service currently only supports a single merchant per payment intent.
+            const amountForMerchant = Math.round(firstOrderTotal * 0.9);
+
             if (!orderId) {
                 throw new Error("Không thể lấy thông tin đơn hàng để tạo thanh toán.");
             }
@@ -458,9 +473,17 @@ export default function PaymentPageClient() {
             const paymentResponse = await paymentApi.createPayment({
                 orderId: orderId,
                 userId: extendedUser.id,
-                amount: totalAmount,
+                // Backend payment service is single-order centric. Use the first order's amount.
+                amount: firstOrderTotal || totalAmount,
                 paymentMethod: "card",
                 currency: "USD",
+                metadata: {
+                    // Provide both naming variants to be compatible with backend implementations.
+                    merchantId: firstOrderRestaurantId,
+                    restaurantId: firstOrderRestaurantId,
+                    amountForMerchant,
+                    amountForRestaurant: amountForMerchant,
+                },
             });
 
             const paymentData = paymentResponse.data;

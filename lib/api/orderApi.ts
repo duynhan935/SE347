@@ -134,47 +134,26 @@ export const orderApi = {
     // Get orders by merchant
     getOrdersByMerchant: async (merchantId: string): Promise<Order[]> => {
         try {
-            // Get all restaurants of this merchant
+            // Business rule: 1 merchant = 1 restaurant
             const restaurantsResponse = await restaurantApi.getRestaurantByMerchantId(merchantId);
-            const restaurants = restaurantsResponse.data || [];
+            const data = restaurantsResponse.data;
+            const restaurants = Array.isArray(data) ? data : data ? [data] : [];
 
-            if (!restaurants || restaurants.length === 0) {
-                return [];
-            }
+            const firstRestaurant = restaurants[0] as { id?: string; _id?: string } | undefined;
+            const restaurantId = firstRestaurant?.id || firstRestaurant?._id;
 
-            // Get orders for each restaurant and combine them
-            // Use Promise.allSettled to handle partial failures
-            const ordersPromises = restaurants.map((restaurant: { id?: string; _id?: string }) =>
-                orderApi
-                    .getOrdersByRestaurant(restaurant.id || restaurant._id || "", merchantId)
-                    .then((r) => r.orders)
-                    .catch((error) => {
-                        console.error(`Failed to get orders for restaurant ${restaurant.id || restaurant._id}:`, error);
-                        return []; // Return empty array on error
-                    })
-            );
+            if (!restaurantId) return [];
 
-            const ordersResults = await Promise.all(ordersPromises);
-            const allOrders: Order[] = ordersResults.flat();
+            const { orders } = await orderApi.getOrdersByRestaurant(restaurantId, merchantId);
 
-            // Remove duplicates and sort by createdAt (newest first)
-            const uniqueOrders = Array.from(new Map(allOrders.map((order: Order) => [order.orderId, order])).values());
-
-            return uniqueOrders.sort((a: Order, b: Order) => {
+            return orders.sort((a: Order, b: Order) => {
                 const dateA = new Date(a.createdAt).getTime();
                 const dateB = new Date(b.createdAt).getTime();
                 return dateB - dateA;
             });
         } catch (error) {
             console.error("Failed to get orders by merchant:", error);
-            // Fallback: try to get all orders and filter (if user has permission)
-            try {
-                const allOrders = await orderApi.getAllOrders();
-                return allOrders.orders;
-            } catch (fallbackError) {
-                console.error("Fallback also failed:", fallbackError);
-                return [];
-            }
+            return [];
         }
     },
 
