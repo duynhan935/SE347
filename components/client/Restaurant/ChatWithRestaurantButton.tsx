@@ -45,12 +45,27 @@ export default function ChatWithRestaurantButton({
 
                 setIsLoading(true);
                 try {
+                        // Log values for debugging
+                        console.log("Starting chat with:", { userId: user.id, merchantId });
+                        
+                        // Validate merchantId
+                        if (!merchantId || merchantId.trim() === "") {
+                                toast.error("Không tìm thấy thông tin nhà hàng");
+                                setIsLoading(false);
+                                return;
+                        }
+                        
                         const roomId = await startChat(user.id, merchantId);
                         // Navigate to chat page with the roomId
                         router.push(`/chat?roomId=${roomId}`);
                 } catch (error) {
                         console.error("Error starting chat:", error);
-                        toast.error("Không thể tạo phòng chat. Vui lòng thử lại sau.");
+                        // Show more specific error message
+                        const axiosError = error as { response?: { data?: { message?: string } }; message?: string };
+                        const errorMessage = axiosError?.response?.data?.message || 
+                                           axiosError?.message || 
+                                           "Không thể tạo phòng chat. Vui lòng thử lại sau.";
+                        toast.error(errorMessage);
                 } finally {
                         setIsLoading(false);
                 }

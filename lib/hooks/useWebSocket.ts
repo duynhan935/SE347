@@ -1,5 +1,6 @@
 "use client";
 
+import { authApi } from "@/lib/api/authApi";
 import { MessageDTO } from "@/types";
 import { Client, IMessage } from "@stomp/stompjs";
 import { useCallback, useEffect, useRef, useState } from "react";

@@ -2,7 +2,7 @@
 
 import { orderApi } from "@/lib/api/orderApi";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { Order, OrderStatus } from "@/types/order.type";
+import { Order } from "@/types/order.type";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -25,18 +25,18 @@ export default function OrderHistoryPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
 
-    // Format status for display
-    const formatStatus = (status: string): string => {
-        const statusMap: Record<string, string> = {
-            [OrderStatus.PENDING]: "Pending",
-            [OrderStatus.CONFIRMED]: "Confirmed",
-            [OrderStatus.PREPARING]: "Preparing",
-            [OrderStatus.READY]: "Ready",
-            [OrderStatus.COMPLETED]: "Completed",
-            [OrderStatus.CANCELLED]: "Cancelled",
+        // Format status for display
+        const formatStatus = (status: string): string => {
+                const statusMap: Record<string, string> = {
+                        pending: "Pending",
+                        confirmed: "Confirmed",
+                        preparing: "Preparing",
+                        ready: "Ready",
+                        completed: "Completed",
+                        cancelled: "Cancelled",
+                };
+                return statusMap[status.toLowerCase()] || status;
         };
-        return statusMap[status] || status;
-    };
 
     // Get status badge color classes
     const getStatusBadgeClass = (status: string): string => {
@@ -139,42 +139,45 @@ export default function OrderHistoryPage() {
                 <p className="text-gray-500">View all your past orders</p>
             </div>
 
-            {orders.length === 0 ? (
-                <div className="text-center py-12">
-                    <p className="text-gray-500 text-lg mb-4">No orders found</p>
-                    <Link href="/restaurants" className="text-sm font-semibold text-brand-purple hover:underline">
-                        Browse Restaurants →
-                    </Link>
+                        {orders.length === 0 ? (
+                                <div className="text-center py-12">
+                                        <p className="text-gray-500 text-lg mb-4">No orders found</p>
+                                        <Link
+                                                href="/restaurants"
+                                                className="text-sm font-semibold text-brand-purple hover:underline"
+                                        >
+                                                Browse Restaurants →
+                                        </Link>
+                                </div>
+                        ) : (
+                                <div className="space-y-4">
+                                        {orders.map((order) => (
+                                                <div
+                                                        key={order.uniqueKey}
+                                                        className="border p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow"
+                                                >
+                                                        <div className="flex-1">
+                                                                <p className="font-bold text-lg text-brand-black">{order.displayId}</p>
+                                                                <p className="text-sm text-gray-500">{order.date}</p>
+                                                                <p className="font-semibold text-brand-purple mt-1">{order.total}</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                                <span
+                                                                        className={`px-3 py-1 text-xs font-semibold rounded-full ${order.statusClass}`}
+                                                                >
+                                                                        {order.status}
+                                                                </span>
+                                                                <Link
+                                                                        href={`/orders/${order.id}`}
+                                                                        className="text-sm font-semibold text-brand-purple hover:underline"
+                                                                >
+                                                                        View Details
+                                                                </Link>
+                                                        </div>
+                                                </div>
+                                        ))}
+                                </div>
+                        )}
                 </div>
-            ) : (
-                <div className="space-y-4">
-                    {orders.map((order) => (
-                        <div
-                            key={order.uniqueKey}
-                            className="border p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow"
-                        >
-                            <div className="flex-1">
-                                <p className="font-bold text-lg text-brand-black">{order.displayId}</p>
-                                <p className="text-sm text-gray-500">{order.date}</p>
-                                <p className="font-semibold text-brand-purple mt-1">{order.total}</p>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${order.statusClass}`}>
-                                    {order.status}
-                                </span>
-                                {order.orderCode && (
-                                    <Link
-                                        href={`/orders/${order.id}`}
-                                        className="text-sm font-semibold text-brand-purple hover:underline"
-                                    >
-                                        View Details
-                                    </Link>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
+        );
 }

@@ -70,8 +70,8 @@ export function NotificationBell() {
                                 const previousStatus = lastOrderCheckRef.current.get(orderId);
                                 if (previousStatus && previousStatus !== currentStatus) {
                                         if (
-                                                previousStatus === OrderStatus.PENDING &&
-                                                currentStatus === OrderStatus.CONFIRMED
+                                                previousStatus === "pending" &&
+                                                currentStatus === "confirmed"
                                         ) {
                                                 useNotificationStore.getState().addNotification({
                                                         type: "ORDER_ACCEPTED",
@@ -81,8 +81,8 @@ export function NotificationBell() {
                                                         restaurantName: order.restaurant?.name,
                                                 });
                                         } else if (
-                                                previousStatus === OrderStatus.PENDING &&
-                                                currentStatus === OrderStatus.CANCELLED
+                                                previousStatus === "pending" &&
+                                                currentStatus === "cancelled"
                                         ) {
                                                 useNotificationStore.getState().addNotification({
                                                         type: "ORDER_REJECTED",
