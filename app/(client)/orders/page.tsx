@@ -3,6 +3,7 @@
 import OrdersPageContainer, { type OrdersPageOrder } from "@/components/client/Orders/OrdersPageContainer";
 import { orderApi } from "@/lib/api/orderApi";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useNotificationStore } from "@/stores/useNotificationStore";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -18,9 +19,11 @@ const OrdersPage = () => {
         const [orders, setOrders] = useState<OrdersPageOrder[]>([]);
         const [isLoading, setIsLoading] = useState(true);
         const userId = user?.id;
+        const { markAllAsRead } = useNotificationStore();
 
         const profileRequestedRef = useRef(false);
         const redirectRef = useRef(false);
+        const hasMarkedAsReadRef = useRef(false);
 
         const mapOrders = useCallback((apiOrders: unknown[]): OrdersPageOrder[] => {
                 return apiOrders.map((order, orderIndex) => {
@@ -151,6 +154,24 @@ const OrdersPage = () => {
                         fetchOrders();
                 }
         }, [authLoading, isAuthenticated, userId, isLoggingOut, fetchOrders, router, fetchProfile]);
+
+        // Mark order notifications as read when user views orders page
+        useEffect(() => {
+                if (!isLoading && !hasMarkedAsReadRef.current) {
+                        // Mark all order notifications as read when page loads
+                        const timer = setTimeout(() => {
+                                markAllAsRead();
+                                hasMarkedAsReadRef.current = true;
+                        }, 300);
+
+                        return () => clearTimeout(timer);
+                }
+        }, [isLoading, markAllAsRead]);
+
+        // Reset hasMarkedAsReadRef when user changes
+        useEffect(() => {
+                hasMarkedAsReadRef.current = false;
+        }, [userId]);
 
         const handleRetry = useCallback(() => {
                 if (!userId) {

@@ -21,6 +21,7 @@ interface NotificationStore {
         removeNotification: (id: string) => void;
         clearAll: () => void;
         unreadCount: () => number;
+        orderUnreadCount: () => number; // Count unread order notifications
 }
 
 export const useNotificationStore = create<NotificationStore>((set, get) => ({
@@ -78,5 +79,11 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
         unreadCount: () => {
                 return get().notifications.filter((notif) => !notif.read).length;
+        },
+
+        orderUnreadCount: () => {
+                return get().notifications.filter(
+                        (notif) => !notif.read && (notif.type === "ORDER_ACCEPTED" || notif.type === "ORDER_REJECTED")
+                ).length;
         },
 }));

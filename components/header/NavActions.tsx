@@ -20,11 +20,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import CartDropdown from "./CartDropdown";
+import { useNotificationStore } from "@/stores/useNotificationStore";
 
 export default function NavActions() {
         const { user, isAuthenticated, loading, logout } = useAuthStore();
         // Subscribe to unread count map to trigger re-render when it changes
         const unreadCountMap = useChatStore((state) => state.unreadCountMap);
+        const orderUnreadCount = useNotificationStore((state) => state.orderUnreadCount());
         const [mounted, setMounted] = useState(false);
         const [showMerchantForm, setShowMerchantForm] = useState(false);
         const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -120,6 +122,11 @@ export default function NavActions() {
                                         title="Đơn hàng của tôi"
                                 >
                                         <Package className="w-5 h-5" />
+                                        {orderUnreadCount > 0 && (
+                                                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                                                        {orderUnreadCount > 9 ? "9+" : orderUnreadCount}
+                                                </span>
+                                        )}
                                         {pathname === "/orders" && (
                                                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-orange rounded-full" />
                                         )}
@@ -181,9 +188,16 @@ export default function NavActions() {
                                                 {/* Group 1: Main Actions */}
                                                 <DropdownMenuGroup>
                                                         <DropdownMenuItem asChild>
-                                                                <Link href="/orders" className="flex items-center cursor-pointer">
-                                                                        <Package className="mr-2 h-4 w-4" />
-                                                                        <span>Đơn hàng của tôi</span>
+                                                                <Link href="/orders" className="flex items-center justify-between cursor-pointer w-full relative">
+                                                                        <div className="flex items-center">
+                                                                                <Package className="mr-2 h-4 w-4" />
+                                                                                <span>Đơn hàng của tôi</span>
+                                                                        </div>
+                                                                        {orderUnreadCount > 0 && (
+                                                                                <span className="ml-2 h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                                                                                        {orderUnreadCount > 9 ? "9+" : orderUnreadCount}
+                                                                                </span>
+                                                                        )}
                                                                 </Link>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem asChild>
