@@ -4,9 +4,9 @@ import Pagination from "@/components/client/Pagination";
 import { useProductStore } from "@/stores/useProductsStores";
 import { useRestaurantStore } from "@/stores/useRestaurantStore";
 import { Category } from "@/types";
-import { ChevronLeft, ChevronRight, Utensils } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, List, Utensils } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FoodCard } from "./FoodCard";
 import { FoodCardSkeleton } from "./FoodCardSkeleton";
 import { RestaurantCard } from "./RestaurantCard";
@@ -38,6 +38,38 @@ export default function RestaurantList() {
         const { restaurants, getAllRestaurants, loading, categories, getAllCategories } = useRestaurantStore();
         const { fetchAllProducts, products, loading: productsLoading } = useProductStore();
         const searchType = searchParams.get("type") || "restaurants";
+
+        // Layout state with localStorage persistence (only for food items)
+        const [foodLayout, setFoodLayout] = useState<"grid" | "flex">(() => {
+                if (typeof window !== "undefined") {
+                        const saved = localStorage.getItem("foodCardLayout");
+                        return (saved === "grid" || saved === "flex" ? saved : "grid") as "grid" | "flex";
+                }
+                return "grid";
+        });
+
+        // State to handle smooth layout transition
+        const [isTransitioning, setIsTransitioning] = useState(false);
+
+        // Save layout preference to localStorage
+        useEffect(() => {
+                if (typeof window !== "undefined") {
+                        localStorage.setItem("foodCardLayout", foodLayout);
+                }
+        }, [foodLayout]);
+
+        // Handle layout change with smooth transition
+        const handleLayoutChange = useCallback((newLayout: "grid" | "flex") => {
+                if (newLayout === foodLayout) return;
+                
+                setIsTransitioning(true);
+                setTimeout(() => {
+                        setFoodLayout(newLayout);
+                        setTimeout(() => {
+                                setIsTransitioning(false);
+                        }, 100);
+                }, 50);
+        }, [foodLayout]);
 
         useEffect(() => {
                 const params = new URLSearchParams(Array.from(searchParams.entries()));
@@ -133,7 +165,7 @@ export default function RestaurantList() {
                                 </div>
                         </div>
 
-                        {/* --- List Header & Grid --- */}
+                        {/* --- List Header & Layout Toggle --- */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                                 <h2 className="text-xl font-bold">
                                         {loading || productsLoading ? (
@@ -142,6 +174,36 @@ export default function RestaurantList() {
                                                 `${totalResults} ${title} Found`
                                         )}
                                 </h2>
+
+                                {/* Layout Toggle - Only show for food items */}
+                                {searchType === "foods" && !loading && !productsLoading && items && items.length > 0 && (
+                                        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
+                                                <button
+                                                        onClick={() => handleLayoutChange("grid")}
+                                                        disabled={isTransitioning}
+                                                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                                                                foodLayout === "grid"
+                                                                        ? "bg-brand-purple text-white shadow-sm"
+                                                                        : "text-gray-600 hover:bg-gray-50"
+                                                        } ${isTransitioning ? "opacity-50 cursor-wait" : ""}`}
+                                                        title="Grid Layout"
+                                                >
+                                                        <LayoutGrid className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                        onClick={() => handleLayoutChange("flex")}
+                                                        disabled={isTransitioning}
+                                                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                                                                foodLayout === "flex"
+                                                                        ? "bg-brand-purple text-white shadow-sm"
+                                                                        : "text-gray-600 hover:bg-gray-50"
+                                                        } ${isTransitioning ? "opacity-50 cursor-wait" : ""}`}
+                                                        title="List Layout"
+                                                >
+                                                        <List className="w-4 h-4" />
+                                                </button>
+                                        </div>
+                                )}
                         </div>
 
                         {/* Loading state with skeletons */}
@@ -167,10 +229,14 @@ export default function RestaurantList() {
                         {!loading && !productsLoading && items && items.length > 0 && (
                                 <>
                                         <div
-                                                className={`grid gap-6 ${
+                                                className={`transition-[grid-template-columns,gap,flex-direction] duration-500 ease-in-out ${
+                                                        isTransitioning ? "opacity-70" : "opacity-100"
+                                                } ${
                                                         searchType === "restaurants"
-                                                                ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
-                                                                : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                                                                ? `grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3`
+                                                                : foodLayout === "grid"
+                                                                ? `grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
+                                                                : `flex flex-col gap-4`
                                                 }`}
                                         >
                                                 {searchType === "restaurants"
@@ -181,7 +247,11 @@ export default function RestaurantList() {
                                                                   />
                                                           ))
                                                         : products.map((product) => (
-                                                                  <FoodCard key={product.id} product={product} />
+                                                                  <FoodCard
+                                                                          key={product.id}
+                                                                          product={product}
+                                                                          layout={foodLayout}
+                                                                  />
                                                           ))}
                                         </div>
                                         <Pagination

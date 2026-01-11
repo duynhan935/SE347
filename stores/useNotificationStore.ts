@@ -18,6 +18,7 @@ interface NotificationStore {
         addNotification: (notification: Omit<Notification, "id" | "read" | "createdAt">) => void;
         markAsRead: (id: string) => void;
         markAllAsRead: () => void;
+        markOrderNotificationsAsRead: () => void; // Mark only order notifications as read
         removeNotification: (id: string) => void;
         clearAll: () => void;
         unreadCount: () => number;
@@ -47,7 +48,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
                                 audio.play().catch(() => {
                                         // Ignore audio play errors
                                 });
-                        } catch (error) {
+                        } catch {
                                 // Ignore audio errors
                         }
                 }
@@ -64,6 +65,16 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         markAllAsRead: () => {
                 set((state) => ({
                         notifications: state.notifications.map((notif) => ({ ...notif, read: true })),
+                }));
+        },
+
+        markOrderNotificationsAsRead: () => {
+                set((state) => ({
+                        notifications: state.notifications.map((notif) =>
+                                !notif.read && (notif.type === "ORDER_ACCEPTED" || notif.type === "ORDER_REJECTED")
+                                        ? { ...notif, read: true }
+                                        : notif
+                        ),
                 }));
         },
 

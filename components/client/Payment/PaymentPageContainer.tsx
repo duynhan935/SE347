@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { InputField } from "./InputField";
 import PaymentMethodSelector from "./PaymentMethodSelector";
+import { PaymentProgress } from "./PaymentProgress";
 import { RadioField } from "./RadioField";
 import { SelectField } from "./SelectField";
 
@@ -93,6 +94,7 @@ export default function PaymentPageClient() {
     const [createdOrders, setCreatedOrders] = useState<unknown[]>([]); // Store created orders data
     const [successfulRestaurantIds, setSuccessfulRestaurantIds] = useState<string[]>([]); // Store successful restaurant IDs for cart clearing
     const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+    const [paymentId, setPaymentId] = useState<string | null>(null); // Store paymentId to complete payment later
     const [isProcessingCardPayment, setIsProcessingCardPayment] = useState(false);
     const [isPaymentCompleted, setIsPaymentCompleted] = useState(false); // Flag to prevent cart empty check after payment
     const [formData, setFormData] = useState({
@@ -486,19 +488,38 @@ export default function PaymentPageClient() {
                 },
             });
 
-            const paymentData = paymentResponse.data;
+            // paymentApi.createPayment returns response.data which is { success, message, data }
+            const paymentResponseData = paymentResponse;
+            console.log("🔔 Payment response:", paymentResponseData);
+
+            // Check response structure: { success: true, message: '...', data: { clientSecret, paymentId, status } }
             if (
-                paymentData &&
-                typeof paymentData === "object" &&
-                "clientSecret" in paymentData &&
-                typeof (paymentData as { clientSecret?: unknown }).clientSecret === "string" &&
-                (paymentData as { clientSecret: string }).clientSecret.length > 0
+                paymentResponseData &&
+                typeof paymentResponseData === "object" &&
+                "data" in paymentResponseData &&
+                paymentResponseData.data &&
+                typeof paymentResponseData.data === "object"
             ) {
-                setStripeClientSecret((paymentData as { clientSecret: string }).clientSecret);
-                toast.dismiss();
-                toast.success("Đã sẵn sàng thanh toán!");
+                const paymentData = paymentResponseData.data as {
+                    clientSecret?: string;
+                    paymentId?: string;
+                    status?: string;
+                };
+
+                if (paymentData.clientSecret && typeof paymentData.clientSecret === "string" && paymentData.clientSecret.length > 0) {
+                    setStripeClientSecret(paymentData.clientSecret);
+                    if (paymentData.paymentId) {
+                        setPaymentId(paymentData.paymentId);
+                    }
+                    toast.dismiss();
+                    toast.success("Đã sẵn sàng thanh toán!");
+                } else {
+                    console.error("❌ Invalid clientSecret in payment response:", paymentData);
+                    throw new Error("Không nhận được clientSecret từ payment service. Response: " + JSON.stringify(paymentData));
+                }
             } else {
-                throw new Error("Không nhận được clientSecret từ payment service.");
+                console.error("❌ Invalid payment response structure:", paymentResponseData);
+                throw new Error("Không nhận được clientSecret từ payment service. Response structure invalid: " + JSON.stringify(paymentResponseData));
             }
         } catch (paymentError) {
             console.error("Failed to create payment:", paymentError);
@@ -516,6 +537,18 @@ export default function PaymentPageClient() {
             // Mark payment as completed to prevent cart empty check
             setIsPaymentCompleted(true);
 
+            // Complete payment - update payment status to "completed"
+            // This ensures payment status is updated immediately (webhook will also handle it as backup)
+            if (paymentId) {
+                try {
+                    await paymentApi.completePayment(paymentId);
+                    console.log("✅ Payment marked as completed:", paymentId);
+                } catch (paymentError) {
+                    console.error("Failed to complete payment:", paymentError);
+                    // Continue even if complete payment fails - webhook will handle it
+                }
+            }
+
             // Clear cart only for successfully created orders
             if (successfulRestaurantIds.length > 0) {
                 for (const restId of successfulRestaurantIds) {
@@ -530,9 +563,14 @@ export default function PaymentPageClient() {
             }
 
             toast.success(`Thanh toán thành công! Đã tạo ${createdOrderIds.length} đơn hàng.`);
+            
+            // Add a small delay to ensure orders are persisted before redirecting
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            
+            // Redirect to orders page - it will fetch orders automatically with retry logic
             router.push("/orders");
         } catch (error) {
-            console.error("Failed to clear cart:", error);
+            console.error("Failed to handle payment success:", error);
         }
     };
 
@@ -546,41 +584,7 @@ export default function PaymentPageClient() {
             {/* Step Indicator */}
             <div className="mb-8">
                 <div className="flex items-center justify-center space-x-4">
-                    <div
-                        className={`flex items-center ${
-                            currentStep === "order" ? "text-brand-purple" : "text-gray-400"
-                        }`}
-                    >
-                        <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
-                                currentStep === "order"
-                                    ? "border-brand-purple bg-brand-purple text-white"
-                                    : "border-gray-300"
-                            }`}
-                        >
-                            <span className="font-bold">1</span>
-                        </div>
-                        <span className="ml-2 font-medium">Tạo đơn hàng</span>
-                    </div>
-                    <div
-                        className={`w-16 h-0.5 ${currentStep === "payment" ? "bg-brand-purple" : "bg-gray-300"}`}
-                    ></div>
-                    <div
-                        className={`flex items-center ${
-                            currentStep === "payment" ? "text-brand-purple" : "text-gray-400"
-                        }`}
-                    >
-                        <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
-                                currentStep === "payment"
-                                    ? "border-brand-purple bg-brand-purple text-white"
-                                    : "border-gray-300"
-                            }`}
-                        >
-                            <span className="font-bold">2</span>
-                        </div>
-                        <span className="ml-2 font-medium">Thanh toán</span>
-                    </div>
+                    <PaymentProgress currentStep={currentStep} />
                 </div>
             </div>
 

@@ -175,14 +175,17 @@ export default function ChatWindow({
 
         return (
                 <div className="flex flex-col h-full bg-white">
-                        {/* Header */}
-                        <div className="p-4 border-b border-gray-200 bg-white">
+                        {/* Header - Improved design */}
+                        <div className="p-4 border-b border-gray-200 bg-white shadow-sm">
                                 <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-purple to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
                                                 {partnerName.charAt(0).toUpperCase()}
                                         </div>
                                         <div className="flex-1">
-                                                <h3 className="font-semibold text-gray-900">{partnerName}</h3>
+                                                <h3 className="font-bold text-gray-900 text-lg">{partnerName}</h3>
+                                                {isConnected && (
+                                                        <p className="text-xs text-green-500 font-medium">Online</p>
+                                                )}
                                         </div>
                                 </div>
                         </div>
@@ -212,20 +215,20 @@ export default function ChatWindow({
                                                                         }`}
                                                                 >
                                                                         <div
-                                                                                className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                                                                                className={`max-w-[75%] md:max-w-[65%] rounded-2xl px-4 py-3 shadow-sm ${
                                                                                         isOwnMessage
-                                                                                                ? "bg-blue-500 text-white rounded-br-none"
-                                                                                                : "bg-white text-gray-900 rounded-bl-none border border-gray-200"
+                                                                                                ? "bg-brand-purple text-white rounded-br-md"
+                                                                                                : "bg-white text-gray-900 rounded-bl-md border border-gray-200"
                                                                                 }`}
                                                                         >
-                                                                                <p className="text-sm whitespace-pre-wrap break-words">
+                                                                                <p className="text-sm md:text-base whitespace-pre-wrap break-words leading-relaxed">
                                                                                         {message.content}
                                                                                 </p>
                                                                                 <p
-                                                                                        className={`text-xs mt-1 ${
+                                                                                        className={`text-xs mt-2 ${
                                                                                                 isOwnMessage
-                                                                                                        ? "text-blue-100"
-                                                                                                        : "text-gray-500"
+                                                                                                        ? "text-purple-100"
+                                                                                                        : "text-gray-400"
                                                                                         }`}
                                                                                 >
                                                                                         {formatMessageTime(message.timestamp)}
@@ -244,9 +247,9 @@ export default function ChatWindow({
                                 )}
                         </div>
 
-                        {/* Input */}
-                        <div className="p-4 border-t border-gray-200 bg-white">
-                                <div className="flex items-center gap-2">
+                        {/* Input - Improved design */}
+                        <div className="p-4 border-t border-gray-200 bg-white shadow-sm">
+                                <div className="flex items-center gap-3">
                                         <input
                                                 ref={inputRef}
                                                 type="text"
@@ -267,15 +270,15 @@ export default function ChatWindow({
                                                                 hasMarkedAsReadRef.current = true;
                                                         }
                                                 }}
-                                                placeholder={isConnected ? "Type a message..." : "Connecting..."}
+                                                placeholder={isConnected ? "Nhập tin nhắn..." : "Đang kết nối..."}
                                                 disabled={!isConnected}
-                                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                                className="flex-1 px-5 py-3 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple disabled:bg-gray-100 disabled:cursor-not-allowed transition-all duration-200"
                                         />
                                         <button
-                                        title="Send Message"
+                                                title="Gửi tin nhắn"
                                                 onClick={handleSend}
                                                 disabled={!isConnected || !inputValue.trim()}
-                                                className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                                                className="p-3 bg-brand-purple text-white rounded-full hover:bg-brand-purple/90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-95 disabled:hover:scale-100"
                                         >
                                                 <Send className="w-5 h-5" />
                                         </button>

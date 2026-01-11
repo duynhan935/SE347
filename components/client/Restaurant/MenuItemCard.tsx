@@ -107,40 +107,67 @@ export const MenuItemCard = memo(({ item }: { item: Product }) => {
                 [isAdding, isMounted, user, item, cardImageUrl, addItem, router]
         );
 
+        const hasImage = cardImageUrl && cardImageUrl !== "/placeholder.png";
+
         return (
                 <Link
                         href={`/food/${item.slug}`}
-                        className="block border rounded-lg overflow-hidden h-full group bg-white hover:shadow-xl transition-shadow"
+                        className="block border border-gray-200 rounded-2xl overflow-hidden h-full group bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1"
                 >
-                        <div className="relative w-full h-32">
-                                <Image
-                                        src={cardImageUrl}
-                                        alt={item.productName}
-                                        fill
-                                        className="object-cover group-hover:scale-105 transition-transform"
-                                        unoptimized={!item.imageURL || cardImageUrl === "/placeholder.png"}
-                                />
+                        {/* Image Section - Improved design */}
+                        <div className="relative w-full h-40 md:h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl">
+                                {hasImage ? (
+                                        <Image
+                                                src={cardImageUrl}
+                                                alt={item.productName}
+                                                fill
+                                                className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                                unoptimized={!item.imageURL || cardImageUrl === "/placeholder.png"}
+                                                onError={(e) => {
+                                                        const target = e.target as HTMLImageElement;
+                                                        target.src = "/placeholder.png";
+                                                }}
+                                        />
+                                ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
+                                                <div className="text-center">
+                                                        <span className="text-4xl mb-2 block">🍽️</span>
+                                                        <span className="text-xs text-gray-600 font-medium">
+                                                                Đang chuẩn bị...
+                                                        </span>
+                                                </div>
+                                        </div>
+                                )}
                         </div>
-                        <div className="p-4 flex flex-col flex-grow">
-                                <h3 className="font-semibold truncate">{item.productName}</h3>
-                                <p className="text-sm text-gray-500 mt-1 line-clamp-2 flex-grow h-10">
-                                        {item.description}
-                                </p>
-                                <div className="flex justify-between items-center mt-3">
-                                        <p className="font-bold">
+
+                        {/* Content Section */}
+                        <div className="p-4 md:p-5 flex flex-col flex-grow">
+                                <h3 className="font-bold text-base md:text-lg text-gray-900 line-clamp-2 mb-2 leading-tight">
+                                        {item.productName}
+                                </h3>
+                                {item.description && (
+                                        <p className="text-xs md:text-sm text-gray-400 mt-1 line-clamp-2 flex-grow mb-3">
+                                                {item.description}
+                                        </p>
+                                )}
+                                <div className="flex justify-between items-center mt-auto pt-2">
+                                        <p className="font-bold text-lg md:text-xl bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
                                                 {item.productSizes.length > 1 ? "From " : ""}
                                                 {displayPrice ? `$${displayPrice.toFixed(2)}` : "N/A"}
                                         </p>
                                         <button
                                                 onClick={handleAddToCart}
                                                 disabled={isAdding || !isMounted}
-                                                className="text-brand-purple hover:text-brand-purple/80 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                title="Add to Cart"
-                                                aria-label="Add to Cart"
+                                                className="p-2.5 text-brand-purple hover:bg-brand-purple/10 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-brand-purple/30 hover:border-brand-purple/50 bg-white hover:shadow-md"
+                                                title="Thêm vào giỏ"
+                                                aria-label="Thêm vào giỏ"
                                         >
-                                                <PlusCircle
-                                                        className={`w-7 h-7 ${isAdding ? "animate-pulse" : ""}`}
-                                                />
+                                                {isAdding ? (
+                                                        <PlusCircle className="w-5 h-5 animate-pulse" />
+                                                ) : (
+                                                        <PlusCircle className="w-5 h-5" />
+                                                )}
                                         </button>
                                 </div>
                         </div>

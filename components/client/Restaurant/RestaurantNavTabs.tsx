@@ -22,24 +22,51 @@ export default function RestaurantNavTabs() {
                 return () => window.removeEventListener("scroll", handleScroll);
         }, []);
 
+        const [activeTab, setActiveTab] = useState("Menu");
+
+        useEffect(() => {
+                const handleHashChange = () => {
+                        const hash = window.location.hash.slice(1);
+                        if (hash === "menu") setActiveTab("Menu");
+                        else if (hash === "about") setActiveTab("About");
+                        else if (hash === "reviews") setActiveTab("Reviews");
+                };
+
+                handleHashChange();
+                window.addEventListener("hashchange", handleHashChange);
+                return () => window.removeEventListener("hashchange", handleHashChange);
+        }, []);
+
         return (
                 <div
                         className={cn(
-                                "bg-white transition-all duration-300 z-30",
-                                isSticky ? "sticky top-0 shadow-md" : "relative"
+                                "bg-white transition-all duration-300 z-30 border-b border-gray-200",
+                                isSticky ? "sticky top-0 shadow-lg" : "relative"
                         )}
                 >
                         <div className="custom-container">
-                                <nav className="flex items-center gap-x-8 -mb-px">
-                                        {navLinks.map((link) => (
-                                                <a
-                                                        key={link.name}
-                                                        href={link.href}
-                                                        className="py-4 text-sm font-semibold text-gray-500 hover:text-brand-purple border-b-2 border-transparent hover:border-brand-purple"
-                                                >
-                                                        {link.name}
-                                                </a>
-                                        ))}
+                                <nav className="flex items-center gap-x-2 md:gap-x-8 -mb-px">
+                                        {navLinks.map((link) => {
+                                                const isActive = activeTab === link.name;
+                                                return (
+                                                        <a
+                                                                key={link.name}
+                                                                href={link.href}
+                                                                onClick={() => setActiveTab(link.name)}
+                                                                className={cn(
+                                                                        "py-4 px-2 md:px-0 text-sm md:text-base font-bold transition-all duration-200 relative",
+                                                                        isActive
+                                                                                ? "text-brand-purple"
+                                                                                : "text-gray-500 hover:text-brand-purple"
+                                                                )}
+                                                        >
+                                                                {link.name}
+                                                                {isActive && (
+                                                                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-purple rounded-full" />
+                                                                )}
+                                                        </a>
+                                                );
+                                        })}
                                 </nav>
                         </div>
                 </div>
