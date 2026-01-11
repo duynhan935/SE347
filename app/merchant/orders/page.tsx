@@ -14,45 +14,38 @@ export default function MerchantOrdersPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<OrderStatus | "ALL">("ALL");
-    const [restaurantIds, setRestaurantIds] = useState<string[]>([]);
+    const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState<{ [orderId: string]: string }>({});
     const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null);
 
-    // Get restaurant IDs for socket connection
+    // Business rule: 1 merchant = 1 restaurant
     useEffect(() => {
-        const fetchRestaurants = async () => {
+        const fetchRestaurantId = async () => {
             if (!user?.id) return;
             try {
                 const response = await restaurantApi.getRestaurantByMerchantId(user.id);
-                const restaurants = response.data || [];
-                const ids = restaurants.map((r: { id?: string; _id?: string }) => r.id || r._id || "").filter(Boolean);
-                setRestaurantIds(ids);
+                const data = response.data;
+                const restaurants = Array.isArray(data) ? data : data ? [data] : [];
+
+                const first = restaurants[0] as { id?: string; _id?: string } | undefined;
+                const id = first?.id || first?._id || null;
+                setRestaurantId(id);
             } catch (error) {
                 console.error("Failed to fetch restaurants:", error);
+                setRestaurantId(null);
             }
         };
-        fetchRestaurants();
+        fetchRestaurantId();
     }, [user?.id]);
 
-    // Connect to socket for each restaurant
-    useOrderSocket({
-        restaurantId: restaurantIds[0] || null, // Join first restaurant room (backend supports multiple)
-        onNewOrder: (notification) => {
-            toast.success(`Đơn hàng mới: ${notification.data.orderId}`, {
-                icon: "🔔",
-            });
-            fetchOrders(); // Refresh orders
-        },
-    });
-
     const fetchOrders = useCallback(async () => {
-        if (!user?.id) return;
+        if (!user?.id || !restaurantId) return;
 
         try {
             setLoading(true);
-            const merchantOrders = await orderApi.getOrdersByMerchant(user.id);
-            console.log("Fetched merchant orders:", merchantOrders);
-            setOrders(merchantOrders);
+            const { orders: restaurantOrders } = await orderApi.getOrdersByRestaurant(restaurantId, user.id);
+            console.log("Fetched restaurant orders:", restaurantOrders);
+            setOrders(restaurantOrders);
         } catch (error) {
             console.error("Failed to fetch orders:", error);
             toast.error("Không thể tải danh sách đơn hàng");
@@ -60,13 +53,25 @@ export default function MerchantOrdersPage() {
         } finally {
             setLoading(false);
         }
-    }, [user?.id]);
+    }, [restaurantId, user?.id]);
+
+    // Connect to socket (single restaurant room)
+    useOrderSocket({
+        restaurantId,
+        userId: user?.id || null,
+        onNewOrder: () => {
+            toast.success("Đơn hàng mới", {
+                icon: "🔔",
+            });
+            fetchOrders();
+        },
+    });
 
     useEffect(() => {
-        if (user?.id) {
+        if (user?.id && restaurantId) {
             fetchOrders();
         }
-    }, [user?.id, filterStatus, fetchOrders]);
+    }, [user?.id, restaurantId, fetchOrders]);
 
     const handleAcceptOrder = async (order: Order) => {
         const orderId = (order as Order & { orderId?: string }).orderId || order.orderId;

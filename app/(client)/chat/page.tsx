@@ -26,7 +26,7 @@ function ChatPageInner() {
 
             try {
                 const response = await chatApi.getAllRoomsByUserId(user.id);
-                setRooms(response.data || []);
+                setRooms(response.data?.content || []);
             } catch (error) {
                 // 404 means user has no rooms yet - this is normal
                 // Backend returns 404 instead of empty array when no rooms found

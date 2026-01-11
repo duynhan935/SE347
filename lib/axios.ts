@@ -10,7 +10,9 @@ const api = axios.create({
     baseURL: API_BASE_URL, // backend của bạn
     timeout: 30000, // Tăng timeout từ 10s lên 30s
     maxRedirects: 0, // Không tự động follow redirects (tránh redirect đến Docker hostname)
-    validateStatus: (status) => status < 500, // Chỉ throw error cho 5xx, không throw cho redirects
+    // Throw for 4xx/5xx so auth refresh + callers can handle properly.
+    // Keep redirects (3xx) as non-throw since maxRedirects=0 is used to prevent following Docker hostname redirects.
+    validateStatus: (status) => status < 400,
 });
 
 let failedQueue: { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }[] = []; // Queue for failed requests during refresh

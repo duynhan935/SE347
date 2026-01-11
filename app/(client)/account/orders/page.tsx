@@ -2,7 +2,7 @@
 
 import { orderApi } from "@/lib/api/orderApi";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { Order } from "@/types/order.type";
+import { Order, OrderStatus } from "@/types/order.type";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";

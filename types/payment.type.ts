@@ -1,5 +1,11 @@
-export type PaymentStatus = "pending" | "processing" | "completed" | "failed" | "refunded";
-export type PaymentMethod = "cash" | "card" | "wallet";
+import type { PaymentMethod } from "./order.type";
+
+export type PaymentTransactionStatus =
+        | "pending"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "refunded";
 
 export interface Payment {
         id: string; // UUID
@@ -11,7 +17,7 @@ export interface Payment {
         paymentMethod: PaymentMethod;
         paymentGateway?: string; // String(50), default 'stripe'
         transactionId?: string; // String(200)
-        status: PaymentStatus;
+        status: PaymentTransactionStatus;
         failureReason?: string; // TEXT
         refundAmount?: number; // DECIMAL(10, 2), default 0
         refundReason?: string; // TEXT
