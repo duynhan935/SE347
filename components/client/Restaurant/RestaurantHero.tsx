@@ -34,13 +34,15 @@ export default function RestaurantHero({ restaurant }: { restaurant: Restaurant 
                                                                 ({restaurant.totalReview.toLocaleString()} reviews)
                                                         </span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                        <span className="font-semibold">{restaurant.duration} min</span>
-                                                        <span className="text-gray-300">•</span>
-                                                        <span className="font-semibold">
-                                                                {restaurant.distance.toFixed(1)} km
-                                                        </span>
-                                                </div>
+                                                {restaurant.duration != null && restaurant.distance != null && (
+                                                        <div className="flex items-center gap-2">
+                                                                <span className="font-semibold">{restaurant.duration} min</span>
+                                                                <span className="text-gray-300">•</span>
+                                                                <span className="font-semibold">
+                                                                        {restaurant.distance.toFixed(1)} km
+                                                                </span>
+                                                        </div>
+                                                )}
                                         </div>
                                 </div>
                         </div>

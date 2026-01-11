@@ -3,7 +3,8 @@
 import OrdersPageContainer, { type OrdersPageOrder } from "@/components/client/Orders/OrdersPageContainer";
 import { orderApi } from "@/lib/api/orderApi";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useRouter } from "next/navigation";
+import { useNotificationStore } from "@/stores/useNotificationStore";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -17,10 +18,14 @@ const OrdersPage = () => {
 
         const [orders, setOrders] = useState<OrdersPageOrder[]>([]);
         const [isLoading, setIsLoading] = useState(true);
+        const [sortBy, setSortBy] = useState<string>("recent");
         const userId = user?.id;
+        const pathname = usePathname();
+        const { markAllAsRead, markOrderNotificationsAsRead, notifications } = useNotificationStore();
 
         const profileRequestedRef = useRef(false);
         const redirectRef = useRef(false);
+        const hasMarkedAsReadRef = useRef(false);
 
         const mapOrders = useCallback((apiOrders: unknown[]): OrdersPageOrder[] => {
                 return apiOrders.map((order, orderIndex) => {
@@ -42,6 +47,8 @@ const OrdersPage = () => {
                                 updatedAt?: string;
                                 finalAmount?: number;
                                 totalAmount?: number;
+                                status?: string;
+                                paymentStatus?: string;
                                 items?: Array<{
                                         productId?: string | number;
                                         productName?: string;
@@ -90,6 +97,8 @@ const OrdersPage = () => {
                                 createdAt: typedOrder.createdAt || typedOrder.updatedAt || new Date().toISOString(),
                                 totalAmount,
                                 items,
+                                status: typedOrder.status as OrdersPageOrder["status"],
+                                paymentStatus: typedOrder.paymentStatus,
                         };
                 });
         }, []);
@@ -103,14 +112,7 @@ const OrdersPage = () => {
                 try {
                         const { orders: apiOrders } = await orderApi.getOrdersByUser(userId);
                         const normalized = mapOrders(apiOrders ?? []);
-                        const sorted = [...normalized].sort((a, b) => {
-                                const getTime = (value: string) => {
-                                        const timestamp = new Date(value).getTime();
-                                        return Number.isFinite(timestamp) ? timestamp : 0;
-                                };
-                                return getTime(b.createdAt) - getTime(a.createdAt);
-                        });
-                        setOrders(sorted);
+                        setOrders(normalized);
                 } catch (error) {
                         console.error("Failed to load orders:", error);
                         toast.error("Failed to load orders");
@@ -148,9 +150,53 @@ const OrdersPage = () => {
                 }
 
                 if (userId) {
+                        // Fetch orders immediately
                         fetchOrders();
+                        
+                        // If coming from payment page, also retry after a delay to ensure new orders are loaded
+                        // This handles cases where order creation is still in progress
+                        const isFromPayment = typeof window !== "undefined" && document.referrer.includes("/payment");
+                        if (isFromPayment) {
+                                // Retry fetching orders after a short delay to ensure backend has persisted the order
+                                const retryTimer = setTimeout(() => {
+                                        console.log("🔄 Retrying fetch orders after payment...");
+                                        fetchOrders();
+                                }, 1500);
+                                return () => clearTimeout(retryTimer);
+                        }
                 }
         }, [authLoading, isAuthenticated, userId, isLoggingOut, fetchOrders, router, fetchProfile]);
+
+        // Mark order notifications as read when user views orders page
+        useEffect(() => {
+                if (!isLoading && !hasMarkedAsReadRef.current) {
+                        // Mark all order notifications as read when page loads
+                        const timer = setTimeout(() => {
+                                markAllAsRead();
+                                hasMarkedAsReadRef.current = true;
+                        }, 300);
+
+                        return () => clearTimeout(timer);
+                }
+        }, [isLoading, markAllAsRead]);
+
+        // Auto-mark order notifications as read when user is on orders page and receives new notifications
+        useEffect(() => {
+                if (pathname === "/orders" && !isLoading) {
+                        // Mark all unread order notifications as read when user is on orders page
+                        const unreadOrderNotifications = notifications.filter(
+                                (notif) => !notif.read && (notif.type === "ORDER_ACCEPTED" || notif.type === "ORDER_REJECTED")
+                        );
+                        if (unreadOrderNotifications.length > 0) {
+                                markOrderNotificationsAsRead();
+                        }
+                }
+        }, [notifications, pathname, isLoading, markOrderNotificationsAsRead]);
+
+        // Reset hasMarkedAsReadRef when user changes
+        useEffect(() => {
+                hasMarkedAsReadRef.current = false;
+        }, [userId]);
 
         const handleRetry = useCallback(() => {
                 if (!userId) {
@@ -161,9 +207,48 @@ const OrdersPage = () => {
                 fetchOrders();
         }, [fetchOrders, router, userId]);
 
+        const handleSortChange = useCallback((sortValue: string) => {
+                setSortBy(sortValue);
+                const sorted = [...orders].sort((a, b) => {
+                        switch (sortValue) {
+                                case "recent":
+                                        const getTime = (value: string) => {
+                                                const timestamp = new Date(value).getTime();
+                                                return Number.isFinite(timestamp) ? timestamp : 0;
+                                        };
+                                        return getTime(b.createdAt) - getTime(a.createdAt);
+                                case "oldest":
+                                        const getTimeOldest = (value: string) => {
+                                                const timestamp = new Date(value).getTime();
+                                                return Number.isFinite(timestamp) ? timestamp : 0;
+                                        };
+                                        return getTimeOldest(a.createdAt) - getTimeOldest(b.createdAt);
+                                case "amount-high":
+                                        return b.totalAmount - a.totalAmount;
+                                case "amount-low":
+                                        return a.totalAmount - b.totalAmount;
+                                case "status":
+                                        const statusOrder: Record<string, number> = {
+                                                PENDING: 1,
+                                                CONFIRMED: 2,
+                                                PREPARING: 3,
+                                                READY: 4,
+                                                COMPLETED: 5,
+                                                CANCELLED: 6,
+                                        };
+                                        const aStatus = a.status || "";
+                                        const bStatus = b.status || "";
+                                        return (statusOrder[aStatus] || 99) - (statusOrder[bStatus] || 99);
+                                default:
+                                        return 0;
+                        }
+                });
+                setOrders(sorted);
+        }, [orders]);
+
         return (
                 <section>
-                        <OrdersPageContainer orders={orders} isLoading={isLoading} onRetry={handleRetry} />
+                        <OrdersPageContainer orders={orders} isLoading={isLoading} onRetry={handleRetry} onSortChange={handleSortChange} />
                 </section>
         );
 };

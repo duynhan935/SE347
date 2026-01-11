@@ -6,81 +6,102 @@ import Image from "next/image";
 export const CartItemRow = ({ item }: { item: CartItem }) => {
         const { updateQuantity, removeItem } = useCartStore();
 
-        return (
-                <div className="flex flex-col sm:flex-row items-center gap-4 py-4 border-b">
-                        {(() => {
-                                const imageUrl = getImageUrl(item.image);
-                                console.log("[CartItemRow] Rendering item:", {
-                                        name: item.name,
-                                        itemImage: item.image,
-                                        imageUrl,
-                                        imageType: typeof item.image,
-                                });
-                                // Always try to display image, even if it's placeholder
-                                // getImageUrl will return "/placeholder.png" if image is invalid
-                                const finalImageUrl = imageUrl || "/placeholder.png";
+        const imageUrl = getImageUrl(item.image);
+        const finalImageUrl = imageUrl || "/placeholder.png";
+        const hasImage = finalImageUrl && finalImageUrl !== "/placeholder.png";
 
-                                if (finalImageUrl && finalImageUrl !== "/placeholder.png") {
-                                        return (
-                                                <Image
-                                                        src={finalImageUrl}
-                                                        alt={item.name}
-                                                        width={100}
-                                                        height={100}
-                                                        className="rounded-md object-cover"
-                                                        unoptimized={finalImageUrl.startsWith("http")}
-                                                />
-                                        );
-                                } else {
-                                        return (
-                                                <div className="w-[100px] h-[100px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
-                                                        No Image
-                                                </div>
-                                        );
-                                }
-                        })()}
-                        <div className="flex-grow text-center sm:text-left ">
-                                <p className="font-semibold text-lg">{item.name}</p>
-                                <p className="text-sm text-gray-500">${item.price.toFixed(2)}</p>
-                                {item.sizeName && <p className="text-xs text-gray-400 mt-1">Size: {item.sizeName}</p>}
-                                {item.customizations && <p className="text-xs text-gray-400">{item.customizations}</p>}
-                                <div className="flex items-center justify-center sm:justify-start gap-2 mt-2 sm:hidden">
-                                        <button
-                                                title="Remove item"
-                                                onClick={() => removeItem(item.id, item.restaurantId)}
-                                                className="text-md p-4 text-gray-500 hover:text-red-500"
+        return (
+                <div className="flex items-start gap-4 py-5 border-b border-gray-100 last:border-b-0">
+                        {/* Product Image - Real food image with rounded corners */}
+                        {hasImage ? (
+                                <div className="relative h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 shadow-sm">
+                                        <Image
+                                                src={finalImageUrl}
+                                                alt={item.name}
+                                                fill
+                                                className="object-cover"
+                                                sizes="(max-width: 768px) 80px, 96px"
+                                                unoptimized={finalImageUrl.startsWith("http")}
+                                        />
+                                </div>
+                        ) : (
+                                <div className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 text-brand-purple flex-shrink-0 shadow-sm">
+                                        <svg
+                                                className="w-8 h-8"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
                                         >
-                                                Remove
+                                                <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                                                />
+                                        </svg>
+                                </div>
+                        )}
+
+                        {/* Product Details - Better typography hierarchy */}
+                        <div className="flex-grow min-w-0 space-y-1.5">
+                                {/* Product Name - Bold */}
+                                <p className="font-bold text-base md:text-lg leading-tight text-gray-900">{item.name}</p>
+
+                                {/* Price per item - Small, light gray */}
+                                <p className="text-xs md:text-sm text-gray-400 font-medium">
+                                        ${item.price.toFixed(2)} each
+                                </p>
+
+                                {/* Size and Customizations - Small, light gray */}
+                                {item.sizeName && (
+                                        <p className="text-xs text-gray-400">Size: {item.sizeName}</p>
+                                )}
+                                {item.customizations && (
+                                        <p className="text-xs text-gray-400 truncate max-w-[200px]" title={item.customizations}>
+                                                {item.customizations}
+                                        </p>
+                                )}
+
+                                {/* Total Price - Smaller than Orders page */}
+                                <p className="font-semibold text-sm text-gray-600 mt-2">
+                                        ${(item.price * item.quantity).toFixed(2)}
+                                </p>
+                        </div>
+
+                        {/* Quantity Controls and Actions */}
+                        <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                                {/* Quantity Controls - Improved design */}
+                                <div className="flex items-center border-2 border-gray-200 rounded-lg overflow-hidden">
+                                        <button
+                                                title="Decrease item"
+                                                onClick={() => updateQuantity(item.id, item.restaurantId, item.quantity - 1)}
+                                                className="p-2.5 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                disabled={item.quantity <= 1}
+                                        >
+                                                <Minus className="w-4 h-4" />
+                                        </button>
+                                        <span className="px-4 py-2 font-bold text-gray-900 min-w-[3rem] text-center">
+                                                {item.quantity}
+                                        </span>
+                                        <button
+                                                title="Increase item"
+                                                onClick={() => updateQuantity(item.id, item.restaurantId, item.quantity + 1)}
+                                                className="p-2.5 hover:bg-gray-100 transition-colors"
+                                        >
+                                                <Plus className="w-4 h-4" />
                                         </button>
                                 </div>
-                        </div>
-                        <div className="flex items-center border rounded-md">
+
+                                {/* Remove Button - Desktop */}
                                 <button
-                                        title="Decrease item"
-                                        onClick={() => updateQuantity(item.id, item.restaurantId, item.quantity - 1)}
-                                        className="p-3 hover:bg-gray-100"
+                                        title="Remove item"
+                                        onClick={() => removeItem(item.id, item.restaurantId)}
+                                        className="text-gray-400 hover:text-red-500 transition-colors hidden sm:flex items-center gap-1.5 text-sm font-medium"
                                 >
-                                        <Minus className="w-4 h-4" />
-                                </button>
-                                <span className="px-5 font-semibold">{item.quantity}</span>
-                                <button
-                                        title="Increase item"
-                                        onClick={() => updateQuantity(item.id, item.restaurantId, item.quantity + 1)}
-                                        className="p-3 hover:bg-gray-100"
-                                >
-                                        <Plus className="w-4 h-4" />
+                                        <Trash2 className="w-4 h-4" />
+                                        <span>Remove</span>
                                 </button>
                         </div>
-                        <p className="font-bold w-24 text-center md:text-right text-lg">
-                                ${(item.price * item.quantity).toFixed(2)}
-                        </p>
-                        <button
-                                title="Remove item"
-                                onClick={() => removeItem(item.id, item.restaurantId)}
-                                className="text-gray-500 hover:text-red-500 hidden sm:block cursor-pointer"
-                        >
-                                <Trash2 className="w-5 h-5" />
-                        </button>
                 </div>
         );
 };

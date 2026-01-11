@@ -20,15 +20,15 @@ export default function RestaurantMenu({ products, categories }: MenuProps) {
         }));
 
         return (
-                <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg">
-                        <h2 className="text-3xl font-bold font-roboto-serif">Menu</h2>
-                        <div className="py-4 border-b my-6">
-                                <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+                <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+                        <h2 className="text-2xl md:text-3xl font-bold font-roboto-serif mb-6">Menu</h2>
+                        <div className="py-4 border-b border-gray-200 mb-8">
+                                <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
                                         {categories.map((category, index) => (
                                                 <a
                                                         key={category.id || `category-${index}`}
                                                         href={`#${slugify(category.cateName)}`}
-                                                        className="px-4 py-2 bg-gray-100 rounded-full text-sm font-semibold whitespace-nowrap hover:bg-gray-200"
+                                                        className="px-5 py-2.5 bg-gray-100 rounded-full text-sm font-bold whitespace-nowrap hover:bg-brand-purple hover:text-white transition-all duration-200 shadow-sm hover:shadow-md"
                                                 >
                                                         {category.cateName}
                                                 </a>
@@ -44,7 +44,7 @@ export default function RestaurantMenu({ products, categories }: MenuProps) {
                                                         id={slugify(group.categoryName)}
                                                         className="scroll-mt-24"
                                                 >
-                                                        <h3 className="text-2xl font-bold mb-6">
+                                                        <h3 className="text-xl md:text-2xl font-bold mb-6 text-gray-900">
                                                                 {group.categoryName}
                                                         </h3>
                                                         <motion.div
