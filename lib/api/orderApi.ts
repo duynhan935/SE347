@@ -26,7 +26,7 @@ export interface CreateOrderRequest {
         price: number;
         customizations?: string;
     }[];
-    paymentMethod: "cash" | "card" | "wallet";
+    paymentMethod: "card";
     orderNote?: string;
     discount?: number;
     deliveryFee?: number;
@@ -149,9 +149,9 @@ export const orderApi = {
                     .getOrdersByRestaurant(restaurant.id || restaurant._id || "", merchantId)
                     .then((r) => r.orders)
                     .catch((error) => {
-                    console.error(`Failed to get orders for restaurant ${restaurant.id || restaurant._id}:`, error);
-                    return []; // Return empty array on error
-                })
+                        console.error(`Failed to get orders for restaurant ${restaurant.id || restaurant._id}:`, error);
+                        return []; // Return empty array on error
+                    })
             );
 
             const ordersResults = await Promise.all(ordersPromises);
@@ -179,15 +179,29 @@ export const orderApi = {
     },
 
     // Update order status
-    updateOrderStatus: async (orderId: string, status: OrderStatus) => {
-        const response = await api.patch(`/orders/${orderId}/status`, { status });
+    updateOrderStatus: async (
+        orderId: string,
+        status: OrderStatus,
+        options?: {
+            cancellationReason?: string;
+        }
+    ) => {
+        const payload: { status: OrderStatus; cancellationReason?: string } = { status };
+
+        if (status === OrderStatus.CANCELLED) {
+            if (!options?.cancellationReason?.trim()) {
+                throw new Error("cancellationReason is required when status is cancelled");
+            }
+            payload.cancellationReason = options.cancellationReason.trim();
+        }
+
+        const response = await api.patch(`/orders/${orderId}/status`, payload);
         return response.data;
     },
 
-    // Cancel order
+    // Cancel order (wrapper around updateOrderStatus)
     cancelOrder: async (orderId: string, reason: string) => {
-        const response = await api.patch(`/orders/${orderId}/cancel`, { reason });
-        return response.data;
+        return orderApi.updateOrderStatus(orderId, OrderStatus.CANCELLED, { cancellationReason: reason });
     },
 
     // Merchant: Accept order

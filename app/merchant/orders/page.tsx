@@ -150,9 +150,7 @@ export default function MerchantOrdersPage() {
                 return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
             case OrderStatus.READY:
                 return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-            case OrderStatus.DELIVERING:
-                return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
-            case OrderStatus.DELIVERED:
+            case OrderStatus.COMPLETED:
                 return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200";
             case OrderStatus.CANCELLED:
                 return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
@@ -168,8 +166,7 @@ export default function MerchantOrdersPage() {
             [OrderStatus.CONFIRMED]: "Đã xác nhận",
             [OrderStatus.PREPARING]: "Đang chuẩn bị",
             [OrderStatus.READY]: "Sẵn sàng",
-            [OrderStatus.DELIVERING]: "Đang giao",
-            [OrderStatus.DELIVERED]: "Đã giao",
+            [OrderStatus.COMPLETED]: "Đã hoàn thành",
             [OrderStatus.CANCELLED]: "Đã hủy",
         };
         return labels[normalizedStatus] || status;
@@ -185,9 +182,7 @@ export default function MerchantOrdersPage() {
             case OrderStatus.PREPARING:
                 return OrderStatus.READY;
             case OrderStatus.READY:
-                return OrderStatus.DELIVERING;
-            case OrderStatus.DELIVERING:
-                return OrderStatus.DELIVERED;
+                return OrderStatus.COMPLETED;
             default:
                 return null;
         }
@@ -244,7 +239,7 @@ export default function MerchantOrdersPage() {
                 >
                     <p className="text-sm text-gray-600 dark:text-gray-400">Đã hoàn thành</p>
                     <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-                        {orders.filter((o) => o.status === OrderStatus.DELIVERED).length}
+                        {orders.filter((o) => o.status === OrderStatus.COMPLETED).length}
                     </p>
                 </div>
             </div>
@@ -357,14 +352,16 @@ export default function MerchantOrdersPage() {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span
                                                     className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                        order.paymentStatus === "paid" || order.paymentStatus === "completed"
+                                                        order.paymentStatus === "paid" ||
+                                                        order.paymentStatus === "completed"
                                                             ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                                                             : order.paymentStatus === "failed"
                                                             ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                                                             : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                                                     }`}
                                                 >
-                                                    {order.paymentStatus === "paid" || order.paymentStatus === "completed"
+                                                    {order.paymentStatus === "paid" ||
+                                                    order.paymentStatus === "completed"
                                                         ? "Đã thanh toán"
                                                         : order.paymentStatus === "failed"
                                                         ? "Thất bại"
