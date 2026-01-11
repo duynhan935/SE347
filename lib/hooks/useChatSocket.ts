@@ -27,6 +27,10 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
         const subscriptionsRef = useRef<Map<string, Subscription>>(new Map());
         const isConnectingRef = useRef<boolean>(false);
         const messageHandlersRef = useRef<Map<string, (message: MessageDTO) => void>>(new Map());
+        const heartbeatMonitorIntervalRef = useRef<NodeJS.Timeout | null>(null);
+        const heartbeatServerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+        const heartbeatClientIntervalRef = useRef<NodeJS.Timeout | null>(null);
+        const lastHeartbeatLogRef = useRef<number>(0);
 
         // Connect WebSocket when user is authenticated
         const connect = useCallback(async () => {
@@ -51,11 +55,54 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                                         return new WebSocket(wsUrl);
                                 },
                                 reconnectDelay: 5000,
-                                heartbeatIncoming: 4000,
-                                heartbeatOutgoing: 4000,
+                                // Server sends heartbeat every 20s, expects client response within 30s
+                                // Client will automatically send heartbeat every 25s to keep connection alive
+                                heartbeatIncoming: 20000, // Expect heartbeat from server every 20s
+                                heartbeatOutgoing: 25000, // Send heartbeat to server every 25s (automatic)
+                                // Disable automatic reconnect on error (we handle it manually)
+                                // But keep it for network issues
+                                connectionTimeout: 5000,
                                 onConnect: () => {
+                                        console.log("✅ WebSocket connected - Heartbeat active (T=0s)");
+                                        console.log("💓 Heartbeat config: Server sends every 20s, Client sends every 25s");
                                         setIsConnected(true);
                                         isConnectingRef.current = false;
+                                        lastHeartbeatLogRef.current = Date.now();
+                                        
+                                        // Start heartbeat timing logs (estimated - based on configured intervals)
+                                        // Clear existing intervals first
+                                        if (heartbeatServerIntervalRef.current) {
+                                                clearInterval(heartbeatServerIntervalRef.current);
+                                        }
+                                        if (heartbeatClientIntervalRef.current) {
+                                                clearInterval(heartbeatClientIntervalRef.current);
+                                        }
+                                        
+                                        // Log estimated server heartbeat (every 20s)
+                                        heartbeatServerIntervalRef.current = setInterval(() => {
+                                                if (clientRef.current?.connected) {
+                                                        const elapsed = Math.floor((Date.now() - lastHeartbeatLogRef.current) / 1000);
+                                                        console.log(`💓 Server → Client heartbeat (estimated, every 20s) - ${elapsed}s since connect`);
+                                                } else {
+                                                        if (heartbeatServerIntervalRef.current) {
+                                                                clearInterval(heartbeatServerIntervalRef.current);
+                                                                heartbeatServerIntervalRef.current = null;
+                                                        }
+                                                }
+                                        }, 20000); // Every 20 seconds
+                                        
+                                        // Log estimated client heartbeat (every 25s)
+                                        heartbeatClientIntervalRef.current = setInterval(() => {
+                                                if (clientRef.current?.connected) {
+                                                        const elapsed = Math.floor((Date.now() - lastHeartbeatLogRef.current) / 1000);
+                                                        console.log(`💓 Client → Server heartbeat (estimated, every 25s) - ${elapsed}s since connect`);
+                                                } else {
+                                                        if (heartbeatClientIntervalRef.current) {
+                                                                clearInterval(heartbeatClientIntervalRef.current);
+                                                                heartbeatClientIntervalRef.current = null;
+                                                        }
+                                                }
+                                        }, 25000); // Every 25 seconds
 
                                         // Re-subscribe to all rooms that were subscribed before
                                         const roomsToResubscribe = Array.from(subscriptionsRef.current.keys());
@@ -88,17 +135,24 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                                                 }
                                         });
                                 },
-                                onStompError: () => {
+                                onStompError: (frame) => {
+                                        console.error("❌ STOMP error:", frame);
                                         setIsConnected(false);
                                         isConnectingRef.current = false;
                                 },
-                                onWebSocketClose: () => {
+                                onWebSocketClose: (event) => {
+                                        console.log("🔌 WebSocket closed:", event.code, event.reason);
                                         setIsConnected(false);
                                         isConnectingRef.current = false;
                                 },
                                 onDisconnect: () => {
+                                        console.log("🔌 WebSocket disconnected");
                                         setIsConnected(false);
                                         isConnectingRef.current = false;
+                                },
+                                // Handle heartbeat events (optional - for debugging)
+                                beforeConnect: () => {
+                                        console.log("🔄 Attempting WebSocket connection...");
                                 },
                         });
 
@@ -114,6 +168,20 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
         const disconnect = useCallback(() => {
                 setIsConnected(false); // Set to false immediately
                 isConnectingRef.current = false;
+                
+                // Clear heartbeat monitor and timing logs
+                if (heartbeatMonitorIntervalRef.current) {
+                        clearInterval(heartbeatMonitorIntervalRef.current);
+                        heartbeatMonitorIntervalRef.current = null;
+                }
+                if (heartbeatServerIntervalRef.current) {
+                        clearInterval(heartbeatServerIntervalRef.current);
+                        heartbeatServerIntervalRef.current = null;
+                }
+                if (heartbeatClientIntervalRef.current) {
+                        clearInterval(heartbeatClientIntervalRef.current);
+                        heartbeatClientIntervalRef.current = null;
+                }
                 
                 if (clientRef.current) {
                         // Unsubscribe from all rooms first
@@ -234,6 +302,39 @@ export function useChatSocket({ userId, isAuthenticated }: UseChatSocketOptions)
                 },
                 [userId]
         );
+
+        // Monitor heartbeat status - log every 30s to confirm connection is alive
+        useEffect(() => {
+                if (!isConnected || !clientRef.current?.connected) {
+                        if (heartbeatMonitorIntervalRef.current) {
+                                clearInterval(heartbeatMonitorIntervalRef.current);
+                                heartbeatMonitorIntervalRef.current = null;
+                        }
+                        return;
+                }
+
+                // Start heartbeat monitor interval (log every 30s to confirm connection is alive)
+                heartbeatMonitorIntervalRef.current = setInterval(() => {
+                        if (clientRef.current?.connected) {
+                                const now = Date.now();
+                                const elapsed = Math.floor((now - lastHeartbeatLogRef.current) / 1000);
+                                console.log(`💓 Heartbeat monitor: Connection still active ✅ (${elapsed}s since connect)`);
+                        } else {
+                                console.log("💓 Heartbeat monitor: Connection lost ❌");
+                                if (heartbeatMonitorIntervalRef.current) {
+                                        clearInterval(heartbeatMonitorIntervalRef.current);
+                                        heartbeatMonitorIntervalRef.current = null;
+                                }
+                        }
+                }, 30000); // Log every 30 seconds to monitor connection health
+
+                return () => {
+                        if (heartbeatMonitorIntervalRef.current) {
+                                clearInterval(heartbeatMonitorIntervalRef.current);
+                                heartbeatMonitorIntervalRef.current = null;
+                        }
+                };
+        }, [isConnected]);
 
         // Connect when user is authenticated, disconnect when logged out
         useEffect(() => {

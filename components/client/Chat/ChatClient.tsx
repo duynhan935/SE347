@@ -201,6 +201,16 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
 
                         setMessages((prev) => {
                                 const messageTimestamp = message.timestamp || new Date().toISOString();
+                                
+                                // Log timestamp info from WebSocket
+                                console.log("📨 Message từ WebSocket:");
+                                console.log("  📅 Raw timestamp:", message.timestamp);
+                                console.log("  📅 Parsed timestamp:", messageTimestamp);
+                                const messageDate = new Date(messageTimestamp);
+                                console.log("  📅 Parsed Date object:", messageDate.toString());
+                                console.log("  📅 getTime():", messageDate.getTime());
+                                console.log("  🕐 Current time:", new Date().toString());
+                                
                                 const messageTime = new Date(messageTimestamp).getTime();
 
                                 // Filter và kiểm tra duplicate dựa trên senderId, receiverId, content và timestamp
@@ -308,6 +318,22 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                         // Call handleMessageReceived to update messages in ChatWindow
                         // processedMessagesRef (global) and processedMessagesPerRoomRef (per room) will prevent duplicates
                         handleMessageReceived(message);
+                        
+                        // If this is a message for the selected room and user is the receiver, mark as read immediately
+                        // This ensures messages are marked as read while user is actively chatting
+                        if (message.roomId === selectedRoomIdRef.current && message.receiverId === currentUserId) {
+                                // Mark as read immediately since user is viewing this room
+                                (async () => {
+                                        try {
+                                                await chatApi.markMessagesAsRead(message.roomId, currentUserId);
+                                                // Reset unread count for this room
+                                                const { resetUnreadCount } = useChatStore.getState();
+                                                resetUnreadCount(message.roomId);
+                                        } catch {
+                                                // Silent error handling - not critical
+                                        }
+                                })();
+                        }
                 };
 
                 window.addEventListener("chat-message-received", handleGlobalMessage as EventListener);
@@ -315,7 +341,7 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                 return () => {
                         window.removeEventListener("chat-message-received", handleGlobalMessage as EventListener);
                 };
-        }, [selectedRoomId, handleMessageReceived]);
+        }, [selectedRoomId, handleMessageReceived, currentUserId]);
 
         // Track last loaded roomId to prevent duplicate loads
         const lastLoadedRoomIdRef = useRef<string | null>(null);
@@ -344,6 +370,26 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                 const response = await chatApi.getMessagesByRoomId(selectedRoomId, 0);
                                 // Backend returns Page<MessageFromBackend>, extract content array
                                 const loadedMessages = response.data?.content || [];
+                                
+                                // Log timestamp info from backend
+                                console.log("📥 Messages từ backend:", loadedMessages.length, "messages");
+                                if (loadedMessages.length > 0) {
+                                        const firstMsg = loadedMessages[0];
+                                        const lastMsg = loadedMessages[loadedMessages.length - 1];
+                                        console.log("📅 First message timestamp từ backend:", firstMsg.timestamp);
+                                        console.log("📅 Last message timestamp từ backend:", lastMsg.timestamp);
+                                        console.log("🕐 Current time (local):", new Date().toISOString());
+                                        console.log("🕐 Current time (local string):", new Date().toString());
+                                        
+                                        // Parse timestamp
+                                        const firstDate = new Date(firstMsg.timestamp);
+                                        const lastDate = new Date(lastMsg.timestamp);
+                                        console.log("📅 First message parsed Date:", firstDate.toString());
+                                        console.log("📅 First message getTime():", firstDate.getTime());
+                                        console.log("📅 Last message parsed Date:", lastDate.toString());
+                                        console.log("📅 Last message getTime():", lastDate.getTime());
+                                }
+                                
                                 // Map messages to ensure roomId is always set (extract from room object if needed)
                                 const mappedMessages: Message[] = loadedMessages.map((msg) => ({
                                         id: msg.id,
@@ -404,17 +450,15 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                         }
                                 }
 
-                                // Mark messages as read (only if there are messages)
-                                // Silently fail if no messages exist
-                                if (loadedMessages && loadedMessages.length > 0) {
-                                        try {
-                                                await chatApi.markMessagesAsRead(selectedRoomId, currentUserId);
-                                                // Reset unread count for this room
-                                                const { resetUnreadCount } = useChatStore.getState();
-                                                resetUnreadCount(selectedRoomId);
-                                        } catch {
-                                                // Silent error handling - not critical
-                                        }
+                                // Mark messages as read when room is loaded (always, even if no messages)
+                                // This ensures unread badge is cleared when user enters the room
+                                try {
+                                        await chatApi.markMessagesAsRead(selectedRoomId, currentUserId);
+                                        // Reset unread count for this room
+                                        const { resetUnreadCount } = useChatStore.getState();
+                                        resetUnreadCount(selectedRoomId);
+                                } catch {
+                                        // Silent error handling - not critical
                                 }
                         } catch {
                                 toast.error("Failed to load messages");
@@ -470,6 +514,20 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                 // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [selectedRoomId, currentUserId, getPartnerInfo]);
 
+
+        // Handle mark messages as read
+        const handleMarkAsRead = useCallback(async () => {
+                if (!selectedRoomId) return;
+
+                try {
+                        await chatApi.markMessagesAsRead(selectedRoomId, currentUserId);
+                        // Reset unread count for this room
+                        const { resetUnreadCount } = useChatStore.getState();
+                        resetUnreadCount(selectedRoomId);
+                } catch {
+                        // Silent error handling - not critical
+                }
+        }, [selectedRoomId, currentUserId]);
 
         // Handle send message
         const handleSendMessage = useCallback(
@@ -584,6 +642,7 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                                 onSendMessage={handleSendMessage}
                                                 isConnected={isConnected}
                                                 isLoading={isLoadingMessages}
+                                                onMarkAsRead={handleMarkAsRead}
                                         />
                                 ) : (
                                         <div className="flex items-center justify-center h-full text-gray-400">
