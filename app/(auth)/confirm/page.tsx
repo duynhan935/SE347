@@ -1,6 +1,7 @@
 "use client";
 
 import { authApi } from "@/lib/api/authApi";
+import GlobalLoader from "@/components/ui/GlobalLoader";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -133,15 +134,7 @@ function ConfirmPageInner() {
 
 export default function ConfirmPage() {
     return (
-        <Suspense
-            fallback={
-                <section className="min-h-screen flex items-center justify-center bg-brand-yellowlight p-4">
-                    <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-8 text-center text-gray-700">
-                        Loading...
-                    </div>
-                </section>
-            }
-        >
+        <Suspense fallback={<GlobalLoader label="Loading" sublabel="Verifying your account" />}>
             <ConfirmPageInner />
         </Suspense>
     );

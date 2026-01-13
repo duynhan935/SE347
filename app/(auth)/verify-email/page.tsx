@@ -2,6 +2,7 @@
 
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Loader2, Mail } from "lucide-react";
+import GlobalLoader from "@/components/ui/GlobalLoader";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -142,16 +143,7 @@ function VerifyEmailPageInner() {
 
 export default function VerifyEmailPage() {
     return (
-        <Suspense
-            fallback={
-                <section className="min-h-screen flex items-center justify-center bg-brand-yellowlight p-4">
-                    <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-8 flex items-center justify-center gap-2 text-gray-700">
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Loading...
-                    </div>
-                </section>
-            }
-        >
+        <Suspense fallback={<GlobalLoader label="Loading" sublabel="Preparing verification" />}>
             <VerifyEmailPageInner />
         </Suspense>
     );

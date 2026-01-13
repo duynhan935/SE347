@@ -1,12 +1,11 @@
-// File: app/payment/page.tsx
-
 import PaymentPageContainer from "@/components/client/Payment/PaymentPageContainer";
+import GlobalLoader from "@/components/ui/GlobalLoader";
 import { Suspense } from "react";
 
 export default function PaymentPage() {
     return (
         <section>
-            <Suspense fallback={<div className="p-4">Loading...</div>}>
+            <Suspense fallback={<GlobalLoader label="Loading" sublabel="Setting up checkout" />}>
                 <PaymentPageContainer />
             </Suspense>
         </section>

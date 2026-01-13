@@ -75,7 +75,7 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b dark:border-gray-700">
                     <Link href="/merchant" className="flex items-center gap-2">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-yellow">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-purple">
                             <Store className="h-6 w-6 text-white" />
                         </div>
                         <span className="text-xl font-bold text-gray-900 dark:text-white">Merchant</span>
@@ -102,7 +102,7 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
                                 className={`
 									flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium
 									transition-colors duration-200
-									${isActive ? "bg-brand-yellow text-white" : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"}
+									${isActive ? "bg-brand-purple text-white" : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"}
 								`}
                             >
                                 <Icon className="h-5 w-5" />
