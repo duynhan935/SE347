@@ -102,9 +102,9 @@ const HomePageAbout = () => {
                                                                 accordingly.
                                                         </p>
 
-                                                        <Link href="/restaurants" className="inline-block">
+                                                        <Link href="/?type=foods" className="inline-block">
                                                                 <Button className="mt-[38px] bg-brand-purple text-brand-white cursor-pointer hover:bg-brand-purple/80 transition-all duration-300">
-                                                                        Learn More
+                                                                        Khám phá món ăn
                                                                 </Button>
                                                         </Link>
                                                 </div>

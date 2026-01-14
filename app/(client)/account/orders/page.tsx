@@ -38,25 +38,17 @@ export default function OrderHistoryPage() {
                 return statusMap[status.toLowerCase()] || status;
         };
 
-    // Get status badge color classes
+    // Get status badge color classes - Orange for processing, Green for completed, Red for cancelled
     const getStatusBadgeClass = (status: string): string => {
         const statusLower = status.toLowerCase();
         if (statusLower.includes("completed")) {
-            return "bg-green-100 text-green-800";
+            return "text-green-600";
         }
         if (statusLower.includes("cancelled")) {
-            return "bg-red-100 text-red-800";
+            return "text-red-600";
         }
-        if (statusLower.includes("pending")) {
-            return "bg-yellow-100 text-yellow-800";
-        }
-        if (statusLower.includes("preparing") || statusLower.includes("ready")) {
-            return "bg-blue-100 text-blue-800";
-        }
-        if (statusLower.includes("confirmed")) {
-            return "bg-indigo-100 text-indigo-800";
-        }
-        return "bg-gray-100 text-gray-800";
+        // All processing states (pending, confirmed, preparing, ready)
+        return "text-[#EE4D2D]";
     };
 
     const fetchOrders = useCallback(async () => {
@@ -92,12 +84,21 @@ export default function OrderHistoryPage() {
                     ? `${orderId}-${new Date(order.createdAt).getTime()}`
                     : `${orderId}-${index}`;
 
+                // Format price to VND
+                const formatPrice = (priceUSD: number): string => {
+                    const vndPrice = priceUSD * 25000; // Convert USD to VND
+                    return vndPrice.toLocaleString("en-US", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                    });
+                };
+
                 return {
                     id: order.orderId,
                     uniqueKey,
                     displayId: order.orderId || `#${index + 1}`,
                     date: orderDate,
-                    total: `$${Number(order.finalAmount || 0).toFixed(2)}`,
+                    total: `${formatPrice(Number(order.finalAmount || 0))} ₫`,
                     status,
                     statusClass: getStatusBadgeClass(status),
                     orderCode: order.orderId,
@@ -127,13 +128,13 @@ export default function OrderHistoryPage() {
     if (!mounted || authLoading || isLoading) {
         return (
             <div className="bg-white p-8 rounded-lg shadow-md flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-8 h-8 animate-spin text-brand-purple" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#EE4D2D]" />
             </div>
         );
     }
 
     return (
-        <div className="bg-white p-8 rounded-lg shadow-md">
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold mb-2">Order History</h1>
                 <p className="text-gray-500">View all your past orders</p>
@@ -144,7 +145,7 @@ export default function OrderHistoryPage() {
                                         <p className="text-gray-500 text-lg mb-4">No orders found</p>
                                         <Link
                                                 href="/restaurants"
-                                                className="text-sm font-semibold text-brand-purple hover:underline"
+                                                className="text-sm font-semibold text-[#EE4D2D] hover:underline"
                                         >
                                                 Browse Restaurants →
                                         </Link>
@@ -163,13 +164,13 @@ export default function OrderHistoryPage() {
                                                         </div>
                                                         <div className="flex items-center gap-4">
                                                                 <span
-                                                                        className={`px-3 py-1 text-xs font-semibold rounded-full ${order.statusClass}`}
+                                                                        className={`text-sm font-semibold ${order.statusClass}`}
                                                                 >
                                                                         {order.status}
                                                                 </span>
                                                                 <Link
                                                                         href={`/orders/${order.id}`}
-                                                                        className="text-sm font-semibold text-brand-purple hover:underline"
+                                                                        className="text-sm font-semibold text-[#EE4D2D] hover:underline"
                                                                 >
                                                                         View Details
                                                                 </Link>

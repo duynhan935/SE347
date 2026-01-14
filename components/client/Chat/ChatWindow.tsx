@@ -2,288 +2,368 @@
 
 import { Message } from "@/types";
 import { format } from "date-fns";
-import { Loader2, Send } from "lucide-react";
+import { ArrowLeft, Loader2, Paperclip, Send } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 interface ChatWindowProps {
-        messages: Message[];
-        currentUserId: string;
-        partnerId: string;
-        partnerName: string;
-        onSendMessage: (content: string, receiverId: string) => void;
-        isConnected: boolean;
-        isLoading?: boolean;
-        onMarkAsRead?: () => void; // Callback to mark messages as read
+    messages: Message[];
+    currentUserId: string;
+    partnerId: string;
+    partnerName: string;
+    onSendMessage: (content: string, receiverId: string) => void;
+    isConnected: boolean;
+    isLoading?: boolean;
+    onMarkAsRead?: () => void;
+    onBack?: () => void; // For mobile back button
 }
 
 export default function ChatWindow({
-        messages,
-        currentUserId,
-        partnerId,
-        partnerName,
-        onSendMessage,
-        isConnected,
-        isLoading = false,
-        onMarkAsRead,
+    messages,
+    currentUserId,
+    partnerId,
+    partnerName,
+    onSendMessage,
+    isConnected,
+    isLoading = false,
+    onMarkAsRead,
+    onBack,
 }: ChatWindowProps) {
-        const [inputValue, setInputValue] = useState("");
-        const messagesEndRef = useRef<HTMLDivElement>(null);
-        const messagesContainerRef = useRef<HTMLDivElement>(null);
-        const inputRef = useRef<HTMLInputElement>(null);
-        const isInitialLoadRef = useRef(true);
-        const lastMessageCountRef = useRef(0);
-        const shouldAutoScrollRef = useRef(true);
-        const hasMarkedAsReadRef = useRef(false);
+    const [inputValue, setInputValue] = useState("");
+    const [showTimestamp, setShowTimestamp] = useState<string | null>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const isInitialLoadRef = useRef(true);
+    const lastMessageCountRef = useRef(0);
+    const shouldAutoScrollRef = useRef(true);
+    const hasMarkedAsReadRef = useRef(false);
 
-        // Check if user is near bottom of scroll container
-        const isNearBottom = () => {
-                if (!messagesContainerRef.current) return true;
-                const container = messagesContainerRef.current;
-                const threshold = 100; // 100px from bottom
-                return (
-                        container.scrollHeight - container.scrollTop - container.clientHeight <
-                        threshold
-                );
+    // Check if user is near bottom of scroll container
+    const isNearBottom = () => {
+        if (!messagesContainerRef.current) return true;
+        const container = messagesContainerRef.current;
+        const threshold = 100;
+        return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+    };
+
+    // Scroll to bottom helper
+    const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+        if (messagesContainerRef.current) {
+            const container = messagesContainerRef.current;
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior,
+            });
+        }
+    };
+
+    // Scroll to bottom when messages change
+    useEffect(() => {
+        if (isLoading) {
+            isInitialLoadRef.current = true;
+            return;
+        }
+
+        // Use filtered and sorted messages for scroll detection
+        const filteredMessages = messages.filter((message) => {
+            const isFromCurrentUser = message.senderId === currentUserId;
+            const isToCurrentUser = message.receiverId === currentUserId;
+            const isFromPartner = message.senderId === partnerId;
+            const isToPartner = message.receiverId === partnerId;
+            return (isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser);
+        });
+
+        const messageCount = filteredMessages.length;
+        const isNewMessage = messageCount > lastMessageCountRef.current;
+        lastMessageCountRef.current = messageCount;
+
+        if (isInitialLoadRef.current && !isLoading && filteredMessages.length > 0) {
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    scrollToBottom("auto");
+                    isInitialLoadRef.current = false;
+                    shouldAutoScrollRef.current = true;
+                }, 50);
+            });
+        } else if (!isLoading && filteredMessages.length > 0 && isNewMessage) {
+            if (shouldAutoScrollRef.current || isNearBottom()) {
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        scrollToBottom("smooth");
+                    }, 30);
+                });
+            }
+        }
+    }, [messages, isLoading, currentUserId, partnerId]);
+
+    // Mark messages as read
+    useEffect(() => {
+        if (!isLoading && onMarkAsRead && !hasMarkedAsReadRef.current) {
+            const timer = setTimeout(() => {
+                onMarkAsRead();
+                hasMarkedAsReadRef.current = true;
+            }, 300);
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading, onMarkAsRead]);
+
+    // Reset hasMarkedAsReadRef when room changes
+    useEffect(() => {
+        hasMarkedAsReadRef.current = false;
+    }, [partnerId]);
+
+    // Track scroll position
+    useEffect(() => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            if (!isNearBottom()) {
+                shouldAutoScrollRef.current = false;
+            } else {
+                shouldAutoScrollRef.current = true;
+            }
         };
 
-        // Scroll to bottom helper
-        const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
-                if (messagesContainerRef.current) {
-                        const container = messagesContainerRef.current;
-                        container.scrollTo({
-                                top: container.scrollHeight,
-                                behavior,
-                        });
-                }
-        };
+        container.addEventListener("scroll", handleScroll);
+        return () => container.removeEventListener("scroll", handleScroll);
+    }, []);
 
-        // Scroll to bottom when messages change, but only if user is near bottom or it's initial load
-        useEffect(() => {
-                // Don't scroll during initial load
-                if (isLoading) {
-                        isInitialLoadRef.current = true;
-                        return;
-                }
+    const handleSend = () => {
+        const trimmedContent = inputValue.trim();
+        if (!trimmedContent || !isConnected) return;
 
-                const messageCount = messages.length;
-                const isNewMessage = messageCount > lastMessageCountRef.current;
-                lastMessageCountRef.current = messageCount;
+        shouldAutoScrollRef.current = true;
+        onSendMessage(trimmedContent, partnerId);
+        setInputValue("");
+        inputRef.current?.focus();
+    };
 
-                // After loading completes, scroll to bottom
-                if (isInitialLoadRef.current && !isLoading && messages.length > 0) {
-                        // Use requestAnimationFrame for smoother initial scroll
-                        requestAnimationFrame(() => {
-                                setTimeout(() => {
-                                        scrollToBottom("auto");
-                                        isInitialLoadRef.current = false;
-                                        shouldAutoScrollRef.current = true;
-                                }, 50);
-                        });
-                } else if (!isLoading && messages.length > 0 && isNewMessage) {
-                        // Only scroll if user is near bottom (reading new messages) or if we should auto-scroll
-                        if (shouldAutoScrollRef.current || isNearBottom()) {
-                                // Use requestAnimationFrame for smoother scroll
-                                requestAnimationFrame(() => {
-                                        setTimeout(() => {
-                                                scrollToBottom("smooth");
-                                        }, 30);
-                                });
-                        }
-                }
-        }, [messages, isLoading]);
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    };
 
-        // Mark messages as read when user interacts with chat window (click input, focus, etc.)
-        useEffect(() => {
-                if (!isLoading && onMarkAsRead && !hasMarkedAsReadRef.current) {
-                        // Mark as read when component is ready (after loading)
-                        const timer = setTimeout(() => {
+    const formatMessageTime = (timestamp: string) => {
+        try {
+            let timestampToParse = timestamp.trim();
+            if (
+                !timestampToParse.endsWith("Z") &&
+                !timestampToParse.match(/[+-]\d{2}:\d{2}$/) &&
+                !timestampToParse.match(/[+-]\d{4}$/)
+            ) {
+                timestampToParse = timestampToParse + "Z";
+            }
+            const date = new Date(timestampToParse);
+            return format(date, "HH:mm");
+        } catch {
+            return "";
+        }
+    };
+
+    // Filter messages to only show messages between currentUserId and partnerId
+    // This prevents showing messages from other conversations
+    const filteredMessages = messages.filter((message) => {
+        const isFromCurrentUser = message.senderId === currentUserId;
+        const isToCurrentUser = message.receiverId === currentUserId;
+        const isFromPartner = message.senderId === partnerId;
+        const isToPartner = message.receiverId === partnerId;
+        
+        // Only show messages where:
+        // - Current user sent to partner, OR
+        // - Partner sent to current user
+        return (isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser);
+    });
+
+    // Remove duplicate messages based on id, content, senderId, receiverId, and timestamp
+    const uniqueMessages = filteredMessages.reduce((acc, message) => {
+        const existingIndex = acc.findIndex((m) => {
+            const sameId = m.id === message.id;
+            const sameContent = m.content === message.content;
+            const sameSender = m.senderId === message.senderId;
+            const sameReceiver = m.receiverId === message.receiverId;
+            const timeDiff = Math.abs(
+                new Date(m.timestamp).getTime() - new Date(message.timestamp).getTime()
+            );
+            const sameTime = timeDiff < 1000; // Within 1 second
+            
+            return sameId || (sameContent && sameSender && sameReceiver && sameTime);
+        });
+        
+        if (existingIndex === -1) {
+            acc.push(message);
+        }
+        
+        return acc;
+    }, [] as Message[]);
+
+    // Sort messages by timestamp
+    const sortedMessages = [...uniqueMessages].sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    return (
+        <div className="flex flex-col h-full bg-white">
+            {/* Header - Sticky Top */}
+            <div className="sticky top-0 z-10 p-4 border-b border-gray-200 bg-white shadow-sm">
+                <div className="flex items-center gap-3">
+                    {/* Mobile Back Button */}
+                    {onBack && (
+                        <button
+                            onClick={onBack}
+                            className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            aria-label="Go back to chat list"
+                            title="Go back"
+                        >
+                            <ArrowLeft className="w-5 h-5 text-gray-600" />
+                        </button>
+                    )}
+
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-[#EE4D2D] to-orange-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        <span>{partnerName.charAt(0).toUpperCase()}</span>
+                    </div>
+
+                    {/* Name & Status */}
+                    <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-gray-900 text-base truncate">{partnerName}</h3>
+                        <div className="flex items-center gap-1.5">
+                            {isConnected ? (
+                                <>
+                                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                    <p className="text-xs text-gray-500">Active now</p>
+                                </>
+                            ) : (
+                                <p className="text-xs text-gray-500">Last seen recently</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Visit Shop Button */}
+                    <Link
+                        href={`/restaurants?merchantId=${partnerId}`}
+                        className="px-3 py-1.5 text-xs font-semibold border border-[#EE4D2D] text-[#EE4D2D] rounded-lg hover:bg-[#EE4D2D]/10 transition-colors whitespace-nowrap"
+                    >
+                        Visit Shop
+                    </Link>
+                </div>
+            </div>
+
+            {/* Messages Area - Scrollable */}
+            <div
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 min-h-0 scrollbar-hide"
+            >
+                {isLoading && sortedMessages.length === 0 ? (
+                    <div className="flex items-center justify-center h-full min-h-[400px]">
+                        <Loader2 className="w-6 h-6 animate-spin text-[#EE4D2D]" />
+                    </div>
+                ) : sortedMessages.length === 0 ? (
+                    <div className="flex items-center justify-center h-full min-h-[400px] text-gray-400">
+                        <p className="text-sm">No messages yet. Start the conversation!</p>
+                    </div>
+                ) : (
+                    <>
+                        {sortedMessages.map((message) => {
+                            const isOwnMessage = message.senderId === currentUserId;
+                            const messageTime = formatMessageTime(message.timestamp);
+                            const showTime = showTimestamp === message.id;
+
+                            return (
+                                <div
+                                    key={message.id}
+                                    className={`flex items-end gap-2 items-start ${isOwnMessage ? "justify-end" : "justify-start"}`}
+                                    onMouseEnter={() => setShowTimestamp(message.id)}
+                                    onMouseLeave={() => setShowTimestamp(null)}
+                                >
+                                    {/* Avatar for received messages */}
+                                    {!isOwnMessage && (
+                                        <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-[#EE4D2D] to-orange-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                                            <span>{partnerName.charAt(0).toUpperCase()}</span>
+                                        </div>
+                                    )}
+
+                                    {/* Message Bubble */}
+                                    <div className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"} flex-shrink-0`}>
+                                        <div
+                                            className={`max-w-[75%] md:max-w-[65%] min-w-[120px] rounded-lg px-3 py-2 shadow-sm inline-block text-sm md:text-base leading-relaxed whitespace-normal break-words ${
+                                                isOwnMessage
+                                                    ? "bg-[#EE4D2D] text-white rounded-l-lg rounded-tr-lg"
+                                                    : "bg-gray-100 text-gray-900 rounded-r-lg rounded-tl-lg"
+                                            }`}
+                                        >
+                                            {message.content}
+                                        </div>
+                                        {/* Timestamp - Always render to prevent layout shift */}
+                                        <p className={`text-xs mt-1 px-1 h-5 transition-opacity duration-150 ${
+                                            isOwnMessage ? "text-gray-500" : "text-gray-400"
+                                        } ${showTime ? "opacity-100" : "opacity-0"}`}>
+                                            {messageTime}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {isLoading && sortedMessages.length > 0 && (
+                            <div className="flex justify-center py-2">
+                                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                            </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                    </>
+                )}
+            </div>
+
+            {/* Input Area - Sticky Bottom */}
+            <div className="sticky bottom-0 p-4 border-t border-gray-200 bg-white">
+                <div className="flex items-center gap-2">
+                    {/* Image/Attachment Button */}
+                    <button
+                        type="button"
+                        className="p-2.5 text-gray-500 hover:text-[#EE4D2D] hover:bg-orange-50 rounded-full transition-colors"
+                        title="Send image"
+                    >
+                        <Paperclip className="w-5 h-5" />
+                    </button>
+
+                    {/* Input Field */}
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        onFocus={() => {
+                            if (onMarkAsRead && !hasMarkedAsReadRef.current) {
                                 onMarkAsRead();
                                 hasMarkedAsReadRef.current = true;
-                        }, 300); // Small delay to ensure everything is loaded
+                            }
+                        }}
+                        onClick={() => {
+                            if (onMarkAsRead && !hasMarkedAsReadRef.current) {
+                                onMarkAsRead();
+                                hasMarkedAsReadRef.current = true;
+                            }
+                        }}
+                        placeholder={isConnected ? "Type a message..." : "Connecting..."}
+                        disabled={!isConnected}
+                        className="flex-1 px-4 py-2.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/20 focus:border-[#EE4D2D] disabled:bg-gray-100 disabled:cursor-not-allowed transition-all"
+                    />
 
-                        return () => clearTimeout(timer);
-                }
-        }, [isLoading, onMarkAsRead]);
-
-        // Reset hasMarkedAsReadRef when room changes (detected by partnerId change)
-        useEffect(() => {
-                hasMarkedAsReadRef.current = false;
-        }, [partnerId]);
-
-        // Track scroll position to determine if user scrolled up
-        useEffect(() => {
-                const container = messagesContainerRef.current;
-                if (!container) return;
-
-                const handleScroll = () => {
-                        // If user scrolls up, disable auto-scroll
-                        if (!isNearBottom()) {
-                                shouldAutoScrollRef.current = false;
-                        } else {
-                                // If user scrolls back to bottom, enable auto-scroll
-                                shouldAutoScrollRef.current = true;
-                        }
-                };
-
-                container.addEventListener("scroll", handleScroll);
-                return () => container.removeEventListener("scroll", handleScroll);
-        }, []);
-
-        const handleSend = () => {
-                const trimmedContent = inputValue.trim();
-                if (!trimmedContent || !isConnected) return;
-
-                // Force auto-scroll when user sends a message
-                // The useEffect will handle scrolling when messages update
-                shouldAutoScrollRef.current = true;
-                onSendMessage(trimmedContent, partnerId);
-                setInputValue("");
-                inputRef.current?.focus();
-        };
-
-        const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                }
-        };
-
-        const formatMessageTime = (timestamp: string) => {
-                try {
-                        // Backend sends timestamp without timezone (LocalDateTime from Java)
-                        // Timestamp format: "2026-01-11T12:21:59" (no timezone)
-                        // Backend stores in UTC, so we need to parse it as UTC
-                        // If timestamp doesn't have timezone indicator, append 'Z' to treat as UTC
-                        let timestampToParse = timestamp.trim();
-                        
-                        // Check if timestamp already has timezone (ends with Z, +, or -)
-                        if (!timestampToParse.endsWith('Z') && 
-                            !timestampToParse.match(/[+-]\d{2}:\d{2}$/) && 
-                            !timestampToParse.match(/[+-]\d{4}$/)) {
-                                // Append 'Z' to treat as UTC
-                                timestampToParse = timestampToParse + 'Z';
-                        }
-                        
-                        const date = new Date(timestampToParse);
-                        const formatted = format(date, "HH:mm");
-                        return formatted;
-                } catch (error) {
-                        console.error("⏰ formatMessageTime - Error:", error, "timestamp:", timestamp);
-                        return "";
-                }
-        };
-
-        return (
-                <div className="flex flex-col h-full bg-white">
-                        {/* Header - Improved design */}
-                        <div className="p-4 border-b border-gray-200 bg-white shadow-sm">
-                                <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-purple to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                                                {partnerName.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="flex-1">
-                                                <h3 className="font-bold text-gray-900 text-lg">{partnerName}</h3>
-                                                {isConnected && (
-                                                        <p className="text-xs text-green-500 font-medium">Online</p>
-                                                )}
-                                        </div>
-                                </div>
-                        </div>
-
-                        {/* Messages */}
-                        <div 
-                                ref={messagesContainerRef}
-                                className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 min-h-0"
-                        >
-                                {isLoading && messages.length === 0 ? (
-                                        <div className="flex items-center justify-center h-full min-h-[400px]">
-                                                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                                        </div>
-                                ) : messages.length === 0 ? (
-                                        <div className="flex items-center justify-center h-full min-h-[400px] text-gray-400">
-                                                <p>No messages yet. Start the conversation!</p>
-                                        </div>
-                                ) : (
-                                        <>
-                                                {messages.map((message) => {
-                                                        const isOwnMessage = message.senderId === currentUserId;
-                                                        return (
-                                                                <div
-                                                                        key={message.id}
-                                                                        className={`flex ${
-                                                                                isOwnMessage ? "justify-end" : "justify-start"
-                                                                        }`}
-                                                                >
-                                                                        <div
-                                                                                className={`max-w-[75%] md:max-w-[65%] rounded-2xl px-4 py-3 shadow-sm ${
-                                                                                        isOwnMessage
-                                                                                                ? "bg-brand-purple text-white rounded-br-md"
-                                                                                                : "bg-white text-gray-900 rounded-bl-md border border-gray-200"
-                                                                                }`}
-                                                                        >
-                                                                                <p className="text-sm md:text-base whitespace-pre-wrap break-words leading-relaxed">
-                                                                                        {message.content}
-                                                                                </p>
-                                                                                <p
-                                                                                        className={`text-xs mt-2 ${
-                                                                                                isOwnMessage
-                                                                                                        ? "text-purple-100"
-                                                                                                        : "text-gray-400"
-                                                                                        }`}
-                                                                                >
-                                                                                        {formatMessageTime(message.timestamp)}
-                                                                                </p>
-                                                                        </div>
-                                                                </div>
-                                                        );
-                                                })}
-                                                {isLoading && messages.length > 0 && (
-                                                        <div className="flex justify-center py-2">
-                                                                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                                                        </div>
-                                                )}
-                                                <div ref={messagesEndRef} />
-                                        </>
-                                )}
-                        </div>
-
-                        {/* Input - Improved design */}
-                        <div className="p-4 border-t border-gray-200 bg-white shadow-sm">
-                                <div className="flex items-center gap-3">
-                                        <input
-                                                ref={inputRef}
-                                                type="text"
-                                                value={inputValue}
-                                                onChange={(e) => setInputValue(e.target.value)}
-                                                onKeyPress={handleKeyPress}
-                                                onFocus={() => {
-                                                        // Mark as read when user clicks/focuses on input
-                                                        if (onMarkAsRead && !hasMarkedAsReadRef.current) {
-                                                                onMarkAsRead();
-                                                                hasMarkedAsReadRef.current = true;
-                                                        }
-                                                }}
-                                                onClick={() => {
-                                                        // Mark as read when user clicks on input
-                                                        if (onMarkAsRead && !hasMarkedAsReadRef.current) {
-                                                                onMarkAsRead();
-                                                                hasMarkedAsReadRef.current = true;
-                                                        }
-                                                }}
-                                                placeholder={isConnected ? "Nhập tin nhắn..." : "Đang kết nối..."}
-                                                disabled={!isConnected}
-                                                className="flex-1 px-5 py-3 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple disabled:bg-gray-100 disabled:cursor-not-allowed transition-all duration-200"
-                                        />
-                                        <button
-                                                title="Gửi tin nhắn"
-                                                onClick={handleSend}
-                                                disabled={!isConnected || !inputValue.trim()}
-                                                className="p-3 bg-brand-purple text-white rounded-full hover:bg-brand-purple/90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-95 disabled:hover:scale-100"
-                                        >
-                                                <Send className="w-5 h-5" />
-                                        </button>
-                                </div>
-                        </div>
+                    {/* Send Button */}
+                    <button
+                        title="Send message"
+                        onClick={handleSend}
+                        disabled={!isConnected || !inputValue.trim()}
+                        className="p-2.5 bg-[#EE4D2D] text-white rounded-full hover:bg-[#EE4D2D]/90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95 disabled:hover:scale-100"
+                    >
+                        <Send className="w-5 h-5" />
+                    </button>
                 </div>
-        );
+            </div>
+        </div>
+    );
 }

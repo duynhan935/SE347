@@ -47,12 +47,14 @@ export default function CartDropdown() {
             {/* Cart Icon Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 rounded-full hover:bg-gray-50 transition-colors duration-200"
+                className="relative p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                aria-label="Shopping cart"
+                title="Shopping cart"
             >
-                <ShoppingCart className="w-5 h-5 text-brand-grey hover:text-brand-black transition-colors" />
+                <ShoppingCart className="w-6 h-6 text-gray-700 hover:text-[#EE4D2D] transition-colors" />
                 {cartItemCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">
-                        {cartItemCount > 9 ? "9+" : cartItemCount}
+                    <span className="absolute -top-1 -right-1 bg-[#EE4D2D] text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center shadow-md">
+                        {cartItemCount > 99 ? "99+" : cartItemCount}
                     </span>
                 )}
             </button>
@@ -81,7 +83,7 @@ export default function CartDropdown() {
                             <Link
                                 href="/restaurants"
                                 onClick={() => setIsOpen(false)}
-                                className="bg-brand-purple text-white px-6 py-2 rounded-md hover:bg-brand-purple/90 transition-colors"
+                                className="bg-[#EE4D2D] text-white px-6 py-2 rounded-md hover:bg-[#EE4D2D]/90 transition-colors"
                             >
                                 Start Shopping
                             </Link>
@@ -128,7 +130,7 @@ export default function CartDropdown() {
                                                 <span className="text-sm font-semibold">
                                                     ${item.price.toFixed(2)} x {item.quantity}
                                                 </span>
-                                                <span className="text-sm font-bold text-brand-purple">
+                                                <span className="text-sm font-bold text-[#EE4D2D]">
                                                     ${(item.price * item.quantity).toFixed(2)}
                                                 </span>
                                             </div>
@@ -148,7 +150,7 @@ export default function CartDropdown() {
                             <div className="p-4 border-t border-gray-200 bg-gray-50">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="font-semibold text-lg">Total</span>
-                                    <span className="font-bold text-xl text-brand-purple">${cartTotal.toFixed(2)}</span>
+                                    <span className="font-bold text-xl text-[#EE4D2D]">${cartTotal.toFixed(2)}</span>
                                 </div>
                                 {(() => {
                                     // Group items by restaurant to determine checkout behavior
@@ -173,7 +175,7 @@ export default function CartDropdown() {
                                             <Link
                                                 href="/cart"
                                                 onClick={() => setIsOpen(false)}
-                                                className="flex-1 text-center bg-white border-2 border-brand-purple text-brand-purple px-4 py-2 rounded-md hover:bg-brand-purple/10 transition-colors font-semibold"
+                                                className="flex-1 text-center bg-white border-2 border-[#EE4D2D] text-[#EE4D2D] px-4 py-2 rounded-md hover:bg-[#EE4D2D]/10 transition-colors font-semibold"
                                             >
                                                 View Cart
                                             </Link>
@@ -182,7 +184,7 @@ export default function CartDropdown() {
                                                 <Link
                                                     href="/cart"
                                                     onClick={() => setIsOpen(false)}
-                                                    className="flex-1 text-center bg-brand-purple text-white px-4 py-2 rounded-md hover:bg-brand-purple/90 transition-colors font-semibold"
+                                                    className="flex-1 text-center bg-[#EE4D2D] text-white px-4 py-2 rounded-md hover:bg-[#EE4D2D]/90 transition-colors font-semibold"
                                                     title="Please checkout one restaurant at a time"
                                                 >
                                                     Checkout
@@ -191,7 +193,7 @@ export default function CartDropdown() {
                                                 <Link
                                                     href={`/payment?restaurantId=${firstRestaurantId}`}
                                                     onClick={() => setIsOpen(false)}
-                                                    className="flex-1 text-center bg-brand-purple text-white px-4 py-2 rounded-md hover:bg-brand-purple/90 transition-colors font-semibold"
+                                                    className="flex-1 text-center bg-[#EE4D2D] text-white px-4 py-2 rounded-md hover:bg-[#EE4D2D]/90 transition-colors font-semibold"
                                                 >
                                                     Checkout
                                                 </Link>

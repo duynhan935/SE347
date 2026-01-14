@@ -239,6 +239,11 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
 
             const { baseProductId, options } = parseCartItemId(productId);
 
+            // Priority: cartItemImage > imageURL from record > imageURL from options > placeholder
+            const rawCartItemImage = itemRecord["cartItemImage"];
+            const cartItemImageFromRecord =
+                typeof rawCartItemImage === "string" && rawCartItemImage.trim() !== "" ? rawCartItemImage.trim() : undefined;
+            
             const rawImageURL = itemRecord["imageURL"];
             const imageFromRecord =
                 typeof rawImageURL === "string" && rawImageURL.trim() !== "" ? rawImageURL.trim() : undefined;
@@ -246,10 +251,17 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
                 typeof options.imageURL === "string" && options.imageURL.trim() !== ""
                     ? options.imageURL.trim()
                     : undefined;
-            const image = imageFromOptions || imageFromRecord || "/placeholder.png";
+            const image = cartItemImageFromRecord || imageFromOptions || imageFromRecord || "/placeholder.png";
 
-            const sizeId = typeof options.sizeId === "string" ? options.sizeId : undefined;
-            const sizeName = typeof options.sizeName === "string" ? options.sizeName : undefined;
+            // Priority: sizeId/sizeName from record > from options (encoded in productId)
+            const rawSizeId = itemRecord["sizeId"];
+            const sizeIdFromRecord =
+                typeof rawSizeId === "string" && rawSizeId.trim() !== "" ? rawSizeId.trim() : undefined;
+            const rawSizeName = itemRecord["sizeName"];
+            const sizeNameFromRecord =
+                typeof rawSizeName === "string" && rawSizeName.trim() !== "" ? rawSizeName.trim() : undefined;
+            const sizeId = sizeIdFromRecord || (typeof options.sizeId === "string" ? options.sizeId : undefined);
+            const sizeName = sizeNameFromRecord || (typeof options.sizeName === "string" ? options.sizeName : undefined);
 
             const rawCustomizations = itemRecord["customizations"];
             const customizationsFromRecord =
@@ -533,7 +545,10 @@ export const useCartStore = create<CartState>()(
                                 price: itemToAdd.price,
                                 quantity,
                                 customizations: itemToAdd.customizations,
-                                imageURL: finalImageURL,
+                                cartItemImage: finalImageURL, // Send as cartItemImage (backend priority)
+                                imageURL: finalImageURL, // Also send as imageURL for backward compatibility
+                                sizeId: itemToAdd.sizeId, // Include sizeId if provided
+                                sizeName: itemToAdd.sizeName, // Include sizeName if provided
                             },
                         };
 
@@ -555,8 +570,47 @@ export const useCartStore = create<CartState>()(
                             throw new Error(errorMessage);
                         }
 
+                        // CRITICAL: Always use backend response as source of truth
+                        // Backend response structure: { status: 'success', message: '...', data: { restaurants: [...] } }
+                        // Extract cart data from response - API returns CartResponse with data field
+                        const cartResponse = cart as { status?: string; message?: string; data?: unknown };
+                        const cartData = cartResponse.data ?? cart;
+                        
+                        // Log raw cart data structure for debugging
+                        console.log("[CartStore] Cart response structure:", {
+                            status: cartResponse.status,
+                            hasData: !!cartResponse.data,
+                            dataType: typeof cartResponse.data,
+                        });
+                        console.log("[CartStore] Cart data structure:", JSON.stringify(cartData, null, 2));
+                        
+                        // Verify restaurants array exists and has items
+                        if (cartData && typeof cartData === "object") {
+                            const cartRecord = cartData as Record<string, unknown>;
+                            const restaurants = cartRecord["restaurants"];
+                            if (Array.isArray(restaurants)) {
+                                const totalItems = restaurants.reduce((sum: number, r: unknown) => {
+                                    const rRecord = r as Record<string, unknown>;
+                                    const items = rRecord["items"];
+                                    return sum + (Array.isArray(items) ? items.length : 0);
+                                }, 0);
+                                console.log(`[CartStore] Backend returned ${restaurants.length} restaurant(s) with ${totalItems} total items`);
+                                
+                                // If backend returned empty items, log warning
+                                if (totalItems === 0) {
+                                    console.warn("[CartStore] WARNING: Backend returned empty items array!");
+                                    console.warn("[CartStore] Full restaurants data:", JSON.stringify(restaurants, null, 2));
+                                }
+                            } else {
+                                console.warn("[CartStore] WARNING: restaurants is not an array:", restaurants);
+                            }
+                        } else {
+                            console.warn("[CartStore] WARNING: cartData is not an object:", cartData);
+                        }
+
                         // Use the response from addItemToCart directly - it already contains the updated cart
                         // This avoids race conditions from fetching cart separately
+                        // mapCartToItems expects either { data: { restaurants: [...] } } or { restaurants: [...] }
                         const parsedItems = mapCartToItems(cart);
 
                         if (parsedItems !== null && parsedItems.length > 0) {
@@ -573,6 +627,16 @@ export const useCartStore = create<CartState>()(
                             console.log(
                                 `[CartStore] Cart updated from backend response, items count: ${parsedItems.length}`
                             );
+                            
+                            // Verify the added item is in the merged items
+                            const addedItem = merged.find(
+                                (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId
+                            );
+                            if (!addedItem) {
+                                console.warn(`[CartStore] WARNING: Added item (${cartItemId}) not found in merged items!`);
+                            } else {
+                                console.log(`[CartStore] Verified: Added item found with quantity ${addedItem.quantity}`);
+                            }
                         } else if (parsedItems !== null && parsedItems.length === 0) {
                             // Backend returned empty cart (shouldn't happen after adding item, but handle it)
                             console.warn("[CartStore] Backend returned empty cart after adding item, fetching cart...");
@@ -722,7 +786,14 @@ export const useCartStore = create<CartState>()(
                     if (!userId) return;
 
                     try {
-                        const cart = await cartApi.removeItemFromCart(userId, restaurantId, itemId);
+                        // Parse sizeId and customizations from itemId or get from current items
+                        const currentItems = get().items;
+                        const item = currentItems.find((it) => it.id === itemId && it.restaurantId === restaurantId);
+                        const { options: parsedOptions } = parseCartItemId(itemId);
+                        const sizeId = item?.sizeId || parsedOptions.sizeId || undefined;
+                        const customizations = item?.customizations || parsedOptions.customizations || undefined;
+                        
+                        const cart = await cartApi.removeItemFromCart(userId, restaurantId, itemId, sizeId, customizations);
 
                         // Check if cart is null (empty cart after deletion)
                         // Backend returns null when cart is deleted (last item removed)
@@ -779,7 +850,14 @@ export const useCartStore = create<CartState>()(
                         if (quantity <= 0) {
                             await get().removeItem(itemId, restaurantId, { silent: true });
                         } else {
-                            const cart = await cartApi.updateItemQuantity(userId, restaurantId, itemId, quantity);
+                            // Parse sizeId and customizations from itemId or get from current items
+                            const currentItems = get().items;
+                            const item = currentItems.find((it) => it.id === itemId && it.restaurantId === restaurantId);
+                            const { options: parsedOptions } = parseCartItemId(itemId);
+                            const sizeId = item?.sizeId || parsedOptions.sizeId || undefined;
+                            const customizations = item?.customizations || parsedOptions.customizations || undefined;
+                            
+                            const cart = await cartApi.updateItemQuantity(userId, restaurantId, itemId, quantity, sizeId, customizations);
                             if (!updateItemsFromResponse(cart)) {
                                 await get().fetchCart();
                             }

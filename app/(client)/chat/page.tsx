@@ -48,19 +48,14 @@ function ChatPageInner() {
     }, [user?.id]);
 
     return (
-        <div className="custom-container py-8">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-900">Messages</h1>
-                <p className="text-gray-600 mt-2">Chat with merchants and other users</p>
-            </div>
-
+        <div className="custom-container py-6">
             {!isAuthenticated || !user ? (
                 <div className="flex items-center justify-center h-[600px]">
                     <p className="text-gray-500">Please log in to use chat</p>
                 </div>
             ) : isLoading ? (
                 <div className="flex items-center justify-center h-[600px]">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                    <Loader2 className="w-8 h-8 animate-spin text-[#EE4D2D]" />
                 </div>
             ) : (
                 <ChatClient initialRooms={rooms} currentUserId={user.id} initialRoomId={initialRoomId} />

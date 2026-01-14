@@ -1,17 +1,18 @@
 "use client";
 import { type Category, type Product } from "@/types";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MenuItemCard } from "./MenuItemCard";
-import { useEffect, useMemo, useState } from "react";
 
 type MenuProps = {
     restaurantId: string;
     restaurantName: string;
     products: Product[];
     categories: Category[];
+    highlightProductId?: string;
 };
 
-export default function RestaurantMenu({ restaurantId, restaurantName, products, categories }: MenuProps) {
+export default function RestaurantMenu({ restaurantId, restaurantName, products, categories, highlightProductId }: MenuProps) {
     const slugify = (text: string) =>
         text
             .toLowerCase()
@@ -109,20 +110,42 @@ export default function RestaurantMenu({ restaurantId, restaurantName, products,
         });
     }, [products, categories]);
 
-    const firstNonEmpty = groups.find((g) => g.items.length > 0)?.value;
-    const [openValue, setOpenValue] = useState<string>(firstNonEmpty ?? groups[0]?.value ?? "");
+    const searchParams = useSearchParams();
+    const productIdFromUrl = highlightProductId || searchParams.get("productId");
+    const [highlightedProductId, setHighlightedProductId] = useState<string | null>(productIdFromUrl || null);
+    const categoryRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
+    // Scroll to highlighted product
     useEffect(() => {
-        if (groups.length === 0) return;
-        if (openValue && groups.some((g) => g.value === openValue)) return;
+        if (!productIdFromUrl || groups.length === 0) return;
 
-        const next = groups.find((g) => g.items.length > 0)?.value ?? groups[0]?.value ?? "";
-        setOpenValue(next);
-    }, [groups, openValue]);
+        const categoryWithProduct = groups.find((group) => 
+            group.items.some((item) => item.id === productIdFromUrl)
+        );
+
+        if (categoryWithProduct) {
+            const categoryElement = categoryRefs.current.get(categoryWithProduct.value);
+            if (categoryElement) {
+                setTimeout(() => {
+                    categoryElement.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 300);
+            }
+        }
+    }, [productIdFromUrl, groups]);
+
+    // Remove highlight after 3 seconds
+    useEffect(() => {
+        if (highlightedProductId) {
+            const timer = setTimeout(() => {
+                setHighlightedProductId(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [highlightedProductId]);
 
     if (groups.length === 0) {
         return (
-            <div className="rounded-2xl border border-brand-purple/10 bg-white/70 p-5 shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-md sm:p-8">
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-lg sm:p-8">
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <h2 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">Menu</h2>
                 </div>
@@ -134,28 +157,26 @@ export default function RestaurantMenu({ restaurantId, restaurantName, products,
     }
 
     return (
-        <div className="rounded-2xl border border-brand-purple/10 bg-white/70 p-5 shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-md sm:p-8">
-            <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-lg sm:p-8">
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
                 <h2 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">Menu</h2>
                 <p className="text-sm text-gray-500">Browse by category</p>
             </div>
 
-            <div className="mt-6 border-b border-gray-200/70 pb-4">
+            {/* Category Quick Navigation */}
+            <div className="mb-6 border-b border-gray-200 pb-4">
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                     {groups.map((group) => (
                         <button
                             key={group.value}
                             type="button"
                             onClick={() => {
-                                setOpenValue(group.value);
-                                const element = document.getElementById(group.value);
+                                const element = categoryRefs.current.get(group.value);
                                 element?.scrollIntoView({ behavior: "smooth", block: "start" });
                             }}
                             className={
-                                "rounded-full px-4 py-2 text-sm font-semibold transition-all " +
-                                (openValue === group.value
-                                    ? "bg-brand-purple text-white shadow-sm"
-                                    : "bg-gray-100 text-gray-700 hover:bg-brand-purple/10 hover:text-brand-purple")
+                                "rounded-full px-4 py-2 text-sm font-semibold transition-all whitespace-nowrap " +
+                                "bg-gray-100 text-gray-700 hover:bg-[#EE4D2D]/10 hover:text-[#EE4D2D]"
                             }
                         >
                             {group.categoryName}
@@ -164,56 +185,65 @@ export default function RestaurantMenu({ restaurantId, restaurantName, products,
                 </div>
             </div>
 
-            <div className="mt-6">
-                <Accordion
-                    type="single"
-                    collapsible
-                    value={openValue}
-                    onValueChange={(value) => {
-                        if (value) setOpenValue(value);
-                    }}
-                    className="space-y-4"
-                >
-                    {groups.map((group) => (
-                        <AccordionItem
-                            key={group.value}
-                            value={group.value}
-                            id={group.value}
-                            className="scroll-mt-24 rounded-2xl border border-gray-200/70 bg-white/70"
-                        >
-                            <AccordionTrigger className="px-5 py-4 text-left hover:no-underline">
-                                <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                                    <div className="min-w-0">
-                                        <p className="truncate text-base font-bold text-gray-900">
-                                            {group.categoryName}
-                                        </p>
-                                        <p className="mt-0.5 text-xs font-medium text-gray-500">
-                                            {group.items.length} items
-                                        </p>
-                                    </div>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="px-5 pb-5">
-                                {group.items.length === 0 ? (
-                                    <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
-                                        No items available in this category.
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                                        {group.items.map((item) => (
+            {/* Long-List Scrolling Layout */}
+            <div className="space-y-12">
+                {groups.map((group) => (
+                    <div
+                        key={group.value}
+                        id={group.value}
+                        ref={(el) => {
+                            if (el) categoryRefs.current.set(group.value, el);
+                        }}
+                        className="scroll-mt-24"
+                    >
+                        {/* Sticky Category Header */}
+                        <div className="sticky top-20 z-10 bg-white/95 backdrop-blur-sm py-4 mb-6 border-b-2 border-[#EE4D2D] -mx-5 px-5 sm:-mx-8 sm:px-8">
+                            <h3 className="text-xl md:text-2xl font-bold text-gray-900">
+                                {group.categoryName}
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                                {group.items.length} {group.items.length === 1 ? "item" : "items"}
+                            </p>
+                        </div>
+
+                        {/* Food Items Grid */}
+                        {group.items.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
+                                No items available in this category.
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                                {group.items.map((item) => {
+                                    const isHighlighted = highlightedProductId === item.id;
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            id={`product-${item.id}`}
+                                            className={`transition-all duration-500 ${
+                                                isHighlighted 
+                                                    ? "ring-4 ring-[#EE4D2D] ring-offset-2 rounded-2xl" 
+                                                    : ""
+                                            }`}
+                                            ref={(el) => {
+                                                if (isHighlighted && el) {
+                                                    setTimeout(() => {
+                                                        el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                                    }, 500);
+                                                }
+                                            }}
+                                        >
                                             <MenuItemCard
-                                                key={item.id}
                                                 item={item}
                                                 restaurantId={restaurantId}
                                                 restaurantName={restaurantName}
                                             />
-                                        ))}
-                                    </div>
-                                )}
-                            </AccordionContent>
-                        </AccordionItem>
-                    ))}
-                </Accordion>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                ))}
             </div>
         </div>
     );

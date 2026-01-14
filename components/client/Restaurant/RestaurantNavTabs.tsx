@@ -56,13 +56,13 @@ export default function RestaurantNavTabs() {
                                                                 className={cn(
                                                                         "py-4 px-2 md:px-0 text-sm md:text-base font-bold transition-all duration-200 relative",
                                                                         isActive
-                                                                                ? "text-brand-purple"
-                                                                                : "text-gray-500 hover:text-brand-purple"
+                                                                                ? "text-[#EE4D2D]"
+                                                                                : "text-gray-500 hover:text-[#EE4D2D]"
                                                                 )}
                                                         >
                                                                 {link.name}
                                                                 {isActive && (
-                                                                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-purple rounded-full" />
+                                                                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#EE4D2D] rounded-full" />
                                                                 )}
                                                         </a>
                                                 );

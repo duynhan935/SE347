@@ -17,13 +17,17 @@ export default function RestaurantReviews({ reviews }: { reviews: Review[] }) {
 
     if (!reviews || reviews.length === 0) {
         return (
-            <div className="rounded-2xl border border-brand-purple/10 bg-white/70 p-6 shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-md md:p-8">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-lg md:p-8">
                 <h2 className="mb-6 flex items-center gap-3 text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">
-                    <MessageSquare className="w-7 h-7 text-brand-purple" />
+                    <MessageSquare className="w-7 h-7 text-[#EE4D2D]" />
                     Customer Reviews
                 </h2>
-                <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
-                    This restaurant has no reviews yet.
+                <div className="flex flex-col items-center justify-center py-12">
+                    <div className="text-6xl mb-4">📭</div>
+                    <p className="text-lg font-semibold text-gray-800 mb-2">No reviews yet</p>
+                    <p className="text-sm text-gray-500 text-center max-w-md">
+                        Be the first to review this restaurant and help others discover great food!
+                    </p>
                 </div>
             </div>
         );
@@ -31,9 +35,9 @@ export default function RestaurantReviews({ reviews }: { reviews: Review[] }) {
     const visibleReviews = showAll ? reviews : reviews.slice(0, 3);
 
     return (
-        <div className="rounded-2xl border border-brand-purple/10 bg-white/70 p-6 shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-md md:p-8">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-lg md:p-8">
             <h2 className="mb-6 flex items-center gap-3 text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">
-                <MessageSquare className="w-7 h-7 text-brand-purple" />
+                <MessageSquare className="w-7 h-7 text-[#EE4D2D]" />
                 Customer Reviews
             </h2>
             <div className="space-y-6">
@@ -53,7 +57,7 @@ export default function RestaurantReviews({ reviews }: { reviews: Review[] }) {
             {reviews.length > 3 && (
                 <button
                     onClick={() => setShowAll(!showAll)}
-                    className="mt-6 w-full rounded-lg border border-brand-purple/20 bg-brand-purple/5 py-2.5 text-center text-sm font-semibold text-brand-purple transition-colors hover:bg-brand-purple/10"
+                    className="mt-6 w-full rounded-lg border border-[#EE4D2D]/20 bg-[#EE4D2D]/5 py-2.5 text-center text-sm font-semibold text-[#EE4D2D] transition-colors hover:bg-[#EE4D2D]/10"
                 >
                     {showAll ? "Show Less" : `View all ${reviews.length} reviews`}
                 </button>

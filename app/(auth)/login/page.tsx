@@ -1,10 +1,14 @@
 "use client";
 
+import { Logo } from "@/constants";
+import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 
+import { decodeJWT } from "@/lib/jwt";
+import { getLoginRedirectPath } from "@/lib/utils/redirectUtils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
@@ -18,47 +22,80 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const { login, loading, error } = useAuthStore();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        // Show loading toast
         const loadingToast = toast.loading("Signing in...");
 
         try {
             const success = await login({ username: email, password });
 
-            // Dismiss loading toast
             toast.dismiss(loadingToast);
 
             if (success) {
                 toast.success("Login successful! Welcome back! 🎉", { duration: 3000 });
-                // Use replace instead of push to avoid back button issues
-                // Small delay to ensure state is fully updated
-                setTimeout(() => {
-                    router.replace("/");
-                }, 300);
+                
+                // Get role from token immediately (faster than waiting for fetchProfile)
+                const accessToken = useAuthStore.getState().accessToken;
+                let userRole: string | null = null;
+                
+                if (accessToken) {
+                    const decodedToken = decodeJWT(accessToken);
+                    userRole = decodedToken?.role || null;
+                }
+                
+                // If role not in token, wait for user profile to be fetched
+                if (!userRole) {
+                    const checkUserAndRedirect = async () => {
+                        let attempts = 0;
+                        const maxAttempts = 10; // 10 attempts = 1 second max wait
+                        
+                        while (attempts < maxAttempts) {
+                            const currentUser = useAuthStore.getState().user;
+                            if (currentUser?.role) {
+                                userRole = currentUser.role;
+                                break;
+                            }
+                            // Wait 100ms before checking again
+                            await new Promise((resolve) => setTimeout(resolve, 100));
+                            attempts++;
+                        }
+                        
+                        const callbackUrl = searchParams.get("redirect");
+                        const redirectPath = getLoginRedirectPath(userRole || null, callbackUrl);
+                        router.replace(redirectPath);
+                    };
+                    
+                    setTimeout(() => {
+                        checkUserAndRedirect();
+                    }, 300);
+                } else {
+                    // Role found in token, redirect immediately
+                    const callbackUrl = searchParams.get("redirect");
+                    const redirectPath = getLoginRedirectPath(userRole, callbackUrl);
+                    setTimeout(() => {
+                        router.replace(redirectPath);
+                    }, 300);
+                }
             } else {
-                // Check if the error is about account not being activated
                 const errorCode =
                     error?.includes("INACTIVATED_ACCOUNT") ||
                     error?.toLowerCase().includes("not activated") ||
                     error?.toLowerCase().includes("activate");
 
                 if (errorCode) {
-                    // Check if this might be a merchant account (check localStorage for pending restaurant)
                     const pendingRestaurant = localStorage.getItem(`pending_restaurant_${email}`);
                     if (pendingRestaurant) {
-                        // This is likely a merchant account waiting for approval
                         toast.error(
-                            "Tài khoản merchant của bạn chưa được admin phê duyệt. Vui lòng chờ admin phê duyệt để có thể đăng nhập.",
+                            "Your merchant account has not been approved by admin yet. Please wait for admin approval to login.",
                             {
                                 duration: 5000,
                             }
                         );
                     } else {
-                        // This is likely a USER account that needs email verification
-                        toast.error("Tài khoản của bạn chưa được kích hoạt. Vui lòng xác minh email để tiếp tục.", {
+                        toast.error("Your account has not been activated. Please verify your email to continue.", {
                             duration: 4000,
                         });
                         setTimeout(() => {
@@ -68,15 +105,13 @@ export default function LoginPage() {
                     return;
                 }
 
-                toast.error(error || "Đăng nhập thất bại. Vui lòng kiểm tra thông tin đăng nhập.", {
+                toast.error(error || "Login failed. Please check your credentials.", {
                     duration: 4000,
                 });
             }
         } catch (err) {
-            // Dismiss loading toast
             toast.dismiss(loadingToast);
 
-            // Handle axios error with errorCode (especially INACTIVATED_ACCOUNT)
             const axiosError = err as {
                 response?: {
                     status?: number;
@@ -88,26 +123,22 @@ export default function LoginPage() {
             const errorMessage = axiosError?.response?.data?.message || axiosError?.message || "Login failed";
             const statusCode = axiosError?.response?.status;
 
-            // Check for INACTIVATED_ACCOUNT error code (403) or message
             if (
                 errorCode === "INACTIVATED_ACCOUNT" ||
                 statusCode === 403 ||
                 errorMessage.toLowerCase().includes("not activated") ||
                 errorMessage.toLowerCase().includes("activate")
             ) {
-                // Check if this might be a merchant account (check localStorage for pending restaurant)
                 const pendingRestaurant = localStorage.getItem(`pending_restaurant_${email}`);
                 if (pendingRestaurant) {
-                    // This is likely a merchant account waiting for approval
                     toast.error(
-                        "Tài khoản merchant của bạn chưa được admin phê duyệt. Vui lòng chờ admin phê duyệt để có thể đăng nhập.",
+                        "Your merchant account has not been approved by admin yet. Please wait for admin approval to login.",
                         {
                             duration: 5000,
                         }
                     );
                 } else {
-                    // This is likely a USER account that needs email verification
-                    toast.error("Tài khoản của bạn chưa được kích hoạt. Vui lòng xác minh email để tiếp tục.", {
+                    toast.error("Your account has not been activated. Please verify your email to continue.", {
                         duration: 4000,
                     });
                     setTimeout(() => {
@@ -117,27 +148,24 @@ export default function LoginPage() {
                 return;
             }
 
-            // For 401 Unauthorized errors, check if it might be account not activated
             if (statusCode === 401) {
-                // Try to provide helpful message
                 const displayMessage =
                     errorMessage.toLowerCase().includes("bad credentials") ||
                     errorMessage.toLowerCase().includes("invalid") ||
                     errorMessage.toLowerCase().includes("wrong password")
-                        ? "Email hoặc mật khẩu không đúng. Vui lòng thử lại."
+                        ? "Email or password is incorrect. Please try again."
                         : errorMessage.toLowerCase().includes("account") ||
                           errorMessage.toLowerCase().includes("enabled")
-                        ? "Tài khoản của bạn chưa được kích hoạt. Vui lòng kiểm tra email để xác minh hoặc chờ admin phê duyệt."
-                        : "Email hoặc mật khẩu không đúng. Vui lòng thử lại.";
+                        ? "Your account has not been activated. Please check your email to verify or wait for admin approval."
+                        : "Email or password is incorrect. Please try again.";
 
                 toast.error(displayMessage, { duration: 4000 });
                 return;
             }
 
-            // For other errors, show toast with better message
             const displayMessage =
                 errorMessage.includes("Network") || errorMessage.includes("timeout")
-                    ? "Lỗi kết nối. Vui lòng kiểm tra kết nối internet và thử lại."
+                    ? "Connection error. Please check your internet connection and try again."
                     : errorMessage;
 
             toast.error(displayMessage, { duration: 4000 });
@@ -145,11 +173,18 @@ export default function LoginPage() {
     };
 
     return (
-        <section className="min-h-screen flex items-center justify-center bg-brand-yellowlight p-4">
-            <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-8">
-                <h2 className="text-3xl font-bold text-center font-roboto-serif text-brand-black mb-6">Sign In</h2>
+        <section className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+            <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
+                {/* Logo */}
+                <div className="flex justify-center mb-6">
+                    <Link href="/" className="flex items-center">
+                        <Image src={Logo} alt="FoodEats Logo" width={140} height={46} className="h-10 w-auto" priority />
+                    </Link>
+                </div>
 
-                {/* --- Social Login --- */}
+                <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">Sign In</h2>
+
+                {/* Social Login */}
                 <div className="space-y-3">
                     <a
                         href={`${BACKEND_ORIGIN}/oauth2/authorization/google`}
@@ -160,14 +195,14 @@ export default function LoginPage() {
                     </a>
                 </div>
 
-                {/* --- Separator --- */}
+                {/* Separator */}
                 <div className="flex items-center my-6">
                     <div className="flex-grow border-t border-gray-300"></div>
                     <span className="mx-4 text-xs font-medium text-gray-500">OR</span>
                     <div className="flex-grow border-t border-gray-300"></div>
                 </div>
 
-                {/* --- Email/Password Form --- */}
+                {/* Email/Password Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -179,7 +214,7 @@ export default function LoginPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
                             placeholder="you@example.com"
                         />
                     </div>
@@ -189,7 +224,7 @@ export default function LoginPage() {
                             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                                 Password
                             </label>
-                            <a href="#" className="text-sm text-brand-purple hover:underline">
+                            <a href="#" className="text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline">
                                 Forgot password?
                             </a>
                         </div>
@@ -201,7 +236,7 @@ export default function LoginPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
                                 placeholder="••••••••"
                             />
 
@@ -217,16 +252,16 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3 px-4 bg-brand-purple text-white font-semibold rounded-md hover:bg-brand-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-purple transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        className="w-full py-3 px-4 bg-[#EE4D2D] text-white font-semibold rounded-md hover:bg-[#EE4D2D]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EE4D2D] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                         {loading ? "Signing In..." : "Sign In"}
                     </button>
                 </form>
 
-                {/* --- Sign Up Link --- */}
+                {/* Sign Up Link */}
                 <p className="mt-6 text-center text-sm text-gray-600">
                     Don&apos;t have an account?{" "}
-                    <Link href="register" className="font-semibold text-brand-purple hover:underline">
+                    <Link href="/register" className="font-semibold text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline">
                         Sign Up
                     </Link>
                 </p>

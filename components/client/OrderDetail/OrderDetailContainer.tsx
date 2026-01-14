@@ -1,6 +1,7 @@
 import { orderApi } from "@/lib/api/orderApi";
 import { Order } from "@/types/order.type";
 import { notFound } from "next/navigation";
+import OrderTrackingTimeline from "../Orders/OrderTrackingTimeline";
 import { OrderSummary } from "./OrderSummary";
 
 type DisplayOrderItem = {
@@ -44,14 +45,26 @@ export default async function OrderDetailPageContainer({ params }: { params: { i
                 return acc;
                 }, {} as Record<string, DisplayOrderItem[]>);
 
+        // Format price to VND
+        const formatPrice = (priceUSD: number): string => {
+            const vndPrice = priceUSD * 25000; // Convert USD to VND
+            return vndPrice.toLocaleString("en-US", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+            });
+        };
+
         return (
                 <div className="custom-container p-3 sm:p-1 md:p-12">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-16 items-start">
-                                {/* Cột trái: Chi tiết đơn hàng */}
+                                {/* Left column: Order Details */}
                                 <div className="lg:col-span-2 space-y-8">
-                                        <h1 className="text-xl md:text-3xl font-bold">
+                                        <h1 className="text-xl md:text-3xl font-bold text-gray-900">
                                                 Order Details ({totalItems} {totalItems > 1 ? "items" : "item"})
                                         </h1>
+
+                                        {/* Tracking Timeline */}
+                                        <OrderTrackingTimeline status={order.status} />
 
                                         <div className="space-y-8">
                                                 {Object.entries(groupedItems).map(([shopName, items]) => (
@@ -74,9 +87,9 @@ export default async function OrderDetailPageContainer({ params }: { params: { i
                                                                                         className="flex items-start gap-4 py-5 border-b border-gray-100 last:border-b-0"
                                                                                 >
                                                                                         {/* Image - Improved placeholder */}
-                                                                                        <div className="h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center shadow-sm">
+                                                                                        <div className="h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-md bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center shadow-sm">
                                                                                                 <svg
-                                                                                                        className="w-8 h-8 text-brand-purple"
+                                                                                                        className="w-8 h-8 text-[#EE4D2D]"
                                                                                                         fill="none"
                                                                                                         stroke="currentColor"
                                                                                                         viewBox="0 0 24 24"
@@ -101,15 +114,14 @@ export default async function OrderDetailPageContainer({ params }: { params: { i
                                                                                                         </p>
                                                                                                 )}
                                                                                                 <p className="text-xs text-gray-400">
-                                                                                                        Số lượng: {item.quantity}
+                                                                                                        Quantity: {item.quantity}
                                                                                                 </p>
                                                                                         </div>
 
                                                                                         {/* Price */}
                                                                                         <div className="text-right flex-shrink-0">
                                                                                                 <p className="font-bold text-lg text-gray-900">
-                                                                                                        $
-                                                                                                        {(item.price * item.quantity).toFixed(2)}
+                                                                                                        {formatPrice(item.price * item.quantity)} ₫
                                                                                                 </p>
                                                                                         </div>
                                                                                 </div>

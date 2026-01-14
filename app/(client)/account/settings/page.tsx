@@ -64,13 +64,13 @@ export default function SettingsPage() {
         if (!mounted || authLoading) {
                 return (
                         <div className="bg-white p-8 rounded-lg shadow-md flex items-center justify-center min-h-[400px]">
-                                <Loader2 className="w-8 h-8 animate-spin text-brand-purple" />
+                                <Loader2 className="w-8 h-8 animate-spin text-[#EE4D2D]" />
                         </div>
                 );
         }
 
         return (
-                <div className="bg-white p-8 rounded-lg shadow-md space-y-8">
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-8">
                         <div>
                                 <h1 className="text-2xl font-bold mb-2">Account Settings</h1>
                                 <p className="text-gray-500">Manage your account preferences.</p>
@@ -91,7 +91,7 @@ export default function SettingsPage() {
                                                                 type={showNewPassword ? "text" : "password"}
                                                                 value={newPassword}
                                                                 onChange={(e) => setNewPassword(e.target.value)}
-                                                                className="w-full p-2 border rounded-md pr-10 focus:ring-2 focus:ring-brand-purple focus:border-brand-purple"
+                                                                className="w-full p-2 border rounded-md pr-10 focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
                                                                 placeholder="Enter new password"
                                                                 required
                                                                 minLength={6}
@@ -120,7 +120,7 @@ export default function SettingsPage() {
                                                                 type={showConfirmPassword ? "text" : "password"}
                                                                 value={confirmPassword}
                                                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                                                className="w-full p-2 border rounded-md pr-10 focus:ring-2 focus:ring-brand-purple focus:border-brand-purple"
+                                                                className="w-full p-2 border rounded-md pr-10 focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
                                                                 placeholder="Confirm new password"
                                                                 required
                                                                 minLength={6}
@@ -143,7 +143,7 @@ export default function SettingsPage() {
                                         </div>
                                         <Button
                                                 type="submit"
-                                                className="bg-brand-purple text-white hover:bg-brand-purple/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                 disabled={loading}
                                         >
                                                 {loading ? (
@@ -165,7 +165,7 @@ export default function SettingsPage() {
                                         Secure your account with an extra layer of protection.
                                 </p>
                                 <div className="mt-4">
-                                        <Button className="bg-brand-purple text-white hover:bg-brand-purple/90">
+                                        <Button className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90">
                                                 Enable 2FA
                                         </Button>
                                 </div>

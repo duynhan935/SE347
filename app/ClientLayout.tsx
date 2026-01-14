@@ -6,11 +6,15 @@ import Footer from "@/components/layout/client/Footer";
 import ChatProvider from "@/components/providers/ChatProvider";
 import SSEProvider from "@/components/providers/SSEProvider";
 import { useCartSync } from "@/lib/hooks/useCartSync";
-import { usePathname } from "next/navigation";
-import React from "react";
+import { shouldRedirectFromPath } from "@/lib/utils/redirectUtils";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useEffect } from "react";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
         const pathname = usePathname();
+        const router = useRouter();
+        const { user, isAuthenticated, loading } = useAuthStore();
         const isMerchant = pathname.includes("merchant");
         const isAdmin = pathname.startsWith("/admin");
         const isManager = pathname.startsWith("/manager");
@@ -21,13 +25,21 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         // Sync cart with user authentication
         useCartSync();
 
+        // Redirect Merchant/Admin away from client pages (home, search, restaurants, etc.)
+        useEffect(() => {
+                if (!loading && isAuthenticated && user?.role && !isMerchant && !isAdmin && !isManager && !isAuthPage) {
+                        const { shouldRedirect, redirectTo } = shouldRedirectFromPath(pathname, user.role);
+                        if (shouldRedirect) {
+                                router.replace(redirectTo);
+                        }
+                }
+        }, [loading, isAuthenticated, user?.role, pathname, router, isMerchant, isAdmin, isManager, isAuthPage]);
+
         // Show Header/Footer only for client pages (not admin/manager/merchant)
         const showHeaderFooter = !isMerchant && !isAdmin && !isManager && !isAuthPage;
 
-        // Apply padding-top only for client pages with header
-        const mainClassName = showHeaderFooter
-                ? "pt-16 lg:pt-20 bg-brand-white min-h-screen"
-                : "bg-brand-white min-h-screen";
+        // No padding-top needed since Header is sticky (not fixed)
+        const mainClassName = "bg-gray-50";
 
         return (
                 <AuthProvider>

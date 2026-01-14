@@ -31,7 +31,14 @@ export const useProductStore = create<ProductState>((set) => ({
         set({ loading: true, error: null });
         try {
             const res = await productApi.getAllProducts(params);
-            set({ products: res.data || [], loading: false });
+            // Handle Page response structure: { content: Product[], ... } or direct array
+            const data = res.data;
+            const productsArray = Array.isArray(data) 
+                ? data 
+                : (data && typeof data === 'object' && 'content' in data && Array.isArray(data.content))
+                    ? data.content
+                    : [];
+            set({ products: productsArray, loading: false });
         } catch (err: any) {
             set({ error: err.message || "Failed to load products.", loading: false });
         }

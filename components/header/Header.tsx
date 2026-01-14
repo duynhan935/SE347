@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AddressSelector from "./AddressSelector";
 import LogoComponent from "./Logo";
 import MobileMenu from "./MobileMenu";
 import NavActions from "./NavActions";
@@ -21,24 +22,27 @@ export default function Header() {
 
         return (
                 <header
-                        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-                                isScrolled ? "bg-brand-yellow shadow-md" : "bg-brand-yellow"
+                        className={`sticky top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 transition-all duration-300 ${
+                                isScrolled ? "shadow-sm" : ""
                         }`}
                 >
                         <div className="custom-container">
-                                <div className="flex items-center justify-between h-20 px-4 lg:px-6 gap-4 lg:gap-6">
+                                <div className="flex items-center justify-between h-16 lg:h-20 px-4 lg:px-6 gap-3 lg:gap-6">
                                         {/* Left: Logo */}
                                         <div className="flex-shrink-0">
                                                 <LogoComponent />
                                         </div>
 
-                                        {/* Center: Search Bar */}
-                                        <div className="hidden lg:flex flex-1 max-w-2xl mx-8">
-                                                <SearchBar />
+                                        {/* Center: Address Selector + Search Bar */}
+                                        <div className="hidden lg:flex flex-1 items-center gap-3 mx-6 lg:mx-8">
+                                                <AddressSelector />
+                                                <div className="flex-1 max-w-2xl">
+                                                        <SearchBar />
+                                                </div>
                                         </div>
 
                                         {/* Right: Navigation Links + Cart + User */}
-                                        <div className="flex items-center gap-4 lg:gap-6 flex-shrink-0">
+                                        <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0">
                                                 <NavigationLinks />
                                                 {/* Desktop: Show NavActions (icons + user dropdown) */}
                                                 <div className="hidden lg:flex items-center gap-3 lg:gap-4">

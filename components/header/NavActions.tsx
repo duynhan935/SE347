@@ -1,6 +1,5 @@
 "use client";
 
-import { MerchantRequestForm } from "@/components/auth/MerchantRequestForm";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,14 +12,15 @@ import {
 import { getImageUrl } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatStore } from "@/stores/useChatStore";
-import { LogOut, MessageCircle, Package, Settings, Store, User, UtensilsCrossed, X } from "lucide-react";
+import { useNotificationStore } from "@/stores/useNotificationStore";
+import { LogOut, MessageCircle, Package, Settings, Store, User, UtensilsCrossed } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import CartDropdown from "./CartDropdown";
-import { useNotificationStore } from "@/stores/useNotificationStore";
+import NotificationDropdown from "./NotificationDropdown";
 
 export default function NavActions() {
     const { user, isAuthenticated, loading, logout } = useAuthStore();
@@ -28,7 +28,6 @@ export default function NavActions() {
     const unreadCountMap = useChatStore((state) => state.unreadCountMap);
     const orderUnreadCount = useNotificationStore((state) => state.orderUnreadCount());
     const [mounted, setMounted] = useState(false);
-    const [showMerchantForm, setShowMerchantForm] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
@@ -96,18 +95,18 @@ export default function NavActions() {
 
     return (
         <div className="flex items-center gap-3 lg:gap-4">
-            {/* Browse restaurants (main action) */}
+            {/* Browse foods (main action) */}
             <Link
-                href="/restaurants"
-                className={`relative p-2 rounded-full hover:bg-gray-50 transition-colors ${
-                    pathname === "/restaurants" ? "text-brand-orange" : "text-brand-grey"
+                href="/?type=foods"
+                className={`relative p-2 rounded-lg hover:bg-gray-50 transition-colors ${
+                    pathname === "/" ? "text-[#EE4D2D]" : "text-gray-600"
                 }`}
-                aria-label="Browse restaurants"
-                title="Browse restaurants"
+                aria-label="Khám phá món ăn"
+                title="Khám phá món ăn"
             >
                 <UtensilsCrossed className="w-5 h-5" />
-                {pathname === "/restaurants" && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-orange rounded-full" />
+                {pathname === "/" && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#EE4D2D] rounded-full" />
                 )}
             </Link>
 
@@ -115,20 +114,20 @@ export default function NavActions() {
             {isAuthenticated && user && !loading && (
                 <Link
                     href="/orders"
-                    className={`relative p-2 rounded-full hover:bg-gray-50 transition-colors ${
-                        pathname === "/orders" ? "text-brand-orange" : "text-brand-grey"
+                    className={`relative p-2 rounded-lg hover:bg-gray-50 transition-colors ${
+                        pathname === "/orders" ? "text-[#EE4D2D]" : "text-gray-600"
                     }`}
                     aria-label="My orders"
                     title="My orders"
                 >
                     <Package className="w-5 h-5" />
                     {orderUnreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                            {orderUnreadCount > 9 ? "9+" : orderUnreadCount}
+                        <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#EE4D2D] text-white text-xs rounded-full flex items-center justify-center font-bold shadow-md">
+                            {orderUnreadCount > 99 ? "99+" : orderUnreadCount}
                         </span>
                     )}
                     {pathname === "/orders" && (
-                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-orange rounded-full" />
+                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#EE4D2D] rounded-full" />
                     )}
                 </Link>
             )}
@@ -137,23 +136,26 @@ export default function NavActions() {
             {isAuthenticated && user && !loading && (
                 <Link
                     href="/chat"
-                    className={`relative p-2 rounded-full hover:bg-gray-50 transition-colors ${
-                        pathname === "/chat" ? "text-brand-orange" : "text-brand-grey"
+                    className={`relative p-2 rounded-lg hover:bg-gray-50 transition-colors ${
+                        pathname === "/chat" ? "text-[#EE4D2D]" : "text-gray-600"
                     }`}
                     aria-label="Messages"
                     title="Messages"
                 >
                     <MessageCircle className="w-5 h-5" />
                     {chatUnreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                            {chatUnreadCount > 9 ? "9+" : chatUnreadCount}
+                        <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#EE4D2D] text-white text-xs rounded-full flex items-center justify-center font-bold shadow-md">
+                            {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
                         </span>
                     )}
                     {pathname === "/chat" && (
-                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-orange rounded-full" />
+                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#EE4D2D] rounded-full" />
                     )}
                 </Link>
             )}
+
+            {/* Notifications - Show if authenticated */}
+            {isAuthenticated && user && !loading && <NotificationDropdown />}
 
             {/* Cart - Show if authenticated and not loading */}
             {isAuthenticated && user && !loading && <CartDropdown />}
@@ -174,7 +176,7 @@ export default function NavActions() {
                         align="end"
                         alignOffset={0}
                         sideOffset={8}
-                        className="w-56 min-w-[14rem] max-w-[14rem]"
+                        className="w-56 min-w-[14rem] max-w-[14rem] shadow-lg border border-gray-200"
                     >
                         {/* User Info */}
                         <DropdownMenuLabel className="font-normal">
@@ -190,15 +192,15 @@ export default function NavActions() {
                             <DropdownMenuItem asChild>
                                 <Link
                                     href="/orders"
-                                    className="flex items-center justify-between cursor-pointer w-full relative"
+                                    className="flex items-center justify-between cursor-pointer w-full py-2.5 px-3 hover:bg-gray-50 transition-colors"
                                 >
-                                    <div className="flex items-center">
-                                        <Package className="mr-2 h-4 w-4" />
-                                        <span>My orders</span>
+                                    <div className="flex items-center gap-2">
+                                        <Package className="h-4 w-4 text-gray-600" />
+                                        <span className="text-sm">My orders</span>
                                     </div>
                                     {orderUnreadCount > 0 && (
-                                        <span className="ml-2 h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                                            {orderUnreadCount > 9 ? "9+" : orderUnreadCount}
+                                        <span className="ml-2 h-5 min-w-[20px] px-1.5 bg-[#EE4D2D] text-white text-xs rounded-full flex items-center justify-center font-bold">
+                                            {orderUnreadCount > 99 ? "99+" : orderUnreadCount}
                                         </span>
                                     )}
                                 </Link>
@@ -206,15 +208,15 @@ export default function NavActions() {
                             <DropdownMenuItem asChild>
                                 <Link
                                     href="/chat"
-                                    className="flex items-center justify-between cursor-pointer w-full relative"
+                                    className="flex items-center justify-between cursor-pointer w-full py-2.5 px-3 hover:bg-gray-50 transition-colors"
                                 >
-                                    <div className="flex items-center">
-                                        <MessageCircle className="mr-2 h-4 w-4" />
-                                        <span>Messages</span>
+                                    <div className="flex items-center gap-2">
+                                        <MessageCircle className="h-4 w-4 text-gray-600" />
+                                        <span className="text-sm">Messages</span>
                                     </div>
                                     {chatUnreadCount > 0 && (
-                                        <span className="ml-2 h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                                            {chatUnreadCount > 9 ? "9+" : chatUnreadCount}
+                                        <span className="ml-2 h-5 min-w-[20px] px-1.5 bg-[#EE4D2D] text-white text-xs rounded-full flex items-center justify-center font-bold">
+                                            {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
                                         </span>
                                     )}
                                 </Link>
@@ -226,15 +228,15 @@ export default function NavActions() {
                         {/* Group 2: Settings */}
                         <DropdownMenuGroup>
                             <DropdownMenuItem asChild>
-                                <Link href="/account" className="flex items-center cursor-pointer">
-                                    <User className="mr-2 h-4 w-4" />
-                                    <span>Profile</span>
+                                <Link href="/account" className="flex items-center gap-2 py-2.5 px-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                                    <User className="h-4 w-4 text-gray-600" />
+                                    <span className="text-sm">Profile</span>
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
-                                <Link href="/account/addresses" className="flex items-center cursor-pointer">
-                                    <Settings className="mr-2 h-4 w-4" />
-                                    <span>Delivery addresses</span>
+                                <Link href="/account/addresses" className="flex items-center gap-2 py-2.5 px-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                                    <Settings className="h-4 w-4 text-gray-600" />
+                                    <span className="text-sm">Delivery addresses</span>
                                 </Link>
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
@@ -244,15 +246,18 @@ export default function NavActions() {
                         {/* Group 3: Merchant & Contact */}
                         <DropdownMenuGroup>
                             {user?.role !== "MERCHANT" && user?.role !== "ADMIN" && (
-                                <DropdownMenuItem onClick={() => setShowMerchantForm(true)} className="cursor-pointer">
-                                    <Store className="mr-2 h-4 w-4" />
-                                    <span>Become a merchant</span>
+                                <DropdownMenuItem
+                                    onClick={() => router.push("/merchant/register")}
+                                    className="flex items-center gap-2 py-2.5 px-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                                >
+                                    <Store className="h-4 w-4 text-gray-600" />
+                                    <span className="text-sm">Become a merchant</span>
                                 </DropdownMenuItem>
                             )}
                             <DropdownMenuItem asChild>
-                                <Link href="/contact" className="flex items-center cursor-pointer">
-                                    <MessageCircle className="mr-2 h-4 w-4" />
-                                    <span>Contact</span>
+                                <Link href="/contact" className="flex items-center gap-2 py-2.5 px-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                                    <MessageCircle className="h-4 w-4 text-gray-600" />
+                                    <span className="text-sm">Contact</span>
                                 </Link>
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
@@ -262,9 +267,9 @@ export default function NavActions() {
                             <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem asChild>
-                                    <Link href="/admin" className="flex items-center cursor-pointer">
-                                        <Settings className="mr-2 h-4 w-4" />
-                                        <span>Admin Panel</span>
+                                    <Link href="/admin" className="flex items-center gap-2 py-2.5 px-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                                        <Settings className="h-4 w-4 text-gray-600" />
+                                        <span className="text-sm">Admin Panel</span>
                                     </Link>
                                 </DropdownMenuItem>
                             </>
@@ -273,9 +278,9 @@ export default function NavActions() {
                             <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem asChild>
-                                    <Link href="/merchant" className="flex items-center cursor-pointer">
-                                        <Store className="mr-2 h-4 w-4" />
-                                        <span>Merchant Dashboard</span>
+                                    <Link href="/merchant" className="flex items-center gap-2 py-2.5 px-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                                        <Store className="h-4 w-4 text-gray-600" />
+                                        <span className="text-sm">Merchant Dashboard</span>
                                     </Link>
                                 </DropdownMenuItem>
                             </>
@@ -286,10 +291,10 @@ export default function NavActions() {
                         {/* Logout */}
                         <DropdownMenuItem
                             onClick={handleLogout}
-                            className="cursor-pointer text-red-600 focus:text-red-600"
+                            className="flex items-center gap-2 py-2.5 px-3 hover:bg-red-50 transition-colors cursor-pointer text-red-600 focus:text-red-600"
                         >
-                            <LogOut className="mr-2 h-4 w-4" />
-                            <span>Log out</span>
+                            <LogOut className="h-4 w-4" />
+                            <span className="text-sm">Log out</span>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -304,42 +309,10 @@ export default function NavActions() {
                     </Link>
                     <Link
                         href="/register"
-                        className="px-4 py-2 text-sm font-medium bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition-colors"
+                        className="px-4 py-2 text-sm font-medium bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors"
                     >
                         Sign up
                     </Link>
-                </div>
-            )}
-
-            {/* Merchant Request Form Dialog */}
-            {showMerchantForm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div
-                        className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-gray-900">Become a merchant</h3>
-                            <button
-                                onClick={() => setShowMerchantForm(false)}
-                                className="text-gray-400 hover:text-gray-600"
-                                aria-label="Close merchant registration form"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <MerchantRequestForm
-                            initialEmail={user?.email || ""}
-                            initialUsername={user?.username || ""}
-                            onSuccess={() => {
-                                setShowMerchantForm(false);
-                                toast.success(
-                                    "Request sent. Please check your email to verify your account and wait for admin approval."
-                                );
-                            }}
-                            onCancel={() => setShowMerchantForm(false)}
-                        />
-                    </div>
                 </div>
             )}
         </div>

@@ -61,10 +61,10 @@ export const ProductSuggestionCard = ({ product }: { product: SuggestedProduct }
                 categoryName: product.category,
             };
             await addItem(itemToAdd, 1);
-            toast.success(`${product.name} has been added to your cart.`);
+            // Toast is handled by cartStore.addItem
         } catch (error) {
             console.error("Failed to add to cart:", error);
-            toast.error("Failed to add item to cart");
+            // Error toast is handled by cartStore.addItem
         } finally {
             setTimeout(() => {
                 setIsAdding(false);

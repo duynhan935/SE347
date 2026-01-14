@@ -1,5 +1,6 @@
 "use client";
 
+import { getRoleBasedRedirectPath, shouldRedirectFromPath } from "@/lib/utils/redirectUtils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -46,7 +47,18 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         if (!allowedRoles.includes(user.role as any)) {
                                 toast.error("You don't have permission to access this page");
-                                router.push("/");
+                                // Redirect to role-based dashboard instead of home
+                                const redirectPath = getRoleBasedRedirectPath(user.role);
+                                router.push(redirectPath);
+                                return;
+                        }
+                }
+
+                // Check if user should be redirected away from current path (e.g., Merchant/Admin on home page)
+                if (!loading && isAuthenticated && user?.role) {
+                        const { shouldRedirect, redirectTo } = shouldRedirectFromPath(pathname, user.role);
+                        if (shouldRedirect) {
+                                router.replace(redirectTo);
                                 return;
                         }
                 }

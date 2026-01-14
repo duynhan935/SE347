@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Merchant Dashboard
 
-## Getting Started
+Dashboard dành cho Merchant (chủ nhà hàng) quản lý nhà hàng của mình.
 
-First, run the development server:
+## Cấu trúc
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+app/merchant/
+├── layout.tsx                 # Layout chính với sidebar
+├── page.tsx                   # Dashboard tổng quan
+├── orders/
+│   └── page.tsx              # Quản lý đơn hàng
+├── reservations/
+│   └── page.tsx              # Quản lý đặt bàn
+├── customers/
+│   └── page.tsx              # Quản lý khách hàng
+├── restaurants/
+│   ├── page.tsx              # Danh sách nhà hàng
+│   └── create/
+│       └── page.tsx          # Tạo nhà hàng mới
+├── menu/
+│   └── page.tsx              # Quản lý menu
+└── manage/
+    ├── staff/
+    │   └── page.tsx          # Quản lý nhân viên
+    └── settings/
+        └── page.tsx          # Cài đặt
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tính năng
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- ✅ Dashboard với thống kê tổng quan
+- ✅ Quản lý đơn hàng
+- ✅ Quản lý đặt bàn
+- ✅ Quản lý khách hàng
+- ✅ Quản lý nhà hàng
+- ✅ Quản lý menu
+- ✅ Quản lý nhân viên
+- ✅ Cài đặt
+- ✅ Dark mode
+- ✅ Responsive design
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Routes
 
-## Learn More
+- `/merchant` - Dashboard
+- `/merchant/orders` - Orders
+- `/merchant/reservations` - Reservations
+- `/merchant/customers` - Customers
+- `/merchant/restaurants` - Restaurants list
+- `/merchant/restaurants/create` - Create new restaurant
+- `/merchant/menu` - Menu management
+- `/merchant/manage/staff` - Staff management
+- `/merchant/manage/settings` - Settings
 
-To learn more about Next.js, take a look at the following resources:
+## TODO
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [ ] Kết nối API thật
+- [ ] Thêm tính năng tìm kiếm và lọc
+- [ ] Thêm pagination
+- [ ] Thêm form validation
+- [ ] Thêm chức năng upload ảnh
+- [ ] Thêm analytics và reports

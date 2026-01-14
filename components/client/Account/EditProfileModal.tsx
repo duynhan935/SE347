@@ -113,10 +113,10 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                                                                                         }
                                                                                         alt="Avatar preview"
                                                                                         fill
-                                                                                        className="rounded-full object-cover border-2 border-red-500"
+                                                                                        className="rounded-full object-cover border-2 border-[#EE4D2D]"
                                                                                 />
                                                                         ) : (
-                                                                                <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs border-2 border-red-500">
+                                                                                <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs border-2 border-[#EE4D2D]">
                                                                                         No Avatar
                                                                                 </div>
                                                                         )}
@@ -126,7 +126,7 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                                                                                 onClick={() =>
                                                                                         fileInputRef.current?.click()
                                                                                 }
-                                                                                className="absolute bottom-0 right-0 bg-brand-purple text-white p-2 rounded-full hover:bg-brand-purple/90 transition-colors cursor-pointer"
+                                                                                className="absolute bottom-0 right-0 bg-[#EE4D2D] text-white p-2 rounded-full hover:bg-[#EE4D2D]/90 transition-colors cursor-pointer"
                                                                         >
                                                                                 <Camera size={16} />
                                                                         </button>
@@ -156,7 +156,7 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                                                                                 onChange={(e) =>
                                                                                         setName(e.target.value)
                                                                                 }
-                                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple"
+                                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D]"
                                                                                 disabled={loading}
                                                                         />
                                                                 </div>
@@ -174,7 +174,7 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                                                                                 onChange={(e) =>
                                                                                         setPhone(e.target.value)
                                                                                 }
-                                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple"
+                                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D]"
                                                                                 disabled={loading}
                                                                         />
                                                                 </div>
@@ -193,7 +193,7 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                                                                 <Button
                                                                         type="submit"
                                                                         title="Save Changes"
-                                                                        className="bg-brand-purple text-white hover:bg-brand-purple/90 cursor-pointer"
+                                                                        className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 cursor-pointer"
                                                                         disabled={loading}
                                                                 >
                                                                         {loading ? (
