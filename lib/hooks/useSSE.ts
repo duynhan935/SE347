@@ -10,8 +10,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_
 const NOTIFICATION_URL = API_BASE_URL.replace(/\/$/, "");
 
 interface UseSSEOptions {
-        userId: string | null;
-        isAuthenticated: boolean;
+    userId: string | null;
+    isAuthenticated: boolean;
 }
 
 /**
@@ -21,155 +21,154 @@ interface UseSSEOptions {
  * - Handles order accepted/rejected notifications
  */
 export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
-        const [isConnected, setIsConnected] = useState(false);
-        const eventSourceRef = useRef<EventSource | null>(null);
-        const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-        const { addNotification } = useNotificationStore();
+    const [isConnected, setIsConnected] = useState(false);
+    const eventSourceRef = useRef<EventSource | null>(null);
+    const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const { addNotification } = useNotificationStore();
 
-        const connect = () => {
-                if (!userId || !isAuthenticated) {
-                        return;
-                }
+    const connect = () => {
+        if (!userId || !isAuthenticated) {
+            return;
+        }
 
-                // Don't reconnect if already connected
-                if (eventSourceRef.current?.readyState === EventSource.OPEN) {
-                        setIsConnected(true);
-                        return;
-                }
+        // Don't reconnect if already connected
+        if (eventSourceRef.current?.readyState === EventSource.OPEN) {
+            setIsConnected(true);
+            return;
+        }
 
-                // Close existing connection if any
-                if (eventSourceRef.current) {
-                        eventSourceRef.current.close();
-                        eventSourceRef.current = null;
-                }
+        // Close existing connection if any
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+        }
 
-                try {
-                        const sseUrl = `${NOTIFICATION_URL}/api/sse/subcribe/${encodeURIComponent(userId)}`;
-                        console.log("🔔 Connecting to SSE:", sseUrl);
-                        
-                        const eventSource = new EventSource(sseUrl);
+        try {
+            const sseUrl = `${NOTIFICATION_URL}/api/sse/subcribe/${encodeURIComponent(userId)}`;
+            console.log("🔔 Connecting to SSE:", sseUrl);
 
-                        eventSource.onopen = () => {
-                                console.log("✅ SSE connected");
-                                setIsConnected(true);
-                                
-                                // Clear any pending reconnect
-                                if (reconnectTimeoutRef.current) {
-                                        clearTimeout(reconnectTimeoutRef.current);
-                                        reconnectTimeoutRef.current = null;
-                                }
-                        };
+            const eventSource = new EventSource(sseUrl);
 
-                        eventSource.onerror = (error) => {
-                                console.error("❌ SSE error:", error);
-                                setIsConnected(false);
-                                
-                                // Close connection
-                                if (eventSourceRef.current) {
-                                        eventSourceRef.current.close();
-                                        eventSourceRef.current = null;
-                                }
+            eventSource.onopen = () => {
+                console.log("✅ SSE connected");
+                setIsConnected(true);
 
-                                // Reconnect after 5 seconds if still authenticated
-                                if (isAuthenticated && userId) {
-                                        reconnectTimeoutRef.current = setTimeout(() => {
-                                                console.log("🔄 Reconnecting SSE...");
-                                                connect();
-                                        }, 5000);
-                                }
-                        };
-
-                        // Handle INIT event (connection confirmation)
-                        eventSource.addEventListener("INIT", (event) => {
-                                console.log("🔔 SSE INIT:", event.data);
-                        });
-
-                        // Handle PING event (heartbeat)
-                        eventSource.addEventListener("PING", () => {
-                                // Silent heartbeat - no need to log
-                        });
-
-                        // Handle Order Successfully event (order accepted)
-                        eventSource.addEventListener("Order Successfully", (event) => {
-                                const message = event.data || "Your order has been accepted";
-                                console.log("✅ Order accepted:", message);
-                                
-                                // Extract restaurant name from message
-                                const restaurantName = message.replace("accepted your order", "").trim();
-                                
-                                addNotification({
-                                        type: "ORDER_ACCEPTED",
-                                        title: "Order accepted",
-                                        message: restaurantName ? `${restaurantName} accepted your order.` : message,
-                                        restaurantName,
-                                });
-
-                                toast.success(restaurantName ? `${restaurantName} accepted your order.` : "Order accepted", {
-                                        icon: "✅",
-                                        duration: 5000,
-                                });
-                        });
-
-                        // Handle Order Failed event (order rejected)
-                        eventSource.addEventListener("Order Failed", (event) => {
-                                const message = event.data || "Your order has been rejected";
-                                console.log("❌ Order rejected:", message);
-                                
-                                // Extract restaurant name from message
-                                const restaurantName = message.replace("rejected your order", "").trim();
-                                
-                                addNotification({
-                                        type: "ORDER_REJECTED",
-                                        title: "Order rejected",
-                                        message: restaurantName ? `${restaurantName} rejected your order.` : message,
-                                        restaurantName,
-                                });
-
-                                toast.error(restaurantName ? `${restaurantName} rejected your order.` : "Order rejected", {
-                                        icon: "❌",
-                                        duration: 5000,
-                                });
-                        });
-
-                        eventSourceRef.current = eventSource;
-                } catch (error) {
-                        console.error("Failed to create SSE connection:", error);
-                        setIsConnected(false);
-                }
-        };
-
-        const disconnect = () => {
-                setIsConnected(false);
-                
+                // Clear any pending reconnect
                 if (reconnectTimeoutRef.current) {
-                        clearTimeout(reconnectTimeoutRef.current);
-                        reconnectTimeoutRef.current = null;
+                    clearTimeout(reconnectTimeoutRef.current);
+                    reconnectTimeoutRef.current = null;
                 }
+            };
 
+            eventSource.onerror = (error) => {
+                console.error("❌ SSE error:", error);
+                setIsConnected(false);
+
+                // Close connection
                 if (eventSourceRef.current) {
-                        eventSourceRef.current.close();
-                        eventSourceRef.current = null;
+                    eventSourceRef.current.close();
+                    eventSourceRef.current = null;
                 }
-        };
 
-        // Connect when user is authenticated, disconnect when logged out
-        useEffect(() => {
+                // Reconnect after 5 seconds if still authenticated
                 if (isAuthenticated && userId) {
+                    reconnectTimeoutRef.current = setTimeout(() => {
+                        console.log("🔄 Reconnecting SSE...");
                         connect();
-                } else {
-                        disconnect();
+                    }, 5000);
                 }
+            };
 
-                return () => {
-                        disconnect();
-                };
-                // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [isAuthenticated, userId]);
+            // Handle INIT event (connection confirmation)
+            eventSource.addEventListener("INIT", (event) => {
+                console.log("🔔 SSE INIT:", event.data);
+            });
 
-        return {
-                isConnected,
-                connect,
-                disconnect,
+            // Handle PING event (heartbeat)
+            eventSource.addEventListener("PING", () => {
+                // Silent heartbeat - no need to log
+            });
+
+            // Handle Order Successfully event (order accepted)
+            eventSource.addEventListener("Order Successfully", (event) => {
+                const message = event.data || "Your order has been accepted";
+                console.log("✅ Order accepted:", message);
+
+                // Extract restaurant name from message
+                const restaurantName = message.replace("accepted your order", "").trim();
+
+                addNotification({
+                    type: "ORDER_ACCEPTED",
+                    title: "Order accepted",
+                    message: restaurantName ? `${restaurantName} accepted your order.` : message,
+                    restaurantName,
+                });
+
+                toast.success(restaurantName ? `${restaurantName} accepted your order.` : "Order accepted", {
+                    icon: "✅",
+                    duration: 5000,
+                });
+            });
+
+            // Handle Order Failed event (order rejected)
+            eventSource.addEventListener("Order Failed", (event) => {
+                const message = event.data || "Your order has been rejected";
+                console.log("❌ Order rejected:", message);
+
+                // Extract restaurant name from message
+                const restaurantName = message.replace("rejected your order", "").trim();
+
+                addNotification({
+                    type: "ORDER_REJECTED",
+                    title: "Order rejected",
+                    message: restaurantName ? `${restaurantName} rejected your order.` : message,
+                    restaurantName,
+                });
+
+                toast.error(restaurantName ? `${restaurantName} rejected your order.` : "Order rejected", {
+                    icon: "❌",
+                    duration: 5000,
+                });
+            });
+
+            eventSourceRef.current = eventSource;
+        } catch (error) {
+            console.error("Failed to create SSE connection:", error);
+            setIsConnected(false);
+        }
+    };
+
+    const disconnect = () => {
+        setIsConnected(false);
+
+        if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+            reconnectTimeoutRef.current = null;
+        }
+
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+        }
+    };
+
+    // Connect when user is authenticated, disconnect when logged out
+    useEffect(() => {
+        if (isAuthenticated && userId) {
+            connect();
+        } else {
+            disconnect();
+        }
+
+        return () => {
+            disconnect();
         };
-}
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthenticated, userId]);
 
+    return {
+        isConnected,
+        connect,
+        disconnect,
+    };
+}

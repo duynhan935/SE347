@@ -33,7 +33,6 @@ export const useSizeStore = create<SizeStore>((set, get) => ({
         }
     },
 
-
     // Create a new size
     createNewSize: async (sizeData: SizeData) => {
         set({ loading: true, error: null });

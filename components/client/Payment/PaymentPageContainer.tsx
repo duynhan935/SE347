@@ -80,10 +80,10 @@ export default function PaymentPageClient() {
     const searchParams = useSearchParams();
     const restaurantId = searchParams.get("restaurantId");
 
-        const { items, clearRestaurant, setUserId, userId: cartUserId, isLoading: cartLoading, fetchCart } = useCartStore();
-        const { user, loading: authLoading, isAuthenticated } = useAuthStore();
-        const { coords, error: locationError } = useGeolocation();
-        const [cartFetched, setCartFetched] = useState(false);
+    const { items, clearRestaurant, setUserId, userId: cartUserId, isLoading: cartLoading, fetchCart } = useCartStore();
+    const { user, loading: authLoading, isAuthenticated } = useAuthStore();
+    const { coords, error: locationError } = useGeolocation();
+    const [cartFetched, setCartFetched] = useState(false);
 
     const extendedUser = (user as ExtendedUser | null) ?? null;
     const defaultAddress = extendedUser?.defaultAddress ?? null;
@@ -131,9 +131,10 @@ export default function PaymentPageClient() {
         }
 
         // Check if user is authenticated (either has user object or has token)
-        const hasToken = typeof window !== "undefined" && 
+        const hasToken =
+            typeof window !== "undefined" &&
             (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
-        
+
         if (!extendedUser && !isAuthenticated && !hasToken) {
             toast.error("Please login to checkout");
             router.push("/login");
@@ -154,34 +155,45 @@ export default function PaymentPageClient() {
             return;
         }
 
-                // Ensure userId is set in cart store (only if user is loaded)
-                if (extendedUser?.id && cartUserId !== extendedUser.id) {
-                        setUserId(extendedUser.id);
-                }
+        // Ensure userId is set in cart store (only if user is loaded)
+        if (extendedUser?.id && cartUserId !== extendedUser.id) {
+            setUserId(extendedUser.id);
+        }
 
-                // Fetch cart when userId is set and matches current user
-                if (extendedUser?.id && cartUserId === extendedUser.id && !cartFetched && !cartLoading) {
-                        fetchCart()
-                                .then(() => {
-                                        // Mark as fetched after successful fetch
-                                        setCartFetched(true);
-                                })
-                                .catch((error) => {
-                                        // Silently handle errors - cart might not exist yet or service unavailable
-                                        const status = (error as { response?: { status?: number } })?.response?.status;
-                                        if (status !== 404 && status !== 503) {
-                                                console.warn("Failed to fetch cart:", error);
-                                        }
-                                        // Still mark as fetched even on error (404/503 are expected for new users)
-                                        setCartFetched(true);
-                                });
-                }
+        // Fetch cart when userId is set and matches current user
+        if (extendedUser?.id && cartUserId === extendedUser.id && !cartFetched && !cartLoading) {
+            fetchCart()
+                .then(() => {
+                    // Mark as fetched after successful fetch
+                    setCartFetched(true);
+                })
+                .catch((error) => {
+                    // Silently handle errors - cart might not exist yet or service unavailable
+                    const status = (error as { response?: { status?: number } })?.response?.status;
+                    if (status !== 404 && status !== 503) {
+                        console.warn("Failed to fetch cart:", error);
+                    }
+                    // Still mark as fetched even on error (404/503 are expected for new users)
+                    setCartFetched(true);
+                });
+        }
 
-                // Mark as fetched when cart loading is complete (for cases where fetch was already in progress)
-                if (cartUserId && !cartLoading && !cartFetched) {
-                        setCartFetched(true);
-                }
-        }, [extendedUser, cartUserId, cartLoading, setUserId, router, cartFetched, fetchCart, restaurantId, authLoading, isAuthenticated]);
+        // Mark as fetched when cart loading is complete (for cases where fetch was already in progress)
+        if (cartUserId && !cartLoading && !cartFetched) {
+            setCartFetched(true);
+        }
+    }, [
+        extendedUser,
+        cartUserId,
+        cartLoading,
+        setUserId,
+        router,
+        cartFetched,
+        fetchCart,
+        restaurantId,
+        authLoading,
+        isAuthenticated,
+    ]);
 
     // Check if cart is empty after fetching (only after cart has been fetched and loaded)
     // Skip this check if payment has been completed to avoid showing error toast after successful payment
@@ -191,27 +203,38 @@ export default function PaymentPageClient() {
 
         // Check if we're coming from "Buy Now" by checking referrer
         // This helps us give more time for cart to sync when user just added an item
-        const isFromBuyNow = typeof window !== "undefined" && 
+        const isFromBuyNow =
+            typeof window !== "undefined" &&
             (document.referrer.includes("/food") || document.referrer.includes("/restaurants"));
 
         // Add a delay to ensure cart state is fully updated after fetch completes
         // Longer delay if coming from Buy Now to handle backend sync time
         const delay = isFromBuyNow ? 800 : 300;
-        
+
         const checkTimer = setTimeout(() => {
-                // Check both filtered items (by restaurantId) and all items
-                // If restaurantId is provided, check filtered items; otherwise check all items
-                const itemsToCheck = restaurantId ? orderItems : items;
-                
-                // Only redirect if cart is truly empty AND we've given enough time for state to update
-                if (itemsToCheck.length === 0 && cartUserId) {
-                        toast.error("Your cart is empty");
-                        router.push("/cart");
-                }
+            // Check both filtered items (by restaurantId) and all items
+            // If restaurantId is provided, check filtered items; otherwise check all items
+            const itemsToCheck = restaurantId ? orderItems : items;
+
+            // Only redirect if cart is truly empty AND we've given enough time for state to update
+            if (itemsToCheck.length === 0 && cartUserId) {
+                toast.error("Your cart is empty");
+                router.push("/cart");
+            }
         }, delay);
 
         return () => clearTimeout(checkTimer);
-    }, [extendedUser, orderItems, items, cartUserId, cartFetched, cartLoading, isPaymentCompleted, router, restaurantId]);
+    }, [
+        extendedUser,
+        orderItems,
+        items,
+        cartUserId,
+        cartFetched,
+        cartLoading,
+        isPaymentCompleted,
+        router,
+        restaurantId,
+    ]);
 
     useEffect(() => {
         if (locationError) {
@@ -267,15 +290,17 @@ export default function PaymentPageClient() {
 
         // VALIDATE: Ensure all items belong to the same restaurant
         // This prevents accidentally creating orders with items from multiple restaurants
-        const uniqueRestaurantIds = new Set(orderItems.map(item => item.restaurantId));
+        const uniqueRestaurantIds = new Set(orderItems.map((item) => item.restaurantId));
         if (uniqueRestaurantIds.size > 1) {
-            toast.error("Error: your cart contains items from multiple restaurants. Each order can only be for one restaurant.");
+            toast.error(
+                "Error: your cart contains items from multiple restaurants. Each order can only be for one restaurant."
+            );
             router.push("/cart");
             return;
         }
 
         // VALIDATE: Ensure all items belong to the specified restaurantId
-        const invalidItems = orderItems.filter(item => item.restaurantId !== restaurantId);
+        const invalidItems = orderItems.filter((item) => item.restaurantId !== restaurantId);
         if (invalidItems.length > 0) {
             toast.error("Error: some items do not belong to the selected restaurant. Please review your cart.");
             router.push("/cart");
@@ -547,7 +572,7 @@ export default function PaymentPageClient() {
                 (firstOrder as { restaurant?: { id?: string } }).restaurant?.id;
 
             // Get merchantId from order response (backend includes it)
-            let merchantId = 
+            let merchantId =
                 (firstOrder as { merchantId?: string }).merchantId ||
                 (firstOrder as { merchant_id?: string }).merchant_id;
 
@@ -710,7 +735,9 @@ export default function PaymentPageClient() {
                 // Note: If payment is still processing, webhook will update it later
                 // Stripe has already confirmed payment success, so it's safe to proceed
                 if (paymentStatus !== "completed") {
-                    console.log("ℹ️ Payment status still processing, webhook will update it shortly. Proceeding with order...");
+                    console.log(
+                        "ℹ️ Payment status still processing, webhook will update it shortly. Proceeding with order..."
+                    );
                 }
             }
 
@@ -959,9 +986,7 @@ export default function PaymentPageClient() {
                                     disabled={isProcessingCardPayment}
                                     className="cursor-pointer w-full bg-brand-purple text-white font-bold text-lg py-3 rounded-lg hover:bg-brand-purple/90 transition-transform transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 >
-                                    {isProcessingCardPayment
-                                        ? "Preparing payment..."
-                                        : "Create card payment"}
+                                    {isProcessingCardPayment ? "Preparing payment..." : "Create card payment"}
                                 </button>
                             ) : null}
                             {/* Note: When card is selected and clientSecret exists, Stripe form is shown in PaymentMethodSelector */}

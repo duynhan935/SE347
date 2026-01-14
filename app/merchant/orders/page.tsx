@@ -103,116 +103,136 @@ export default function MerchantOrdersPage() {
         fetchRestaurantId();
     }, [user?.id]);
 
-    const fetchOrders = useCallback(async (options?: { background?: boolean }) => {
-        if (!user?.id || !restaurantId) return;
+    const fetchOrders = useCallback(
+        async (options?: { background?: boolean }) => {
+            if (!user?.id || !restaurantId) return;
 
-        try {
-            if (!options?.background) {
-                setLoading(true);
+            try {
+                if (!options?.background) {
+                    setLoading(true);
+                }
+                const { orders: restaurantOrders } = await orderApi.getOrdersByRestaurant(restaurantId, user.id);
+                // Keep a snapshot of order ids for background change detection.
+                knownOrderIdsRef.current = new Set(restaurantOrders.map((o) => o.orderId));
+                setOrders(restaurantOrders);
+                return restaurantOrders;
+            } catch (error) {
+                console.error("Failed to fetch orders:", error);
+                if (!options?.background) {
+                    toast.error("Unable to load orders.");
+                    setOrders([]);
+                }
+                return;
+            } finally {
+                if (!options?.background) {
+                    setLoading(false);
+                }
             }
-            const { orders: restaurantOrders } = await orderApi.getOrdersByRestaurant(restaurantId, user.id);
-            // Keep a snapshot of order ids for background change detection.
-            knownOrderIdsRef.current = new Set(restaurantOrders.map((o) => o.orderId));
-            setOrders(restaurantOrders);
-            return restaurantOrders;
-        } catch (error) {
-            console.error("Failed to fetch orders:", error);
-            if (!options?.background) {
-                toast.error("Unable to load orders.");
-                setOrders([]);
-            }
-            return;
-        } finally {
-            if (!options?.background) {
-                setLoading(false);
-            }
-        }
-    }, [restaurantId, user?.id]);
+        },
+        [restaurantId, user?.id]
+    );
 
-    const normalizeSocketOrder = useCallback((raw: unknown): Order | null => {
-        if (!raw || typeof raw !== "object") return null;
+    const normalizeSocketOrder = useCallback(
+        (raw: unknown): Order | null => {
+            if (!raw || typeof raw !== "object") return null;
 
-        const record = raw as Record<string, unknown>;
-        const orderId = typeof record.orderId === "string" ? record.orderId : undefined;
-        if (!orderId) return null;
+            const record = raw as Record<string, unknown>;
+            const orderId = typeof record.orderId === "string" ? record.orderId : undefined;
+            if (!orderId) return null;
 
-        const createdAt = typeof record.createdAt === "string" ? record.createdAt : new Date().toISOString();
-        const updatedAt = typeof record.updatedAt === "string" ? record.updatedAt : createdAt;
+            const createdAt = typeof record.createdAt === "string" ? record.createdAt : new Date().toISOString();
+            const updatedAt = typeof record.updatedAt === "string" ? record.updatedAt : createdAt;
 
-        const status = typeof record.status === "string" ? (record.status as OrderStatus) : OrderStatus.PENDING;
-        const paymentStatus = typeof record.paymentStatus === "string" ? (record.paymentStatus as Order["paymentStatus"]) : "pending";
+            const status = typeof record.status === "string" ? (record.status as OrderStatus) : OrderStatus.PENDING;
+            const paymentStatus =
+                typeof record.paymentStatus === "string" ? (record.paymentStatus as Order["paymentStatus"]) : "pending";
 
-        const rawItems = record.items;
-        const items = Array.isArray(rawItems)
-            ? rawItems
-                  .map((it) => {
-                      if (!it || typeof it !== "object") return null;
-                      const item = it as Record<string, unknown>;
-                      const productId = typeof item.productId === "string" ? item.productId : "";
-                      const productName = typeof item.productName === "string" ? item.productName : (typeof item.name === "string" ? item.name : "");
-                      const quantity = typeof item.quantity === "number" ? item.quantity : 0;
-                      const price = typeof item.price === "number" ? item.price : 0;
-                      if (!productName || quantity <= 0) return null;
-                      return { productId, productName, quantity, price };
-                  })
-                  .filter(Boolean) as Order["items"]
-            : [];
+            const rawItems = record.items;
+            const items = Array.isArray(rawItems)
+                ? (rawItems
+                      .map((it) => {
+                          if (!it || typeof it !== "object") return null;
+                          const item = it as Record<string, unknown>;
+                          const productId = typeof item.productId === "string" ? item.productId : "";
+                          const productName =
+                              typeof item.productName === "string"
+                                  ? item.productName
+                                  : typeof item.name === "string"
+                                  ? item.name
+                                  : "";
+                          const quantity = typeof item.quantity === "number" ? item.quantity : 0;
+                          const price = typeof item.price === "number" ? item.price : 0;
+                          if (!productName || quantity <= 0) return null;
+                          return { productId, productName, quantity, price };
+                      })
+                      .filter(Boolean) as Order["items"])
+                : [];
 
-        const restaurantName = typeof record.restaurantName === "string" ? record.restaurantName : "";
-        const restaurantRef = (() => {
-            const rawRestaurant = record.restaurant;
-            if (rawRestaurant && typeof rawRestaurant === "object") {
-                const rr = rawRestaurant as Record<string, unknown>;
-                const id = typeof rr.id === "string" ? rr.id : (typeof rr.restaurantId === "string" ? rr.restaurantId : "");
-                const name = typeof rr.name === "string" ? rr.name : restaurantName;
-                if (id || name) return { id: id || restaurantId || "", name: name || restaurantName };
-            }
-            return { id: restaurantId || "", name: restaurantName };
-        })();
+            const restaurantName = typeof record.restaurantName === "string" ? record.restaurantName : "";
+            const restaurantRef = (() => {
+                const rawRestaurant = record.restaurant;
+                if (rawRestaurant && typeof rawRestaurant === "object") {
+                    const rr = rawRestaurant as Record<string, unknown>;
+                    const id =
+                        typeof rr.id === "string" ? rr.id : typeof rr.restaurantId === "string" ? rr.restaurantId : "";
+                    const name = typeof rr.name === "string" ? rr.name : restaurantName;
+                    if (id || name) return { id: id || restaurantId || "", name: name || restaurantName };
+                }
+                return { id: restaurantId || "", name: restaurantName };
+            })();
 
-        const finalAmount = typeof record.finalAmount === "number" ? record.finalAmount : (typeof record.totalAmount === "number" ? record.totalAmount : 0);
-        const paymentMethod = typeof record.paymentMethod === "string" ? (record.paymentMethod as Order["paymentMethod"]) : "cash";
+            const finalAmount =
+                typeof record.finalAmount === "number"
+                    ? record.finalAmount
+                    : typeof record.totalAmount === "number"
+                    ? record.totalAmount
+                    : 0;
+            const paymentMethod =
+                typeof record.paymentMethod === "string" ? (record.paymentMethod as Order["paymentMethod"]) : "cash";
 
-        const deliveryAddress = (() => {
-            const raw = record.deliveryAddress;
-            if (!raw || typeof raw !== "object") {
-                return { street: "", city: "", state: "", zipCode: "" };
-            }
-            const addr = raw as Record<string, unknown>;
+            const deliveryAddress = (() => {
+                const raw = record.deliveryAddress;
+                if (!raw || typeof raw !== "object") {
+                    return { street: "", city: "", state: "", zipCode: "" };
+                }
+                const addr = raw as Record<string, unknown>;
+                return {
+                    street: typeof addr.street === "string" ? addr.street : "",
+                    city: typeof addr.city === "string" ? addr.city : "",
+                    state: typeof addr.state === "string" ? addr.state : "",
+                    zipCode: typeof addr.zipCode === "string" ? addr.zipCode : "",
+                };
+            })();
+
             return {
-                street: typeof addr.street === "string" ? addr.street : "",
-                city: typeof addr.city === "string" ? addr.city : "",
-                state: typeof addr.state === "string" ? addr.state : "",
-                zipCode: typeof addr.zipCode === "string" ? addr.zipCode : "",
+                orderId,
+                slug: typeof record.slug === "string" ? record.slug : orderId,
+                userId: typeof record.userId === "string" ? record.userId : "",
+                restaurant: restaurantRef,
+                restaurantId: typeof record.restaurantId === "string" ? record.restaurantId : restaurantRef.id,
+                merchantId: typeof record.merchantId === "string" ? record.merchantId : undefined,
+                items,
+                deliveryAddress,
+                totalAmount: typeof record.totalAmount === "number" ? record.totalAmount : finalAmount,
+                discount: typeof record.discount === "number" ? record.discount : 0,
+                deliveryFee: typeof record.deliveryFee === "number" ? record.deliveryFee : 0,
+                tax: typeof record.tax === "number" ? record.tax : 0,
+                finalAmount,
+                paymentMethod,
+                status,
+                paymentStatus,
+                estimatedDeliveryTime:
+                    typeof record.estimatedDeliveryTime === "string" ? record.estimatedDeliveryTime : undefined,
+                actualDeliveryTime: typeof record.actualDeliveryTime === "string" ? record.actualDeliveryTime : null,
+                orderNote: typeof record.orderNote === "string" ? record.orderNote : undefined,
+                rating: null,
+                review: "",
+                createdAt,
+                updatedAt,
             };
-        })();
-
-        return {
-            orderId,
-            slug: typeof record.slug === "string" ? record.slug : orderId,
-            userId: typeof record.userId === "string" ? record.userId : "",
-            restaurant: restaurantRef,
-            restaurantId: typeof record.restaurantId === "string" ? record.restaurantId : restaurantRef.id,
-            merchantId: typeof record.merchantId === "string" ? record.merchantId : undefined,
-            items,
-            deliveryAddress,
-            totalAmount: typeof record.totalAmount === "number" ? record.totalAmount : finalAmount,
-            discount: typeof record.discount === "number" ? record.discount : 0,
-            deliveryFee: typeof record.deliveryFee === "number" ? record.deliveryFee : 0,
-            tax: typeof record.tax === "number" ? record.tax : 0,
-            finalAmount,
-            paymentMethod,
-            status,
-            paymentStatus,
-            estimatedDeliveryTime: typeof record.estimatedDeliveryTime === "string" ? record.estimatedDeliveryTime : undefined,
-            actualDeliveryTime: typeof record.actualDeliveryTime === "string" ? record.actualDeliveryTime : null,
-            orderNote: typeof record.orderNote === "string" ? record.orderNote : undefined,
-            rating: null,
-            review: "",
-            createdAt,
-            updatedAt,
-        };
-    }, [restaurantId]);
+        },
+        [restaurantId]
+    );
 
     // Connect to socket (single restaurant room)
     const { isConnected: isOrderSocketConnected } = useOrderSocket({

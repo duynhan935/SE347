@@ -102,7 +102,8 @@ export default function AdminDashboard() {
             // Pending merchants (approval queue)
             const pendingPage = await authApi.getMerchantsPendingConsideration({ page: 0, size: 5 });
             const pendingList = Array.isArray(pendingPage?.content) ? pendingPage.content : [];
-            const pendingCount = typeof pendingPage?.totalElements === "number" ? pendingPage.totalElements : pendingList.length;
+            const pendingCount =
+                typeof pendingPage?.totalElements === "number" ? pendingPage.totalElements : pendingList.length;
             setPendingMerchantRequests(pendingList);
 
             // Restaurants
@@ -187,9 +188,13 @@ export default function AdminDashboard() {
                     revenueByMonth.set(key, (revenueByMonth.get(key) || 0) + (o.finalAmount || 0));
                 }
 
-                const merchantId = o.merchantId || (o.restaurantId ? restaurantIdToMerchantId.get(o.restaurantId) : undefined);
+                const merchantId =
+                    o.merchantId || (o.restaurantId ? restaurantIdToMerchantId.get(o.restaurantId) : undefined);
                 if (merchantId) {
-                    revenueByMerchantId.set(merchantId, (revenueByMerchantId.get(merchantId) || 0) + (o.finalAmount || 0));
+                    revenueByMerchantId.set(
+                        merchantId,
+                        (revenueByMerchantId.get(merchantId) || 0) + (o.finalAmount || 0)
+                    );
                 }
             }
 
@@ -366,7 +371,9 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Platform Growth Chart */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Platform growth (new per month)</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Platform growth (new per month)
+                    </h3>
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={platformGrowthData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -401,7 +408,9 @@ export default function AdminDashboard() {
 
                 {/* Revenue Trend */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue (completed orders)</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Revenue (completed orders)
+                    </h3>
                     <ResponsiveContainer width="100%" height={300}>
                         <AreaChart data={revenueData}>
                             <defs>
@@ -465,7 +474,11 @@ export default function AdminDashboard() {
                         {recentOrders.map((o, idx) => (
                             <div
                                 key={o.orderId}
-                                className={`flex items-center gap-4 ${idx < recentOrders.length - 1 ? "pb-4 border-b border-gray-200 dark:border-gray-700" : ""}`}
+                                className={`flex items-center gap-4 ${
+                                    idx < recentOrders.length - 1
+                                        ? "pb-4 border-b border-gray-200 dark:border-gray-700"
+                                        : ""
+                                }`}
                             >
                                 <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
                                     <ShoppingCart className="text-orange-600 dark:text-orange-400" size={20} />
@@ -475,7 +488,8 @@ export default function AdminDashboard() {
                                         Order {o.orderId} • {o.status}
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {new Date(o.createdAt).toLocaleString("en-US")} • {o.finalAmount.toLocaleString()}₫
+                                        {new Date(o.createdAt).toLocaleString("en-US")} •{" "}
+                                        {o.finalAmount.toLocaleString()}₫
                                     </p>
                                 </div>
                             </div>

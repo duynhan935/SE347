@@ -78,17 +78,16 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                     <div className="mb-6 p-6 bg-gray-100 rounded-full">
                                         <Package className="w-16 h-16 text-gray-400" />
                                     </div>
-                                    
+
                                     {/* Title */}
-                                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                        No orders yet
-                                    </h3>
-                                    
+                                    <h3 className="text-2xl font-bold text-gray-900 mb-2">No orders yet</h3>
+
                                     {/* Description */}
                                     <p className="text-gray-600 mb-8 max-w-md">
-                                        You have not placed any orders yet. Browse restaurants and discover great food to get started.
+                                        You have not placed any orders yet. Browse restaurants and discover great food
+                                        to get started.
                                     </p>
-                                    
+
                                     {/* CTA Buttons */}
                                     <div className="flex flex-col sm:flex-row gap-3">
                                         <Link
@@ -161,13 +160,18 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                 const statusInfo = getStatusInfo(order.status);
 
                                 return (
-                                    <div key={order.id} className="border border-gray-200 rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300">
+                                    <div
+                                        key={order.id}
+                                        className="border border-gray-200 rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300"
+                                    >
                                         <div className="flex flex-col gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4 md:flex-row md:items-center md:justify-between">
                                             <div className="flex-1">
                                                 {/* Order ID and Status - Always on same line */}
                                                 <div className="flex items-center gap-3 mb-2 flex-nowrap">
                                                     {/* Order ID - Bold and prominent */}
-                                                    <h2 className="text-xl md:text-2xl font-bold text-gray-900 whitespace-nowrap">Order {order.id}</h2>
+                                                    <h2 className="text-xl md:text-2xl font-bold text-gray-900 whitespace-nowrap">
+                                                        Order {order.id}
+                                                    </h2>
                                                     {order.status && (
                                                         <span
                                                             className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${statusInfo.className}`}
@@ -177,10 +181,13 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                                     )}
                                                 </div>
                                                 {/* Date - Better contrast */}
-                                                <p className="text-sm font-medium text-gray-700">Placed on {formattedDate}</p>
+                                                <p className="text-sm font-medium text-gray-700">
+                                                    Placed on {formattedDate}
+                                                </p>
                                                 {order.paymentStatus && (
                                                     <p className="text-xs text-gray-500 mt-1 font-medium">
-                                                        Payment: <span className="capitalize">{order.paymentStatus}</span>
+                                                        Payment:{" "}
+                                                        <span className="capitalize">{order.paymentStatus}</span>
                                                     </p>
                                                 )}
                                             </div>

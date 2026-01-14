@@ -132,7 +132,6 @@ export const authApi = {
         return response.data;
     },
 
-
     // Merchant approval queue
     getMerchantsPendingConsideration: async (params?: { page?: number; size?: number; sort?: string }) => {
         const response = await api.get<PageableResponse<User>>("/users/merchants/consideration", {

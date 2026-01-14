@@ -17,13 +17,13 @@ type FoodCardProps = {
 };
 
 export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
-        const router = useRouter();
-        const addItem = useCartStore((state) => state.addItem);
-        const setUserId = useCartStore((state) => state.setUserId);
-        const { user, isAuthenticated } = useAuthStore();
-        const [isAdding, setIsAdding] = useState(false);
-        const [isMounted, setIsMounted] = useState(false);
-        const [imageError, setImageError] = useState(false);
+    const router = useRouter();
+    const addItem = useCartStore((state) => state.addItem);
+    const setUserId = useCartStore((state) => state.setUserId);
+    const { user, isAuthenticated } = useAuthStore();
+    const [isAdding, setIsAdding] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+    const [imageError, setImageError] = useState(false);
 
     // Ensure component is mounted (client-side only)
     useEffect(() => {
@@ -37,14 +37,14 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
         }
     }, [isMounted, user?.id, setUserId]);
 
-        const displayPrice = useMemo(() => product.productSizes?.[0]?.price, [product.productSizes]);
-        const defaultSize = useMemo(() => product.productSizes?.[0], [product.productSizes]);
-        const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
+    const displayPrice = useMemo(() => product.productSizes?.[0]?.price, [product.productSizes]);
+    const defaultSize = useMemo(() => product.productSizes?.[0], [product.productSizes]);
+    const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
 
-        // Reset image error when image URL changes
-        useEffect(() => {
-                setImageError(false);
-        }, [cardImageUrl]);
+    // Reset image error when image URL changes
+    useEffect(() => {
+        setImageError(false);
+    }, [cardImageUrl]);
 
     // Determine if product is best seller or popular (you can adjust logic based on your data)
     const isBestSeller = useMemo(() => {
@@ -142,114 +142,116 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
             e.preventDefault();
             e.stopPropagation();
 
-                        // Prevent double clicks
-                        if (isAdding || !isMounted) {
-                                return;
-                        }
-                        
-                        // Set loading state immediately to prevent double clicks
-                        setIsAdding(true);
+            // Prevent double clicks
+            if (isAdding || !isMounted) {
+                return;
+            }
 
-                        if (typeof addItem !== "function") {
-                                console.warn("[FoodCard] addItem is not available yet");
-                                setIsAdding(false);
-                                return;
-                        }
+            // Set loading state immediately to prevent double clicks
+            setIsAdding(true);
 
-                        // Check authentication - verify both user object and token exist
-                        const hasToken = typeof window !== "undefined" && 
-                                (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
-                        
-                        if (!user && !isAuthenticated && !hasToken) {
-                            toast.error("Please sign in to place an order");
-                                setIsAdding(false);
-                                router.push("/login");
-                                return;
-                        }
+            if (typeof addItem !== "function") {
+                console.warn("[FoodCard] addItem is not available yet");
+                setIsAdding(false);
+                return;
+            }
 
-                        // If user object is missing but token exists, wait a bit for auth to initialize
-                        if (!user && hasToken) {
-                                // Wait a moment for auth to initialize
-                                await new Promise((resolve) => setTimeout(resolve, 300));
-                                // Re-check auth state after waiting
-                                const currentAuthState = useAuthStore.getState();
-                                if (!currentAuthState.user && !currentAuthState.isAuthenticated) {
-                                    toast.error("Please sign in to place an order");
-                                        setIsAdding(false);
-                                        router.push("/login");
-                                        return;
+            // Check authentication - verify both user object and token exist
+            const hasToken =
+                typeof window !== "undefined" &&
+                (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
+
+            if (!user && !isAuthenticated && !hasToken) {
+                toast.error("Please sign in to place an order");
+                setIsAdding(false);
+                router.push("/login");
+                return;
+            }
+
+            // If user object is missing but token exists, wait a bit for auth to initialize
+            if (!user && hasToken) {
+                // Wait a moment for auth to initialize
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                // Re-check auth state after waiting
+                const currentAuthState = useAuthStore.getState();
+                if (!currentAuthState.user && !currentAuthState.isAuthenticated) {
+                    toast.error("Please sign in to place an order");
+                    setIsAdding(false);
+                    router.push("/login");
+                    return;
+                }
+            }
+
+            if (!product.restaurant?.id) {
+                toast.error("Restaurant information not found");
+                setIsAdding(false);
+                return;
+            }
+
+            try {
+                // Add item to cart - this now does optimistic update immediately AND syncs with backend
+                await handleAddToCart(e);
+
+                // Verify user is still authenticated before navigating
+                const currentAuthState = useAuthStore.getState();
+                const stillHasToken =
+                    typeof window !== "undefined" &&
+                    (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
+
+                if (!currentAuthState.user && !currentAuthState.isAuthenticated && !stillHasToken) {
+                    toast.error("Your session has expired. Please sign in again");
+                    router.push("/login");
+                    return;
+                }
+
+                // addItem already calls fetchCart internally, so cart is already synced
+                // Just add a small delay to ensure navigation happens after state update
+                await new Promise((resolve) => setTimeout(resolve, 100));
+
+                // Navigate to payment page
+                router.push(`/payment?restaurantId=${product.restaurant.id}`);
+            } catch (error) {
+                console.error("Failed to add to cart in Buy Now:", error);
+                toast.error("Unable to add to cart");
+            } finally {
+                setTimeout(() => {
+                    setIsAdding(false);
+                }, 300);
+            }
+        },
+        [isAdding, isMounted, addItem, user, isAuthenticated, product, router, handleAddToCart]
+    );
+
+    // Option 1: Grid Layout (ShopeeFood style) - RECOMMENDED
+    if (layout === "grid") {
+        return (
+            <div className="group relative bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow] duration-300 h-full flex flex-col hover:-translate-y-1">
+                {/* Image Section - Rounded top corners */}
+                <Link href={`/food/${product.slug}`} className="block relative">
+                    <div className="relative w-full aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                        <Image
+                            src={imageError ? "/placeholder.png" : cardImageUrl}
+                            alt={product.productName}
+                            fill
+                            className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out rounded-t-2xl"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            unoptimized={!product.imageURL || cardImageUrl === "/placeholder.png" || imageError}
+                            onError={() => {
+                                // Only set error state once to prevent infinite loop
+                                if (!imageError) {
+                                    setImageError(true);
                                 }
-                        }
-
-                        if (!product.restaurant?.id) {
-                            toast.error("Restaurant information not found");
-                                setIsAdding(false);
-                                return;
-                        }
-
-                        try {
-                                // Add item to cart - this now does optimistic update immediately AND syncs with backend
-                                await handleAddToCart(e);
-                                
-                                // Verify user is still authenticated before navigating
-                                const currentAuthState = useAuthStore.getState();
-                                const stillHasToken = typeof window !== "undefined" && 
-                                        (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
-                                
-                                if (!currentAuthState.user && !currentAuthState.isAuthenticated && !stillHasToken) {
-                                    toast.error("Your session has expired. Please sign in again");
-                                        router.push("/login");
-                                        return;
-                                }
-                                
-                                // addItem already calls fetchCart internally, so cart is already synced
-                                // Just add a small delay to ensure navigation happens after state update
-                                await new Promise((resolve) => setTimeout(resolve, 100));
-                                
-                                // Navigate to payment page
-                                router.push(`/payment?restaurantId=${product.restaurant.id}`);
-                        } catch (error) {
-                                console.error("Failed to add to cart in Buy Now:", error);
-                            toast.error("Unable to add to cart");
-                        } finally {
-                                setTimeout(() => {
-                                        setIsAdding(false);
-                                }, 300);
-                        }
-                },
-                [isAdding, isMounted, addItem, user, isAuthenticated, product, router, handleAddToCart]
-        );
-
-        // Option 1: Grid Layout (ShopeeFood style) - RECOMMENDED
-        if (layout === "grid") {
-                return (
-                        <div className="group relative bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow] duration-300 h-full flex flex-col hover:-translate-y-1">
-                                {/* Image Section - Rounded top corners */}
-                                <Link href={`/food/${product.slug}`} className="block relative">
-                                        <div className="relative w-full aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                                                <Image
-                                                        src={imageError ? "/placeholder.png" : cardImageUrl}
-                                                        alt={product.productName}
-                                                        fill
-                                                        className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out rounded-t-2xl"
-                                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                                        unoptimized={!product.imageURL || cardImageUrl === "/placeholder.png" || imageError}
-                                                        onError={() => {
-                                                                // Only set error state once to prevent infinite loop
-                                                                if (!imageError) {
-                                                                        setImageError(true);
-                                                                }
-                                                        }}
-                                                />
-                                                {/* Placeholder overlay for broken images */}
-                                                {(!product.imageURL || cardImageUrl === "/placeholder.png") && (
-                                                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200 rounded-t-2xl">
-                                                                <div className="text-center">
-                                                                        <span className="text-4xl mb-2 block">🍽️</span>
-                                                                        <span className="text-xs text-gray-600 font-medium">Đang chuẩn bị...</span>
-                                                                </div>
-                                                        </div>
-                                                )}
+                            }}
+                        />
+                        {/* Placeholder overlay for broken images */}
+                        {(!product.imageURL || cardImageUrl === "/placeholder.png") && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200 rounded-t-2xl">
+                                <div className="text-center">
+                                    <span className="text-4xl mb-2 block">🍽️</span>
+                                    <span className="text-xs text-gray-600 font-medium">Đang chuẩn bị...</span>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Badges on Image - Top Left */}
                         <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
