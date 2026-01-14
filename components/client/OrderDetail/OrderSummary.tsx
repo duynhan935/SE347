@@ -14,6 +14,15 @@ export const OrderSummary = ({ order }: { order: Order }) => {
     const [isAdding, setIsAdding] = useState(false);
     const isProcessingRef = useRef(false);
 
+    // Format price to VND
+    const formatPrice = (priceUSD: number): string => {
+        const vndPrice = priceUSD * 25000; // Convert USD to VND
+        return vndPrice.toLocaleString("en-US", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        });
+    };
+
     const originalPrice = Number(order.totalAmount ?? 0);
     const savings = Number(order.discount ?? 0);
     const shipping = Number(order.deliveryFee ?? 0);
@@ -95,36 +104,36 @@ export const OrderSummary = ({ order }: { order: Order }) => {
     }, [isAdding, order, addItem, user, isAuthenticated, router]);
 
     return (
-        <div className="bg-gray-50 p-6 rounded-lg border w-full lg:sticky lg:top-24">
-            <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-md w-full lg:sticky lg:top-24">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">Order Summary</h2>
             <div className="space-y-3 text-gray-600">
                 <div className="flex justify-between">
                     <span>Original Price</span>
-                    <span>${originalPrice.toFixed(2)}</span>
+                    <span className="text-right">{formatPrice(originalPrice)} ₫</span>
                 </div>
                 <div className="flex justify-between">
                     <span>Savings</span>
-                    <span>-${savings.toFixed(2)}</span>
+                    <span className="text-right text-green-600">-{formatPrice(savings)} ₫</span>
                 </div>
                 <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span>{shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}</span>
+                    <span className="text-right">{shipping === 0 ? "FREE" : `${formatPrice(shipping)} ₫`}</span>
                 </div>
                 <div className="flex justify-between">
                     <span>Estimated Sales Tax</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span className="text-right">{formatPrice(tax)} ₫</span>
                 </div>
             </div>
-            <div className="flex justify-between font-bold text-2xl mt-4 pt-4 border-t">
-                <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+            <div className="flex justify-between font-bold text-2xl mt-4 pt-4 border-t border-gray-200">
+                <span className="text-gray-900">Total</span>
+                <span className="text-[#EE4D2D] text-right">{formatPrice(total)} ₫</span>
             </div>
             <button
                 onClick={handleBuyAgain}
                 disabled={isAdding}
-                className="cursor-pointer w-full mt-6 bg-yellow-400 text-black font-bold py-3 rounded-md hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="cursor-pointer w-full mt-6 bg-[#EE4D2D] text-white font-bold py-3 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
             >
-                {isAdding ? "Adding..." : "Buy Again"}
+                {isAdding ? "Adding..." : "Reorder"}
             </button>
         </div>
     );

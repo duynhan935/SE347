@@ -10,6 +10,7 @@ export interface CartItem {
     customizations?: string;
     subtotal: number;
     imageURL?: string;
+    cartItemImage?: string;
 }
 
 export interface Restaurant {
@@ -47,7 +48,10 @@ export interface CartResponse {
 
 export interface AddItemToCartRequest {
     restaurant: Restaurant;
-    item: Omit<CartItem, "subtotal">;
+    item: Omit<CartItem, "subtotal"> & {
+        cartItemImage?: string;
+        image?: string;
+    };
 }
 
 export const cartApi = {

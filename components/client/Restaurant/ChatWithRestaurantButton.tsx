@@ -32,14 +32,14 @@ export default function ChatWithRestaurantButton({
 
         const handleChatClick = async () => {
                 if (!isAuthenticated || !user?.id) {
-                        toast.error("Vui lòng đăng nhập để chat với nhà hàng");
+                        toast.error("Please login to chat with restaurant");
                         router.push("/login");
                         return;
                 }
 
                 // Prevent chatting with yourself
                 if (user.id === merchantId) {
-                        toast.error("Bạn không thể chat với chính mình");
+                        toast.error("You cannot chat with yourself");
                         return;
                 }
 
@@ -50,7 +50,7 @@ export default function ChatWithRestaurantButton({
                         
                         // Validate merchantId
                         if (!merchantId || merchantId.trim() === "") {
-                                toast.error("Không tìm thấy thông tin nhà hàng");
+                                toast.error("Restaurant information not found");
                                 setIsLoading(false);
                                 return;
                         }
@@ -64,7 +64,7 @@ export default function ChatWithRestaurantButton({
                         const axiosError = error as { response?: { data?: { message?: string } }; message?: string };
                         const errorMessage = axiosError?.response?.data?.message || 
                                            axiosError?.message || 
-                                           "Không thể tạo phòng chat. Vui lòng thử lại sau.";
+                                           "Unable to create chat room. Please try again later.";
                         toast.error(errorMessage);
                 } finally {
                         setIsLoading(false);
@@ -75,9 +75,9 @@ export default function ChatWithRestaurantButton({
                 "inline-flex items-center justify-center gap-2 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
 
         const variantStyles = {
-                default: "bg-brand-purple text-white hover:bg-brand-purple/90 focus:ring-brand-purple",
-                outline: "border-2 border-brand-purple text-brand-purple hover:bg-brand-purple/10 focus:ring-brand-purple",
-                ghost: "text-brand-purple hover:bg-brand-purple/10 focus:ring-brand-purple",
+                default: "bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 focus:ring-[#EE4D2D]",
+                outline: "border-2 border-[#EE4D2D] text-[#EE4D2D] hover:bg-[#EE4D2D]/10 focus:ring-[#EE4D2D]",
+                ghost: "text-[#EE4D2D] hover:bg-[#EE4D2D]/10 focus:ring-[#EE4D2D]",
         };
 
         // Ensure disabled is always a boolean to avoid hydration mismatch
@@ -93,12 +93,12 @@ export default function ChatWithRestaurantButton({
                         {isLoading ? (
                                 <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Đang tạo phòng chat...</span>
+                                        <span>Creating chat room...</span>
                                 </>
                         ) : (
                                 <>
                                         <MessageSquare className="w-4 h-4" />
-                                        <span>Chat với nhà hàng</span>
+                                        <span>Chat with Restaurant</span>
                                 </>
                         )}
                 </button>

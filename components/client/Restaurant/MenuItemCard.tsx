@@ -119,7 +119,7 @@ export const MenuItemCard = memo(
                 className="block border border-gray-200 rounded-2xl overflow-hidden h-full group bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1"
             >
                 {/* Image Section - Improved design */}
-                <div className="relative w-full h-40 md:h-48 overflow-hidden bg-gradient-to-br from-brand-purple/5 to-violet-500/5 rounded-t-2xl">
+                <div className="relative w-full h-40 md:h-48 overflow-hidden bg-gradient-to-br from-[#EE4D2D]/5 to-orange-500/5 rounded-t-2xl">
                     {hasImage ? (
                         <Image
                             src={cardImageUrl}
@@ -134,10 +134,10 @@ export const MenuItemCard = memo(
                             }}
                         />
                     ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-purple/10 to-violet-500/10">
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#EE4D2D]/10 to-orange-500/10">
                             <div className="text-center">
                                 <span className="text-4xl mb-2 block">🍽️</span>
-                                <span className="text-xs text-gray-600 font-medium">Đang chuẩn bị...</span>
+                                <span className="text-xs text-gray-600 font-medium">Preparing...</span>
                             </div>
                         </div>
                     )}
@@ -154,16 +154,16 @@ export const MenuItemCard = memo(
                         </p>
                     )}
                     <div className="flex justify-between items-center mt-auto pt-2">
-                        <p className="font-bold text-lg md:text-xl bg-gradient-to-r from-brand-purple to-violet-500 bg-clip-text text-transparent">
+                        <p className="font-bold text-lg md:text-xl text-[#EE4D2D]">
                             {sizes.length > 1 ? "From " : ""}
                             {displayPrice ? `$${displayPrice.toFixed(2)}` : "N/A"}
                         </p>
                         <button
                             onClick={handleAddToCart}
                             disabled={isAdding || !isMounted}
-                            className="p-2.5 text-brand-purple hover:bg-brand-purple/10 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-brand-purple/30 hover:border-brand-purple/50 bg-white hover:shadow-md"
-                            title="Thêm vào giỏ"
-                            aria-label="Thêm vào giỏ"
+                            className="p-2.5 text-[#EE4D2D] hover:bg-[#EE4D2D]/10 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-[#EE4D2D]/30 hover:border-[#EE4D2D]/50 bg-white hover:shadow-md"
+                            title="Add to Cart"
+                            aria-label="Add to Cart"
                         >
                             {isAdding ? (
                                 <PlusCircle className="w-5 h-5 animate-pulse" />

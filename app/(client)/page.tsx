@@ -1,42 +1,58 @@
 // File: app/page.tsx
-import ScrollReveal from "@/components/client/Animations/ScrollReveal"; // Import component
-import About from "@/components/client/HomePage/About";
-import Features from "@/components/client/HomePage/Features";
-import FeedYourEmployee from "@/components/client/HomePage/FeedYourEmployee";
-import Hero from "@/components/client/HomePage/Hero";
-import HomePageReviews from "@/components/client/HomePage/HomePageReviews";
-import NewsLetter from "@/components/client/HomePage/NewsLetter";
-import { Variants } from "framer-motion";
+"use client";
 
-const slideInFromLeft: Variants = {
-        hidden: { opacity: 0, x: -100 },
-        visible: { opacity: 1, x: 0 },
-};
-
-const zoomIn: Variants = {
-        hidden: { opacity: 0, scale: 0.8 },
-        visible: { opacity: 1, scale: 1 },
-};
+import FeaturedFoodPanel from "@/components/client/HomePage/FeaturedFoodPanel";
+import HeroSearchSection from "@/components/client/HomePage/HeroSearchSection";
+import GlobalLoader from "@/components/ui/GlobalLoader";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { shouldRedirectFromPath } from "@/lib/utils/redirectUtils";
+import { useRouter, usePathname } from "next/navigation";
+import { Suspense, useEffect } from "react";
 
 export default function HomePage() {
+        const router = useRouter();
+        const pathname = usePathname();
+        const { user, isAuthenticated, loading } = useAuthStore();
+
+        // Redirect Merchant/Admin away from home page
+        useEffect(() => {
+                if (!loading && isAuthenticated && user?.role) {
+                        const { shouldRedirect, redirectTo } = shouldRedirectFromPath(pathname, user.role);
+                        if (shouldRedirect) {
+                                router.replace(redirectTo);
+                        }
+                }
+        }, [loading, isAuthenticated, user?.role, pathname, router]);
+
         return (
-                <main>
-                        <Hero />
+                <main className="h-[calc(100vh-80px)] overflow-hidden">
+                        {/* Split-Hero Layout: Left (Search) + Right (Food Panel) */}
+                        <div className="flex h-full items-stretch">
+                                {/* Left Column: Hero Search Section - 40% width */}
+                                <div className="w-full lg:w-[40%] relative h-full flex-shrink-0">
+                                        <HeroSearchSection />
+                                </div>
 
-                        <ScrollReveal variants={zoomIn}>
-                                <Features />
-                        </ScrollReveal>
+                                {/* Right Column: Featured Food Panel - 60% width */}
+                                <div className="hidden lg:flex w-[60%] h-full overflow-y-auto scrollbar-hide bg-gray-50 flex-shrink-0">
+                                        <div className="w-full flex items-start justify-center ">
+                                                <div className="w-full max-w-5xl">
+                                                        <Suspense fallback={<GlobalLoader label="Loading" sublabel="Đang tải danh sách món ăn" />}>
+                                                                <FeaturedFoodPanel />
+                                                        </Suspense>
+                                                </div>
+                                        </div>
+                                </div>
 
-                        <About />
-
-                        <ScrollReveal variants={slideInFromLeft}>
-                                <FeedYourEmployee />
-                        </ScrollReveal>
-
-                        <ScrollReveal variants={zoomIn}>
-                                <HomePageReviews />
-                                <NewsLetter />
-                        </ScrollReveal>
+                                {/* Mobile: Right Column below Left */}
+                                <div className="lg:hidden w-full h-auto overflow-y-auto scrollbar-hide bg-gray-50">
+                                        <div className="w-full p-4">
+                                                <Suspense fallback={<GlobalLoader label="Loading" sublabel="Đang tải danh sách món ăn" />}>
+                                                        <FeaturedFoodPanel />
+                                                </Suspense>
+                                        </div>
+                                </div>
+                        </div>
                 </main>
         );
 }

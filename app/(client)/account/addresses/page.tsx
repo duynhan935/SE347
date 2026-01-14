@@ -134,13 +134,13 @@ export default function AddressesPage() {
         if (!mounted || authLoading || loading) {
                 return (
                         <div className="bg-white p-8 rounded-lg shadow-md flex items-center justify-center min-h-[400px]">
-                                <Loader2 className="w-8 h-8 animate-spin text-brand-purple" />
+                                <Loader2 className="w-8 h-8 animate-spin text-[#EE4D2D]" />
                         </div>
                 );
         }
 
         return (
-                <div className="bg-white p-8 rounded-lg shadow-md space-y-6">
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-6">
                         <div className="flex justify-between items-center">
                                 <div>
                                         <h1 className="text-2xl font-bold mb-2">My Addresses</h1>
@@ -148,7 +148,7 @@ export default function AddressesPage() {
                                 </div>
                                 <Button
                                         onClickFunction={() => setIsAdding(!isAdding)}
-                                        className="bg-brand-purple text-white hover:bg-brand-purple/90 cursor-pointer flex items-center gap-2"
+                                        className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 cursor-pointer flex items-center gap-2"
                                 >
                                         <Plus size={20} />
                                         {isAdding ? "Cancel" : "Add Address"}
@@ -172,7 +172,7 @@ export default function AddressesPage() {
                                                                                 location: e.target.value,
                                                                         })
                                                                 }
-                                                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple focus:border-brand-purple disabled:opacity-50"
+                                                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] disabled:opacity-50"
                                                                 placeholder="Enter full address (street, ward, district, city)"
                                                                 rows={3}
                                                                 required
@@ -197,7 +197,7 @@ export default function AddressesPage() {
                                                                                                 ) || 0,
                                                                                 })
                                                                         }
-                                                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple focus:border-brand-purple disabled:opacity-50"
+                                                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] disabled:opacity-50"
                                                                         placeholder="106.6297"
                                                                         disabled={submitting}
                                                                 />
@@ -219,7 +219,7 @@ export default function AddressesPage() {
                                                                                                 ) || 0,
                                                                                 })
                                                                         }
-                                                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple focus:border-brand-purple disabled:opacity-50"
+                                                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] disabled:opacity-50"
                                                                         placeholder="10.8231"
                                                                         disabled={submitting}
                                                                 />
@@ -228,7 +228,7 @@ export default function AddressesPage() {
                                                 <div className="flex gap-4">
                                                         <Button
                                                                 type="submit"
-                                                                className="bg-brand-purple text-white hover:bg-brand-purple/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 disabled={submitting}
                                                         >
                                                                 {submitting ? (
@@ -262,10 +262,26 @@ export default function AddressesPage() {
                         {/* Addresses List */}
                         <div className="border-t pt-6">
                                 {!addresses || addresses.length === 0 ? (
-                                        <div className="text-center py-12">
-                                                <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                                <p className="text-gray-500 text-lg">No addresses saved yet</p>
-                                                <p className="text-gray-400 text-sm mt-2">
+                                        <div className="text-center py-16">
+                                                <div className="mb-6">
+                                                        <svg
+                                                                width="120"
+                                                                height="120"
+                                                                viewBox="0 0 120 120"
+                                                                fill="none"
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                className="mx-auto text-gray-300"
+                                                        >
+                                                                <circle cx="60" cy="60" r="50" fill="currentColor" opacity="0.1" />
+                                                                <path
+                                                                        d="M60 30C45.6406 30 34 41.6406 34 56C34 70.3594 60 90 60 90C60 90 86 70.3594 86 56C86 41.6406 74.3594 30 60 30ZM60 65C55.5817 65 52 61.4183 52 57C52 52.5817 55.5817 49 60 49C64.4183 49 68 52.5817 68 57C68 61.4183 64.4183 65 60 65Z"
+                                                                        fill="currentColor"
+                                                                        opacity="0.3"
+                                                                />
+                                                        </svg>
+                                                </div>
+                                                <p className="text-gray-500 text-lg font-semibold mb-2">No addresses saved yet</p>
+                                                <p className="text-gray-400 text-sm">
                                                         Add your first address to get started
                                                 </p>
                                         </div>
@@ -280,7 +296,7 @@ export default function AddressesPage() {
                                                                         <div className="flex justify-between items-start">
                                                                                 <div className="flex-1">
                                                                                         <div className="flex items-center gap-2 mb-2">
-                                                                                                <MapPin className="w-5 h-5 text-brand-purple" />
+                                                                                                <MapPin className="w-5 h-5 text-[#EE4D2D]" />
                                                                                                 <h3 className="font-semibold text-gray-800">
                                                                                                         Address
                                                                                                 </h3>

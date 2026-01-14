@@ -49,15 +49,15 @@ export default function MobileMenu() {
         <>
             {/* Mobile Cart & Menu Button */}
             <div className="flex lg:hidden items-center gap-3">
-                {/* Browse restaurants icon */}
+                {/* Browse foods icon */}
                 <Link
-                    href="/restaurants"
+                    href="/?type=foods"
                     prefetch={true}
                     className="relative p-2 rounded-full hover:bg-gray-50 transition-colors"
-                    aria-label="Browse restaurants"
+                    aria-label="Khám phá món ăn"
                 >
                     <UtensilsCrossed
-                        className={`w-5 h-5 ${pathname === "/restaurants" ? "text-brand-orange" : "text-brand-grey"}`}
+                        className={`w-5 h-5 ${pathname === "/" ? "text-brand-orange" : "text-brand-grey"}`}
                     />
                 </Link>
 

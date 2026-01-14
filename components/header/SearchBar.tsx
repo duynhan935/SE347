@@ -122,14 +122,14 @@ export default function SearchBar() {
                 // Trim whitespace
                 const trimmedQuery = searchQuery.trim();
                 
-                // If query is empty, redirect to restaurants page without search
+                // If query is empty, redirect to home page (which shows foods by default)
                 if (!trimmedQuery) {
-                        router.push("/restaurants");
+                        router.push("/?type=foods");
                         return;
                 }
 
-                // Redirect to restaurants page with search query
-                router.push(`/restaurants?search=${encodeURIComponent(trimmedQuery)}&type=restaurants`);
+                // Redirect to search page
+                router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
                 setShowSuggestions(false);
         };
 
@@ -159,23 +159,23 @@ export default function SearchBar() {
         };
 
         return (
-                <div className="hidden lg:flex flex-1 max-w-2xl mx-8 relative" ref={suggestionsRef}>
+                <div className="hidden lg:flex flex-1 max-w-2xl relative" ref={suggestionsRef}>
                         <form onSubmit={handleSearch} className="w-full">
                                 <div className="relative w-full">
                                         <input
                                                 type="text"
-                                                placeholder="Tìm bún bò, trà sữa, gà rán..."
+                                                placeholder="Search for food, drinks..."
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                 onFocus={handleInputFocus}
                                                 onBlur={handleInputBlur}
-                                                className={`w-full py-3 px-6 pl-12 bg-brand-white rounded-full text-brand-black placeholder:text-brand-grey font-manrope text-p2 border transition-all duration-200 ${
+                                                className={`w-full py-2.5 px-4 pl-11 bg-gray-100 rounded-full text-gray-900 placeholder:text-gray-400 text-sm border transition-all duration-200 ${
                                                         isFocused
-                                                                ? "border-brand-orange/50 shadow-lg shadow-brand-orange/10 ring-2 ring-brand-orange/20"
-                                                                : "border-gray-200 shadow-md hover:shadow-lg"
+                                                                ? "bg-white border-[#EE4D2D]/50 shadow-md ring-2 ring-[#EE4D2D]/20"
+                                                                : "border-transparent hover:bg-gray-50"
                                                 }`}
                                         />
-                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-grey pointer-events-none" />
+                                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                 </div>
                         </form>
 
@@ -184,7 +184,7 @@ export default function SearchBar() {
                                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 max-h-[400px] overflow-y-auto z-50">
                                         {isLoadingSuggestions ? (
                                                 <div className="p-4 text-center text-gray-500">
-                                                        <div className="animate-pulse">Đang tìm kiếm...</div>
+                                                        <div className="animate-pulse">Searching...</div>
                                                 </div>
                                         ) : (
                                                 <>
@@ -201,7 +201,7 @@ export default function SearchBar() {
                                                                                                 onClick={() => handleSuggestionClick(suggestion)}
                                                                                                 className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-md transition-colors text-left"
                                                                                         >
-                                                                                                <Store className="w-4 h-4 text-brand-purple flex-shrink-0" />
+                                                                                                <Store className="w-4 h-4 text-[#EE4D2D] flex-shrink-0" />
                                                                                                 <div className="flex-1 min-w-0">
                                                                                                         <div className="font-medium text-sm text-gray-900 truncate">
                                                                                                                 {suggestion.name}
@@ -246,7 +246,7 @@ export default function SearchBar() {
                                                                 <div className="p-2 border-t border-gray-100">
                                                                         <button
                                                                                 onClick={handleSearch}
-                                                                                className="w-full px-3 py-2 text-sm font-semibold text-brand-purple hover:bg-brand-purple/10 rounded-md transition-colors text-center"
+                                                                                className="w-full px-3 py-2 text-sm font-semibold text-[#EE4D2D] hover:bg-[#EE4D2D]/10 rounded-md transition-colors text-center"
                                                                         >
                                                                                 View all results for &quot;{searchQuery}&quot;
                                                                         </button>

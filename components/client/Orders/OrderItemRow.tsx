@@ -103,7 +103,7 @@ export const OrderItemRow = ({ item, orderId }: { item: OrderListItem; orderId: 
                     />
                 </div>
             ) : (
-                <div className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 text-brand-purple flex-shrink-0 shadow-sm">
+                <div className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-md bg-gradient-to-br from-orange-100 to-orange-200 text-[#EE4D2D] flex-shrink-0 shadow-sm">
                     <ShoppingBag className="h-8 w-8" />
                 </div>
             )}
@@ -126,26 +126,18 @@ export const OrderItemRow = ({ item, orderId }: { item: OrderListItem; orderId: 
                     )}
                 </div>
 
-                {/* Item Price - Smaller than total, gray */}
-                <p className="font-semibold text-sm text-gray-600">${(item.price * item.quantity).toFixed(2)}</p>
+                {/* Item Price - VND format */}
+                <p className="font-semibold text-sm text-gray-600">
+                    {((item.price * item.quantity) * 25000).toLocaleString("en-US", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                    })}{" "}
+                    ₫
+                </p>
             </div>
 
-            {/* Action Buttons - Pill-shaped, Primary vs Secondary */}
-            <div className="flex flex-col gap-2 flex-shrink-0">
-                <button
-                    onClick={handleBuyAgain}
-                    disabled={isAdding}
-                    className="text-sm font-bold bg-brand-purple text-white px-5 py-2.5 rounded-full hover:bg-brand-purple/90 transition-all duration-200 cursor-pointer whitespace-nowrap shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {isAdding ? "Đang thêm..." : "Buy Again"}
-                </button>
-                <Link
-                    href={`/orders/${orderId}`}
-                    className="text-sm font-semibold px-5 py-2.5 rounded-full text-center hover:bg-gray-50 border-2 border-gray-300 hover:border-gray-400 transition-all duration-200 whitespace-nowrap text-gray-700"
-                >
-                    See Details
-                </Link>
-            </div>
+            {/* Action Buttons - Removed from here, handled in OrdersPageContainer */}
+            <div className="flex-shrink-0" data-order-id={orderId} />
         </div>
     );
 };

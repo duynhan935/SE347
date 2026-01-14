@@ -6,7 +6,7 @@ import RestaurantActions from "@/components/client/Restaurant/RestaurantActions"
 import RestaurantBreadcrumb from "@/components/client/Restaurant/RestaurantBreadcrumb";
 import RestaurantHero from "@/components/client/Restaurant/RestaurantHero";
 import RestaurantInfo from "@/components/client/Restaurant/RestaurantInfo";
-import RestaurantMenu from "@/components/client/Restaurant/RestaurantMenu";
+import RestaurantMenuWrapper from "@/components/client/Restaurant/RestaurantMenuWrapper";
 import RestaurantNavTabs from "@/components/client/Restaurant/RestaurantNavTabs";
 import RestaurantReviews from "@/components/client/Restaurant/RestaurantReviews";
 
@@ -33,7 +33,7 @@ export default async function RestaurantDetailPage({ params }: { params: Promise
                     <div className="lg:col-span-2 space-y-16">
                         <ScrollReveal>
                             <section id="menu" className="scroll-mt-24">
-                                <RestaurantMenu
+                                <RestaurantMenuWrapper
                                     restaurantId={restaurant.id}
                                     restaurantName={restaurant.resName}
                                     products={restaurant.products}

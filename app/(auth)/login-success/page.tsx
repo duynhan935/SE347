@@ -1,7 +1,9 @@
 "use client";
 
-import { useAuthStore } from "@/stores/useAuthStore";
 import GlobalLoader from "@/components/ui/GlobalLoader";
+import { decodeJWT } from "@/lib/jwt";
+import { getLoginRedirectPath } from "@/lib/utils/redirectUtils";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -50,11 +52,46 @@ function LoginSuccessContent() {
 
                 if (success) {
                     toast.success("Login successful! Welcome back! 🎉", { duration: 2000 });
-                    // Small delay to show success message
-                    setTimeout(() => {
-                        // Use replace to avoid adding to history
-                        router.replace("/");
-                    }, 500);
+                    
+                    // Get role from token or user profile for OAuth redirect
+                    const accessToken = useAuthStore.getState().accessToken;
+                    let userRole: string | null = null;
+                    
+                    if (accessToken) {
+                        const decodedToken = decodeJWT(accessToken);
+                        userRole = decodedToken?.role || null;
+                    }
+                    
+                    // If role not in token, wait for user profile
+                    if (!userRole) {
+                        const checkUserAndRedirect = async () => {
+                            let attempts = 0;
+                            const maxAttempts = 10;
+                            
+                            while (attempts < maxAttempts) {
+                                const currentUser = useAuthStore.getState().user;
+                                if (currentUser?.role) {
+                                    userRole = currentUser.role;
+                                    break;
+                                }
+                                await new Promise((resolve) => setTimeout(resolve, 100));
+                                attempts++;
+                            }
+                            
+                            const redirectPath = getLoginRedirectPath(userRole || null, null);
+                            router.replace(redirectPath);
+                        };
+                        
+                        setTimeout(() => {
+                            checkUserAndRedirect();
+                        }, 500);
+                    } else {
+                        // Role found, redirect immediately
+                        const redirectPath = getLoginRedirectPath(userRole, null);
+                        setTimeout(() => {
+                            router.replace(redirectPath);
+                        }, 500);
+                    }
                 } else {
                     setError("Failed to complete login. Please try again.");
                     toast.error("Failed to complete login. Please try again.", { duration: 3000 });

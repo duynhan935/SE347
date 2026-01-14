@@ -140,11 +140,20 @@ export default function ProfilePage() {
                     ? `${orderId}-${new Date(order.createdAt).getTime()}`
                     : `${orderId}-${index}`;
 
+                // Format price to VND
+                const formatPriceLocal = (priceUSD: number): string => {
+                    const vndPrice = priceUSD * 25000; // Convert USD to VND
+                    return vndPrice.toLocaleString("en-US", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                    });
+                };
+
                 return {
                     id: uniqueId,
                     displayId: order.orderId || `#${index + 1}`,
                     date: orderDate,
-                    total: `$${Number(order.finalAmount || 0).toFixed(2)}`,
+                    total: formatPriceLocal(Number(order.finalAmount || 0)) + " ₫",
                     status,
                     statusClass: getStatusBadgeClass(status),
                 };
@@ -170,10 +179,19 @@ export default function ProfilePage() {
             fetchOrdersAndStats();
         }
     }, [mounted, user?.id, loading, fetchOrdersAndStats]);
+    // Format price to VND
+    const formatPrice = (priceUSD: number): string => {
+        const vndPrice = priceUSD * 25000; // Convert USD to VND
+        return vndPrice.toLocaleString("en-US", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        });
+    };
+
     if (!mounted || loading || ordersLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="animate-spin text-brand-purple" />
+                <Loader2 className="animate-spin text-[#EE4D2D]" />
             </div>
         );
     }
@@ -192,18 +210,18 @@ export default function ProfilePage() {
 
     return (
         <>
-            <div className="custom-container p-3 sm:p-1 md:p-12 space-y-8">
+            <div className="space-y-8">
                 {/* ✨ 1. Welcome Banner & Profile Summary - Improved design */}
                 <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 flex flex-col sm:flex-row items-center gap-6">
                     <div className="relative w-24 h-24 md:w-28 md:h-28 flex-shrink-0">
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-brand-purple to-purple-600 p-0.5">
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#EE4D2D] to-orange-600 p-0.5">
                                 <div className="w-full h-full rounded-full bg-white p-1">
                                         <Image src={avatarUrl} alt="User Avatar" fill className="rounded-full object-cover" />
                                 </div>
                         </div>
                     </div>
                     <div className="text-center sm:text-left flex-grow">
-                        <p className="text-sm text-gray-500 font-medium">Chào mừng trở lại,</p>
+                        <p className="text-sm text-gray-500 font-medium">Welcome back,</p>
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mt-1">{user.username}</h1>
                         <p className="text-gray-600 flex items-center justify-center sm:justify-start gap-2 mt-2">
                             <Mail className="w-4 h-4" />
@@ -212,23 +230,23 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex-shrink-0">
                         <Button
-                            className="bg-brand-purple text-white hover:bg-brand-purple/90 text-sm !py-3 !px-6 cursor-pointer rounded-full font-bold shadow-md hover:shadow-lg transition-all duration-200"
+                            className="bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90 text-sm !py-3 !px-6 cursor-pointer rounded-full font-bold shadow-md hover:shadow-lg transition-all duration-200"
                             onClickFunction={() => setIsModalOpen(true)}
                         >
-                            Chỉnh sửa hồ sơ
+                            Edit Profile
                         </Button>
                     </div>
                 </div>
 
-                {/* ✨ 2. Thẻ "Quick Stats" - Improved design */}
+                {/* ✨ 2. Quick Stats Cards - Improved design */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {stats.map((stat) => (
                         <div
                             key={stat.name}
-                            className="bg-white p-6 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 flex items-center gap-4"
+                            className="bg-white p-6 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 flex items-center gap-4 border-l-4 border-[#EE4D2D]"
                         >
-                            <div className="bg-gradient-to-br from-brand-purple/10 to-purple-100 p-4 rounded-xl">
-                                <stat.icon className="w-6 h-6 text-brand-purple" />
+                            <div className="bg-orange-100 p-4 rounded-xl">
+                                <stat.icon className="w-6 h-6 text-[#EE4D2D]" />
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500 font-medium">{stat.name}</p>
@@ -238,16 +256,16 @@ export default function ProfilePage() {
                     ))}
                 </div>
 
-                {/* ✨ 3. Phần "Recent Orders" - Improved design */}
+                {/* ✨ 3. Recent Activity Section - Improved design */}
                 <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300">
-                    <h2 className="text-xl md:text-2xl font-bold mb-6 text-gray-900">Hoạt động gần đây</h2>
+                    <h2 className="text-xl md:text-2xl font-bold mb-6 text-gray-900">Recent Activity</h2>
                     {recentOrders.length > 0 ? (
                         <>
                             <div className="space-y-4">
                                 {recentOrders.map((order) => (
                                     <div
                                         key={order.id}
-                                        className="border border-gray-200 p-5 rounded-xl hover:border-brand-purple/30 transition-all duration-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+                                        className="border border-gray-200 p-5 rounded-xl hover:border-[#EE4D2D]/30 transition-all duration-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
                                     >
                                         <div>
                                             <p className="font-bold text-gray-900 text-lg">{order.displayId}</p>
@@ -269,20 +287,20 @@ export default function ProfilePage() {
                             <div className="text-right mt-6">
                                 <Link
                                     href="/account/orders"
-                                    className="text-sm font-bold text-brand-purple hover:text-brand-purple/80 transition-colors inline-flex items-center gap-1"
+                                    className="text-sm font-bold text-[#EE4D2D] hover:text-[#EE4D2D]/80 transition-colors inline-flex items-center gap-1"
                                 >
-                                    Xem tất cả đơn hàng →
+                                    View all orders →
                                 </Link>
                             </div>
                         </>
                     ) : (
                         <div className="text-center py-12">
-                            <p className="text-gray-500 mb-4">Chưa có đơn hàng nào</p>
+                            <p className="text-gray-500 mb-4">No orders yet</p>
                             <Link
                                 href="/restaurants"
-                                className="text-sm font-bold text-brand-purple hover:text-brand-purple/80 transition-colors inline-flex items-center gap-1"
+                                className="text-sm font-bold text-[#EE4D2D] hover:text-[#EE4D2D]/80 transition-colors inline-flex items-center gap-1"
                             >
-                                Bắt đầu đặt hàng →
+                                Start ordering →
                             </Link>
                         </div>
                     )}

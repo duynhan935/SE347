@@ -4,7 +4,7 @@ import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Product } from "@/types";
-import { Plus, ShoppingCart } from "lucide-react";
+import { CheckCircle2, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -20,7 +20,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
     const router = useRouter();
     const addItem = useCartStore((state) => state.addItem);
     const setUserId = useCartStore((state) => state.setUserId);
-    const { user, isAuthenticated } = useAuthStore();
+    const { user } = useAuthStore();
     const [isAdding, setIsAdding] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [imageError, setImageError] = useState(false);
@@ -40,6 +40,21 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
     const displayPrice = useMemo(() => product.productSizes?.[0]?.price, [product.productSizes]);
     const defaultSize = useMemo(() => product.productSizes?.[0], [product.productSizes]);
     const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
+    
+    // Format price to VND (assuming 1 USD = 25,000 VND)
+    const formattedPrice = useMemo(() => {
+        if (displayPrice === undefined) return null;
+        const vndPrice = displayPrice * 25000;
+        // Format with comma separator, no decimals for VND
+        return vndPrice.toLocaleString("en-US");
+    }, [displayPrice]);
+    
+    // Format sold count
+    const soldCount = useMemo(() => {
+        const count = product.totalReview || Math.floor(Math.random() * 500) + 50; // Mock sold count if not available
+        if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+        return `${count}+`;
+    }, [product.totalReview]);
 
     // Reset image error when image URL changes
     useEffect(() => {
@@ -55,6 +70,17 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
         return product.totalReview > 20 && product.rating >= 4.0;
     }, [product.totalReview, product.rating]);
 
+    // Check for promo/freeship (you can adjust logic based on your data)
+    const hasPromo = useMemo(() => {
+        // Example: Check if product has discount or special offer
+        return product.totalReview > 30 || Math.random() > 0.7; // Placeholder logic
+    }, [product.totalReview]);
+
+    const hasFreeship = useMemo(() => {
+        // Example: Check if restaurant offers free shipping
+        return product.restaurant?.duration && product.restaurant.duration <= 25;
+    }, [product.restaurant?.duration]);
+
     // Validate and format delivery time
     const deliveryTime = useMemo(() => {
         const duration = product.restaurant?.duration;
@@ -68,10 +94,6 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
         return Math.round(duration).toString();
     }, [product.restaurant?.duration]);
 
-    const isFastDelivery = useMemo(() => {
-        const duration = product.restaurant?.duration;
-        return duration && typeof duration === "number" && duration > 0 && duration <= 30;
-    }, [product.restaurant?.duration]);
 
     const handleAddToCart = useCallback(
         async (e: React.MouseEvent) => {
@@ -137,103 +159,22 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
         [isAdding, isMounted, user, product, defaultSize, cardImageUrl, addItem, router]
     );
 
-    const handleBuyNow = useCallback(
-        async (e: React.MouseEvent) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            // Prevent double clicks
-            if (isAdding || !isMounted) {
-                return;
-            }
-
-            // Set loading state immediately to prevent double clicks
-            setIsAdding(true);
-
-            if (typeof addItem !== "function") {
-                console.warn("[FoodCard] addItem is not available yet");
-                setIsAdding(false);
-                return;
-            }
-
-            // Check authentication - verify both user object and token exist
-            const hasToken =
-                typeof window !== "undefined" &&
-                (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
-
-            if (!user && !isAuthenticated && !hasToken) {
-                toast.error("Please sign in to place an order");
-                setIsAdding(false);
-                router.push("/login");
-                return;
-            }
-
-            // If user object is missing but token exists, wait a bit for auth to initialize
-            if (!user && hasToken) {
-                // Wait a moment for auth to initialize
-                await new Promise((resolve) => setTimeout(resolve, 300));
-                // Re-check auth state after waiting
-                const currentAuthState = useAuthStore.getState();
-                if (!currentAuthState.user && !currentAuthState.isAuthenticated) {
-                    toast.error("Please sign in to place an order");
-                    setIsAdding(false);
-                    router.push("/login");
-                    return;
-                }
-            }
-
-            if (!product.restaurant?.id) {
-                toast.error("Restaurant information not found");
-                setIsAdding(false);
-                return;
-            }
-
-            try {
-                // Add item to cart - this now does optimistic update immediately AND syncs with backend
-                await handleAddToCart(e);
-
-                // Verify user is still authenticated before navigating
-                const currentAuthState = useAuthStore.getState();
-                const stillHasToken =
-                    typeof window !== "undefined" &&
-                    (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
-
-                if (!currentAuthState.user && !currentAuthState.isAuthenticated && !stillHasToken) {
-                    toast.error("Your session has expired. Please sign in again");
-                    router.push("/login");
-                    return;
-                }
-
-                // addItem already calls fetchCart internally, so cart is already synced
-                // Just add a small delay to ensure navigation happens after state update
-                await new Promise((resolve) => setTimeout(resolve, 100));
-
-                // Navigate to payment page
-                router.push(`/payment?restaurantId=${product.restaurant.id}`);
-            } catch (error) {
-                console.error("Failed to add to cart in Buy Now:", error);
-                toast.error("Unable to add to cart");
-            } finally {
-                setTimeout(() => {
-                    setIsAdding(false);
-                }, 300);
-            }
-        },
-        [isAdding, isMounted, addItem, user, isAuthenticated, product, router, handleAddToCart]
-    );
 
     // Option 1: Grid Layout (ShopeeFood style) - RECOMMENDED
     if (layout === "grid") {
         return (
-            <div className="group relative bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow] duration-300 h-full flex flex-col hover:-translate-y-1">
+            <div className="group relative bg-white rounded-lg overflow-visible shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow,border] duration-300 h-full flex flex-col hover:-translate-y-1 hover:border-2 hover:border-[#EE4D2D]/30 max-w-[280px] mx-auto">
                 {/* Image Section - Rounded top corners */}
-                <Link href={`/food/${product.slug}`} className="block relative">
-                    <div className="relative w-full aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                <Link 
+                    href={product.restaurant?.slug ? `/restaurants/${product.restaurant.slug}?productId=${product.id}` : `/food/${product.slug}`} 
+                    className="block relative"
+                >
+                    <div className="relative w-full aspect-square overflow-hidden bg-gray-100 rounded-t-lg">
                         <Image
                             src={imageError ? "/placeholder.png" : cardImageUrl}
                             alt={product.productName}
                             fill
-                            className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out rounded-t-2xl"
+                            className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500 ease-out"
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                             unoptimized={!product.imageURL || cardImageUrl === "/placeholder.png" || imageError}
                             onError={() => {
@@ -245,15 +186,29 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         />
                         {/* Placeholder overlay for broken images */}
                         {(!product.imageURL || cardImageUrl === "/placeholder.png") && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200 rounded-t-2xl">
+                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
                                 <div className="text-center">
                                     <span className="text-4xl mb-2 block">🍽️</span>
-                                    <span className="text-xs text-gray-600 font-medium">Đang chuẩn bị...</span>
+                                    <span className="text-xs text-gray-600 font-medium">Preparing...</span>
                                 </div>
                             </div>
                         )}
 
-                        {/* Badges on Image - Top Left */}
+                        {/* Promo/Freeship Badges - Top Right Corner */}
+                        <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
+                            {hasFreeship && (
+                                <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg whitespace-nowrap">
+                                    🚚 Freeship
+                                </span>
+                            )}
+                            {hasPromo && !hasFreeship && (
+                                <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg whitespace-nowrap">
+                                    🎁 Promo
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Best Seller/Popular Badges - Top Left */}
                         <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
                             {isBestSeller && (
                                 <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
@@ -265,65 +220,65 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                                     ⚡ Bán chạy
                                 </span>
                             )}
-                            {isFastDelivery && !isBestSeller && (
-                                <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
-                                    ⚡ Fast
-                                </span>
+                        </div>
+
+                        {/* Rating & Time Badges - Bottom Left Overlay */}
+                        <div className="absolute bottom-3 left-3 flex items-center gap-2 z-10">
+                            {product.rating > 0 && (
+                                <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2 py-1 rounded-full shadow-md border border-white/50 flex items-center gap-1">
+                                    <span className="text-yellow-500">⭐</span>
+                                    <span>{product.rating.toFixed(1)}</span>
+                                </div>
+                            )}
+                            {deliveryTime && (
+                                <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2 py-1 rounded-full shadow-md border border-white/50 flex items-center gap-1">
+                                    <span>🕒</span>
+                                    <span>{deliveryTime} min</span>
+                                </div>
                             )}
                         </div>
 
-                        {/* Delivery time badge - Top Right with glassmorphism */}
-                        {deliveryTime && (
-                            <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-lg border border-white/50 z-10">
-                                ⏱ {deliveryTime} phút
-                            </div>
-                        )}
                     </div>
                 </Link>
 
                 {/* Content Section - More padding for breathing room */}
                 <div className="p-5 flex-grow flex flex-col">
-                    <Link href={`/food/${product.slug}`} className="flex-grow flex flex-col">
-                        {/* Product Name - Capitalize first letter, Bold, Larger */}
+                    <Link 
+                        href={product.restaurant?.slug ? `/restaurants/${product.restaurant.slug}?productId=${product.id}` : `/food/${product.slug}`} 
+                        className="flex-grow flex flex-col"
+                    >
+                        {/* Product Name - Bold and Larger */}
                         <h3
-                            className="font-bold text-lg md:text-xl text-gray-900 line-clamp-2 mb-2 leading-tight"
+                            className="font-bold text-lg text-gray-900 line-clamp-2 mb-2 leading-tight"
                             title={product.productName}
                         >
                             {product.productName.charAt(0).toUpperCase() + product.productName.slice(1)}
                         </h3>
 
-                        {/* Rating - Only show if > 0, with stars */}
-                        {product.rating > 0 && (
-                            <div className="flex items-center gap-1.5 mb-3">
-                                <div className="flex items-center">
-                                    {Array.from({ length: 5 }).map((_, i) => (
-                                        <span
-                                            key={i}
-                                            className={`text-xs ${
-                                                i < Math.round(product.rating) ? "text-yellow-400" : "text-gray-300"
-                                            }`}
-                                        >
-                                            ⭐
-                                        </span>
-                                    ))}
+                        {/* Rating & Sold Count - Trust Information */}
+                        <div className="flex items-center gap-2 mb-2">
+                            {product.rating > 0 && (
+                                <div className="flex items-center gap-1">
+                                    <span className="text-yellow-500 text-xs">⭐</span>
+                                    <span className="text-xs font-semibold text-gray-700">{product.rating.toFixed(1)}</span>
                                 </div>
-                                <span className="text-xs font-semibold text-gray-700">{product.rating.toFixed(1)}</span>
-                                {product.totalReview > 0 && (
-                                    <span className="text-xs text-gray-400">({product.totalReview})</span>
-                                )}
-                            </div>
-                        )}
+                            )}
+                            <span className="text-xs text-gray-500">• {soldCount} sold</span>
+                        </div>
 
-                        {/* Restaurant Name / Category - Smaller, lighter gray */}
-                        <p className="text-xs text-gray-400 line-clamp-1 mb-3">
-                            {product.restaurant?.resName || "Restaurant"}
-                        </p>
+                        {/* Restaurant Name with Verified Icon */}
+                        <div className="flex items-center gap-1.5 mb-3">
+                            <p className="text-sm text-gray-500 line-clamp-1 flex-1">
+                                {product.restaurant?.resName || "Restaurant"}
+                            </p>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                        </div>
 
-                        {/* Price - Orange/Red-orange color, Prominent */}
-                        <div className="mt-auto pt-2">
-                            {displayPrice !== undefined ? (
-                                <p className="text-xl md:text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-                                    ${displayPrice.toFixed(2)}
+                        {/* Price - Orange-Red color, Prominent */}
+                        <div className="mt-auto pt-2 relative pr-14">
+                            {formattedPrice ? (
+                                <p className="text-base md:text-lg font-bold text-[#EE4D2D]">
+                                    {formattedPrice} ₫
                                 </p>
                             ) : (
                                 <p className="text-sm text-gray-400">No price</p>
@@ -331,26 +286,19 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         </div>
                     </Link>
 
-                    {/* Action Buttons - Pill-shaped CTA, refined + button */}
-                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
-                        <button
-                            onClick={handleBuyNow}
-                            disabled={isAdding || !isMounted}
-                            className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-brand-purple hover:bg-brand-purple/90 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-                        >
-                            {isAdding ? "Đang xử lý..." : "Mua ngay"}
-                        </button>
+                    {/* Circle Add Button - Bottom Right Corner of Image */}
+                    <div className="absolute bottom-3 right-3 z-20">
                         <button
                             onClick={handleAddToCart}
                             disabled={isAdding || !isMounted}
-                            className="p-2.5 text-brand-purple hover:bg-brand-purple/10 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-brand-purple/30 hover:border-brand-purple/50 bg-white hover:shadow-md"
-                            title="Thêm vào giỏ"
-                            aria-label="Thêm vào giỏ"
+                            className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-[#EE4D2D] hover:bg-[#EE4D2D]/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 active:scale-95"
+                            title="Add to Cart"
+                            aria-label="Add to Cart"
                         >
                             {isAdding ? (
-                                <ShoppingCart className="w-5 h-5 animate-pulse" />
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             ) : (
-                                <Plus className="w-5 h-5 font-bold" />
+                                <Plus className="w-5 h-5 md:w-6 md:h-6 font-bold" />
                             )}
                         </button>
                     </div>
@@ -361,10 +309,10 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
 
     // Option 2: Flex Layout (Horizontal) - For long lists - Larger image
     return (
-        <div className="group relative bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow] duration-300 flex flex-row h-full hover:-translate-y-1">
+        <div className="group relative bg-white rounded-2xl overflow-visible shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow,border] duration-300 flex flex-row h-full hover:-translate-y-1 hover:border-2 hover:border-[#EE4D2D]/30">
             {/* Image Section - Left - Much larger (60-65% width) */}
             <Link
-                href={`/food/${product.slug}`}
+                href={product.restaurant?.slug ? `/restaurants/${product.restaurant.slug}?productId=${product.id}` : `/food/${product.slug}`}
                 className="block relative flex-shrink-0 w-[60%] md:w-[65%] min-w-[200px]"
             >
                 <div className="relative w-full h-full min-h-[180px] md:min-h-[220px] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-l-2xl">
@@ -390,37 +338,59 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         </div>
                     )}
 
-                    {/* Badges - Top Left - Larger */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
-                        {isBestSeller && (
-                            <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
-                                🔥 Best Seller
+                    {/* Promo/Freeship Badges - Top Right Corner */}
+                    <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
+                        {hasFreeship && (
+                            <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg whitespace-nowrap">
+                                🚚 Freeship
                             </span>
                         )}
-                        {!isBestSeller && isPopular && (
-                            <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
-                                ⚡ Bán chạy
-                            </span>
-                        )}
-                        {isFastDelivery && !isBestSeller && !isPopular && (
-                            <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
-                                ⚡ Fast
+                        {hasPromo && !hasFreeship && (
+                            <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg whitespace-nowrap">
+                                🎁 Promo
                             </span>
                         )}
                     </div>
 
-                    {/* Delivery time badge - Top Right with glassmorphism */}
-                    {deliveryTime && (
-                        <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-lg border border-white/50 z-10">
-                            ⏱ {deliveryTime} phút
-                        </div>
-                    )}
+                    {/* Best Seller/Popular Badges - Top Left */}
+                    <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
+                        {isBestSeller && (
+                            <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
+                                🔥 Best Seller
+                            </span>
+                        )}
+                        {!isBestSeller && isPopular && (
+                            <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
+                                ⚡ Bán chạy
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Rating & Time Badges - Bottom Left Overlay */}
+                    <div className="absolute bottom-3 left-3 flex items-center gap-2 z-10">
+                        {product.rating > 0 && (
+                            <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2 py-1 rounded-full shadow-md border border-white/50 flex items-center gap-1">
+                                <span className="text-yellow-500">⭐</span>
+                                <span>{product.rating.toFixed(1)}</span>
+                            </div>
+                        )}
+                        {deliveryTime && (
+                            <div className="bg-white/90 backdrop-blur-md text-gray-800 text-[10px] font-semibold px-2 py-1 rounded-full shadow-md border border-white/50 flex items-center gap-1">
+                                <span>🕒</span>
+                                <span>{deliveryTime} min</span>
+                            </div>
+                        )}
+                    </div>
+
                 </div>
             </Link>
 
             {/* Content Section - Right - More spacious and better layout */}
             <div className="flex-1 flex flex-col p-5 md:p-6 min-w-0 justify-between">
-                <Link href={`/food/${product.slug}`} className="flex-grow flex flex-col min-w-0">
+                <Link 
+                    href={product.restaurant?.slug ? `/restaurants/${product.restaurant.slug}?productId=${product.id}` : `/food/${product.slug}`} 
+                    className="flex-grow flex flex-col min-w-0"
+                >
                     {/* Restaurant Name - Small, light gray at top */}
                     {product.restaurant?.resName && (
                         <p className="text-[10px] md:text-xs text-gray-400 uppercase tracking-wide mb-1.5 font-semibold">
@@ -436,35 +406,39 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         {product.productName.charAt(0).toUpperCase() + product.productName.slice(1)}
                     </h3>
 
-                    {/* Rating with stars - Larger */}
-                    {product.rating > 0 && (
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="flex items-center gap-0.5">
-                                {Array.from({ length: 5 }).map((_, i) => (
-                                    <span
-                                        key={i}
-                                        className={`text-xs md:text-sm ${
-                                            i < Math.round(product.rating) ? "text-yellow-400" : "text-gray-300"
-                                        }`}
-                                    >
-                                        ⭐
+                    {/* Restaurant Name with Rating */}
+                    {product.restaurant?.resName && (
+                        <div className="flex items-center gap-2 mb-2">
+                            <p className="text-xs text-gray-500 flex-1">
+                                {product.restaurant.resName}
+                            </p>
+                            {product.rating > 0 && (
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                    <span className="text-yellow-500 text-xs">⭐</span>
+                                    <span className="text-xs font-semibold text-gray-700">
+                                        {product.rating.toFixed(1)}
                                     </span>
-                                ))}
-                            </div>
-                            <span className="text-xs md:text-sm font-semibold text-gray-700">
-                                {product.rating.toFixed(1)}
-                            </span>
-                            {product.totalReview > 0 && (
-                                <span className="text-xs text-gray-500">({product.totalReview})</span>
+                                </div>
                             )}
                         </div>
                     )}
 
-                    {/* Price - Large, Orange/Red-orange gradient */}
-                    <div className="mt-auto mb-4">
-                        {displayPrice !== undefined ? (
-                            <p className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent leading-none">
-                                ${displayPrice.toFixed(2)}
+                    {/* Rating & Sold Count - Trust Information */}
+                    <div className="flex items-center gap-2 mb-3">
+                        {product.rating > 0 && (
+                            <div className="flex items-center gap-1">
+                                <span className="text-yellow-500 text-xs">⭐</span>
+                                <span className="text-xs font-semibold text-gray-700">{product.rating.toFixed(1)}</span>
+                            </div>
+                        )}
+                        <span className="text-xs text-gray-500">• {soldCount} sold</span>
+                    </div>
+
+                    {/* Price - Large, Orange-Red */}
+                    <div className="mt-auto mb-4 relative">
+                        {formattedPrice ? (
+                            <p className="text-2xl md:text-3xl font-bold text-[#EE4D2D] leading-none">
+                                {formattedPrice} ₫
                             </p>
                         ) : (
                             <p className="text-sm text-gray-400">No price</p>
@@ -472,27 +446,20 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                     </div>
                 </Link>
 
-                {/* Action Buttons - Bottom, full width */}
-                <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                {/* Circle Add Button - Bottom Right Corner */}
+                <div className="absolute bottom-4 right-4 z-20">
                     <button
                         onClick={handleAddToCart}
                         disabled={isAdding || !isMounted}
-                        className="p-2.5 text-brand-purple hover:bg-brand-purple/10 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-brand-purple/30 hover:border-brand-purple/50 bg-white hover:shadow-md"
+                        className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-[#EE4D2D] hover:bg-[#EE4D2D]/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 active:scale-95"
                         title="Thêm vào giỏ"
                         aria-label="Thêm vào giỏ"
                     >
                         {isAdding ? (
-                            <ShoppingCart className="w-5 h-5 animate-pulse" />
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         ) : (
-                            <Plus className="w-5 h-5 font-bold" />
+                            <Plus className="w-5 h-5 md:w-6 md:h-6 font-bold" />
                         )}
-                    </button>
-                    <button
-                        onClick={handleBuyNow}
-                        disabled={isAdding || !isMounted}
-                        className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-brand-purple hover:bg-brand-purple/90 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                        {isAdding ? "Đang xử lý..." : "Mua ngay"}
                     </button>
                 </div>
             </div>

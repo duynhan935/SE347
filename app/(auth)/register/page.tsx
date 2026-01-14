@@ -1,8 +1,9 @@
 // File: app/auth/register/page.tsx
 "use client";
 
-import { MerchantRequestForm } from "@/components/auth/MerchantRequestForm";
-import { Eye, EyeOff, X } from "lucide-react";
+import { Logo } from "@/constants";
+import { Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -21,7 +22,6 @@ export default function SignUpPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [showMerchantForm, setShowMerchantForm] = useState(false);
     const { register, loading, error } = useAuthStore();
 
     const router = useRouter();
@@ -34,10 +34,8 @@ export default function SignUpPage() {
             return;
         }
 
-        // Register as USER only
         const success = await register({ username, email, password, confirmPassword, role: "USER" });
         if (success) {
-            // Redirect to verify-email page with email in query params
             router.push(`/verify-email?email=${encodeURIComponent(email)}`);
         } else {
             toast.error(error || "Registration failed. Please try again.");
@@ -45,16 +43,22 @@ export default function SignUpPage() {
     };
 
     const handleRegisterMerchant = () => {
-        // Open merchant form - user can fill all info there
-        setShowMerchantForm(true);
+        router.push("/merchant/register");
     };
 
     return (
-        <section className="min-h-screen flex items-center justify-center bg-brand-yellowlight p-4">
-            <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-8">
-                <h2 className="text-3xl font-bold text-center font-roboto-serif text-brand-black mb-6">Sign Up</h2>
+        <section className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+            <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
+                {/* Logo */}
+                <div className="flex justify-center mb-6">
+                    <Link href="/" className="flex items-center">
+                        <Image src={Logo} alt="FoodEats Logo" width={140} height={46} className="h-10 w-auto" priority />
+                    </Link>
+                </div>
 
-                {/* --- Social Login --- */}
+                <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">Sign Up</h2>
+
+                {/* Social Login */}
                 <div className="space-y-3">
                     <a
                         href={`${BACKEND_ORIGIN}/oauth2/authorization/google`}
@@ -65,14 +69,14 @@ export default function SignUpPage() {
                     </a>
                 </div>
 
-                {/* --- Separator --- */}
+                {/* Separator */}
                 <div className="flex items-center my-6">
                     <div className="flex-grow border-t border-gray-300"></div>
                     <span className="mx-4 text-xs font-medium text-gray-500">OR</span>
                     <div className="flex-grow border-t border-gray-300"></div>
                 </div>
 
-                {/* --- Sign Up Form --- */}
+                {/* Sign Up Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
@@ -84,7 +88,7 @@ export default function SignUpPage() {
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             required
-                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
                             placeholder="johndoe"
                         />
                     </div>
@@ -99,7 +103,7 @@ export default function SignUpPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
                             placeholder="you@example.com"
                         />
                     </div>
@@ -115,7 +119,7 @@ export default function SignUpPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
                                 placeholder="••••••••"
                             />
                             <button
@@ -139,7 +143,7 @@ export default function SignUpPage() {
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] transition"
                                 placeholder="••••••••"
                             />
                             <button
@@ -156,7 +160,7 @@ export default function SignUpPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-1 py-3 px-4 bg-brand-purple text-white font-semibold rounded-md hover:bg-brand-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-purple transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 py-3 px-4 bg-[#EE4D2D] text-white font-semibold rounded-md hover:bg-[#EE4D2D]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EE4D2D] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? "Signing Up..." : "Sign Up"}
                         </button>
@@ -164,53 +168,18 @@ export default function SignUpPage() {
                             type="button"
                             onClick={handleRegisterMerchant}
                             disabled={loading}
-                            className="flex-1 py-3 px-4 bg-brand-black text-white font-semibold rounded-md hover:bg-brand-purpledark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-black transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 py-3 px-4 border-2 border-[#EE4D2D] text-[#EE4D2D] font-semibold rounded-md hover:bg-[#EE4D2D]/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EE4D2D] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Register Merchant
                         </button>
                     </div>
                 </form>
 
-                {/* Merchant Request Form Dialog */}
-                {showMerchantForm && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <div
-                            className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-gray-900">Đăng ký Merchant</h3>
-                                <button
-                                    onClick={() => {
-                                        setShowMerchantForm(false);
-                                    }}
-                                    className="text-gray-400 hover:text-gray-600"
-                                    aria-label="Close merchant registration form"
-                                    title="Close"
-                                >
-                                    <span className="sr-only">Close</span>
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <MerchantRequestForm
-                                initialEmail={email}
-                                initialUsername={username}
-                                onSuccess={() => {
-                                    setShowMerchantForm(false);
-                                    router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-                                }}
-                                onCancel={() => {
-                                    setShowMerchantForm(false);
-                                }}
-                            />
-                        </div>
-                    </div>
-                )}
 
-                {/* --- Sign In Link --- */}
+                {/* Sign In Link */}
                 <p className="mt-6 text-center text-sm text-gray-600">
                     Have an account?{" "}
-                    <Link href="/login" className="font-semibold text-brand-purple hover:underline">
+                    <Link href="/login" className="font-semibold text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline">
                         Sign In
                     </Link>
                 </p>

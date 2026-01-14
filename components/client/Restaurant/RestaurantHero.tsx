@@ -27,9 +27,9 @@ export default function RestaurantHero({ restaurant }: { restaurant: Restaurant 
                                         </h1>
                                         <p className="mt-2 text-lg">{mainCategory}</p>
                                         <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                                                <div className="flex items-center gap-1">
-                                                        <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                                                        <span className="font-semibold">{restaurant.rating}</span>
+                                                <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full">
+                                                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                                        <span className="font-semibold text-white">{restaurant.rating}</span>
                                                         <span className="text-gray-300">
                                                                 ({restaurant.totalReview.toLocaleString()} reviews)
                                                         </span>

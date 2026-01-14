@@ -10,15 +10,44 @@ interface RestaurantActionsProps {
 export default function RestaurantActions({ restaurant }: RestaurantActionsProps) {
         return (
                 <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
-                        <h2 className="text-2xl font-bold font-roboto-serif mb-4 text-gray-900">Liên hệ</h2>
-                        <p className="text-sm text-gray-600 mb-6">
-                                Có câu hỏi về nhà hàng? Chat trực tiếp với chủ nhà hàng để được hỗ trợ nhanh chóng.
-                        </p>
+                        <h2 className="text-2xl font-bold mb-4 text-gray-900">Restaurant Info</h2>
+                        
+                        {/* Opening Hours */}
+                        {restaurant.openingTime && restaurant.closingTime && (
+                                <div className="mb-4 pb-4 border-b border-gray-200">
+                                        <h3 className="text-sm font-semibold text-gray-700 mb-2">Opening Hours</h3>
+                                        <p className="text-sm text-gray-600">
+                                                {restaurant.openingTime} - {restaurant.closingTime}
+                                        </p>
+                                </div>
+                        )}
+
+                        {/* Distance */}
+                        {restaurant.distance != null && (
+                                <div className="mb-4 pb-4 border-b border-gray-200">
+                                        <h3 className="text-sm font-semibold text-gray-700 mb-2">Distance</h3>
+                                        <p className="text-sm text-gray-600">
+                                                {restaurant.distance.toFixed(1)} km away
+                                        </p>
+                                </div>
+                        )}
+
+                        {/* Delivery Time */}
+                        {restaurant.duration != null && (
+                                <div className="mb-6 pb-4 border-b border-gray-200">
+                                        <h3 className="text-sm font-semibold text-gray-700 mb-2">Delivery Time</h3>
+                                        <p className="text-sm text-gray-600">
+                                                {restaurant.duration} minutes
+                                        </p>
+                                </div>
+                        )}
+
+                        {/* Chat Button */}
                         <div className="flex flex-col gap-3">
                                 <ChatWithRestaurantButton
                                         merchantId={restaurant.merchantId}
                                         restaurantName={restaurant.resName}
-                                        variant="default"
+                                        variant="outline"
                                         className="w-full px-6 py-3 rounded-lg"
                                 />
                         </div>

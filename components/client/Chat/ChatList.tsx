@@ -3,7 +3,8 @@
 import { useChatStore } from "@/stores/useChatStore";
 import { ChatRoom } from "@/types";
 import { formatDistanceToNow } from "date-fns";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Search } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 interface ChatListProps {
@@ -22,24 +23,22 @@ export default function ChatList({
     onGetPartnerInfo,
 }: ChatListProps) {
     const [partnerInfoMap, setPartnerInfoMap] = useState<Record<string, { name: string; avatar?: string }>>({});
+    const [searchQuery, setSearchQuery] = useState("");
     const getUnreadCountByRoom = useChatStore((state) => state.getUnreadCountByRoom);
-    const fetchedPartnerIdsRef = useRef<Set<string>>(new Set()); // Track which partners we've already fetched
+    const fetchedPartnerIdsRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
         const fetchPartnerInfo = async () => {
-            const infoMap: Record<string, { name: string; avatar?: string }> = { ...partnerInfoMap }; // Start with existing info
+            const infoMap: Record<string, { name: string; avatar?: string }> = { ...partnerInfoMap };
             const partnersToFetch: string[] = [];
 
-            // First, identify which partners we need to fetch (only new ones)
             for (const room of rooms) {
                 const partnerId = room.user1Id === currentUserId ? room.user2Id : room.user1Id;
-                // Only fetch if we don't already have it and haven't fetched it before
                 if (!infoMap[partnerId] && !fetchedPartnerIdsRef.current.has(partnerId) && onGetPartnerInfo) {
                     partnersToFetch.push(partnerId);
                 }
             }
 
-            // Only fetch new partners
             if (partnersToFetch.length > 0 && onGetPartnerInfo) {
                 for (const partnerId of partnersToFetch) {
                     fetchedPartnerIdsRef.current.add(partnerId);
@@ -57,7 +56,6 @@ export default function ChatList({
         if (rooms.length > 0 && onGetPartnerInfo) {
             fetchPartnerInfo();
         }
-        // Only depend on rooms.length to detect NEW rooms, not when rooms update with new messages
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [rooms.length, currentUserId, onGetPartnerInfo]);
 
@@ -73,56 +71,107 @@ export default function ChatList({
     const formatTime = (timestamp: string | null) => {
         if (!timestamp) return "";
         try {
-            return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+            const distance = formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+            // Convert "about X minutes ago" to "X min ago"
+            return distance.replace("about ", "").replace(" minutes", " min").replace(" minute", " min");
         } catch {
             return "";
         }
     };
 
+    // Filter rooms based on search query
+    const filteredRooms = rooms.filter((room) => {
+        if (!searchQuery.trim()) return true;
+        const partnerName = getPartnerName(room);
+        const searchLower = searchQuery.toLowerCase();
+        return partnerName.toLowerCase().includes(searchLower) || room.lastMessage?.toLowerCase().includes(searchLower);
+    });
+
+    // Generate avatar URL
+    const getAvatarUrl = (partnerId: string, partnerName: string) => {
+        const avatar = partnerInfoMap[partnerId]?.avatar;
+        if (avatar) return avatar;
+        const initial = partnerName.charAt(0).toUpperCase();
+        return `https://placehold.co/48x48/${initial.charCodeAt(0) % 2 === 0 ? "EE4D2D" : "FF6B35"}/FFFFFF?text=${initial}`;
+    };
+
     return (
-        <div className="flex flex-col h-full bg-white border-r border-gray-200 dark:bg-gray-900 dark:border-gray-800">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Messages</h2>
+        <div className="flex flex-col h-full bg-white">
+            {/* Header */}
+            <div className="p-4 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Messages</h2>
+                {/* Search Bar */}
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search for shops..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/20 focus:bg-white transition-all"
+                    />
+                </div>
             </div>
-            <div className="flex-1 overflow-y-auto">
-                {rooms.length === 0 ? (
+
+            {/* Conversation List */}
+            <div className="flex-1 overflow-y-auto scrollbar-hide">
+                {filteredRooms.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
-                        <MessageSquare className="w-12 h-12 mb-4" />
-                        <p className="text-center">No conversations yet</p>
+                        <MessageSquare className="w-12 h-12 mb-4 text-gray-300" />
+                        <p className="text-center text-sm">
+                            {searchQuery ? "No conversations found" : "No conversations yet"}
+                        </p>
                     </div>
                 ) : (
                     <div className="divide-y divide-gray-100">
-                        {rooms.map((room) => {
+                        {filteredRooms.map((room) => {
                             const partnerName = getPartnerName(room);
+                            const partnerId = getPartnerId(room);
                             const isSelected = selectedRoomId === room.id;
                             const unreadCount = getUnreadCountByRoom(room.id);
+                            const avatarUrl = getAvatarUrl(partnerId, partnerName);
 
                             return (
                                 <button
                                     key={room.id}
                                     onClick={() => onSelectRoom(room.id)}
-                                    className={`w-full p-4 text-left transition-colors relative hover:bg-gray-50 dark:hover:bg-gray-800 ${
-                                        isSelected ? "bg-purple-50 border-l-4 border-brand-purple dark:bg-gray-800" : ""
+                                    className={`w-full p-4 text-left transition-colors relative hover:bg-gray-50 ${
+                                        isSelected ? "bg-orange-50 border-l-4 border-[#EE4D2D]" : ""
                                     }`}
                                 >
                                     <div className="flex items-start gap-3">
+                                        {/* Avatar */}
                                         <div className="relative flex-shrink-0">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-purple to-purple-600 flex items-center justify-center text-white font-semibold">
-                                                {partnerName.charAt(0).toUpperCase()}
+                                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-[#EE4D2D] to-orange-600 flex items-center justify-center text-white font-semibold">
+                                                {partnerInfoMap[partnerId]?.avatar ? (
+                                                    <Image
+                                                        src={partnerInfoMap[partnerId].avatar!}
+                                                        alt={partnerName}
+                                                        width={48}
+                                                        height={48}
+                                                        className="w-full h-full object-cover"
+                                                        unoptimized
+                                                    />
+                                                ) : (
+                                                    <span>{partnerName.charAt(0).toUpperCase()}</span>
+                                                )}
                                             </div>
+                                            {/* Unread Badge */}
                                             {unreadCount > 0 && !isSelected && (
                                                 <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
                                                     {unreadCount > 9 ? "9+" : unreadCount}
                                                 </span>
                                             )}
                                         </div>
+
+                                        {/* Info */}
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-1">
                                                 <p
-                                                    className={`text-sm font-semibold truncate ${
+                                                    className={`text-sm font-bold truncate ${
                                                         unreadCount > 0 && !isSelected
-                                                            ? "font-bold"
-                                                            : "text-gray-900 dark:text-white"
+                                                            ? "text-gray-900"
+                                                            : "text-gray-900"
                                                     }`}
                                                 >
                                                     {partnerName}
@@ -137,8 +186,8 @@ export default function ChatList({
                                                 <p
                                                     className={`text-sm truncate ${
                                                         unreadCount > 0 && !isSelected
-                                                            ? "font-medium text-gray-900 dark:text-white"
-                                                            : "text-gray-600 dark:text-gray-400"
+                                                            ? "font-medium text-gray-900"
+                                                            : "text-gray-500"
                                                     }`}
                                                 >
                                                     {room.lastMessage}

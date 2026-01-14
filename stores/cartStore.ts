@@ -239,6 +239,11 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
 
             const { baseProductId, options } = parseCartItemId(productId);
 
+            // Priority: cartItemImage > imageURL from record > imageURL from options > placeholder
+            const rawCartItemImage = itemRecord["cartItemImage"];
+            const cartItemImageFromRecord =
+                typeof rawCartItemImage === "string" && rawCartItemImage.trim() !== "" ? rawCartItemImage.trim() : undefined;
+            
             const rawImageURL = itemRecord["imageURL"];
             const imageFromRecord =
                 typeof rawImageURL === "string" && rawImageURL.trim() !== "" ? rawImageURL.trim() : undefined;
@@ -246,7 +251,7 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
                 typeof options.imageURL === "string" && options.imageURL.trim() !== ""
                     ? options.imageURL.trim()
                     : undefined;
-            const image = imageFromOptions || imageFromRecord || "/placeholder.png";
+            const image = cartItemImageFromRecord || imageFromOptions || imageFromRecord || "/placeholder.png";
 
             const sizeId = typeof options.sizeId === "string" ? options.sizeId : undefined;
             const sizeName = typeof options.sizeName === "string" ? options.sizeName : undefined;
@@ -533,7 +538,8 @@ export const useCartStore = create<CartState>()(
                                 price: itemToAdd.price,
                                 quantity,
                                 customizations: itemToAdd.customizations,
-                                imageURL: finalImageURL,
+                                cartItemImage: finalImageURL, // Send as cartItemImage (backend priority)
+                                imageURL: finalImageURL, // Also send as imageURL for backward compatibility
                             },
                         };
 
