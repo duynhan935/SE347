@@ -88,7 +88,7 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
             setSpecialInstructions("");
         } catch (error) {
             console.error("Failed to add to cart:", error);
-            toast.error("Failed to add item to cart");
+            // Error toast is handled by cartStore.addItem
         } finally {
             setTimeout(() => {
                 setIsAdding(false);

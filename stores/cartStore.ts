@@ -253,8 +253,15 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
                     : undefined;
             const image = cartItemImageFromRecord || imageFromOptions || imageFromRecord || "/placeholder.png";
 
-            const sizeId = typeof options.sizeId === "string" ? options.sizeId : undefined;
-            const sizeName = typeof options.sizeName === "string" ? options.sizeName : undefined;
+            // Priority: sizeId/sizeName from record > from options (encoded in productId)
+            const rawSizeId = itemRecord["sizeId"];
+            const sizeIdFromRecord =
+                typeof rawSizeId === "string" && rawSizeId.trim() !== "" ? rawSizeId.trim() : undefined;
+            const rawSizeName = itemRecord["sizeName"];
+            const sizeNameFromRecord =
+                typeof rawSizeName === "string" && rawSizeName.trim() !== "" ? rawSizeName.trim() : undefined;
+            const sizeId = sizeIdFromRecord || (typeof options.sizeId === "string" ? options.sizeId : undefined);
+            const sizeName = sizeNameFromRecord || (typeof options.sizeName === "string" ? options.sizeName : undefined);
 
             const rawCustomizations = itemRecord["customizations"];
             const customizationsFromRecord =
@@ -540,6 +547,8 @@ export const useCartStore = create<CartState>()(
                                 customizations: itemToAdd.customizations,
                                 cartItemImage: finalImageURL, // Send as cartItemImage (backend priority)
                                 imageURL: finalImageURL, // Also send as imageURL for backward compatibility
+                                sizeId: itemToAdd.sizeId, // Include sizeId if provided
+                                sizeName: itemToAdd.sizeName, // Include sizeName if provided
                             },
                         };
 
@@ -777,7 +786,14 @@ export const useCartStore = create<CartState>()(
                     if (!userId) return;
 
                     try {
-                        const cart = await cartApi.removeItemFromCart(userId, restaurantId, itemId);
+                        // Parse sizeId and customizations from itemId or get from current items
+                        const currentItems = get().items;
+                        const item = currentItems.find((it) => it.id === itemId && it.restaurantId === restaurantId);
+                        const { options: parsedOptions } = parseCartItemId(itemId);
+                        const sizeId = item?.sizeId || parsedOptions.sizeId || undefined;
+                        const customizations = item?.customizations || parsedOptions.customizations || undefined;
+                        
+                        const cart = await cartApi.removeItemFromCart(userId, restaurantId, itemId, sizeId, customizations);
 
                         // Check if cart is null (empty cart after deletion)
                         // Backend returns null when cart is deleted (last item removed)
@@ -834,7 +850,14 @@ export const useCartStore = create<CartState>()(
                         if (quantity <= 0) {
                             await get().removeItem(itemId, restaurantId, { silent: true });
                         } else {
-                            const cart = await cartApi.updateItemQuantity(userId, restaurantId, itemId, quantity);
+                            // Parse sizeId and customizations from itemId or get from current items
+                            const currentItems = get().items;
+                            const item = currentItems.find((it) => it.id === itemId && it.restaurantId === restaurantId);
+                            const { options: parsedOptions } = parseCartItemId(itemId);
+                            const sizeId = item?.sizeId || parsedOptions.sizeId || undefined;
+                            const customizations = item?.customizations || parsedOptions.customizations || undefined;
+                            
+                            const cart = await cartApi.updateItemQuantity(userId, restaurantId, itemId, quantity, sizeId, customizations);
                             if (!updateItemsFromResponse(cart)) {
                                 await get().fetchCart();
                             }

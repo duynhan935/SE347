@@ -137,10 +137,10 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                     },
                     1
                 );
-                toast.success("Đã thêm vào giỏ hàng");
+                // Toast is handled by cartStore.addItem
             } catch (error) {
                 console.error("Failed to add to cart:", error);
-                toast.error("Unable to add to cart");
+                // Error toast is handled by cartStore.addItem
             } finally {
                 setTimeout(() => {
                     setIsAdding(false);

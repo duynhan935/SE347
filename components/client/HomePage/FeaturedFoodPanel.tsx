@@ -22,7 +22,7 @@ export default function FeaturedFoodPanel() {
         fetchAllProducts(params);
     }, [fetchAllProducts, searchParams]);
 
-    // Use API data from store
+    // Use API data from store (already ensured to be array by store)
     const productsToUse = products;
 
     // Filter và sort để lấy món ăn nổi bật

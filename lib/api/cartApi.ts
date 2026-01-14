@@ -68,16 +68,36 @@ export const cartApi = {
     },
 
     // Update item quantity
-    updateItemQuantity: async (userId: string, restaurantId: string, productId: string, quantity: number) => {
+    updateItemQuantity: async (
+        userId: string,
+        restaurantId: string,
+        productId: string,
+        quantity: number,
+        sizeId?: string,
+        customizations?: string
+    ) => {
         const response = await api.patch<CartResponse>(`/cart/${userId}/restaurant/${restaurantId}/item/${productId}`, {
             quantity,
+            ...(sizeId && { sizeId }),
+            ...(customizations && { customizations }),
         });
         return response.data;
     },
 
     // Remove item from cart
-    removeItemFromCart: async (userId: string, restaurantId: string, productId: string) => {
-        const response = await api.delete<CartResponse>(`/cart/${userId}/restaurant/${restaurantId}/item/${productId}`);
+    removeItemFromCart: async (
+        userId: string,
+        restaurantId: string,
+        productId: string,
+        sizeId?: string,
+        customizations?: string
+    ) => {
+        const params = new URLSearchParams();
+        if (sizeId) params.append("sizeId", sizeId);
+        if (customizations) params.append("customizations", customizations);
+        const queryString = params.toString();
+        const url = `/cart/${userId}/restaurant/${restaurantId}/item/${productId}${queryString ? `?${queryString}` : ""}`;
+        const response = await api.delete<CartResponse>(url);
         return response.data;
     },
 

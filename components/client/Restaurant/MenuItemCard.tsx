@@ -99,9 +99,10 @@ export const MenuItemCard = memo(
                         },
                         1
                     );
+                    // Toast is handled by cartStore.addItem
                 } catch (error) {
                     console.error("Failed to add to cart:", error);
-                    toast.error("Failed to add item to cart");
+                    // Error toast is handled by cartStore.addItem
                 } finally {
                     setTimeout(() => {
                         setIsAdding(false);

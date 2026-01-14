@@ -147,9 +147,10 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                     },
                     1
                 );
+                // Toast is handled by cartStore.addItem
             } catch (error) {
                 console.error("Failed to add to cart:", error);
-                toast.error("Unable to add to cart");
+                // Error toast is handled by cartStore.addItem
             } finally {
                 setTimeout(() => {
                     setIsAdding(false);
