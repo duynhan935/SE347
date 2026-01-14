@@ -9,7 +9,7 @@ import { getImageUrl } from "@/lib/utils";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Address } from "@/types";
-import { Banknote, CreditCard, Edit2, Truck } from "lucide-react";
+import { Edit2, Truck } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -43,7 +43,7 @@ export default function PaymentPageClient() {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [deliverStyle, setDeliverStyle] = useState<"delivery" | "pickup">("delivery");
-    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+    const [paymentMethod] = useState<PaymentMethod>("card"); // Always use card payment (Stripe)
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const [useNewAddress, setUseNewAddress] = useState(false);
     
@@ -202,6 +202,15 @@ export default function PaymentPageClient() {
         }
     }, [locationError]);
 
+    // Debug: Log state changes
+    useEffect(() => {
+        console.log("[PaymentPage] State changed:", {
+            isProcessingCardPayment,
+            stripeClientSecret: stripeClientSecret ? `${stripeClientSecret.substring(0, 20)}...` : null,
+            paymentMethod,
+        });
+    }, [isProcessingCardPayment, stripeClientSecret, paymentMethod]);
+
     // Handle address selection
     const handleAddressSelect = (addressId: string) => {
         setSelectedAddressId(addressId);
@@ -346,10 +355,13 @@ export default function PaymentPageClient() {
                 // For COD, redirect immediately
                 toast.success("Order placed successfully!");
                 router.push(`/orders/${order.orderId}`);
-            } else {
+            } else if (paymentMethod === "card") {
                 // For card payment, create payment and show Stripe form
                 // Save order ID for payment step
                 setCreatedOrderIds([order.orderId]);
+                // CRITICAL: Set isProcessingCardPayment BEFORE calling handleCardPayment
+                // This ensures the UI updates immediately
+                setIsProcessingCardPayment(true);
                 await handleCardPayment(order);
             }
         } catch (error: unknown) {
@@ -375,16 +387,24 @@ export default function PaymentPageClient() {
     const handleCardPayment = async (order: { orderId: string }) => {
         if (!user?.id) {
             toast.error("Please login to complete payment");
+            setIsProcessingCardPayment(false);
             return;
         }
 
-        setIsProcessingCardPayment(true);
-        toast.loading("Preparing payment...");
+        // isProcessingCardPayment is already set to true in handleSubmit
+        const loadingToast = toast.loading("Preparing payment...");
 
         try {
             // Calculate total amount
             const tax = subtotal * 0.05;
             const calculatedTotal = subtotal + shipping + tax;
+
+            console.log("[PaymentPage] Creating payment intent:", {
+                orderId: order.orderId,
+                userId: user.id,
+                amount: calculatedTotal,
+                currency: "USD",
+            });
 
             // Create payment
             const paymentResponse = await paymentApi.createPayment({
@@ -395,22 +415,107 @@ export default function PaymentPageClient() {
                 paymentMethod: "card",
             });
 
-            if (paymentResponse.data.clientSecret) {
-                setStripeClientSecret(paymentResponse.data.clientSecret);
-                setPaymentId(paymentResponse.data.paymentId);
-                toast.dismiss();
-                toast.success("Please complete your payment");
-            } else {
-                throw new Error("Failed to get payment client secret");
+            console.log("[PaymentPage] Payment response:", JSON.stringify(paymentResponse, null, 2));
+            console.log("[PaymentPage] Payment response type:", typeof paymentResponse);
+            console.log("[PaymentPage] Payment response keys:", Object.keys(paymentResponse || {}));
+
+            // Check response structure
+            if (!paymentResponse) {
+                throw new Error("Payment response is null or undefined");
             }
+
+            // Backend returns: { success: true, message: "...", data: { clientSecret, paymentId, status } }
+            // But paymentApi.createPayment returns response.data, so it might be the data directly
+            const responseData = (paymentResponse as { data?: unknown }).data || paymentResponse;
+            
+            console.log("[PaymentPage] Response data:", JSON.stringify(responseData, null, 2));
+            console.log("[PaymentPage] Response data type:", typeof responseData);
+            console.log("[PaymentPage] Response data keys:", Object.keys(responseData || {}));
+            
+            if (!responseData || typeof responseData !== "object") {
+                console.error("[PaymentPage] Response data is missing or invalid:", responseData);
+                throw new Error("Payment response data is missing or invalid");
+            }
+
+            const responseDataObj = responseData as Record<string, unknown>;
+            const clientSecret = responseDataObj.clientSecret as string | undefined;
+            const paymentIdFromResponse = responseDataObj.paymentId as string | undefined;
+            
+            console.log("[PaymentPage] Extracted clientSecret:", clientSecret ? `${clientSecret.substring(0, 20)}...` : "null");
+            console.log("[PaymentPage] Extracted paymentId:", paymentIdFromResponse);
+
+            if (!clientSecret) {
+                console.error("[PaymentPage] Client secret is missing:", responseData);
+                throw new Error("Failed to get payment client secret from backend");
+            }
+
+            if (!paymentIdFromResponse) {
+                console.error("[PaymentPage] Payment ID is missing:", responseData);
+                throw new Error("Failed to get payment ID from backend");
+            }
+
+            // Set states to show Stripe form
+            console.log("[PaymentPage] Setting Stripe client secret:", clientSecret);
+            console.log("[PaymentPage] Setting payment ID:", paymentIdFromResponse);
+            console.log("[PaymentPage] Current isProcessingCardPayment:", true);
+            
+            // Set states synchronously to ensure React batches updates correctly
+            setStripeClientSecret(clientSecret);
+            setPaymentId(paymentIdFromResponse);
+            
+            // Use flushSync to force immediate re-render (if needed)
+            // But first, let's ensure state is set
+            console.log("[PaymentPage] States set, waiting for re-render...");
+            
+            // Force a small delay to ensure state is set before dismissing toast
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            
+            // Verify state was actually set
+            const currentState = {
+                isProcessingCardPayment: true, // This should still be true
+                stripeClientSecret: clientSecret, // This should be set
+            };
+            console.log("[PaymentPage] State verification:", currentState);
+            
+            toast.dismiss(loadingToast);
+            toast.success("Please complete your payment", { duration: 3000 });
+            
+            console.log("[PaymentPage] Stripe form should now be visible");
+            console.log("[PaymentPage] Final state check:", {
+                isProcessingCardPayment: true,
+                stripeClientSecret: clientSecret ? `${clientSecret.substring(0, 20)}...` : null,
+            });
+            
+            // Scroll to payment form if it exists
+            setTimeout(() => {
+                const paymentForm = document.querySelector('[data-payment-form]');
+                if (paymentForm) {
+                    paymentForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    console.log("[PaymentPage] Scrolled to payment form");
+                } else {
+                    console.warn("[PaymentPage] Payment form element not found");
+                }
+            }, 200);
         } catch (error: unknown) {
-            console.error("Failed to create payment:", error);
-            const errorMessage =
-                (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-                (error as { message?: string })?.message ||
-                "Failed to create payment. Please try again.";
-            toast.error(errorMessage);
+            console.error("[PaymentPage] Failed to create payment:", error);
+            
+            // Extract error message
+            let errorMessage = "Failed to create payment. Please try again.";
+            
+            if (error && typeof error === "object") {
+                const errorObj = error as { response?: { data?: { message?: string } }; message?: string };
+                if (errorObj.response?.data?.message) {
+                    errorMessage = errorObj.response.data.message;
+                } else if (errorObj.message) {
+                    errorMessage = errorObj.message;
+                }
+            }
+            
+            toast.dismiss(loadingToast);
+            toast.error(errorMessage, { duration: 5000 });
             setIsProcessingCardPayment(false);
+            setStripeClientSecret(null);
+            setPaymentId(null);
         }
     };
 
@@ -502,8 +607,9 @@ export default function PaymentPageClient() {
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {/* Name */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                <label htmlFor="desktop-name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                                 <input
+                                    id="desktop-name"
                                     type="text"
                                     name="name"
                                     value={formData.name}
@@ -515,8 +621,9 @@ export default function PaymentPageClient() {
 
                             {/* Phone */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                <label htmlFor="desktop-phone" className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                                 <input
+                                    id="desktop-phone"
                                     type="tel"
                                     name="phone"
                                     value={formData.phone}
@@ -606,66 +713,34 @@ export default function PaymentPageClient() {
                     </div>
 
                     {/* Block B: Payment Method */}
-                    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+                    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6" data-payment-form>
                         <h2 className="text-xl font-bold mb-4">Payment Method</h2>
-                        
-                        {/* Show Stripe form if card payment is processing */}
                         {isProcessingCardPayment && stripeClientSecret ? (
-                            <PaymentMethodSelector
-                                stripeClientSecret={stripeClientSecret}
-                                isProcessingCardPayment={isProcessingCardPayment}
-                                onPaymentSuccess={handlePaymentSuccess}
-                                onPaymentError={handlePaymentError}
-                            />
+                            (() => {
+                                console.log("[PaymentPage] Rendering PaymentMethodSelector with:", {
+                                    stripeClientSecret: stripeClientSecret ? `${stripeClientSecret.substring(0, 20)}...` : null,
+                                    isProcessingCardPayment,
+                                });
+                                return (
+                                    <PaymentMethodSelector
+                                        key={stripeClientSecret} // Force re-render when clientSecret changes
+                                        stripeClientSecret={stripeClientSecret}
+                                        isProcessingCardPayment={isProcessingCardPayment}
+                                        onPaymentSuccess={handlePaymentSuccess}
+                                        onPaymentError={handlePaymentError}
+                                    />
+                                );
+                            })()
                         ) : (
-                            <div className="space-y-3">
-                                {/* Cash on Delivery */}
-                                <label
-                                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                                        paymentMethod === "cash"
-                                            ? "border-[#EE4D2D] bg-orange-50"
-                                            : "border-gray-200 hover:border-gray-300"
-                                    }`}
-                                >
-                                    <input
-                                        type="radio"
-                                        name="payment"
-                                        value="cash"
-                                        checked={paymentMethod === "cash"}
-                                        onChange={() => setPaymentMethod("cash")}
-                                        disabled={isSubmitting || isProcessingCardPayment}
-                                        className="w-5 h-5 text-[#EE4D2D] focus:ring-[#EE4D2D] disabled:opacity-50"
-                                    />
-                                    <Banknote className="w-6 h-6 text-[#EE4D2D]" />
-                                    <div className="flex-grow">
-                                        <div className="font-semibold text-gray-900">Cash on Delivery (COD)</div>
-                                        <div className="text-sm text-gray-500">Pay when you receive your order</div>
+                            <div className="text-gray-500 text-sm py-8 text-center">
+                                {isProcessingCardPayment ? (
+                                    <div className="flex items-center justify-center space-x-2">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#EE4D2D]"></div>
+                                        <span>Preparing payment form...</span>
                                     </div>
-                                </label>
-
-                                {/* Credit/Debit Card (Stripe) */}
-                                <label
-                                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                                        paymentMethod === "card"
-                                            ? "border-[#EE4D2D] bg-orange-50"
-                                            : "border-gray-200 hover:border-gray-300"
-                                    }`}
-                                >
-                                    <input
-                                        type="radio"
-                                        name="payment"
-                                        value="card"
-                                        checked={paymentMethod === "card"}
-                                        onChange={() => setPaymentMethod("card")}
-                                        disabled={isSubmitting || isProcessingCardPayment}
-                                        className="w-5 h-5 text-[#EE4D2D] focus:ring-[#EE4D2D] disabled:opacity-50"
-                                    />
-                                    <CreditCard className="w-6 h-6 text-[#EE4D2D]" />
-                                    <div className="flex-grow">
-                                        <div className="font-semibold text-gray-900">Credit/Debit Card (Stripe)</div>
-                                        <div className="text-sm text-gray-500">Pay securely with Stripe</div>
-                                    </div>
-                                </label>
+                                ) : (
+                                    "Please click 'Place Order' to proceed with payment"
+                                )}
                             </div>
                         )}
                     </div>
@@ -785,8 +860,9 @@ export default function PaymentPageClient() {
                     <form onSubmit={handleSubmit} className="space-y-3">
                         {/* Name */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <label htmlFor="mobile-name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                             <input
+                                id="mobile-name"
                                 type="text"
                                 name="name"
                                 value={formData.name}
@@ -798,8 +874,9 @@ export default function PaymentPageClient() {
 
                         {/* Phone */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                            <label htmlFor="mobile-phone" className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                             <input
+                                id="mobile-phone"
                                 type="tel"
                                 name="phone"
                                 value={formData.phone}
@@ -889,66 +966,34 @@ export default function PaymentPageClient() {
                 </div>
 
                 {/* Payment Method */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4" data-payment-form>
                     <h2 className="text-lg font-bold mb-4">Payment Method</h2>
-                    
-                    {/* Show Stripe form if card payment is processing */}
                     {isProcessingCardPayment && stripeClientSecret ? (
-                        <PaymentMethodSelector
-                            stripeClientSecret={stripeClientSecret}
-                            isProcessingCardPayment={isProcessingCardPayment}
-                            onPaymentSuccess={handlePaymentSuccess}
-                            onPaymentError={handlePaymentError}
-                        />
+                        (() => {
+                            console.log("[PaymentPage Mobile] Rendering PaymentMethodSelector with:", {
+                                stripeClientSecret: stripeClientSecret ? `${stripeClientSecret.substring(0, 20)}...` : null,
+                                isProcessingCardPayment,
+                            });
+                            return (
+                                <PaymentMethodSelector
+                                    key={stripeClientSecret} // Force re-render when clientSecret changes
+                                    stripeClientSecret={stripeClientSecret}
+                                    isProcessingCardPayment={isProcessingCardPayment}
+                                    onPaymentSuccess={handlePaymentSuccess}
+                                    onPaymentError={handlePaymentError}
+                                />
+                            );
+                        })()
                     ) : (
-                        <div className="space-y-2">
-                            {/* Cash on Delivery */}
-                            <label
-                                className={`flex items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                                    paymentMethod === "cash"
-                                        ? "border-[#EE4D2D] bg-orange-50"
-                                        : "border-gray-200 hover:border-gray-300"
-                                }`}
-                            >
-                                <input
-                                    type="radio"
-                                    name="payment"
-                                    value="cash"
-                                    checked={paymentMethod === "cash"}
-                                    onChange={() => setPaymentMethod("cash")}
-                                    disabled={isSubmitting || isProcessingCardPayment}
-                                    className="w-4 h-4 text-[#EE4D2D] focus:ring-[#EE4D2D] disabled:opacity-50"
-                                />
-                                <Banknote className="w-5 h-5 text-[#EE4D2D]" />
-                                <div className="flex-grow">
-                                    <div className="font-semibold text-sm text-gray-900">Cash on Delivery (COD)</div>
-                                    <div className="text-xs text-gray-500">Pay when you receive</div>
+                        <div className="text-gray-500 text-sm py-8 text-center">
+                            {isProcessingCardPayment ? (
+                                <div className="flex items-center justify-center space-x-2">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#EE4D2D]"></div>
+                                    <span>Preparing payment form...</span>
                                 </div>
-                            </label>
-
-                            {/* Credit/Debit Card (Stripe) */}
-                            <label
-                                className={`flex items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                                    paymentMethod === "card"
-                                        ? "border-[#EE4D2D] bg-orange-50"
-                                        : "border-gray-200 hover:border-gray-300"
-                                }`}
-                            >
-                                <input
-                                    type="radio"
-                                    name="payment"
-                                    value="card"
-                                    checked={paymentMethod === "card"}
-                                    onChange={() => setPaymentMethod("card")}
-                                    disabled={isSubmitting || isProcessingCardPayment}
-                                    className="w-4 h-4 text-[#EE4D2D] focus:ring-[#EE4D2D] disabled:opacity-50"
-                                />
-                                <CreditCard className="w-5 h-5 text-[#EE4D2D]" />
-                                <div className="flex-grow">
-                                    <div className="font-semibold text-sm text-gray-900">Credit/Debit Card (Stripe)</div>
-                                    <div className="text-xs text-gray-500">Pay securely with Stripe</div>
-                                </div>
-                            </label>
+                            ) : (
+                                "Please click 'Place Order' to proceed with payment"
+                            )}
                         </div>
                     )}
                 </div>

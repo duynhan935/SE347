@@ -20,6 +20,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import CartDropdown from "./CartDropdown";
+import NotificationDropdown from "./NotificationDropdown";
 
 export default function NavActions() {
     const { user, isAuthenticated, loading, logout } = useAuthStore();
@@ -152,6 +153,9 @@ export default function NavActions() {
                     )}
                 </Link>
             )}
+
+            {/* Notifications - Show if authenticated */}
+            {isAuthenticated && user && !loading && <NotificationDropdown />}
 
             {/* Cart - Show if authenticated and not loading */}
             {isAuthenticated && user && !loading && <CartDropdown />}

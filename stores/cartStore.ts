@@ -561,8 +561,47 @@ export const useCartStore = create<CartState>()(
                             throw new Error(errorMessage);
                         }
 
+                        // CRITICAL: Always use backend response as source of truth
+                        // Backend response structure: { status: 'success', message: '...', data: { restaurants: [...] } }
+                        // Extract cart data from response - API returns CartResponse with data field
+                        const cartResponse = cart as { status?: string; message?: string; data?: unknown };
+                        const cartData = cartResponse.data ?? cart;
+                        
+                        // Log raw cart data structure for debugging
+                        console.log("[CartStore] Cart response structure:", {
+                            status: cartResponse.status,
+                            hasData: !!cartResponse.data,
+                            dataType: typeof cartResponse.data,
+                        });
+                        console.log("[CartStore] Cart data structure:", JSON.stringify(cartData, null, 2));
+                        
+                        // Verify restaurants array exists and has items
+                        if (cartData && typeof cartData === "object") {
+                            const cartRecord = cartData as Record<string, unknown>;
+                            const restaurants = cartRecord["restaurants"];
+                            if (Array.isArray(restaurants)) {
+                                const totalItems = restaurants.reduce((sum: number, r: unknown) => {
+                                    const rRecord = r as Record<string, unknown>;
+                                    const items = rRecord["items"];
+                                    return sum + (Array.isArray(items) ? items.length : 0);
+                                }, 0);
+                                console.log(`[CartStore] Backend returned ${restaurants.length} restaurant(s) with ${totalItems} total items`);
+                                
+                                // If backend returned empty items, log warning
+                                if (totalItems === 0) {
+                                    console.warn("[CartStore] WARNING: Backend returned empty items array!");
+                                    console.warn("[CartStore] Full restaurants data:", JSON.stringify(restaurants, null, 2));
+                                }
+                            } else {
+                                console.warn("[CartStore] WARNING: restaurants is not an array:", restaurants);
+                            }
+                        } else {
+                            console.warn("[CartStore] WARNING: cartData is not an object:", cartData);
+                        }
+
                         // Use the response from addItemToCart directly - it already contains the updated cart
                         // This avoids race conditions from fetching cart separately
+                        // mapCartToItems expects either { data: { restaurants: [...] } } or { restaurants: [...] }
                         const parsedItems = mapCartToItems(cart);
 
                         if (parsedItems !== null && parsedItems.length > 0) {
@@ -579,6 +618,16 @@ export const useCartStore = create<CartState>()(
                             console.log(
                                 `[CartStore] Cart updated from backend response, items count: ${parsedItems.length}`
                             );
+                            
+                            // Verify the added item is in the merged items
+                            const addedItem = merged.find(
+                                (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId
+                            );
+                            if (!addedItem) {
+                                console.warn(`[CartStore] WARNING: Added item (${cartItemId}) not found in merged items!`);
+                            } else {
+                                console.log(`[CartStore] Verified: Added item found with quantity ${addedItem.quantity}`);
+                            }
                         } else if (parsedItems !== null && parsedItems.length === 0) {
                             // Backend returned empty cart (shouldn't happen after adding item, but handle it)
                             console.warn("[CartStore] Backend returned empty cart after adding item, fetching cart...");

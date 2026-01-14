@@ -2,8 +2,7 @@
 
 import { Message } from "@/types";
 import { format } from "date-fns";
-import { ArrowLeft, Image as ImageIcon, Loader2, Paperclip, Send } from "lucide-react";
-import Image from "next/image";
+import { ArrowLeft, Loader2, Paperclip, Send } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -66,11 +65,20 @@ export default function ChatWindow({
             return;
         }
 
-        const messageCount = messages.length;
+        // Use filtered and sorted messages for scroll detection
+        const filteredMessages = messages.filter((message) => {
+            const isFromCurrentUser = message.senderId === currentUserId;
+            const isToCurrentUser = message.receiverId === currentUserId;
+            const isFromPartner = message.senderId === partnerId;
+            const isToPartner = message.receiverId === partnerId;
+            return (isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser);
+        });
+
+        const messageCount = filteredMessages.length;
         const isNewMessage = messageCount > lastMessageCountRef.current;
         lastMessageCountRef.current = messageCount;
 
-        if (isInitialLoadRef.current && !isLoading && messages.length > 0) {
+        if (isInitialLoadRef.current && !isLoading && filteredMessages.length > 0) {
             requestAnimationFrame(() => {
                 setTimeout(() => {
                     scrollToBottom("auto");
@@ -78,7 +86,7 @@ export default function ChatWindow({
                     shouldAutoScrollRef.current = true;
                 }, 50);
             });
-        } else if (!isLoading && messages.length > 0 && isNewMessage) {
+        } else if (!isLoading && filteredMessages.length > 0 && isNewMessage) {
             if (shouldAutoScrollRef.current || isNearBottom()) {
                 requestAnimationFrame(() => {
                     setTimeout(() => {
@@ -87,7 +95,7 @@ export default function ChatWindow({
                 });
             }
         }
-    }, [messages, isLoading]);
+    }, [messages, isLoading, currentUserId, partnerId]);
 
     // Mark messages as read
     useEffect(() => {
@@ -156,11 +164,46 @@ export default function ChatWindow({
         }
     };
 
-    // Generate avatar URL
-    const getAvatarUrl = (name: string) => {
-        const initial = name.charAt(0).toUpperCase();
-        return `https://placehold.co/40x40/${initial.charCodeAt(0) % 2 === 0 ? "EE4D2D" : "FF6B35"}/FFFFFF?text=${initial}`;
-    };
+    // Filter messages to only show messages between currentUserId and partnerId
+    // This prevents showing messages from other conversations
+    const filteredMessages = messages.filter((message) => {
+        const isFromCurrentUser = message.senderId === currentUserId;
+        const isToCurrentUser = message.receiverId === currentUserId;
+        const isFromPartner = message.senderId === partnerId;
+        const isToPartner = message.receiverId === partnerId;
+        
+        // Only show messages where:
+        // - Current user sent to partner, OR
+        // - Partner sent to current user
+        return (isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser);
+    });
+
+    // Remove duplicate messages based on id, content, senderId, receiverId, and timestamp
+    const uniqueMessages = filteredMessages.reduce((acc, message) => {
+        const existingIndex = acc.findIndex((m) => {
+            const sameId = m.id === message.id;
+            const sameContent = m.content === message.content;
+            const sameSender = m.senderId === message.senderId;
+            const sameReceiver = m.receiverId === message.receiverId;
+            const timeDiff = Math.abs(
+                new Date(m.timestamp).getTime() - new Date(message.timestamp).getTime()
+            );
+            const sameTime = timeDiff < 1000; // Within 1 second
+            
+            return sameId || (sameContent && sameSender && sameReceiver && sameTime);
+        });
+        
+        if (existingIndex === -1) {
+            acc.push(message);
+        }
+        
+        return acc;
+    }, [] as Message[]);
+
+    // Sort messages by timestamp
+    const sortedMessages = [...uniqueMessages].sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
 
     return (
         <div className="flex flex-col h-full bg-white">
@@ -172,6 +215,8 @@ export default function ChatWindow({
                         <button
                             onClick={onBack}
                             className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            aria-label="Go back to chat list"
+                            title="Go back"
                         >
                             <ArrowLeft className="w-5 h-5 text-gray-600" />
                         </button>
@@ -212,17 +257,17 @@ export default function ChatWindow({
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 min-h-0 scrollbar-hide"
             >
-                {isLoading && messages.length === 0 ? (
+                {isLoading && sortedMessages.length === 0 ? (
                     <div className="flex items-center justify-center h-full min-h-[400px]">
                         <Loader2 className="w-6 h-6 animate-spin text-[#EE4D2D]" />
                     </div>
-                ) : messages.length === 0 ? (
+                ) : sortedMessages.length === 0 ? (
                     <div className="flex items-center justify-center h-full min-h-[400px] text-gray-400">
                         <p className="text-sm">No messages yet. Start the conversation!</p>
                     </div>
                 ) : (
                     <>
-                        {messages.map((message) => {
+                        {sortedMessages.map((message) => {
                             const isOwnMessage = message.senderId === currentUserId;
                             const messageTime = formatMessageTime(message.timestamp);
                             const showTime = showTimestamp === message.id;
@@ -230,7 +275,7 @@ export default function ChatWindow({
                             return (
                                 <div
                                     key={message.id}
-                                    className={`flex items-end gap-2 ${isOwnMessage ? "justify-end" : "justify-start"}`}
+                                    className={`flex items-end gap-2 items-start ${isOwnMessage ? "justify-end" : "justify-start"}`}
                                     onMouseEnter={() => setShowTimestamp(message.id)}
                                     onMouseLeave={() => setShowTimestamp(null)}
                                 >
@@ -242,29 +287,27 @@ export default function ChatWindow({
                                     )}
 
                                     {/* Message Bubble */}
-                                    <div className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}>
+                                    <div className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"} flex-shrink-0`}>
                                         <div
-                                            className={`max-w-[75%] md:max-w-[65%] rounded-lg px-4 py-2.5 shadow-sm ${
+                                            className={`max-w-[75%] md:max-w-[65%] min-w-[120px] rounded-lg px-3 py-2 shadow-sm inline-block text-sm md:text-base leading-relaxed whitespace-normal break-words ${
                                                 isOwnMessage
                                                     ? "bg-[#EE4D2D] text-white rounded-l-lg rounded-tr-lg"
                                                     : "bg-gray-100 text-gray-900 rounded-r-lg rounded-tl-lg"
                                             }`}
                                         >
-                                            <p className="text-sm md:text-base whitespace-pre-wrap break-words leading-relaxed">
-                                                {message.content}
-                                            </p>
+                                            {message.content}
                                         </div>
-                                        {/* Timestamp - Show on hover */}
-                                        {showTime && (
-                                            <p className={`text-xs mt-1 px-1 ${isOwnMessage ? "text-gray-500" : "text-gray-400"}`}>
-                                                {messageTime}
-                                            </p>
-                                        )}
+                                        {/* Timestamp - Always render to prevent layout shift */}
+                                        <p className={`text-xs mt-1 px-1 h-5 transition-opacity duration-150 ${
+                                            isOwnMessage ? "text-gray-500" : "text-gray-400"
+                                        } ${showTime ? "opacity-100" : "opacity-0"}`}>
+                                            {messageTime}
+                                        </p>
                                     </div>
                                 </div>
                             );
                         })}
-                        {isLoading && messages.length > 0 && (
+                        {isLoading && sortedMessages.length > 0 && (
                             <div className="flex justify-center py-2">
                                 <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                             </div>

@@ -121,9 +121,13 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
         const { isConnected, sendMessage: sendMessageToSocket } = useChatSocketContext();
 
         const selectedRoomIdRef = useRef<string | null>(selectedRoomId);
+        const partnerIdRef = useRef<string | null>(partnerId);
         useEffect(() => {
                 selectedRoomIdRef.current = selectedRoomId;
         }, [selectedRoomId]);
+        useEffect(() => {
+                partnerIdRef.current = partnerId;
+        }, [partnerId]);
 
         const processedMessagesRef = useRef<Set<string>>(new Set());
         const processedMessagesPerRoomRef = useRef<Map<string, Set<string>>>(new Map());
@@ -131,6 +135,23 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
         const handleMessageReceived = useCallback(
                 (message: MessageDTO) => {
                         if (message.roomId !== selectedRoomIdRef.current) {
+                                return;
+                        }
+
+                        // Get current partnerId from state or ref
+                        const currentPartnerId = partnerId;
+                        if (!currentPartnerId) {
+                                return;
+                        }
+
+                        // Filter: Only process messages between currentUserId and partnerId
+                        const isFromCurrentUser = message.senderId === currentUserId;
+                        const isToCurrentUser = message.receiverId === currentUserId;
+                        const isFromPartner = message.senderId === currentPartnerId;
+                        const isToPartner = message.receiverId === currentPartnerId;
+                        
+                        // Only process if it's a message between current user and partner
+                        if (!((isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser))) {
                                 return;
                         }
 
@@ -151,10 +172,19 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                         }
 
                         setMessages((prev) => {
+                                // Filter existing messages to only include messages between currentUserId and partnerId
+                                const filteredPrev = prev.filter((m) => {
+                                        const mIsFromCurrentUser = m.senderId === currentUserId;
+                                        const mIsToCurrentUser = m.receiverId === currentUserId;
+                                        const mIsFromPartner = m.senderId === currentPartnerId;
+                                        const mIsToPartner = m.receiverId === currentPartnerId;
+                                        return (mIsFromCurrentUser && mIsToPartner) || (mIsFromPartner && mIsToCurrentUser);
+                                });
+
                                 const messageTimestamp = message.timestamp || new Date().toISOString();
                                 const messageTime = new Date(messageTimestamp).getTime();
 
-                                const existingMessage = prev.find((m) => {
+                                const existingMessage = filteredPrev.find((m) => {
                                         const mTime = new Date(m.timestamp).getTime();
                                         const timeDiff = Math.abs(mTime - messageTime);
                                         return (
@@ -166,11 +196,11 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                 });
 
                                 if (existingMessage) {
-                                        return prev;
+                                        return filteredPrev;
                                 }
 
                                 if (message.senderId === currentUserId) {
-                                        const optimisticIndex = prev.findIndex(
+                                        const optimisticIndex = filteredPrev.findIndex(
                                                 (m) =>
                                                         m.id.startsWith("temp-") &&
                                                         m.senderId === message.senderId &&
@@ -179,7 +209,7 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                         );
 
                                         if (optimisticIndex >= 0) {
-                                                const updated = [...prev];
+                                                const updated = [...filteredPrev];
                                                 updated[optimisticIndex] = {
                                                         ...updated[optimisticIndex],
                                                         timestamp: messageTimestamp,
@@ -198,11 +228,11 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                         read: false,
                                 };
 
-                                const updated = [...prev, newMessage];
+                                const updated = [...filteredPrev, newMessage];
                                 return updated.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
                         });
                 },
-        [currentUserId]
+        [currentUserId, partnerId]
         );
 
         useEffect(() => {
@@ -214,6 +244,22 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                         const message = event.detail;
                         
                         if (message.roomId !== selectedRoomIdRef.current) {
+                                return;
+                        }
+
+                        // Get current partnerId from ref
+                        const currentPartnerId = partnerIdRef.current;
+                        if (!currentPartnerId) {
+                                return;
+                        }
+
+                        // Filter: Only process messages between currentUserId and partnerId
+                        const isFromCurrentUser = message.senderId === currentUserId;
+                        const isToCurrentUser = message.receiverId === currentUserId;
+                        const isFromPartner = message.senderId === currentPartnerId;
+                        const isToPartner = message.receiverId === currentPartnerId;
+                        
+                        if (!((isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser))) {
                                 return;
                         }
 
@@ -292,7 +338,45 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                         read: msg.read,
                                 }));
 
-                                const sortedMessages = mappedMessages.reverse();
+                                // Get partnerId for filtering
+                                const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
+                                const currentPartner = selectedRoom 
+                                        ? (selectedRoom.user1Id === currentUserId ? selectedRoom.user2Id : selectedRoom.user1Id)
+                                        : null;
+
+                                // Filter messages to only include messages between currentUserId and partnerId
+                                const filteredMessages = currentPartner 
+                                        ? mappedMessages.filter((msg) => {
+                                                const isFromCurrentUser = msg.senderId === currentUserId;
+                                                const isToCurrentUser = msg.receiverId === currentUserId;
+                                                const isFromPartner = msg.senderId === currentPartner;
+                                                const isToPartner = msg.receiverId === currentPartner;
+                                                return (isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser);
+                                        })
+                                        : mappedMessages;
+
+                                // Remove duplicates
+                                const uniqueMessages = filteredMessages.reduce((acc, msg) => {
+                                        const existingIndex = acc.findIndex((m) => {
+                                                const sameId = m.id === msg.id;
+                                                const sameContent = m.content === msg.content;
+                                                const sameSender = m.senderId === msg.senderId;
+                                                const sameReceiver = m.receiverId === msg.receiverId;
+                                                const timeDiff = Math.abs(
+                                                        new Date(m.timestamp).getTime() - new Date(msg.timestamp).getTime()
+                                                );
+                                                const sameTime = timeDiff < 1000;
+                                                return sameId || (sameContent && sameSender && sameReceiver && sameTime);
+                                        });
+                                        
+                                        if (existingIndex === -1) {
+                                                acc.push(msg);
+                                        }
+                                        
+                                        return acc;
+                                }, [] as Message[]);
+
+                                const sortedMessages = uniqueMessages.reverse();
                                 
                                 sortedMessages.forEach((msg) => {
                     const messageKey = `${msg.roomId}-${msg.content}-${msg.senderId}-${msg.receiverId}-${Math.floor(
@@ -303,20 +387,18 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                                 
                                 setMessages(sortedMessages);
 
-                                const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
-                                if (selectedRoom) {
-                    const partner = selectedRoom.user1Id === currentUserId ? selectedRoom.user2Id : selectedRoom.user1Id;
-                                        
-                                        if (partner !== partnerId) {
-                                        setPartnerId(partner);
+                                // Use selectedRoom and currentPartner already defined above
+                                if (selectedRoom && currentPartner) {
+                                        if (currentPartner !== partnerId) {
+                                                setPartnerId(currentPartner);
                                         }
 
-                                        const cachedInfo = partnerInfoCacheRef.current[partner];
+                                        const cachedInfo = partnerInfoCacheRef.current[currentPartner];
                                         if (cachedInfo?.fetched) {
                                                 setPartnerName(cachedInfo.name);
                                         } else {
-                                        const info = await getPartnerInfo(partner);
-                                        setPartnerName(info.name);
+                                                const info = await getPartnerInfo(currentPartner);
+                                                setPartnerName(info.name);
                                         }
                                 } else if (selectedRoomId) {
                                         const roomIdParts = selectedRoomId.split("_");
