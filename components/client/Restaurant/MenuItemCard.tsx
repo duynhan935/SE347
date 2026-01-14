@@ -13,176 +13,168 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 export const MenuItemCard = memo(
-    ({
-        item,
-        restaurantId,
-        restaurantName,
-    }: {
-        item: Product;
-        restaurantId?: string;
-        restaurantName?: string;
-    }) => {
-    const router = useRouter();
-    const addItem = useCartStore((state) => state.addItem);
-    const setUserId = useCartStore((state) => state.setUserId);
-    const { user } = useAuthStore();
+    ({ item, restaurantId, restaurantName }: { item: Product; restaurantId?: string; restaurantName?: string }) => {
+        const router = useRouter();
+        const addItem = useCartStore((state) => state.addItem);
+        const setUserId = useCartStore((state) => state.setUserId);
+        const { user } = useAuthStore();
 
-    const [isAdding, setIsAdding] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
+        const [isAdding, setIsAdding] = useState(false);
+        const [isMounted, setIsMounted] = useState(false);
 
-    // Ensure component is mounted (client-side only)
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
+        // Ensure component is mounted (client-side only)
+        useEffect(() => {
+            setIsMounted(true);
+        }, []);
 
-    // Ensure userId is set in cart store when user is available
-    useEffect(() => {
-        if (isMounted && user?.id) {
-            setUserId(user.id);
-        }
-    }, [isMounted, user?.id, setUserId]);
-    // Use the same image URL that's displayed on the card
-    const cardImageUrl = useMemo(() => getImageUrl(item.imageURL), [item.imageURL]);
-    const sizes = useMemo(() => item.productSizes ?? [], [item.productSizes]);
-    const displayPrice = useMemo(() => sizes[0]?.price, [sizes]);
-
-    const handleAddToCart = useCallback(
-        async (e: React.MouseEvent<HTMLButtonElement>) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            // Prevent multiple clicks or if not mounted
-            if (isAdding || !isMounted) {
-                return;
+        // Ensure userId is set in cart store when user is available
+        useEffect(() => {
+            if (isMounted && user?.id) {
+                setUserId(user.id);
             }
+        }, [isMounted, user?.id, setUserId]);
+        // Use the same image URL that's displayed on the card
+        const cardImageUrl = useMemo(() => getImageUrl(item.imageURL), [item.imageURL]);
+        const sizes = useMemo(() => item.productSizes ?? [], [item.productSizes]);
+        const displayPrice = useMemo(() => sizes[0]?.price, [sizes]);
 
-            // Ensure addItem is available (should always be, but double-check)
-            if (typeof addItem !== "function") {
-                console.warn("[MenuItemCard] addItem is not available yet");
-                return;
-            }
+        const handleAddToCart = useCallback(
+            async (e: React.MouseEvent<HTMLButtonElement>) => {
+                e.preventDefault();
+                e.stopPropagation();
 
-            if (!user) {
-                toast.error("Please login to add items to cart");
-                router.push("/login");
-                return;
-            }
+                // Prevent multiple clicks or if not mounted
+                if (isAdding || !isMounted) {
+                    return;
+                }
 
-            if (!sizes || sizes.length === 0) {
-                toast.error("This product has no available sizes");
-                return;
-            }
+                // Ensure addItem is available (should always be, but double-check)
+                if (typeof addItem !== "function") {
+                    console.warn("[MenuItemCard] addItem is not available yet");
+                    return;
+                }
 
-            // Use first size as default
-            const defaultSize = sizes[0];
+                if (!user) {
+                    toast.error("Please login to add items to cart");
+                    router.push("/login");
+                    return;
+                }
 
-            if (!defaultSize) {
-                toast.error("No default size found");
-                return;
-            }
+                if (!sizes || sizes.length === 0) {
+                    toast.error("This product has no available sizes");
+                    return;
+                }
 
-            setIsAdding(true);
-            try {
-                // Use the same image URL that's displayed on the card
-                console.log("[MenuItemCard] Adding to cart:", {
-                    productId: item.id,
-                    productName: item.productName,
-                    originalImageURL: item.imageURL,
-                    cardImageUrl: cardImageUrl,
-                    imageURLType: typeof item.imageURL,
-                });
+                // Use first size as default
+                const defaultSize = sizes[0];
 
-                await addItem(
-                    {
-                        id: item.id,
-                        name: item.productName,
-                        price: defaultSize.price,
-                        image: cardImageUrl, // Use the same image as displayed on card
-                        restaurantId: restaurantId || item.restaurant?.id || "",
-                        restaurantName: restaurantName || item.restaurant?.resName || "Unknown Restaurant",
-                        categoryId: item.categoryId,
-                        categoryName: item.categoryName,
-                        sizeId: defaultSize.id,
-                        sizeName: defaultSize.sizeName,
-                    },
-                    1
-                );
-            } catch (error) {
-                console.error("Failed to add to cart:", error);
-                toast.error("Failed to add item to cart");
-            } finally {
-                setTimeout(() => {
-                    setIsAdding(false);
-                }, 300);
-            }
-        },
-        [isAdding, isMounted, user, item, cardImageUrl, addItem, router, restaurantId, restaurantName]
-    );
+                if (!defaultSize) {
+                    toast.error("No default size found");
+                    return;
+                }
 
-    const hasImage = cardImageUrl && cardImageUrl !== "/placeholder.png";
+                setIsAdding(true);
+                try {
+                    // Use the same image URL that's displayed on the card
+                    console.log("[MenuItemCard] Adding to cart:", {
+                        productId: item.id,
+                        productName: item.productName,
+                        originalImageURL: item.imageURL,
+                        cardImageUrl: cardImageUrl,
+                        imageURLType: typeof item.imageURL,
+                    });
 
-    return (
-        <Link
-            href={`/food/${item.slug}`}
-            className="block border border-gray-200 rounded-2xl overflow-hidden h-full group bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1"
-        >
-            {/* Image Section - Improved design */}
-            <div className="relative w-full h-40 md:h-48 overflow-hidden bg-gradient-to-br from-brand-purple/5 to-violet-500/5 rounded-t-2xl">
-                {hasImage ? (
-                    <Image
-                        src={cardImageUrl}
-                        alt={item.productName}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        unoptimized={!item.imageURL || cardImageUrl === "/placeholder.png"}
-                        onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "/placeholder.png";
-                        }}
-                    />
-                ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-purple/10 to-violet-500/10">
-                        <div className="text-center">
-                            <span className="text-4xl mb-2 block">🍽️</span>
-                            <span className="text-xs text-gray-600 font-medium">Đang chuẩn bị...</span>
+                    await addItem(
+                        {
+                            id: item.id,
+                            name: item.productName,
+                            price: defaultSize.price,
+                            image: cardImageUrl, // Use the same image as displayed on card
+                            restaurantId: restaurantId || item.restaurant?.id || "",
+                            restaurantName: restaurantName || item.restaurant?.resName || "Unknown Restaurant",
+                            categoryId: item.categoryId,
+                            categoryName: item.categoryName,
+                            sizeId: defaultSize.id,
+                            sizeName: defaultSize.sizeName,
+                        },
+                        1
+                    );
+                } catch (error) {
+                    console.error("Failed to add to cart:", error);
+                    toast.error("Failed to add item to cart");
+                } finally {
+                    setTimeout(() => {
+                        setIsAdding(false);
+                    }, 300);
+                }
+            },
+            [isAdding, isMounted, user, item, cardImageUrl, addItem, router, restaurantId, restaurantName]
+        );
+
+        const hasImage = cardImageUrl && cardImageUrl !== "/placeholder.png";
+
+        return (
+            <Link
+                href={`/food/${item.slug}`}
+                className="block border border-gray-200 rounded-2xl overflow-hidden h-full group bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1"
+            >
+                {/* Image Section - Improved design */}
+                <div className="relative w-full h-40 md:h-48 overflow-hidden bg-gradient-to-br from-brand-purple/5 to-violet-500/5 rounded-t-2xl">
+                    {hasImage ? (
+                        <Image
+                            src={cardImageUrl}
+                            alt={item.productName}
+                            fill
+                            className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            unoptimized={!item.imageURL || cardImageUrl === "/placeholder.png"}
+                            onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = "/placeholder.png";
+                            }}
+                        />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-purple/10 to-violet-500/10">
+                            <div className="text-center">
+                                <span className="text-4xl mb-2 block">🍽️</span>
+                                <span className="text-xs text-gray-600 font-medium">Đang chuẩn bị...</span>
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Content Section */}
-            <div className="p-4 md:p-5 flex flex-col flex-grow">
-                <h3 className="font-bold text-base md:text-lg text-gray-900 line-clamp-2 mb-2 leading-tight">
-                    {item.productName}
-                </h3>
-                {item.description && (
-                    <p className="text-xs md:text-sm text-gray-400 mt-1 line-clamp-2 flex-grow mb-3">
-                        {item.description}
-                    </p>
-                )}
-                <div className="flex justify-between items-center mt-auto pt-2">
-                    <p className="font-bold text-lg md:text-xl bg-gradient-to-r from-brand-purple to-violet-500 bg-clip-text text-transparent">
-                        {sizes.length > 1 ? "From " : ""}
-                        {displayPrice ? `$${displayPrice.toFixed(2)}` : "N/A"}
-                    </p>
-                    <button
-                        onClick={handleAddToCart}
-                        disabled={isAdding || !isMounted}
-                        className="p-2.5 text-brand-purple hover:bg-brand-purple/10 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-brand-purple/30 hover:border-brand-purple/50 bg-white hover:shadow-md"
-                        title="Thêm vào giỏ"
-                        aria-label="Thêm vào giỏ"
-                    >
-                        {isAdding ? (
-                            <PlusCircle className="w-5 h-5 animate-pulse" />
-                        ) : (
-                            <PlusCircle className="w-5 h-5" />
-                        )}
-                    </button>
+                    )}
                 </div>
-            </div>
-        </Link>
-    );
+
+                {/* Content Section */}
+                <div className="p-4 md:p-5 flex flex-col flex-grow">
+                    <h3 className="font-bold text-base md:text-lg text-gray-900 line-clamp-2 mb-2 leading-tight">
+                        {item.productName}
+                    </h3>
+                    {item.description && (
+                        <p className="text-xs md:text-sm text-gray-400 mt-1 line-clamp-2 flex-grow mb-3">
+                            {item.description}
+                        </p>
+                    )}
+                    <div className="flex justify-between items-center mt-auto pt-2">
+                        <p className="font-bold text-lg md:text-xl bg-gradient-to-r from-brand-purple to-violet-500 bg-clip-text text-transparent">
+                            {sizes.length > 1 ? "From " : ""}
+                            {displayPrice ? `$${displayPrice.toFixed(2)}` : "N/A"}
+                        </p>
+                        <button
+                            onClick={handleAddToCart}
+                            disabled={isAdding || !isMounted}
+                            className="p-2.5 text-brand-purple hover:bg-brand-purple/10 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-brand-purple/30 hover:border-brand-purple/50 bg-white hover:shadow-md"
+                            title="Thêm vào giỏ"
+                            aria-label="Thêm vào giỏ"
+                        >
+                            {isAdding ? (
+                                <PlusCircle className="w-5 h-5 animate-pulse" />
+                            ) : (
+                                <PlusCircle className="w-5 h-5" />
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </Link>
+        );
     }
 );
 

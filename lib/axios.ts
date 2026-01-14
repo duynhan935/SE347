@@ -34,8 +34,7 @@ api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         // Get token from Zustand store
         const accessTokenFromStore = useAuthStore.getState().accessToken;
-        const accessTokenFromStorage =
-            typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+        const accessTokenFromStorage = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
         const accessToken = accessTokenFromStore || accessTokenFromStorage;
         if (accessToken && config.headers) {
             // Only add if the request isn't for refreshing the token itself
