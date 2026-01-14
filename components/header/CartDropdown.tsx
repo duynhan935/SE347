@@ -183,22 +183,55 @@ export default function CartDropdown() {
                                                                                 ${cartTotal.toFixed(2)}
                                                                         </span>
                                                                 </div>
-                                                                <div className="flex gap-2">
-                                                                        <Link
-                                                                                href="/cart"
-                                                                                onClick={() => setIsOpen(false)}
-                                                                                className="flex-1 text-center bg-white border-2 border-brand-purple text-brand-purple px-4 py-2 rounded-md hover:bg-brand-purple/10 transition-colors font-semibold"
-                                                                        >
-                                                                                View Cart
-                                                                        </Link>
-                                                                        <Link
-                                                                                href="/payment"
-                                                                                onClick={() => setIsOpen(false)}
-                                                                                className="flex-1 text-center bg-brand-purple text-white px-4 py-2 rounded-md hover:bg-brand-purple/90 transition-colors font-semibold"
-                                                                        >
-                                                                                Checkout
-                                                                        </Link>
-                                                                </div>
+                                                                {(() => {
+                                                                        // Group items by restaurant to determine checkout behavior
+                                                                        const restaurantGroups = cartItems.reduce((acc, item) => {
+                                                                                if (!acc[item.restaurantId]) {
+                                                                                        acc[item.restaurantId] = {
+                                                                                                restaurantName: item.restaurantName,
+                                                                                                items: [],
+                                                                                        };
+                                                                                }
+                                                                                acc[item.restaurantId].items.push(item);
+                                                                                return acc;
+                                                                        }, {} as Record<string, { restaurantName: string; items: typeof cartItems }>);
+
+                                                                        const restaurantIds = Object.keys(restaurantGroups);
+                                                                        const hasMultipleRestaurants = restaurantIds.length > 1;
+                                                                        const firstRestaurantId = restaurantIds[0];
+
+                                                                        return (
+                                                                                <div className="flex gap-2">
+                                                                                        {/* View Cart - Always redirects to cart page where user can checkout each restaurant separately */}
+                                                                                        <Link
+                                                                                                href="/cart"
+                                                                                                onClick={() => setIsOpen(false)}
+                                                                                                className="flex-1 text-center bg-white border-2 border-brand-purple text-brand-purple px-4 py-2 rounded-md hover:bg-brand-purple/10 transition-colors font-semibold"
+                                                                                        >
+                                                                                                View Cart
+                                                                                        </Link>
+                                                                                        {/* Checkout - Only allow if single restaurant, otherwise redirect to cart */}
+                                                                                        {hasMultipleRestaurants ? (
+                                                                                                <Link
+                                                                                                        href="/cart"
+                                                                                                        onClick={() => setIsOpen(false)}
+                                                                                                        className="flex-1 text-center bg-brand-purple text-white px-4 py-2 rounded-md hover:bg-brand-purple/90 transition-colors font-semibold"
+                                                                                                        title="Vui lòng chọn từng nhà hàng để đặt hàng"
+                                                                                                >
+                                                                                                        Checkout
+                                                                                                </Link>
+                                                                                        ) : (
+                                                                                                <Link
+                                                                                                        href={`/payment?restaurantId=${firstRestaurantId}`}
+                                                                                                        onClick={() => setIsOpen(false)}
+                                                                                                        className="flex-1 text-center bg-brand-purple text-white px-4 py-2 rounded-md hover:bg-brand-purple/90 transition-colors font-semibold"
+                                                                                                >
+                                                                                                        Checkout
+                                                                                                </Link>
+                                                                                        )}
+                                                                                </div>
+                                                                        );
+                                                                })()}
                                                         </div>
                                                 </>
                                         )}

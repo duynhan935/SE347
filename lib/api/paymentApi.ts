@@ -41,12 +41,4 @@ export const paymentApi = {
         const response = await api.post(`/payments/${paymentId}/refund`, { amount, reason });
         return response.data;
     },
-
-    // Complete payment (mark payment as completed)
-    completePayment: async (paymentId: string, transactionId?: string) => {
-        const response = await api.post<{ success: boolean; data: Payment }>(`/payments/${paymentId}/complete`, {
-            transactionId,
-        });
-        return response.data.data;
-    },
 };
