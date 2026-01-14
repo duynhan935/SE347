@@ -58,6 +58,7 @@ export const ProductSuggestionCard = ({ product }: { product: SuggestedProduct }
                 image: getImageUrl(product.image),
                 restaurantId: "3",
                 restaurantName: "The Burger Shop",
+                categoryName: product.category,
             };
             await addItem(itemToAdd, 1);
             toast.success(`${product.name} has been added to your cart.`);

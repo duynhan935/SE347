@@ -75,6 +75,8 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                                                 image: getImageUrl(foodItem.imageURL),
                                                 restaurantId: restaurant.id,
                                                 restaurantName: restaurant.resName,
+                                                categoryId: foodItem.categoryId,
+                                                categoryName: foodItem.categoryName,
                                                 sizeId: selectedSize.id,
                                                 sizeName: selectedSize.sizeName,
                                                 customizations: specialInstructions || undefined,

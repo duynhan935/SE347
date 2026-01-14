@@ -5,6 +5,7 @@ import {
         Clock,
         Grid3x3,
         LayoutDashboard,
+        MessageCircle,
         Percent,
         Ruler,
         Settings,
@@ -29,6 +30,11 @@ const menuItems: MenuItem[] = [
                 label: "Dashboard",
                 icon: LayoutDashboard,
                 href: "/admin/dashboard",
+        },
+        {
+                label: "Tin nhắn",
+                icon: MessageCircle,
+                href: "/admin/messages",
         },
         {
                 label: "Quản lý Users",

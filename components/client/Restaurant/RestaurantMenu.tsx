@@ -4,9 +4,14 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { MenuItemCard } from "./MenuItemCard";
 import { useEffect, useMemo, useState } from "react";
 
-type MenuProps = { products: Product[]; categories: Category[] };
+type MenuProps = {
+    restaurantId: string;
+    restaurantName: string;
+    products: Product[];
+    categories: Category[];
+};
 
-export default function RestaurantMenu({ products, categories }: MenuProps) {
+export default function RestaurantMenu({ restaurantId, restaurantName, products, categories }: MenuProps) {
     const slugify = (text: string) =>
         text
             .toLowerCase()
@@ -196,7 +201,12 @@ export default function RestaurantMenu({ products, categories }: MenuProps) {
                                 ) : (
                                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
                                         {group.items.map((item) => (
-                                            <MenuItemCard key={item.id} item={item} />
+                                            <MenuItemCard
+                                                key={item.id}
+                                                item={item}
+                                                restaurantId={restaurantId}
+                                                restaurantName={restaurantName}
+                                            />
                                         ))}
                                     </div>
                                 )}

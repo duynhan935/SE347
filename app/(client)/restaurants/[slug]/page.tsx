@@ -33,7 +33,12 @@ export default async function RestaurantDetailPage({ params }: { params: Promise
                     <div className="lg:col-span-2 space-y-16">
                         <ScrollReveal>
                             <section id="menu" className="scroll-mt-24">
-                                <RestaurantMenu products={restaurant.products} categories={restaurant.cate} />
+                                <RestaurantMenu
+                                    restaurantId={restaurant.id}
+                                    restaurantName={restaurant.resName}
+                                    products={restaurant.products}
+                                    categories={restaurant.cate}
+                                />
                             </section>
                         </ScrollReveal>
                         <ScrollReveal delay={0.1}>

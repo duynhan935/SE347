@@ -47,6 +47,13 @@ export const CartItemRow = ({ item }: { item: CartItem }) => {
                                 {/* Product Name - Bold */}
                                 <p className="font-bold text-base md:text-lg leading-tight text-gray-900">{item.name}</p>
 
+                                {/* Category */}
+                                {item.categoryName && (
+                                        <p className="text-xs md:text-sm text-gray-500 font-medium">
+                                                Category: {item.categoryName}
+                                        </p>
+                                )}
+
                                 {/* Price per item - Small, light gray */}
                                 <p className="text-xs md:text-sm text-gray-400 font-medium">
                                         ${item.price.toFixed(2)} each

@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Package, Settings, Store, Users, Wallet, X } from "lucide-react";
+import { BarChart3, MessageCircle, Package, Settings, Store, Users, Wallet, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -23,6 +23,11 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
             icon: Store,
             label: "Dashboard",
             href: "/merchant",
+        },
+        {
+            icon: MessageCircle,
+            label: "Tin nhắn",
+            href: "/merchant/messages",
         },
         {
             icon: Package,

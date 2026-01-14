@@ -245,13 +245,13 @@ export default function FoodPage() {
                                     ? "Bắt đầu bằng cách thêm món ăn đầu tiên của bạn"
                                     : "Thử đổi từ khóa hoặc thêm món ăn mới"}
                             </p>
-                            <button
-                                onClick={() => handleOpenModal(null)}
+                            <Link
+                                href="/merchant/food/new"
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-lg transition-colors"
                             >
                                 <Plus className="h-5 w-5" />
                                 Thêm Món Ăn
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </div>

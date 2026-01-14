@@ -6,13 +6,30 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface CartItem {
-        id: string;
+        id: string; // Unique cart item id used by backend routes (productId)
+        baseProductId: string; // Original product id
         name: string;
         price: number;
         image: string | StaticImageData;
         quantity: number;
         restaurantId: string;
         restaurantName: string;
+        categoryId?: string;
+        categoryName?: string;
+        sizeId?: string;
+        sizeName?: string;
+        customizations?: string;
+}
+
+export interface AddToCartItem {
+        id: string; // base product id
+        name: string;
+        price: number;
+        image: string | StaticImageData;
+        restaurantId: string;
+        restaurantName: string;
+        categoryId?: string;
+        categoryName?: string;
         sizeId?: string;
         sizeName?: string;
         customizations?: string;
@@ -26,12 +43,89 @@ interface CartState {
         // Actions
         setUserId: (userId: string | null) => void;
         fetchCart: () => Promise<void>;
-        addItem: (itemToAdd: Omit<CartItem, "quantity">, quantity: number) => Promise<void>;
+        addItem: (itemToAdd: AddToCartItem, quantity: number) => Promise<void>;
         removeItem: (itemId: string, restaurantId: string, options?: { silent?: boolean }) => Promise<void>;
         updateQuantity: (itemId: string, restaurantId: string, quantity: number) => Promise<void>;
         clearCart: (options?: { silent?: boolean }) => Promise<void>;
         clearRestaurant: (restaurantId: string, options?: { silent?: boolean }) => Promise<void>;
 }
+
+type CartItemOptions = {
+        categoryId?: string;
+        categoryName?: string;
+        sizeId?: string;
+        sizeName?: string;
+        customizations?: string;
+        imageURL?: string;
+};
+
+const base64UrlEncode = (input: string): string => {
+        const bytes = new TextEncoder().encode(input);
+        let binary = "";
+        for (const byte of bytes) {
+                binary += String.fromCharCode(byte);
+        }
+        const base64 = btoa(binary);
+        return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+};
+
+const base64UrlDecode = (input: string): string => {
+        const base64 = input.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64 + "===".slice((base64.length + 3) % 4);
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+        }
+        return new TextDecoder().decode(bytes);
+};
+
+const normalizeOptions = (options: CartItemOptions): CartItemOptions => {
+        const normalized: CartItemOptions = {};
+
+        const entries = Object.entries(options) as Array<[keyof CartItemOptions, CartItemOptions[keyof CartItemOptions]]>;
+        for (const [key, value] of entries) {
+                if (typeof value === "string") {
+                        const trimmed = value.trim();
+                        if (trimmed.length > 0) {
+                                normalized[key] = trimmed as never;
+                        }
+                }
+        }
+
+        return normalized;
+};
+
+const createCartItemId = (baseProductId: string, options: CartItemOptions): string => {
+        const normalized = normalizeOptions(options);
+        const json = JSON.stringify(normalized);
+        if (json === "{}") {
+                return baseProductId;
+        }
+
+        return `${baseProductId}--${base64UrlEncode(json)}`;
+};
+
+const parseCartItemId = (cartItemId: string): { baseProductId: string; options: CartItemOptions } => {
+        const separatorIndex = cartItemId.indexOf("--");
+        if (separatorIndex === -1) {
+                return { baseProductId: cartItemId, options: {} };
+        }
+
+        const baseProductId = cartItemId.slice(0, separatorIndex);
+        const encoded = cartItemId.slice(separatorIndex + 2);
+
+        try {
+                const json = base64UrlDecode(encoded);
+                const parsed = JSON.parse(json);
+                if (!parsed || typeof parsed !== "object") {
+                        return { baseProductId, options: {} };
+                }
+                return { baseProductId, options: parsed as CartItemOptions };
+        } catch {
+                return { baseProductId, options: {} };
+        }
+};
 
 const mapCartToItems = (cart: unknown): CartItem[] | null => {
         if (!cart || typeof cart !== "object") {
@@ -86,43 +180,36 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
                                 return;
                         }
 
-                        const imageURL = itemRecord["imageURL"];
-                        console.log("[CartStore] Parsing item imageURL:", {
-                                productId,
-                                productName,
-                                imageURL,
-                                imageURLType: typeof imageURL,
-                                imageURLValue: imageURL,
-                        });
-                        // Use imageURL if it exists and is not empty, otherwise use placeholder
-                        // Always ensure we have a valid image URL string
-                        let image = "/placeholder.png";
-                        if (
-                                imageURL !== undefined &&
-                                imageURL !== null &&
-                                typeof imageURL === "string" &&
-                                imageURL.trim() !== ""
-                        ) {
-                                image = imageURL.trim();
-                        }
-                        console.log("[CartStore] Final image value:", image);
-                        const sizeId = typeof itemRecord["sizeId"] === "string" ? itemRecord["sizeId"] : undefined;
-                        const sizeName =
-                                typeof itemRecord["sizeName"] === "string" ? itemRecord["sizeName"] : undefined;
+                        const { baseProductId, options } = parseCartItemId(productId);
+
+                        const imageFromOptions = typeof options.imageURL === "string" ? options.imageURL : undefined;
+                        const image = imageFromOptions && imageFromOptions.trim() !== "" ? imageFromOptions.trim() : "/placeholder.png";
+
+                        const sizeId = typeof options.sizeId === "string" ? options.sizeId : undefined;
+                        const sizeName = typeof options.sizeName === "string" ? options.sizeName : undefined;
+
                         const rawCustomizations = itemRecord["customizations"];
                         const customizations =
-                                typeof rawCustomizations === "string" && rawCustomizations.trim().length > 0
-                                        ? rawCustomizations
-                                        : undefined;
+                                typeof options.customizations === "string" && options.customizations.trim().length > 0
+                                        ? options.customizations
+                                        : typeof rawCustomizations === "string" && rawCustomizations.trim().length > 0
+                                          ? rawCustomizations
+                                          : undefined;
+
+                        const categoryId = typeof options.categoryId === "string" ? options.categoryId : undefined;
+                        const categoryName = typeof options.categoryName === "string" ? options.categoryName : undefined;
 
                         items.push({
                                 id: productId,
+                                baseProductId,
                                 name: productName,
                                 price,
                                 quantity,
                                 image,
                                 restaurantId,
                                 restaurantName,
+                                categoryId,
+                                categoryName,
                                 sizeId,
                                 sizeName,
                                 customizations,
@@ -272,18 +359,62 @@ export const useCartStore = create<CartState>()(
                                                                 ? imageUrlToSend.trim()
                                                                 : "/placeholder.png";
 
+                                                const cartItemId = createCartItemId(itemToAdd.id, {
+                                                        categoryId: itemToAdd.categoryId,
+                                                        categoryName: itemToAdd.categoryName,
+                                                        sizeId: itemToAdd.sizeId,
+                                                        sizeName: itemToAdd.sizeName,
+                                                        customizations: itemToAdd.customizations,
+                                                        imageURL: finalImageURL,
+                                                });
+
+                                                // Optimistic update so first add is immediately visible
+                                                set((state) => {
+                                                        const existingIndex = state.items.findIndex(
+                                                                (item) =>
+                                                                        item.id === cartItemId &&
+                                                                        item.restaurantId === itemToAdd.restaurantId
+                                                        );
+
+                                                        if (existingIndex >= 0) {
+                                                                const updatedItems = [...state.items];
+                                                                const existing = updatedItems[existingIndex];
+                                                                updatedItems[existingIndex] = {
+                                                                        ...existing,
+                                                                        quantity: existing.quantity + quantity,
+                                                                };
+                                                                return { items: updatedItems };
+                                                        }
+
+                                                        const newItem: CartItem = {
+                                                                id: cartItemId,
+                                                                baseProductId: itemToAdd.id,
+                                                                name: itemToAdd.name,
+                                                                price: itemToAdd.price,
+                                                                image: finalImageURL,
+                                                                quantity,
+                                                                restaurantId: itemToAdd.restaurantId,
+                                                                restaurantName: itemToAdd.restaurantName,
+                                                                categoryId: itemToAdd.categoryId,
+                                                                categoryName: itemToAdd.categoryName,
+                                                                sizeId: itemToAdd.sizeId,
+                                                                sizeName: itemToAdd.sizeName,
+                                                                customizations: itemToAdd.customizations,
+                                                        };
+
+                                                        return { items: [...state.items, newItem] };
+                                                });
+
                                                 const requestPayload = {
                                                         restaurant: {
                                                                 restaurantId: itemToAdd.restaurantId,
                                                                 restaurantName: itemToAdd.restaurantName,
                                                         },
                                                         item: {
-                                                                productId: itemToAdd.id,
+                                                                productId: cartItemId,
                                                                 productName: itemToAdd.name,
                                                                 price: itemToAdd.price,
                                                                 quantity,
-                                                                sizeId: itemToAdd.sizeId,
-                                                                sizeName: itemToAdd.sizeName,
                                                                 customizations: itemToAdd.customizations,
                                                                 imageURL: finalImageURL,
                                                         },
@@ -316,90 +447,9 @@ export const useCartStore = create<CartState>()(
                                                         throw new Error(errorMessage);
                                                 }
 
-                                                // Backend might return response before item is fully persisted
-                                                // Add a small delay and retry fetchCart to ensure we get the latest data
-                                                let retryCount = 0;
-                                                const maxRetries = 3;
-                                                let itemsFound = false;
-
-                                                while (retryCount < maxRetries && !itemsFound) {
-                                                        // Wait a bit for backend to persist (especially for first add)
-                                                        if (retryCount > 0) {
-                                                                await new Promise((resolve) => setTimeout(resolve, 300 * retryCount));
-                                                        }
-
-                                                        try {
-                                                                console.log(`[CartStore] Fetching cart (attempt ${retryCount + 1}/${maxRetries})...`);
-                                                                await get().fetchCart();
-                                                                const currentItems = get().items;
-                                                                
-                                                                console.log(`[CartStore] Fetched cart, items count: ${currentItems.length}`);
-                                                                
-                                                                // Check if items were successfully loaded
-                                                                if (currentItems.length > 0) {
-                                                                        itemsFound = true;
-                                                                        console.log("[CartStore] Items found in cart!");
-                                                                } else {
-                                                                        retryCount++;
-                                                                        if (retryCount < maxRetries) {
-                                                                                console.log(`[CartStore] No items found, retrying... (${retryCount}/${maxRetries})`);
-                                                                        }
-                                                                }
-                                                        } catch (fetchError) {
-                                                                console.warn(`[CartStore] Fetch attempt ${retryCount + 1} failed:`, fetchError);
-                                                                retryCount++;
-                                                                if (retryCount >= maxRetries) {
-                                                                        // Last resort: try to parse the response
-                                                                        console.warn("[CartStore] All fetch attempts failed, using response data as fallback");
-                                                                        updateItemsFromResponse(cart);
-                                                                }
-                                                        }
-                                                }
-
-                                                if (!itemsFound) {
-                                                        console.warn("[CartStore] Could not fetch items after all retries - backend may not have persisted the item");
-                                                        console.warn("[CartStore] Attempting to manually add item to store as fallback...");
-                                                        
-                                                        // Fallback: Manually add item to store if backend didn't persist it
-                                                        // This is a workaround until backend is fixed
-                                                        const currentItems = get().items;
-                                                        const existingItemIndex = currentItems.findIndex(
-                                                                (item) =>
-                                                                        item.id === itemToAdd.id &&
-                                                                        item.restaurantId === itemToAdd.restaurantId &&
-                                                                        item.sizeId === itemToAdd.sizeId
-                                                        );
-
-                                                        if (existingItemIndex >= 0) {
-                                                                // Item exists, update quantity
-                                                                const existingItem = currentItems[existingItemIndex];
-                                                                const updatedItems = [...currentItems];
-                                                                updatedItems[existingItemIndex] = {
-                                                                        ...existingItem,
-                                                                        quantity: existingItem.quantity + quantity,
-                                                                };
-                                                                set({ items: updatedItems });
-                                                                console.log("[CartStore] Updated existing item quantity in store");
-                                                        } else {
-                                                                // New item, add to store
-                                                                const newItem: CartItem = {
-                                                                        id: itemToAdd.id,
-                                                                        name: itemToAdd.name,
-                                                                        price: itemToAdd.price,
-                                                                        image: finalImageURL,
-                                                                        quantity,
-                                                                        restaurantId: itemToAdd.restaurantId,
-                                                                        restaurantName: itemToAdd.restaurantName,
-                                                                        sizeId: itemToAdd.sizeId,
-                                                                        sizeName: itemToAdd.sizeName,
-                                                                        customizations: itemToAdd.customizations,
-                                                                };
-                                                                set({ items: [...currentItems, newItem] });
-                                                                console.log("[CartStore] Manually added item to store as fallback");
-                                                        }
-                                                        
-                                                        console.warn("[CartStore] ⚠️ NOTE: Item was added to local store but may not be persisted in backend. Please check backend logs.");
-                                                }
+                                                // Reconcile with backend response (best-effort)
+                                                updateItemsFromResponse(cart);
+                                                void get().fetchCart();
                                                 
                                                 toast.success("Đã thêm vào giỏ hàng!");
                                         } catch (error) {

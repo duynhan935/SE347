@@ -79,10 +79,10 @@ export default function PaymentPageClient() {
     const searchParams = useSearchParams();
     const restaurantId = searchParams.get("restaurantId");
 
-        const { items, clearRestaurant, setUserId, userId: cartUserId, isLoading: cartLoading, fetchCart } = useCartStore();
-        const { user } = useAuthStore();
-        const { coords, error: locationError } = useGeolocation();
-        const [cartFetched, setCartFetched] = useState(false);
+    const { items, clearRestaurant, setUserId, userId: cartUserId, isLoading: cartLoading, fetchCart } = useCartStore();
+    const { user } = useAuthStore();
+    const { coords, error: locationError } = useGeolocation();
+    const [cartFetched, setCartFetched] = useState(false);
 
     const extendedUser = (user as ExtendedUser | null) ?? null;
     const defaultAddress = extendedUser?.defaultAddress ?? null;
@@ -129,28 +129,28 @@ export default function PaymentPageClient() {
             return;
         }
 
-                // Ensure userId is set in cart store
-                if (extendedUser.id && cartUserId !== extendedUser.id) {
-                        setUserId(extendedUser.id);
-                }
+        // Ensure userId is set in cart store
+        if (extendedUser.id && cartUserId !== extendedUser.id) {
+            setUserId(extendedUser.id);
+        }
 
-                // Fetch cart when userId is set and matches current user
-                if (extendedUser.id && cartUserId === extendedUser.id && !cartFetched && !cartLoading) {
-                        fetchCart().catch((error) => {
-                                // Silently handle errors - cart might not exist yet or service unavailable
-                                const status = (error as { response?: { status?: number } })?.response?.status;
-                                if (status !== 404 && status !== 503) {
-                                        console.warn("Failed to fetch cart:", error);
-                                }
-                        });
-                        setCartFetched(true);
+        // Fetch cart when userId is set and matches current user
+        if (extendedUser.id && cartUserId === extendedUser.id && !cartFetched && !cartLoading) {
+            fetchCart().catch((error) => {
+                // Silently handle errors - cart might not exist yet or service unavailable
+                const status = (error as { response?: { status?: number } })?.response?.status;
+                if (status !== 404 && status !== 503) {
+                    console.warn("Failed to fetch cart:", error);
                 }
+            });
+            setCartFetched(true);
+        }
 
-                // Mark as fetched when cart loading is complete
-                if (cartUserId && !cartLoading && !cartFetched) {
-                        setCartFetched(true);
-                }
-        }, [extendedUser, cartUserId, cartLoading, setUserId, router, cartFetched, fetchCart]);
+        // Mark as fetched when cart loading is complete
+        if (cartUserId && !cartLoading && !cartFetched) {
+            setCartFetched(true);
+        }
+    }, [extendedUser, cartUserId, cartLoading, setUserId, router, cartFetched, fetchCart]);
 
     // Check if cart is empty after fetching (only after cart has been fetched and loaded)
     // Skip this check if payment has been completed to avoid showing error toast after successful payment
@@ -426,6 +426,7 @@ export default function PaymentPageClient() {
 
     // Handle payment method selection and process payment
     const handlePaymentSubmit = async () => {
+        console.log("đang thanh toán");
         if (!extendedUser?.id || createdOrderIds.length === 0) {
             toast.error("Lỗi: Không tìm thấy thông tin đơn hàng.");
             return;
@@ -506,7 +507,11 @@ export default function PaymentPageClient() {
                     status?: string;
                 };
 
-                if (paymentData.clientSecret && typeof paymentData.clientSecret === "string" && paymentData.clientSecret.length > 0) {
+                if (
+                    paymentData.clientSecret &&
+                    typeof paymentData.clientSecret === "string" &&
+                    paymentData.clientSecret.length > 0
+                ) {
                     setStripeClientSecret(paymentData.clientSecret);
                     if (paymentData.paymentId) {
                         setPaymentId(paymentData.paymentId);
@@ -515,11 +520,16 @@ export default function PaymentPageClient() {
                     toast.success("Đã sẵn sàng thanh toán!");
                 } else {
                     console.error("❌ Invalid clientSecret in payment response:", paymentData);
-                    throw new Error("Không nhận được clientSecret từ payment service. Response: " + JSON.stringify(paymentData));
+                    throw new Error(
+                        "Không nhận được clientSecret từ payment service. Response: " + JSON.stringify(paymentData)
+                    );
                 }
             } else {
                 console.error("❌ Invalid payment response structure:", paymentResponseData);
-                throw new Error("Không nhận được clientSecret từ payment service. Response structure invalid: " + JSON.stringify(paymentResponseData));
+                throw new Error(
+                    "Không nhận được clientSecret từ payment service. Response structure invalid: " +
+                        JSON.stringify(paymentResponseData)
+                );
             }
         } catch (paymentError) {
             console.error("Failed to create payment:", paymentError);
@@ -563,10 +573,10 @@ export default function PaymentPageClient() {
             }
 
             toast.success(`Thanh toán thành công! Đã tạo ${createdOrderIds.length} đơn hàng.`);
-            
+
             // Add a small delay to ensure orders are persisted before redirecting
             await new Promise((resolve) => setTimeout(resolve, 500));
-            
+
             // Redirect to orders page - it will fetch orders automatically with retry logic
             router.push("/orders");
         } catch (error) {

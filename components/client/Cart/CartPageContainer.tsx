@@ -121,7 +121,7 @@ export default function CartPageContainer() {
                                                                 <div className="p-5">
                                                                         {group.items.map((item) => (
                                                                                 <CartItemRow
-                                                                                        key={`${item.id}-${item.sizeId}`}
+                                                                                        key={item.id}
                                                                                         item={item}
                                                                                 />
                                                                         ))}

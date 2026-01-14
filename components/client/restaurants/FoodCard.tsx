@@ -112,6 +112,8 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                                                 image: cardImageUrl,
                                                 restaurantId: product.restaurant.id,
                                                 restaurantName: product.restaurant.resName || "Unknown Restaurant",
+                                                categoryId: product.categoryId,
+                                                categoryName: product.categoryName,
                                                 sizeId: defaultSize.id,
                                                 sizeName: defaultSize.sizeName,
                                         },

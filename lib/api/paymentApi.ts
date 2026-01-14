@@ -1,5 +1,6 @@
 import { CreatePaymentRequest, CreatePaymentResponse, Payment } from "@/types/payment.type";
 import api from "../axios";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export const paymentApi = {
     // Create payment
@@ -44,9 +45,21 @@ export const paymentApi = {
 
     // Complete payment (mark payment as completed)
     completePayment: async (paymentId: string, transactionId?: string) => {
-        const response = await api.post<{ success: boolean; data: Payment }>(`/payments/${paymentId}/complete`, {
-            transactionId,
-        });
+        const accessTokenFromStore = useAuthStore.getState().accessToken;
+        const accessTokenFromStorage = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+        const accessToken = accessTokenFromStore || accessTokenFromStorage;
+
+        const response = await api.post<{ success: boolean; data: Payment }>(
+            `/payments/${paymentId}/complete`,
+            { transactionId },
+            accessToken
+                ? {
+                      headers: {
+                          Authorization: `Bearer ${accessToken}`,
+                      },
+                  }
+                : undefined
+        );
         return response.data.data;
     },
 };

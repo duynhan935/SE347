@@ -12,7 +12,16 @@ import { useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
-export const MenuItemCard = memo(({ item }: { item: Product }) => {
+export const MenuItemCard = memo(
+    ({
+        item,
+        restaurantId,
+        restaurantName,
+    }: {
+        item: Product;
+        restaurantId?: string;
+        restaurantName?: string;
+    }) => {
     const router = useRouter();
     const addItem = useCartStore((state) => state.addItem);
     const setUserId = useCartStore((state) => state.setUserId);
@@ -89,8 +98,10 @@ export const MenuItemCard = memo(({ item }: { item: Product }) => {
                         name: item.productName,
                         price: defaultSize.price,
                         image: cardImageUrl, // Use the same image as displayed on card
-                        restaurantId: item.restaurant?.id || "",
-                        restaurantName: item.restaurant?.resName || "Unknown Restaurant",
+                        restaurantId: restaurantId || item.restaurant?.id || "",
+                        restaurantName: restaurantName || item.restaurant?.resName || "Unknown Restaurant",
+                        categoryId: item.categoryId,
+                        categoryName: item.categoryName,
                         sizeId: defaultSize.id,
                         sizeName: defaultSize.sizeName,
                     },
@@ -105,7 +116,7 @@ export const MenuItemCard = memo(({ item }: { item: Product }) => {
                 }, 300);
             }
         },
-        [isAdding, isMounted, user, item, cardImageUrl, addItem, router]
+        [isAdding, isMounted, user, item, cardImageUrl, addItem, router, restaurantId, restaurantName]
     );
 
     const hasImage = cardImageUrl && cardImageUrl !== "/placeholder.png";
@@ -172,6 +183,7 @@ export const MenuItemCard = memo(({ item }: { item: Product }) => {
             </div>
         </Link>
     );
-});
+    }
+);
 
 MenuItemCard.displayName = "MenuItemCard";
