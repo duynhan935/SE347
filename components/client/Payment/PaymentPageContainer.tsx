@@ -2,6 +2,7 @@
 
 import { orderApi, type CreateOrderRequest } from "@/lib/api/orderApi";
 import { paymentApi } from "@/lib/api/paymentApi";
+import { restaurantApi } from "@/lib/api/restaurantApi";
 import { useGeolocation } from "@/lib/userLocation";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -79,10 +80,10 @@ export default function PaymentPageClient() {
     const searchParams = useSearchParams();
     const restaurantId = searchParams.get("restaurantId");
 
-    const { items, clearRestaurant, setUserId, userId: cartUserId, isLoading: cartLoading, fetchCart } = useCartStore();
-    const { user } = useAuthStore();
-    const { coords, error: locationError } = useGeolocation();
-    const [cartFetched, setCartFetched] = useState(false);
+        const { items, clearRestaurant, setUserId, userId: cartUserId, isLoading: cartLoading, fetchCart } = useCartStore();
+        const { user, loading: authLoading, isAuthenticated } = useAuthStore();
+        const { coords, error: locationError } = useGeolocation();
+        const [cartFetched, setCartFetched] = useState(false);
 
     const extendedUser = (user as ExtendedUser | null) ?? null;
     const defaultAddress = extendedUser?.defaultAddress ?? null;
@@ -123,46 +124,94 @@ export default function PaymentPageClient() {
 
     // Ensure cart is initialized and fetched
     useEffect(() => {
-        if (!extendedUser) {
+        // Wait for auth to finish loading before checking user
+        // This prevents redirect on page refresh (F5) when auth is still initializing
+        if (authLoading) {
+            return;
+        }
+
+        // Check if user is authenticated (either has user object or has token)
+        const hasToken = typeof window !== "undefined" && 
+            (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
+        
+        if (!extendedUser && !isAuthenticated && !hasToken) {
             toast.error("Please login to checkout");
             router.push("/login");
             return;
         }
 
-        // Ensure userId is set in cart store
-        if (extendedUser.id && cartUserId !== extendedUser.id) {
-            setUserId(extendedUser.id);
+        // If we have token but user is not loaded yet, wait a bit for profile to load
+        if (!extendedUser && hasToken && isAuthenticated) {
+            // User might still be loading, give it a moment
+            return;
         }
 
-        // Fetch cart when userId is set and matches current user
-        if (extendedUser.id && cartUserId === extendedUser.id && !cartFetched && !cartLoading) {
-            fetchCart().catch((error) => {
-                // Silently handle errors - cart might not exist yet or service unavailable
-                const status = (error as { response?: { status?: number } })?.response?.status;
-                if (status !== 404 && status !== 503) {
-                    console.warn("Failed to fetch cart:", error);
+        // REQUIRE restaurantId when accessing payment page
+        // Each order must be for ONE restaurant only
+        if (!restaurantId) {
+            toast.error("Vui lòng chọn nhà hàng để đặt hàng. Mỗi đơn hàng chỉ được đặt cho một nhà hàng.");
+            router.push("/cart");
+            return;
+        }
+
+                // Ensure userId is set in cart store (only if user is loaded)
+                if (extendedUser?.id && cartUserId !== extendedUser.id) {
+                        setUserId(extendedUser.id);
                 }
-            });
-            setCartFetched(true);
-        }
 
-        // Mark as fetched when cart loading is complete
-        if (cartUserId && !cartLoading && !cartFetched) {
-            setCartFetched(true);
-        }
-    }, [extendedUser, cartUserId, cartLoading, setUserId, router, cartFetched, fetchCart]);
+                // Fetch cart when userId is set and matches current user
+                if (extendedUser?.id && cartUserId === extendedUser.id && !cartFetched && !cartLoading) {
+                        fetchCart()
+                                .then(() => {
+                                        // Mark as fetched after successful fetch
+                                        setCartFetched(true);
+                                })
+                                .catch((error) => {
+                                        // Silently handle errors - cart might not exist yet or service unavailable
+                                        const status = (error as { response?: { status?: number } })?.response?.status;
+                                        if (status !== 404 && status !== 503) {
+                                                console.warn("Failed to fetch cart:", error);
+                                        }
+                                        // Still mark as fetched even on error (404/503 are expected for new users)
+                                        setCartFetched(true);
+                                });
+                }
+
+                // Mark as fetched when cart loading is complete (for cases where fetch was already in progress)
+                if (cartUserId && !cartLoading && !cartFetched) {
+                        setCartFetched(true);
+                }
+        }, [extendedUser, cartUserId, cartLoading, setUserId, router, cartFetched, fetchCart, restaurantId, authLoading, isAuthenticated]);
 
     // Check if cart is empty after fetching (only after cart has been fetched and loaded)
     // Skip this check if payment has been completed to avoid showing error toast after successful payment
+    // Add a delay to handle race conditions when coming from "Buy Now"
     useEffect(() => {
         if (!extendedUser || cartLoading || !cartFetched || isPaymentCompleted) return;
 
-        // Only check if cart is empty after fetching is complete
-        if (orderItems.length === 0 && cartUserId) {
-            toast.error("Your cart is empty");
-            router.push("/cart");
-        }
-    }, [extendedUser, orderItems.length, cartUserId, cartFetched, cartLoading, isPaymentCompleted, router]);
+        // Check if we're coming from "Buy Now" by checking referrer
+        // This helps us give more time for cart to sync when user just added an item
+        const isFromBuyNow = typeof window !== "undefined" && 
+            (document.referrer.includes("/food") || document.referrer.includes("/restaurants"));
+
+        // Add a delay to ensure cart state is fully updated after fetch completes
+        // Longer delay if coming from Buy Now to handle backend sync time
+        const delay = isFromBuyNow ? 800 : 300;
+        
+        const checkTimer = setTimeout(() => {
+                // Check both filtered items (by restaurantId) and all items
+                // If restaurantId is provided, check filtered items; otherwise check all items
+                const itemsToCheck = restaurantId ? orderItems : items;
+                
+                // Only redirect if cart is truly empty AND we've given enough time for state to update
+                if (itemsToCheck.length === 0 && cartUserId) {
+                        toast.error("Your cart is empty");
+                        router.push("/cart");
+                }
+        }, delay);
+
+        return () => clearTimeout(checkTimer);
+    }, [extendedUser, orderItems, items, cartUserId, cartFetched, cartLoading, isPaymentCompleted, router, restaurantId]);
 
     useEffect(() => {
         if (locationError) {
@@ -193,14 +242,43 @@ export default function PaymentPageClient() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Prevent double submission
+        if (isSubmitting) {
+            return;
+        }
+
         if (!extendedUser?.id) {
             toast.error("Please login to place order");
             router.push("/login");
             return;
         }
 
+        // REQUIRE restaurantId - each order must be for ONE restaurant only
+        if (!restaurantId) {
+            toast.error("Vui lòng chọn nhà hàng để đặt hàng. Mỗi đơn hàng chỉ được đặt cho một nhà hàng.");
+            router.push("/cart");
+            return;
+        }
+
         if (orderItems.length === 0) {
             toast.error("Your cart is empty");
+            return;
+        }
+
+        // VALIDATE: Ensure all items belong to the same restaurant
+        // This prevents accidentally creating orders with items from multiple restaurants
+        const uniqueRestaurantIds = new Set(orderItems.map(item => item.restaurantId));
+        if (uniqueRestaurantIds.size > 1) {
+            toast.error("Lỗi: Đơn hàng chứa món từ nhiều nhà hàng. Mỗi đơn hàng chỉ được đặt cho một nhà hàng.");
+            router.push("/cart");
+            return;
+        }
+
+        // VALIDATE: Ensure all items belong to the specified restaurantId
+        const invalidItems = orderItems.filter(item => item.restaurantId !== restaurantId);
+        if (invalidItems.length > 0) {
+            toast.error("Lỗi: Một số món không thuộc nhà hàng đã chọn. Vui lòng kiểm tra lại giỏ hàng.");
+            router.push("/cart");
             return;
         }
 
@@ -229,7 +307,9 @@ export default function PaymentPageClient() {
         setIsSubmitting(true);
 
         try {
-            // Group items by restaurant
+            // ENSURE: Only one restaurant in orderItems (already validated above)
+            // Since we require restaurantId and validate items belong to it,
+            // all items should belong to the same restaurant
             const restaurantGroups = orderItems.reduce((acc, item) => {
                 if (!acc[item.restaurantId]) {
                     acc[item.restaurantId] = {
@@ -243,8 +323,13 @@ export default function PaymentPageClient() {
 
             const restaurantEntries = Object.entries(restaurantGroups);
 
-            // Create order for each restaurant
-            // Use Promise.allSettled to handle partial failures
+            // VALIDATE: Should only have ONE restaurant (safety check)
+            if (restaurantEntries.length !== 1) {
+                throw new Error(`Lỗi: Đơn hàng chứa món từ ${restaurantEntries.length} nhà hàng. Mỗi đơn hàng chỉ được đặt cho một nhà hàng.`);
+            }
+
+            // Create order for ONE restaurant only
+            // Use Promise.allSettled for consistency, but should only have one entry
             const orderResults = await Promise.allSettled(
                 restaurantEntries.map(async ([restId, group]) => {
                     const payload: CreateOrderRequest = {
@@ -458,6 +543,30 @@ export default function PaymentPageClient() {
                 (firstOrder as { restaurantId?: string }).restaurantId ||
                 (firstOrder as { restaurant?: { id?: string } }).restaurant?.id;
 
+            // Get merchantId from order response (backend includes it)
+            let merchantId = 
+                (firstOrder as { merchantId?: string }).merchantId ||
+                (firstOrder as { merchant_id?: string }).merchant_id;
+
+            // If merchantId is not in order response, fetch from restaurant
+            if (!merchantId && firstOrderRestaurantId) {
+                try {
+                    const restaurantResponse = await restaurantApi.getByRestaurantId(firstOrderRestaurantId);
+                    const restaurant = restaurantResponse.data;
+                    merchantId = restaurant?.merchantId;
+                } catch (restaurantError) {
+                    console.warn("Failed to fetch restaurant for merchantId:", restaurantError);
+                    // Continue without merchantId - backend will try to get it from order
+                }
+            }
+
+            // Fallback: use restaurantId as merchantId if still not available
+            // This is a temporary fallback - ideally order should always have merchantId
+            if (!merchantId && firstOrderRestaurantId) {
+                console.warn("merchantId not found, using restaurantId as fallback");
+                merchantId = firstOrderRestaurantId;
+            }
+
             const firstOrderTotal = Number(
                 (firstOrder as { finalAmount?: number; totalAmount?: number }).finalAmount ||
                     (firstOrder as { finalAmount?: number; totalAmount?: number }).totalAmount ||
@@ -473,6 +582,14 @@ export default function PaymentPageClient() {
                 throw new Error("Không thể lấy thông tin đơn hàng để tạo thanh toán.");
             }
 
+            if (!merchantId) {
+                throw new Error("Không thể lấy merchantId để tạo thanh toán. Vui lòng thử lại.");
+            }
+
+            if (!firstOrderRestaurantId) {
+                throw new Error("Không thể lấy restaurantId để tạo thanh toán. Vui lòng thử lại.");
+            }
+
             const paymentResponse = await paymentApi.createPayment({
                 orderId: orderId,
                 userId: extendedUser.id,
@@ -481,11 +598,15 @@ export default function PaymentPageClient() {
                 paymentMethod: "card",
                 currency: "USD",
                 metadata: {
-                    // Provide both naming variants to be compatible with backend implementations.
-                    merchantId: firstOrderRestaurantId,
+                    // Backend requires both merchantId and restaurantId separately
+                    merchantId: merchantId,
+                    merchant_id: merchantId, // Also provide snake_case variant for compatibility
                     restaurantId: firstOrderRestaurantId,
+                    restaurant_id: firstOrderRestaurantId, // Also provide snake_case variant for compatibility
                     amountForMerchant,
+                    amount_for_merchant: amountForMerchant, // Also provide snake_case variant
                     amountForRestaurant: amountForMerchant,
+                    amount_for_restaurant: amountForMerchant, // Also provide snake_case variant
                 },
             });
 
@@ -547,15 +668,46 @@ export default function PaymentPageClient() {
             // Mark payment as completed to prevent cart empty check
             setIsPaymentCompleted(true);
 
-            // Complete payment - update payment status to "completed"
-            // This ensures payment status is updated immediately (webhook will also handle it as backup)
-            if (paymentId) {
-                try {
-                    await paymentApi.completePayment(paymentId);
-                    console.log("✅ Payment marked as completed:", paymentId);
-                } catch (paymentError) {
-                    console.error("Failed to complete payment:", paymentError);
-                    // Continue even if complete payment fails - webhook will handle it
+            if (!paymentId) {
+                console.warn("⚠️ Payment ID not available, cannot verify payment status");
+            } else {
+                console.log("✅ Stripe payment confirmed, webhook will update payment status:", paymentId);
+
+                // Wait a bit for webhook to process (webhook is async)
+                // Stripe webhook will automatically update payment status to 'completed'
+                // We'll poll status a few times to check, but don't block user if webhook is slow
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+
+                // Poll payment status to check if webhook has processed (non-blocking)
+                let attempts = 0;
+                const maxAttempts = 3; // Reduced attempts - just check, don't block
+                let paymentStatus = "processing";
+
+                while (attempts < maxAttempts && paymentStatus !== "completed") {
+                    try {
+                        const payment = await paymentApi.getPaymentById(paymentId);
+                        paymentStatus = payment.status || "processing";
+                        console.log(`📊 Payment status check ${attempts + 1}/${maxAttempts}:`, paymentStatus);
+
+                        if (paymentStatus === "completed") {
+                            console.log("✅ Payment status confirmed as completed by webhook");
+                            break;
+                        }
+
+                        // Wait before next check
+                        await new Promise((resolve) => setTimeout(resolve, 1500));
+                        attempts++;
+                    } catch (error) {
+                        console.warn("Failed to check payment status:", error);
+                        attempts++;
+                        await new Promise((resolve) => setTimeout(resolve, 1500));
+                    }
+                }
+
+                // Note: If payment is still processing, webhook will update it later
+                // Stripe has already confirmed payment success, so it's safe to proceed
+                if (paymentStatus !== "completed") {
+                    console.log("ℹ️ Payment status still processing, webhook will update it shortly. Proceeding with order...");
                 }
             }
 
@@ -581,6 +733,11 @@ export default function PaymentPageClient() {
             router.push("/orders");
         } catch (error) {
             console.error("Failed to handle payment success:", error);
+            // Still redirect even if status check fails - payment was confirmed by Stripe
+            toast.success(`Thanh toán đã được xác nhận! Đang chuyển hướng...`);
+            setTimeout(() => {
+                router.push("/orders");
+            }, 1000);
         }
     };
 

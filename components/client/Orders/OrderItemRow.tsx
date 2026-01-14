@@ -1,14 +1,20 @@
 "use client";
 
 import { getImageUrl } from "@/lib/utils";
+import { useCartStore } from "@/stores/cartStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 export type OrderListItem = {
         id: string;
         productId: string;
         productName: string;
+        restaurantId?: string;
         restaurantName: string;
         price: number;
         quantity: number;
@@ -17,6 +23,67 @@ export type OrderListItem = {
 };
 
 export const OrderItemRow = ({ item, orderId }: { item: OrderListItem; orderId: string }) => {
+        const router = useRouter();
+        const { addItem } = useCartStore();
+        const { user, isAuthenticated } = useAuthStore();
+        const [isAdding, setIsAdding] = useState(false);
+        const isProcessingRef = useRef(false);
+
+        const handleBuyAgain = useCallback(async () => {
+                // Prevent double clicks using both state and ref
+                if (isAdding || isProcessingRef.current) return;
+                
+                // Set both state and ref immediately to prevent race conditions
+                setIsAdding(true);
+                isProcessingRef.current = true;
+
+                // Check authentication
+                const hasToken = typeof window !== "undefined" && 
+                        (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
+                
+                if (!user && !isAuthenticated && !hasToken) {
+                        toast.error("Vui lòng đăng nhập để mua lại");
+                        setIsAdding(false);
+                        isProcessingRef.current = false;
+                        router.push("/login");
+                        return;
+                }
+
+                if (!item.restaurantId) {
+                        toast.error("Không tìm thấy thông tin nhà hàng");
+                        setIsAdding(false);
+                        isProcessingRef.current = false;
+                        return;
+                }
+
+                try {
+                        // Add item to cart
+                        await addItem(
+                                {
+                                        id: item.productId,
+                                        name: item.productName,
+                                        price: item.price,
+                                        image: item.imageURL ? getImageUrl(item.imageURL) : "/placeholder.png",
+                                        restaurantId: item.restaurantId,
+                                        restaurantName: item.restaurantName,
+                                        customizations: item.customizations,
+                                },
+                                item.quantity
+                        );
+                        
+                        // Wait a bit for cart to sync
+                        await new Promise((resolve) => setTimeout(resolve, 300));
+                        
+                        // Navigate to checkout page
+                        router.push(`/payment?restaurantId=${item.restaurantId}`);
+                } catch (error) {
+                        console.error("Failed to add item to cart:", error);
+                        toast.error("Không thể thêm vào giỏ hàng");
+                } finally {
+                        setIsAdding(false);
+                        isProcessingRef.current = false;
+                }
+        }, [isAdding, item, addItem, user, isAuthenticated, router]);
         const imageUrl = item.imageURL ? getImageUrl(item.imageURL) : null;
         const hasImage = imageUrl && imageUrl !== "/placeholder.png";
 
@@ -66,8 +133,12 @@ export const OrderItemRow = ({ item, orderId }: { item: OrderListItem; orderId: 
 
                         {/* Action Buttons - Pill-shaped, Primary vs Secondary */}
                         <div className="flex flex-col gap-2 flex-shrink-0">
-                                <button className="text-sm font-bold bg-brand-purple text-white px-5 py-2.5 rounded-full hover:bg-brand-purple/90 transition-all duration-200 cursor-pointer whitespace-nowrap shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]">
-                                        Buy Again
+                                <button 
+                                        onClick={handleBuyAgain}
+                                        disabled={isAdding}
+                                        className="text-sm font-bold bg-brand-purple text-white px-5 py-2.5 rounded-full hover:bg-brand-purple/90 transition-all duration-200 cursor-pointer whitespace-nowrap shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                        {isAdding ? "Đang thêm..." : "Buy Again"}
                                 </button>
                                 <Link
                                         href={`/orders/${orderId}`}

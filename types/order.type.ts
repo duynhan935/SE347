@@ -37,6 +37,8 @@ export interface Order {
     slug: string;
     userId: string;
     restaurant: OrderRestaurantRef;
+    restaurantId?: string; // Backend may return restaurantId directly
+    merchantId?: string; // Backend returns merchantId from restaurant
     items: OrderItem[];
     deliveryAddress: DeliveryAddress;
     totalAmount: number;

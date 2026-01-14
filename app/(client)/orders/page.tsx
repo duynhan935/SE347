@@ -68,6 +68,9 @@ const OrdersPage = () => {
                                 `order-${orderIndex + 1}`;
 
                         const restaurantName = typedOrder.restaurant?.name || typedOrder.restaurantName || "Restaurant";
+                        const restaurantId = (typedOrder.restaurant as { id?: string })?.id || 
+                                             (typedOrder as { restaurantId?: string }).restaurantId || 
+                                             undefined;
 
                         const items = Array.isArray(typedOrder.items)
                                 ? typedOrder.items.map((item, itemIndex) => {
@@ -76,6 +79,7 @@ const OrdersPage = () => {
                                                   id: fallbackId,
                                                   productId: (item.productId ?? fallbackId).toString(),
                                                   productName: item.productName || "Unknown item",
+                                                  restaurantId,
                                                   restaurantName,
                                                   price: typeof item.price === "number" ? item.price : 0,
                                                   quantity: typeof item.quantity === "number" ? item.quantity : 0,
