@@ -79,7 +79,7 @@ export default function CartPageContainer() {
         }, [cartLoading, cartFetched]);
         // Show loading while fetching cart or waiting for state to update
         if (showLoading || cartLoading || !cartFetched) {
-                return <GlobalLoader label="Đang tải giỏ hàng" sublabel="Vui lòng đợi..." />;
+                return <GlobalLoader label="Loading cart" sublabel="Please wait..." />;
         }
 
         const totalItems = items.reduce((total, item) => total + item.quantity, 0);
@@ -128,20 +128,19 @@ export default function CartPageContainer() {
                                                 </div>
 
                         {/* Title */}
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Giỏ hàng trống</h3>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h3>
 
                         {/* Description */}
-                        <p className="text-gray-600 mb-8 max-w-md">
-                            Bạn chưa thêm món ăn nào vào giỏ hàng. Hãy khám phá các món ăn ngon và thêm vào giỏ hàng
-                            nhé!
-                        </p>
+                                                <p className="text-gray-600 mb-8 max-w-md">
+                                                        You have not added any items yet. Explore restaurants and add something tasty to your cart.
+                                                </p>
 
                         {/* CTA Button */}
                         <Link
                             href="/restaurants"
                             className="bg-brand-purple text-white px-6 py-3 rounded-full font-bold hover:bg-brand-purple/90 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
                         >
-                            Khám phá món ăn
+                                                        Explore food
                         </Link>
                     </div>
                 </div>
@@ -177,7 +176,7 @@ export default function CartPageContainer() {
                                                                         href={`/payment?restaurantId=${restaurantId}`}
                                                                         className="bg-brand-purple text-white px-6 py-3 rounded-full font-bold hover:bg-brand-purple/90 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
                                                                 >
-                                                                        Đặt hàng ($
+                                                                        Checkout ($
                                                                         {restaurantTotal.toFixed(2)})
                                                                 </Link>
                                                         </div>

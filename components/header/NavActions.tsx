@@ -46,14 +46,14 @@ export default function NavActions() {
                 setIsLoggingOut(true);
 
                 try {
-                        const loadingToast = toast.loading("Đang đăng xuất...");
+                        const loadingToast = toast.loading("Logging out...");
                         logout();
                         await new Promise((resolve) => setTimeout(resolve, 100));
                         toast.dismiss(loadingToast);
-                        toast.success("Đăng xuất thành công! 👋", { duration: 3000 });
+                        toast.success("Logged out successfully. See you soon!", { duration: 3000 });
                         router.replace("/");
                 } catch (error) {
-                        toast.error("Đăng xuất thất bại. Vui lòng thử lại.");
+                        toast.error("Logout failed. Please try again.");
                         console.error("Logout error:", error);
                 } finally {
                         setTimeout(() => setIsLoggingOut(false), 500);
@@ -96,14 +96,14 @@ export default function NavActions() {
 
         return (
                 <div className="flex items-center gap-3 lg:gap-4">
-                        {/* Đặt đồ ăn - Hiển thị cho tất cả user (phần chính) */}
+                        {/* Browse restaurants (main action) */}
                         <Link
                                 href="/restaurants"
                                 className={`relative p-2 rounded-full hover:bg-gray-50 transition-colors ${
                                         pathname === "/restaurants" ? "text-brand-orange" : "text-brand-grey"
                                 }`}
-                                aria-label="Đặt đồ ăn"
-                                title="Đặt đồ ăn"
+                                aria-label="Browse restaurants"
+                                title="Browse restaurants"
                         >
                                 <UtensilsCrossed className="w-5 h-5" />
                                 {pathname === "/restaurants" && (
@@ -118,8 +118,8 @@ export default function NavActions() {
                                         className={`relative p-2 rounded-full hover:bg-gray-50 transition-colors ${
                                                 pathname === "/orders" ? "text-brand-orange" : "text-brand-grey"
                                         }`}
-                                        aria-label="Đơn hàng của tôi"
-                                        title="Đơn hàng của tôi"
+                                        aria-label="My orders"
+                                        title="My orders"
                                 >
                                         <Package className="w-5 h-5" />
                                         {orderUnreadCount > 0 && (
@@ -140,8 +140,8 @@ export default function NavActions() {
                                         className={`relative p-2 rounded-full hover:bg-gray-50 transition-colors ${
                                                 pathname === "/chat" ? "text-brand-orange" : "text-brand-grey"
                                         }`}
-                                        aria-label="Tin nhắn"
-                                        title="Tin nhắn"
+                                        aria-label="Messages"
+                                        title="Messages"
                                 >
                                         <MessageCircle className="w-5 h-5" />
                                         {chatUnreadCount > 0 && (
@@ -191,7 +191,7 @@ export default function NavActions() {
                                                                 <Link href="/orders" className="flex items-center justify-between cursor-pointer w-full relative">
                                                                         <div className="flex items-center">
                                                                                 <Package className="mr-2 h-4 w-4" />
-                                                                                <span>Đơn hàng của tôi</span>
+                                                                                <span>My orders</span>
                                                                         </div>
                                                                         {orderUnreadCount > 0 && (
                                                                                 <span className="ml-2 h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
@@ -204,7 +204,7 @@ export default function NavActions() {
                                                                 <Link href="/chat" className="flex items-center justify-between cursor-pointer w-full relative">
                                                                         <div className="flex items-center">
                                                                                 <MessageCircle className="mr-2 h-4 w-4" />
-                                                                                <span>Tin nhắn</span>
+                                                                                <span>Messages</span>
                                                                         </div>
                                                                         {chatUnreadCount > 0 && (
                                                                                 <span className="ml-2 h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
@@ -222,13 +222,13 @@ export default function NavActions() {
                                                         <DropdownMenuItem asChild>
                                                                 <Link href="/account" className="flex items-center cursor-pointer">
                                                                         <User className="mr-2 h-4 w-4" />
-                                                                        <span>Hồ sơ cá nhân</span>
+                                                                        <span>Profile</span>
                                                                 </Link>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem asChild>
                                                                 <Link href="/account/addresses" className="flex items-center cursor-pointer">
                                                                         <Settings className="mr-2 h-4 w-4" />
-                                                                        <span>Địa chỉ giao hàng</span>
+                                                                        <span>Delivery addresses</span>
                                                                 </Link>
                                                         </DropdownMenuItem>
                                                 </DropdownMenuGroup>
@@ -243,13 +243,13 @@ export default function NavActions() {
                                                                         className="cursor-pointer"
                                                                 >
                                                                         <Store className="mr-2 h-4 w-4" />
-                                                                        <span>Đăng ký bán hàng</span>
+                                                                        <span>Become a merchant</span>
                                                                 </DropdownMenuItem>
                                                         )}
                                                         <DropdownMenuItem asChild>
                                                                 <Link href="/contact" className="flex items-center cursor-pointer">
                                                                         <MessageCircle className="mr-2 h-4 w-4" />
-                                                                        <span>Liên hệ</span>
+                                                                        <span>Contact</span>
                                                                 </Link>
                                                         </DropdownMenuItem>
                                                 </DropdownMenuGroup>
@@ -283,7 +283,7 @@ export default function NavActions() {
                                                 {/* Logout */}
                                                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600">
                                                         <LogOut className="mr-2 h-4 w-4" />
-                                                        <span>Đăng xuất</span>
+                                                        <span>Log out</span>
                                                 </DropdownMenuItem>
                                         </DropdownMenuContent>
                                 </DropdownMenu>
@@ -294,13 +294,13 @@ export default function NavActions() {
                                                 href="/login"
                                                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
                                         >
-                                                Đăng nhập
+                                                Sign in
                                         </Link>
                                         <Link
                                                 href="/register"
                                                 className="px-4 py-2 text-sm font-medium bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition-colors"
                                         >
-                                                Đăng ký
+                                                Sign up
                                         </Link>
                                 </div>
                         )}
@@ -313,7 +313,7 @@ export default function NavActions() {
                                                 onClick={(e) => e.stopPropagation()}
                                         >
                                                 <div className="flex justify-between items-center mb-4">
-                                                        <h3 className="text-xl font-bold text-gray-900">Yêu cầu trở thành Merchant</h3>
+                                                        <h3 className="text-xl font-bold text-gray-900">Become a merchant</h3>
                                                         <button
                                                                 onClick={() => setShowMerchantForm(false)}
                                                                 className="text-gray-400 hover:text-gray-600"
@@ -328,7 +328,7 @@ export default function NavActions() {
                                                         onSuccess={() => {
                                                                 setShowMerchantForm(false);
                                                                 toast.success(
-                                                                        "Yêu cầu đã được gửi! Vui lòng kiểm tra email để xác nhận tài khoản và chờ admin phê duyệt."
+                                                                        "Request sent. Please check your email to verify your account and wait for admin approval."
                                                                 );
                                                         }}
                                                         onCancel={() => setShowMerchantForm(false)}

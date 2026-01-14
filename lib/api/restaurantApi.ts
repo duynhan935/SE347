@@ -2,21 +2,20 @@ import type { Category, Restaurant, RestaurantData } from "@/types";
 import { Review } from "@/types/review.type";
 import api from "../axios";
 
-// Hàm helper để tạo FormData CHUẨN
+// Helper to build FormData in the exact format the backend expects
 function buildRestaurantFormData(restaurantData: RestaurantData, imageFile?: File): FormData {
     const formData = new FormData();
 
-    // --- THAY ĐỔI QUAN TRỌNG ---
-    // 1. Tạo một "cục" dữ liệu (Blob) từ chuỗi JSON
-    // 2. "Dán nhãn" (type) cho nó là 'application/json'
+    // Important:
+    // 1) Create a JSON Blob
+    // 2) Mark it as 'application/json'
     const jsonBlob = new Blob([JSON.stringify(restaurantData)], { type: "application/json" });
 
-    // 3. Append cái Blob đó vào formData.
-    // Giờ đây server sẽ biết part 'restaurant' là JSON.
+    // 3) Append the JSON Blob under the 'restaurant' key.
+    // The server can now parse that part as JSON.
     formData.append("restaurant", jsonBlob);
-    // --- HẾT THAY ĐỔI ---
 
-    // Thêm file ảnh nếu có (cái này trình duyệt tự biết type)
+    // Add image file if provided (browser will set its content type)
     if (imageFile) {
         formData.append("image", imageFile);
     }

@@ -1,18 +1,11 @@
-import api from "../axios";
-import { Merchant, User } from "@/types";
+import { Merchant } from "@/types";
 import { authApi } from "./authApi";
-
-export interface MerchantStats {
-	totalRestaurants: number;
-	totalRevenue: number;
-	totalOrders: number;
-	activeRestaurants: number;
-}
+import { restaurantApi } from "./restaurantApi";
 
 export const merchantApi = {
 	// Get all merchants (Admin only)
 	getAllMerchants: async () => {
-		const usersPage = await authApi.getAllUsers();
+		const usersPage = await authApi.getAllUsers({ page: 0, size: 1000 });
 		const users = Array.isArray(usersPage?.content) ? usersPage.content : [];
 
 		return users
@@ -51,21 +44,6 @@ export const merchantApi = {
 		return authApi.rejectMerchant(merchantId, { reason });
 	},
 
-	// Get merchant stats
-	getMerchantStats: async (merchantId: string): Promise<MerchantStats> => {
-		// TODO: Replace with real API
-		// const response = await api.get<MerchantStats>(`/merchants/${merchantId}/stats`);
-		// return response.data;
-		console.log("Fetching stats for merchant:", merchantId);
-		
-		return Promise.resolve({
-			totalRestaurants: 3,
-			totalRevenue: 50000000,
-			totalOrders: 150,
-			activeRestaurants: 3,
-		});
-	},
-
 	// Create manager for restaurant
 	createManager: async (data: {
 		email: string;
@@ -73,29 +51,14 @@ export const merchantApi = {
 		password: string;
 		restaurantId: string;
 		merchantId: string;
-	}) => {
-		const response = await api.post<User>("/merchants/managers", data);
-		return response.data;
-	},
-
-	// Get managers by merchant
-	getManagersByMerchant: async (merchantId: string) => {
-		// TODO: Replace with real API
-		// const response = await api.get<Manager[]>(`/merchants/${merchantId}/managers`);
-		// return response.data;
-
-		return Promise.resolve([
-			{
-				id: "mgr1",
-				username: "manager1",
-				email: "manager1@example.com",
-				phone: "0909876543",
-				role: "MANAGER" as const,
-				enabled: true,
-				restaurantId: "rest1",
-				merchantId: merchantId,
-				assignedAt: "2024-01-20T10:00:00.000Z",
-			},
-		]);
+	}): Promise<void> => {
+		// Backend endpoint lives under restaurant-service.
+		// Note: merchantId is kept for backwards compatibility but is not required by the API.
+		await restaurantApi.createManagerForRestaurant(data.restaurantId, {
+			username: data.username,
+			email: data.email,
+			password: data.password,
+			confirmPassword: data.password,
+		});
 	},
 };

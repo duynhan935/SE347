@@ -56,7 +56,7 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
                         }
                 } catch (err: any) {
                         set({
-                                error: err.message || "Không thể tải dữ liệu nhà hàng",
+                                error: err.message || "Failed to load restaurant data.",
                                 loading: false,
                         });
                 }
@@ -80,7 +80,7 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
                         }
                 } catch (err: any) {
                         set({
-                                error: err.message || "Không thể tải dữ liệu nhà hàng",
+                                error: err.message || "Failed to load restaurant data.",
                                 loading: false,
                         });
                 }
@@ -101,7 +101,7 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
                         });
                 } catch (err: any) {
                         set({
-                                error: err.message || "Không thể tải dữ liệu nhà hàng",
+                                error: err.message || "Failed to load restaurant data.",
                                 loading: false,
                         });
                 } finally {
@@ -116,7 +116,7 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
                         set({ restaurants: res.data, loading: false });
                 } catch (err: any) {
                         set({
-                                error: err.message || "Không thể tải dữ liệu nhà hàng",
+                                error: err.message || "Failed to load restaurant data.",
                                 loading: false,
                         });
                 } finally {

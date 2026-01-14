@@ -5,11 +5,12 @@ import { authApi } from "./api/authApi";
 const DEFAULT_API_BASE_URL = "http://localhost:8080/api";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL;
 
-// Tạo instance
+// Create Axios instance
 const api = axios.create({
-    baseURL: API_BASE_URL, // backend của bạn
-    timeout: 30000, // Tăng timeout từ 10s lên 30s
-    maxRedirects: 0, // Không tự động follow redirects (tránh redirect đến Docker hostname)
+    baseURL: API_BASE_URL,
+    timeout: 30000,
+    // Do not auto-follow redirects (prevents redirects to Docker hostnames)
+    maxRedirects: 0,
     // Throw for 4xx/5xx so auth refresh + callers can handle properly.
     // Keep redirects (3xx) as non-throw since maxRedirects=0 is used to prevent following Docker hostname redirects.
     validateStatus: (status) => status < 400,
@@ -49,19 +50,19 @@ api.interceptors.request.use(
     }
 );
 
-// // Interceptor xử lý response lỗi chung (option)
+// // Optional: global 401 handler
 // api.interceptors.response.use(
 //     (response) => response,
 //     (error) => {
 //         if (error.response?.status === 401) {
-//             console.log("Token hết hạn hoặc không hợp lệ");
-//             // Có thể logout user hoặc redirect login
+//             console.log("Token is expired or invalid");
+//             // You can logout the user or redirect to login
 //         }
 //         return Promise.reject(error);
 //     }
 // );
 
-// 🧩 Interceptor xử lý lỗi toàn cục với auto refresh token
+// Global response interceptor with automatic token refresh
 api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
@@ -171,7 +172,7 @@ api.interceptors.response.use(
         console.log("➡️ Method:", error.config?.method?.toUpperCase());
         console.log("➡️ Status:", status ?? "Unknown");
 
-        // Nếu backend có trả về errorCode/message
+        // If the backend returns an errorCode/message
         if (data && typeof data === "object" && ("errorCode" in data || "message" in data)) {
             console.log("➡️ Error Code:", "errorCode" in data ? data.errorCode : "N/A");
             console.log("➡️ Message:", "message" in data ? data.message : "N/A");
@@ -181,19 +182,19 @@ api.interceptors.response.use(
 
         console.groupEnd();
 
-        // ⚡ Tùy chỉnh thêm theo mã lỗi HTTP
+        // Optional: status-specific logging
         switch (status) {
             case 400:
-                console.error("Bad Request – Kiểm tra dữ liệu gửi đi");
+                console.error("Bad Request – Check the request payload");
                 break;
             case 403:
-                console.error("Forbidden – Không có quyền truy cập");
+                console.error("Forbidden – Insufficient permissions");
                 break;
             case 404:
-                console.error("Not Found – Không tìm thấy tài nguyên");
+                console.error("Not Found – Resource does not exist");
                 break;
             case 500:
-                console.error("Internal Server Error – Lỗi máy chủ");
+                console.error("Internal Server Error – Server-side failure");
                 break;
             default:
                 console.error("Unknown Error –", error.message);

@@ -33,7 +33,7 @@ export const useProductStore = create<ProductState>((set) => ({
                         const res = await productApi.getAllProducts(params);
                         set({ products: res.data || [], loading: false });
                 } catch (err: any) {
-                        set({ error: err.message || "Không thể tải sản phẩm", loading: false });
+                        set({ error: err.message || "Failed to load products.", loading: false });
                 }
         },
 
@@ -43,7 +43,7 @@ export const useProductStore = create<ProductState>((set) => ({
                         const res = await productApi.getProductsByRestaurantId(restaurantId);
                         set({ products: res.data || [], loading: false });
                 } catch (err: any) {
-                        set({ error: err.message || "Không thể tải sản phẩm", loading: false });
+                        set({ error: err.message || "Failed to load products.", loading: false });
                 }
         },
 
@@ -53,7 +53,7 @@ export const useProductStore = create<ProductState>((set) => ({
                         const res = await productApi.getProductById(productId);
                         set({ product: res.data || null, loading: false });
                 } catch (err: any) {
-                        set({ error: err.message || "Không thể tải sản phẩm", loading: false });
+                        set({ error: err.message || "Failed to load product.", loading: false });
                 }
         },
 
@@ -150,7 +150,7 @@ export const useProductStore = create<ProductState>((set) => ({
                         const res = await productApi.getAllReviews(productId);
                         set({ reviews: res.data || [], loading: false });
                 } catch (err: any) {
-                        set({ error: err.message || "Không thể tải đánh giá", loading: false });
+                        set({ error: err.message || "Failed to load reviews.", loading: false });
                 }
         },
         clearProducts: () => set({ products: [], product: null }),

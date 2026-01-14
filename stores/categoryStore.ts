@@ -24,25 +24,25 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
         loading: false,
         error: null,
 
-        // 📦 Lấy tất cả danh mục
+        // Fetch all categories
         fetchAllCategories: async () => {
                 set({ loading: true, error: null });
                 try {
                         const res = await categoryApi.getAllCategories();
                         set({ categories: res.data || [], loading: false });
                 } catch (err: any) {
-                        set({ error: err.message || "Không thể tải danh mục", loading: false });
+                        set({ error: err.message || "Failed to load categories.", loading: false });
                 }
         },
 
-        // 🔍 Lấy chi tiết một danh mục theo ID
+        // Fetch category by ID
         fetchCategoryById: async (categoryId: string) => {
                 set({ loading: true, error: null });
                 try {
                         const res = await categoryApi.getCategoryById(categoryId);
                         set({ category: res.data, loading: false });
                 } catch (err: any) {
-                        set({ error: err.message || "Không thể tải thông tin danh mục", loading: false });
+                        set({ error: err.message || "Failed to load category.", loading: false });
                 }
         },
 
@@ -52,11 +52,11 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
                         const res = await categoryApi.getCategoryByName(categoryName);
                         set({ category: res.data, loading: false });
                 } catch (err: any) {
-                        set({ error: err.message || "Không thể tải thông tin danh mục", loading: false });
+                        set({ error: err.message || "Failed to load category.", loading: false });
                 }
         },
 
-        // 🆕 Tạo danh mục mới
+        // Create a new category
         createNewCategory: async (categoryData: CategoryData) => {
                 set({ loading: true, error: null });
                 try {
@@ -66,11 +66,11 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
                                 loading: false,
                         }));
                 } catch (err: any) {
-                        set({ error: err.message || "Không thể tạo danh mục", loading: false });
+                        set({ error: err.message || "Failed to create category.", loading: false });
                 }
         },
 
-        // ✏️ Cập nhật danh mục
+        // Update category
         updateCategory: async (categoryId: string, categoryData: CategoryData) => {
                 set({ loading: true, error: null });
                 try {
@@ -81,11 +81,11 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
                                 loading: false,
                         }));
                 } catch (err: any) {
-                        set({ error: err.message || "Không thể cập nhật danh mục", loading: false });
+                        set({ error: err.message || "Failed to update category.", loading: false });
                 }
         },
 
-        // 🗑️ Xóa danh mục
+        // Delete category
         deleteCategory: async (categoryId: string) => {
                 set({ loading: true, error: null });
                 try {
@@ -95,11 +95,11 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
                                 loading: false,
                         }));
                 } catch (err: any) {
-                        set({ error: err.message || "Không thể xóa danh mục", loading: false });
+                        set({ error: err.message || "Failed to delete category.", loading: false });
                 }
         },
 
-        // ♻️ Xóa toàn bộ dữ liệu trong store (nếu cần)
+        // Clear store data
         clearCategories: () => {
                 set({ categories: [], category: null, error: null });
         },

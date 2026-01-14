@@ -183,7 +183,7 @@ export default function CartDropdown() {
                                                                                                         href="/cart"
                                                                                                         onClick={() => setIsOpen(false)}
                                                                                                         className="flex-1 text-center bg-brand-purple text-white px-4 py-2 rounded-md hover:bg-brand-purple/90 transition-colors font-semibold"
-                                                                                                        title="Vui lòng chọn từng nhà hàng để đặt hàng"
+                                                                                                title="Please checkout one restaurant at a time"
                                                                                                 >
                                                                                                         Checkout
                                                                                                 </Link>

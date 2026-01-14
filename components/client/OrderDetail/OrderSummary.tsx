@@ -33,7 +33,7 @@ export const OrderSummary = ({ order }: { order: Order }) => {
                         (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
                 
                 if (!user && !isAuthenticated && !hasToken) {
-                        toast.error("Vui lòng đăng nhập để mua lại");
+                        toast.error("Please sign in to buy again.");
                         setIsAdding(false);
                         isProcessingRef.current = false;
                         router.push("/login");
@@ -42,14 +42,14 @@ export const OrderSummary = ({ order }: { order: Order }) => {
 
                 const restaurantId = order.restaurantId || order.restaurant?.id;
                 if (!restaurantId) {
-                        toast.error("Không tìm thấy thông tin nhà hàng");
+                        toast.error("Restaurant information not found.");
                         setIsAdding(false);
                         isProcessingRef.current = false;
                         return;
                 }
 
                 if (!order.items || order.items.length === 0) {
-                        toast.error("Đơn hàng không có sản phẩm nào");
+                        toast.error("This order has no items.");
                         setIsAdding(false);
                         isProcessingRef.current = false;
                         return;
@@ -80,13 +80,13 @@ export const OrderSummary = ({ order }: { order: Order }) => {
                         // Wait a bit for cart to sync with backend
                         await new Promise((resolve) => setTimeout(resolve, 500));
                         
-                        toast.success(`Đã thêm ${order.items.length} sản phẩm vào giỏ hàng!`);
+                        toast.success(`Added ${order.items.length} item(s) to your cart.`);
                         
                         // Navigate to checkout page
                         router.push(`/payment?restaurantId=${restaurantId}`);
                 } catch (error) {
                         console.error("Failed to add items to cart:", error);
-                        toast.error("Không thể thêm vào giỏ hàng");
+                        toast.error("Failed to add to cart.");
                 } finally {
                         setIsAdding(false);
                         isProcessingRef.current = false;
@@ -123,7 +123,7 @@ export const OrderSummary = ({ order }: { order: Order }) => {
                                 disabled={isAdding}
                                 className="cursor-pointer w-full mt-6 bg-yellow-400 text-black font-bold py-3 rounded-md hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                                {isAdding ? "Đang thêm..." : "Buy Again"}
+                                {isAdding ? "Adding..." : "Buy Again"}
                         </button>
                 </div>
         );

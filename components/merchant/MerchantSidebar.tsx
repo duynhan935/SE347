@@ -26,17 +26,17 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
         },
         {
             icon: MessageCircle,
-            label: "Tin nhắn",
+            label: "Messages",
             href: "/merchant/messages",
         },
         {
             icon: Package,
-            label: "Đơn Hàng",
+            label: "Orders",
             href: "/merchant/orders",
         },
         {
             icon: Store,
-            label: "Món Ăn",
+            label: "Food",
             href: "/merchant/food",
         },
         {
@@ -51,7 +51,7 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
         },
         {
             icon: Wallet,
-            label: "Ví",
+            label: "Wallet",
             href: "/merchant/wallet",
         },
         {

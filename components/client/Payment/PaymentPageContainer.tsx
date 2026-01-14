@@ -149,7 +149,7 @@ export default function PaymentPageClient() {
         // REQUIRE restaurantId when accessing payment page
         // Each order must be for ONE restaurant only
         if (!restaurantId) {
-            toast.error("Vui lòng chọn nhà hàng để đặt hàng. Mỗi đơn hàng chỉ được đặt cho một nhà hàng.");
+            toast.error("Please select a restaurant to checkout. Each order can only be for one restaurant.");
             router.push("/cart");
             return;
         }
@@ -255,7 +255,7 @@ export default function PaymentPageClient() {
 
         // REQUIRE restaurantId - each order must be for ONE restaurant only
         if (!restaurantId) {
-            toast.error("Vui lòng chọn nhà hàng để đặt hàng. Mỗi đơn hàng chỉ được đặt cho một nhà hàng.");
+            toast.error("Please select a restaurant to checkout. Each order can only be for one restaurant.");
             router.push("/cart");
             return;
         }
@@ -269,7 +269,7 @@ export default function PaymentPageClient() {
         // This prevents accidentally creating orders with items from multiple restaurants
         const uniqueRestaurantIds = new Set(orderItems.map(item => item.restaurantId));
         if (uniqueRestaurantIds.size > 1) {
-            toast.error("Lỗi: Đơn hàng chứa món từ nhiều nhà hàng. Mỗi đơn hàng chỉ được đặt cho một nhà hàng.");
+            toast.error("Error: your cart contains items from multiple restaurants. Each order can only be for one restaurant.");
             router.push("/cart");
             return;
         }
@@ -277,7 +277,7 @@ export default function PaymentPageClient() {
         // VALIDATE: Ensure all items belong to the specified restaurantId
         const invalidItems = orderItems.filter(item => item.restaurantId !== restaurantId);
         if (invalidItems.length > 0) {
-            toast.error("Lỗi: Một số món không thuộc nhà hàng đã chọn. Vui lòng kiểm tra lại giỏ hàng.");
+            toast.error("Error: some items do not belong to the selected restaurant. Please review your cart.");
             router.push("/cart");
             return;
         }
@@ -325,7 +325,9 @@ export default function PaymentPageClient() {
 
             // VALIDATE: Should only have ONE restaurant (safety check)
             if (restaurantEntries.length !== 1) {
-                throw new Error(`Lỗi: Đơn hàng chứa món từ ${restaurantEntries.length} nhà hàng. Mỗi đơn hàng chỉ được đặt cho một nhà hàng.`);
+                throw new Error(
+                    `Error: your cart contains items from ${restaurantEntries.length} restaurants. Each order can only be for one restaurant.`
+                );
             }
 
             // Create order for ONE restaurant only
@@ -395,14 +397,14 @@ export default function PaymentPageClient() {
             // If all orders failed, throw error
             if (orders.length === 0) {
                 const errorMessages = failedRestaurants.map((f) => `${f.name}: ${f.error}`).join("; ");
-                throw new Error(`Không thể tạo đơn hàng cho bất kỳ nhà hàng nào. ${errorMessages}`);
+                throw new Error(`Unable to create an order for any restaurant. ${errorMessages}`);
             }
 
             // If some orders failed, show warning but continue
             if (failedRestaurants.length > 0) {
                 const failedNames = failedRestaurants.map((f) => f.name).join(", ");
                 toast.error(
-                    `Một số đơn hàng không thể tạo: ${failedNames}. Các đơn hàng khác đã được tạo thành công.`,
+                    `Some orders could not be created: ${failedNames}. Other orders were created successfully.`,
                     { duration: 6000 }
                 );
             }
@@ -438,7 +440,7 @@ export default function PaymentPageClient() {
 
             if (orderIds.length === 0) {
                 console.error("No valid order IDs found. Orders:", orders);
-                throw new Error("Không thể lấy ID đơn hàng từ response. Vui lòng thử lại.");
+                throw new Error("Could not extract order ID from the response. Please try again.");
             }
 
             if (process.env.NODE_ENV === "development") {
@@ -457,7 +459,7 @@ export default function PaymentPageClient() {
 
             // Move to payment step
             setCurrentStep("payment");
-            toast.success(`Đã tạo ${orders.length} đơn hàng thành công! Vui lòng chọn phương thức thanh toán.`);
+            toast.success(`Created ${orders.length} order(s). Please choose a payment method.`);
         } catch (error: unknown) {
             console.error("Failed to create order:", error);
 
@@ -480,14 +482,15 @@ export default function PaymentPageClient() {
 
                 // Get current time for debugging
                 const now = new Date();
-                const currentTime = now.toLocaleTimeString("vi-VN", {
+                const currentTime = now.toLocaleTimeString("en-US", {
                     hour: "2-digit",
                     minute: "2-digit",
+                    hour12: false,
                     timeZone: "Asia/Ho_Chi_Minh",
                 });
 
                 toast.error(
-                    `Nhà hàng "${restaurantName}" hiện đang đóng cửa (Thời gian hiện tại: ${currentTime}). Vui lòng kiểm tra lại thời gian hoạt động trong phần quản lý nhà hàng hoặc thử lại sau.`,
+                    `Restaurant "${restaurantName}" is currently closed (current time: ${currentTime}). Please check the operating hours or try again later.`,
                     {
                         duration: 8000,
                     }
@@ -495,7 +498,7 @@ export default function PaymentPageClient() {
             } else if (errorMessage.includes("Restaurant validation failed")) {
                 // Check if it's a closed restaurant error
                 if (errorMessage.includes("closed")) {
-                    toast.error("Nhà hàng hiện đang đóng cửa. Vui lòng kiểm tra lại thời gian hoạt động.", {
+                    toast.error("This restaurant is currently closed. Please check the operating hours.", {
                         duration: 6000,
                     });
                 } else {
@@ -511,9 +514,9 @@ export default function PaymentPageClient() {
 
     // Handle payment method selection and process payment
     const handlePaymentSubmit = async () => {
-        console.log("đang thanh toán");
+        console.log("Processing payment");
         if (!extendedUser?.id || createdOrderIds.length === 0) {
-            toast.error("Lỗi: Không tìm thấy thông tin đơn hàng.");
+            toast.error("Error: order information not found.");
             return;
         }
 
@@ -531,7 +534,7 @@ export default function PaymentPageClient() {
 
         // Create payment and get clientSecret (card-only)
         setIsProcessingCardPayment(true);
-        toast.loading("Đang chuẩn bị thanh toán...");
+        toast.loading("Preparing payment...");
 
         try {
             const firstOrder = createdOrders[0];
@@ -579,15 +582,15 @@ export default function PaymentPageClient() {
             const amountForMerchant = Math.round(firstOrderTotal * 0.9);
 
             if (!orderId) {
-                throw new Error("Không thể lấy thông tin đơn hàng để tạo thanh toán.");
+                throw new Error("Unable to get order information to create a payment.");
             }
 
             if (!merchantId) {
-                throw new Error("Không thể lấy merchantId để tạo thanh toán. Vui lòng thử lại.");
+                throw new Error("Unable to get merchantId to create a payment. Please try again.");
             }
 
             if (!firstOrderRestaurantId) {
-                throw new Error("Không thể lấy restaurantId để tạo thanh toán. Vui lòng thử lại.");
+                throw new Error("Unable to get restaurantId to create a payment. Please try again.");
             }
 
             const paymentResponse = await paymentApi.createPayment({
@@ -638,17 +641,17 @@ export default function PaymentPageClient() {
                         setPaymentId(paymentData.paymentId);
                     }
                     toast.dismiss();
-                    toast.success("Đã sẵn sàng thanh toán!");
+                    toast.success("Ready to pay!");
                 } else {
                     console.error("❌ Invalid clientSecret in payment response:", paymentData);
                     throw new Error(
-                        "Không nhận được clientSecret từ payment service. Response: " + JSON.stringify(paymentData)
+                        "Did not receive clientSecret from payment service. Response: " + JSON.stringify(paymentData)
                     );
                 }
             } else {
                 console.error("❌ Invalid payment response structure:", paymentResponseData);
                 throw new Error(
-                    "Không nhận được clientSecret từ payment service. Response structure invalid: " +
+                    "Did not receive clientSecret from payment service. Invalid response structure: " +
                         JSON.stringify(paymentResponseData)
                 );
             }
@@ -657,7 +660,7 @@ export default function PaymentPageClient() {
             const errorMessage =
                 (paymentError as { response?: { data?: { message?: string } } })?.response?.data?.message ||
                 (paymentError as { message?: string })?.message ||
-                "Không thể tạo thanh toán. Vui lòng thử lại.";
+                "Unable to create payment. Please try again.";
             toast.error(errorMessage);
             setIsProcessingCardPayment(false);
         }
@@ -724,7 +727,7 @@ export default function PaymentPageClient() {
                 }
             }
 
-            toast.success(`Thanh toán thành công! Đã tạo ${createdOrderIds.length} đơn hàng.`);
+            toast.success(`Payment successful. Created ${createdOrderIds.length} order(s).`);
 
             // Add a small delay to ensure orders are persisted before redirecting
             await new Promise((resolve) => setTimeout(resolve, 500));
@@ -734,7 +737,7 @@ export default function PaymentPageClient() {
         } catch (error) {
             console.error("Failed to handle payment success:", error);
             // Still redirect even if status check fails - payment was confirmed by Stripe
-            toast.success(`Thanh toán đã được xác nhận! Đang chuyển hướng...`);
+            toast.success("Payment confirmed. Redirecting...");
             setTimeout(() => {
                 router.push("/orders");
             }, 1000);
@@ -758,7 +761,7 @@ export default function PaymentPageClient() {
             {currentStep === "order" ? (
                 /* Step 1: Create Order */
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-                    {/* Cột bên trái: Billing Details */}
+                    {/* Left column: billing details */}
                     <div className="space-y-6">
                         <h1 className="text-3xl font-bold">Billing details</h1>
 
@@ -899,7 +902,7 @@ export default function PaymentPageClient() {
                                 disabled={isSubmitting || orderItems.length === 0}
                                 className="cursor-pointer w-full bg-brand-purple text-white font-bold text-lg py-3 rounded-lg hover:bg-brand-purple/90 transition-transform transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                             >
-                                {isSubmitting ? "Đang tạo đơn hàng..." : `Tạo đơn hàng (${orderItems.length} items)`}
+                                {isSubmitting ? "Creating order..." : `Create order (${orderItems.length} items)`}
                             </button>
                         </form>
                     </div>
@@ -912,24 +915,24 @@ export default function PaymentPageClient() {
             ) : (
                 /* Step 2: Payment */
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-                    {/* Cột bên trái: Order Summary */}
+                    {/* Left column: order summary */}
                     <div className="space-y-6">
-                        <h1 className="text-3xl font-bold">Thông tin đơn hàng</h1>
+                        <h1 className="text-3xl font-bold">Order details</h1>
                         <div className="bg-gray-50 p-6 rounded-lg border">
-                            <h2 className="text-xl font-bold mb-4">Đơn hàng đã tạo</h2>
+                            <h2 className="text-xl font-bold mb-4">Created orders</h2>
                             <div className="space-y-2 text-sm">
                                 <p>
-                                    <span className="font-medium">Số đơn hàng:</span> {createdOrderIds.length}
+                                    <span className="font-medium">Order count:</span> {createdOrderIds.length}
                                 </p>
                                 <p>
-                                    <span className="font-medium">Mã đơn hàng:</span> {createdOrderIds.join(", ")}
+                                    <span className="font-medium">Order ID(s):</span> {createdOrderIds.join(", ")}
                                 </p>
                             </div>
                             <button
                                 onClick={() => setCurrentStep("order")}
                                 className="mt-4 text-brand-purple hover:underline text-sm"
                             >
-                                ← Quay lại chỉnh sửa đơn hàng
+                                ← Back to edit order
                             </button>
                         </div>
                     </div>
@@ -957,8 +960,8 @@ export default function PaymentPageClient() {
                                     className="cursor-pointer w-full bg-brand-purple text-white font-bold text-lg py-3 rounded-lg hover:bg-brand-purple/90 transition-transform transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 >
                                     {isProcessingCardPayment
-                                        ? "Đang chuẩn bị thanh toán..."
-                                        : "Tạo thanh toán bằng thẻ"}
+                                        ? "Preparing payment..."
+                                        : "Create card payment"}
                                 </button>
                             ) : null}
                             {/* Note: When card is selected and clientSecret exists, Stripe form is shown in PaymentMethodSelector */}

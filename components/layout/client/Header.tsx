@@ -112,7 +112,7 @@ export default function Header() {
                                                                 className="text-brand-black text-p2 font-manrope hover:text-brand-purpledark flex items-center gap-1"
                                                         >
                                                                 <Store className="h-4 w-4" />
-                                                                Đăng ký Merchant
+                                                                Become a merchant
                                                         </button>
                                                 )}
                                                 <DropdownMenu>
@@ -155,7 +155,7 @@ export default function Header() {
                                                                                 >
                                                                                         <div className="flex items-center">
                                                                                                 <Store className="mr-2 h-4 w-4" />
-                                                                                                Đăng ký Merchant
+                                                                                                Become a merchant
                                                                                         </div>
                                                                                 </DropdownMenuItem>
                                                                         )}
@@ -244,7 +244,7 @@ export default function Header() {
                                                                                                 className="cursor-pointer"
                                                                                         >
                                                                                                 <Store className="mr-2 h-4 w-4" />
-                                                                                                Trở thành Merchant
+                                                                                                        Become a merchant
                                                                                         </DropdownMenuItem>
                                                                                 )}
                                                                         <DropdownMenuSeparator />
@@ -278,7 +278,7 @@ export default function Header() {
                                                 )}
                                         </div>
 
-                                        {/* Nút menu */}
+                                        {/* Menu button */}
                                         <button
                                                 className="md:hidden p-2 rounded focus:outline-none cursor-pointer"
                                                 onClick={() => setOpen(true)}
@@ -287,7 +287,7 @@ export default function Header() {
                                                 <Menu className="w-7 h-7 text-brand-black" />
                                         </button>
 
-                                        {/* Mobile menu  */}
+                                        {/* Mobile menu */}
                                         <div
                                                 className={`fixed top-0 right-0 h-full w-72 bg-brand-yellowlight shadow-lg z-[100] transform transition-transform duration-300 ${
                                                         open ? "translate-x-0" : "translate-x-full"
@@ -333,7 +333,7 @@ export default function Header() {
                                                                         className="text-brand-black text-p2 font-manrope w-full py-2 text-left hover:text-brand-purpledark flex items-center gap-2"
                                                                 >
                                                                         <Store className="h-4 w-4" />
-                                                                        Đăng ký Merchant
+                                                                        Become a merchant
                                                                 </button>
                                                         )}
                                                         <Link
@@ -413,7 +413,7 @@ export default function Header() {
                                                 </nav>
                                         </div>
 
-                                        {/* Overlay khi mở menu */}
+                                        {/* Overlay when menu is open */}
                                         {open && (
                                                 <div
                                                         className="fixed inset-0 bg-black/30 z-[99]"
@@ -432,7 +432,7 @@ export default function Header() {
                                         >
                                                 <div className="flex justify-between items-center mb-4">
                                                         <h3 className="text-xl font-bold text-gray-900">
-                                                                Yêu cầu trở thành Merchant
+                                                                Become a merchant
                                                         </h3>
                                                         <button
                                                                 onClick={() => setShowMerchantForm(false)}
@@ -449,7 +449,7 @@ export default function Header() {
                                                         onSuccess={() => {
                                                                 setShowMerchantForm(false);
                                                                 toast.success(
-                                                                        "Yêu cầu đã được gửi! Vui lòng kiểm tra email để xác nhận tài khoản và chờ admin phê duyệt."
+                                                                        "Request sent. Please check your email to verify your account and wait for admin approval."
                                                                 );
                                                         }}
                                                         onCancel={() => setShowMerchantForm(false)}

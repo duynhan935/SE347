@@ -8,8 +8,8 @@ interface PaymentProgressProps {
 
 export const PaymentProgress = ({ currentStep }: PaymentProgressProps) => {
     const steps = [
-        { id: "order", label: "Thông tin đơn hàng", number: 1 },
-        { id: "payment", label: "Thanh toán", number: 2 },
+        { id: "order", label: "Order details", number: 1 },
+        { id: "payment", label: "Payment", number: 2 },
     ];
 
     const currentStepIndex = steps.findIndex((step) => step.id === currentStep);

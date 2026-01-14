@@ -88,23 +88,23 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
             }
 
             if (!user) {
-                toast.error("Vui lòng đăng nhập để thêm vào giỏ hàng");
+                toast.error("Please sign in to add items to cart");
                 router.push("/login");
                 return;
             }
 
             if (!product.productSizes || product.productSizes.length === 0) {
-                toast.error("Sản phẩm này không có size khả dụng");
+                toast.error("This product has no available sizes");
                 return;
             }
 
             if (!product.restaurant?.id) {
-                toast.error("Không tìm thấy thông tin nhà hàng");
+                toast.error("Restaurant information not found");
                 return;
             }
 
             if (!defaultSize) {
-                toast.error("Không tìm thấy size mặc định");
+                toast.error("Default size not found");
                 return;
             }
 
@@ -127,7 +127,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                 );
             } catch (error) {
                 console.error("Failed to add to cart:", error);
-                toast.error("Không thể thêm vào giỏ hàng");
+                toast.error("Unable to add to cart");
             } finally {
                 setTimeout(() => {
                     setIsAdding(false);
@@ -161,7 +161,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                                 (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
                         
                         if (!user && !isAuthenticated && !hasToken) {
-                                toast.error("Vui lòng đăng nhập để mua hàng");
+                            toast.error("Please sign in to place an order");
                                 setIsAdding(false);
                                 router.push("/login");
                                 return;
@@ -174,7 +174,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                                 // Re-check auth state after waiting
                                 const currentAuthState = useAuthStore.getState();
                                 if (!currentAuthState.user && !currentAuthState.isAuthenticated) {
-                                        toast.error("Vui lòng đăng nhập để mua hàng");
+                                    toast.error("Please sign in to place an order");
                                         setIsAdding(false);
                                         router.push("/login");
                                         return;
@@ -182,7 +182,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         }
 
                         if (!product.restaurant?.id) {
-                                toast.error("Không tìm thấy thông tin nhà hàng");
+                            toast.error("Restaurant information not found");
                                 setIsAdding(false);
                                 return;
                         }
@@ -197,7 +197,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                                         (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
                                 
                                 if (!currentAuthState.user && !currentAuthState.isAuthenticated && !stillHasToken) {
-                                        toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại");
+                                    toast.error("Your session has expired. Please sign in again");
                                         router.push("/login");
                                         return;
                                 }
@@ -210,7 +210,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                                 router.push(`/payment?restaurantId=${product.restaurant.id}`);
                         } catch (error) {
                                 console.error("Failed to add to cart in Buy Now:", error);
-                                toast.error("Không thể thêm vào giỏ hàng");
+                            toast.error("Unable to add to cart");
                         } finally {
                                 setTimeout(() => {
                                         setIsAdding(false);

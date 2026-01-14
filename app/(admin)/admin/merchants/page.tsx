@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { merchantApi } from "@/lib/api/merchantApi";
 import { Merchant } from "@/types";
+import { restaurantApi } from "@/lib/api/restaurantApi";
+import { orderApi } from "@/lib/api/orderApi";
+import { OrderStatus } from "@/types/order.type";
 
 export default function MerchantsPage() {
 	const [merchants, setMerchants] = useState<Merchant[]>([]);
@@ -20,11 +23,49 @@ export default function MerchantsPage() {
 		setLoading(true);
 		try {
 			const data = await merchantApi.getAllMerchants();
-			// Ensure data is an array
-			setMerchants(Array.isArray(data) ? data : []);
+			const baseMerchants = Array.isArray(data) ? data : [];
+
+			const restaurantsResponse = await restaurantApi.getAllRestaurants(new URLSearchParams());
+			const restaurants = Array.isArray(restaurantsResponse.data) ? restaurantsResponse.data : [];
+
+			const restaurantCountByMerchantId = new Map<string, number>();
+			const restaurantIdToMerchantId = new Map<string, string>();
+			for (const r of restaurants) {
+				restaurantCountByMerchantId.set(r.merchantId, (restaurantCountByMerchantId.get(r.merchantId) || 0) + 1);
+				restaurantIdToMerchantId.set(r.id, r.merchantId);
+			}
+
+			const revenueByMerchantId = new Map<string, number>();
+			let page = 1;
+			const limit = 100;
+			const maxPages = 20;
+			while (page <= maxPages) {
+				const { orders, pagination } = await orderApi.getAllOrders({
+					page,
+					limit,
+					status: OrderStatus.COMPLETED,
+				});
+
+				for (const o of orders) {
+					const merchantId = o.merchantId || (o.restaurantId ? restaurantIdToMerchantId.get(o.restaurantId) : undefined);
+					if (!merchantId) continue;
+					revenueByMerchantId.set(merchantId, (revenueByMerchantId.get(merchantId) || 0) + (o.finalAmount || 0));
+				}
+
+				if (!pagination || page >= (pagination.totalPages || 1)) break;
+				page += 1;
+			}
+
+			setMerchants(
+				baseMerchants.map((m) => ({
+					...m,
+					totalRestaurants: restaurantCountByMerchantId.get(m.id) || 0,
+					totalRevenue: revenueByMerchantId.get(m.id) || 0,
+				}))
+			);
 		} catch (error) {
 			console.error("Failed to fetch merchants:", error);
-			toast.error("Không thể tải danh sách merchants");
+			toast.error("Failed to load merchants.");
 			setMerchants([]);
 		} finally {
 			setLoading(false);
@@ -34,25 +75,25 @@ export default function MerchantsPage() {
 	const handleApproveMerchant = async (merchantId: string) => {
 		try {
 			await merchantApi.approveMerchant(merchantId);
-			toast.success("Đã phê duyệt merchant");
+			toast.success("Merchant approved.");
 			fetchMerchants();
 		} catch (error) {
 			console.error("Failed to approve merchant:", error);
-			toast.error("Không thể phê duyệt merchant");
+			toast.error("Failed to approve merchant.");
 		}
 	};
 
 	const handleRejectMerchant = async (merchantId: string) => {
-		const reason = prompt("Nhập lý do từ chối:");
+		const reason = prompt("Enter a rejection reason:");
 		if (!reason) return;
 
 		try {
 			await merchantApi.rejectMerchant(merchantId, reason);
-			toast.success("Đã từ chối merchant");
+			toast.success("Merchant rejected.");
 			fetchMerchants();
 		} catch (error) {
 			console.error("Failed to reject merchant:", error);
-			toast.error("Không thể từ chối merchant");
+			toast.error("Failed to reject merchant.");
 		}
 	};
 
@@ -70,31 +111,31 @@ export default function MerchantsPage() {
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Quản lý Merchants</h1>
-					<p className="text-gray-600 dark:text-gray-400 mt-1">Quản lý và phê duyệt các merchant trong hệ thống</p>
+					<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Merchants</h1>
+					<p className="text-gray-600 dark:text-gray-400 mt-1">Review and approve merchant accounts</p>
 				</div>
 			</div>
 
 			{/* Stats Cards */}
 			<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 				<div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-					<p className="text-sm text-gray-600 dark:text-gray-400">Tổng Merchants</p>
+					<p className="text-sm text-gray-600 dark:text-gray-400">Total merchants</p>
 					<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{merchants.length}</p>
 				</div>
 				<div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-					<p className="text-sm text-gray-600 dark:text-gray-400">Chờ duyệt</p>
+					<p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
 					<p className="text-2xl font-bold text-yellow-600 mt-1">
 						{merchants.filter((m) => m.status === "PENDING").length}
 					</p>
 				</div>
 				<div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-					<p className="text-sm text-gray-600 dark:text-gray-400">Đã duyệt</p>
+					<p className="text-sm text-gray-600 dark:text-gray-400">Approved</p>
 					<p className="text-2xl font-bold text-green-600 mt-1">
 						{merchants.filter((m) => m.status === "APPROVED").length}
 					</p>
 				</div>
 				<div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-					<p className="text-sm text-gray-600 dark:text-gray-400">Đã từ chối</p>
+					<p className="text-sm text-gray-600 dark:text-gray-400">Rejected</p>
 					<p className="text-2xl font-bold text-red-600 mt-1">
 						{merchants.filter((m) => m.status === "REJECTED").length}
 					</p>
@@ -109,7 +150,7 @@ export default function MerchantsPage() {
 						<Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
 						<input
 							type="text"
-							placeholder="Tìm kiếm theo tên, email hoặc công ty..."
+							placeholder="Search by username, email, or company..."
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
 							className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
@@ -122,10 +163,10 @@ export default function MerchantsPage() {
 						onChange={(e) => setFilterStatus(e.target.value)}
 						className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
 					>
-						<option value="ALL">Tất cả trạng thái</option>
-						<option value="PENDING">Chờ duyệt</option>
-						<option value="APPROVED">Đã duyệt</option>
-						<option value="REJECTED">Đã từ chối</option>
+						<option value="ALL">All statuses</option>
+						<option value="PENDING">Pending</option>
+						<option value="APPROVED">Approved</option>
+						<option value="REJECTED">Rejected</option>
 					</select>
 				</div>
 			</div>
@@ -145,19 +186,19 @@ export default function MerchantsPage() {
 										Merchant
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-										Công ty
+										Company
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-										Số nhà hàng
+										Restaurants
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-										Doanh thu
+										Revenue
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-										Trạng thái
+										Status
 									</th>
 									<th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-										Thao tác
+										Actions
 									</th>
 								</tr>
 							</thead>
@@ -190,7 +231,7 @@ export default function MerchantsPage() {
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
 											<div className="text-sm text-gray-900 dark:text-white">
-												{merchant.totalRevenue.toLocaleString()}đ
+												{merchant.totalRevenue.toLocaleString()}₫
 											</div>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
@@ -204,10 +245,10 @@ export default function MerchantsPage() {
 												}`}
 											>
 												{merchant.status === "PENDING"
-													? "Chờ duyệt"
+													? "Pending"
 													: merchant.status === "APPROVED"
-													? "Đã duyệt"
-													: "Đã từ chối"}
+													? "Approved"
+													: "Rejected"}
 											</span>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -215,7 +256,7 @@ export default function MerchantsPage() {
 												<button
 													onClick={() => {}}
 													className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-													title="Xem chi tiết"
+													title="View details"
 												>
 													<Eye size={18} />
 												</button>
@@ -224,14 +265,14 @@ export default function MerchantsPage() {
 														<button
 															onClick={() => handleApproveMerchant(merchant.id)}
 															className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-															title="Phê duyệt"
+															title="Approve"
 														>
 															<CheckCircle size={18} />
 														</button>
 														<button
 															onClick={() => handleRejectMerchant(merchant.id)}
 															className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-															title="Từ chối"
+															title="Reject"
 														>
 															<XCircle size={18} />
 														</button>
@@ -245,7 +286,7 @@ export default function MerchantsPage() {
 						</table>
 						{filteredMerchants.length === 0 && (
 							<div className="text-center py-12 text-gray-500 dark:text-gray-400">
-								Không tìm thấy merchant nào
+								No merchants found.
 							</div>
 						)}
 					</div>

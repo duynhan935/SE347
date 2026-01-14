@@ -64,7 +64,7 @@ export const orderApi = {
                 const restaurantMatch = errorMessage.match(/Restaurant is currently closed: (.+)/);
                 const restaurantName = restaurantMatch ? restaurantMatch[1] : orderData.restaurantName;
                 throw new Error(
-                    `Nhà hàng "${restaurantName}" hiện đang đóng cửa. Vui lòng kiểm tra lại thời gian hoạt động trong phần quản lý nhà hàng hoặc thử lại sau.`
+                    `Restaurant "${restaurantName}" is currently closed. Please check its operating hours and try again later.`
                 );
             }
 
@@ -115,7 +115,7 @@ export const orderApi = {
             return { orders: response.data.data, pagination: response.data.pagination };
         } catch (error: unknown) {
             console.error(`Failed to get orders for restaurant ${restaurantId}:`, error);
-            // Re-throw để caller có thể handle
+            // Re-throw so the caller can handle it
             throw error;
         }
     },

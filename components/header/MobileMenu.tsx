@@ -49,12 +49,12 @@ export default function MobileMenu() {
                 <>
                         {/* Mobile Cart & Menu Button */}
                         <div className="flex lg:hidden items-center gap-3">
-                                {/* Đặt đồ ăn Icon - Hiển thị cho tất cả user */}
+                                {/* Browse restaurants icon */}
                                 <Link 
                                         href="/restaurants" 
                                         prefetch={true} 
                                         className="relative p-2 rounded-full hover:bg-gray-50 transition-colors"
-                                        aria-label="Đặt đồ ăn"
+                                        aria-label="Browse restaurants"
                                 >
                                         <UtensilsCrossed className={`w-5 h-5 ${pathname === "/restaurants" ? "text-brand-orange" : "text-brand-grey"}`} />
                                 </Link>
@@ -109,7 +109,7 @@ export default function MobileMenu() {
                                 </div>
 
                                 <nav className="flex flex-col p-4 space-y-1">
-                                        {/* Main Actions - Chỉ hiện khi authenticated */}
+                                        {/* Main actions - authenticated only */}
                                         {mounted && isAuthenticated && user && (
                                                 <>
                                                         <Link
@@ -119,7 +119,7 @@ export default function MobileMenu() {
                                                                 className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors flex items-center gap-2"
                                                         >
                                                                 <Package className="w-5 h-5" />
-                                                                Đơn hàng của tôi
+                                                                My orders
                                                         </Link>
                                                         <Link
                                                                 href="/chat"
@@ -128,7 +128,7 @@ export default function MobileMenu() {
                                                                 className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors flex items-center gap-2"
                                                         >
                                                                 <MessageCircle className="w-5 h-5" />
-                                                                Tin nhắn
+                                                                Messages
                                                         </Link>
                                                 </>
                                         )}
@@ -156,7 +156,7 @@ export default function MobileMenu() {
                                                                         onClick={() => setOpen(false)}
                                                                         className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors block"
                                                                 >
-                                                                        Hồ sơ cá nhân
+                                                                        Profile
                                                                 </Link>
                                                                 <Link
                                                                         href="/account/addresses"
@@ -164,7 +164,7 @@ export default function MobileMenu() {
                                                                         onClick={() => setOpen(false)}
                                                                         className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors block"
                                                                 >
-                                                                        Địa chỉ giao hàng
+                                                                        Delivery addresses
                                                                 </Link>
                                                                 {user?.role === "ADMIN" && (
                                                                         <Link
@@ -190,7 +190,7 @@ export default function MobileMenu() {
                                                                         onClick={handleLogout}
                                                                         className="w-full text-left text-red-600 text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-red-50 transition-colors"
                                                                 >
-                                                                        Đăng xuất
+                                                                        Log out
                                                                 </button>
                                                         </div>
                                                 </>

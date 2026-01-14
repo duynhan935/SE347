@@ -22,19 +22,19 @@ export const useSizeStore = create<SizeStore>((set, get) => ({
     loading: false,
     error: null,
 
-    // 🟦 Lấy tất cả size
+    // Fetch all sizes
     fetchAllSizes: async () => {
         set({ loading: true, error: null });
         try {
             const res = await sizeApi.getAllSizes();
             set({ sizes: res.data || [], loading: false });
         } catch (err: any) {
-            set({ error: err.message || "Không thể tải danh sách kích thước", loading: false });
+            set({ error: err.message || "Failed to load sizes.", loading: false });
         }
     },
 
 
-    // 🟨 Tạo size mới
+    // Create a new size
     createNewSize: async (sizeData: SizeData) => {
         set({ loading: true, error: null });
         try {
@@ -44,11 +44,11 @@ export const useSizeStore = create<SizeStore>((set, get) => ({
                 loading: false,
             });
         } catch (err: any) {
-            set({ error: err.message || "Không thể tạo kích thước mới", loading: false });
+            set({ error: err.message || "Failed to create size.", loading: false });
         }
     },
 
-    // 🟧 Cập nhật size
+    // Update size
     updateSize: async (sizeId: string, sizeData: SizeData) => {
         set({ loading: true, error: null });
         try {
@@ -58,11 +58,11 @@ export const useSizeStore = create<SizeStore>((set, get) => ({
                 loading: false,
             });
         } catch (err: any) {
-            set({ error: err.message || "Không thể cập nhật kích thước", loading: false });
+            set({ error: err.message || "Failed to update size.", loading: false });
         }
     },
 
-    // 🟥 Xóa size
+    // Delete size
     deleteSize: async (sizeId: string) => {
         set({ loading: true, error: null });
         try {
@@ -72,11 +72,11 @@ export const useSizeStore = create<SizeStore>((set, get) => ({
                 loading: false,
             });
         } catch (err: any) {
-            set({ error: err.message || "Không thể xóa kích thước", loading: false });
+            set({ error: err.message || "Failed to delete size.", loading: false });
         }
     },
 
-    // 🧹 Xóa dữ liệu trong store
+    // Clear store data
     clearSizes: () => {
         set({ sizes: [], size: null });
     },

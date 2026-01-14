@@ -18,13 +18,13 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                 e.preventDefault();
 
                 if (!stripe || !elements) {
-                        onPaymentError("Stripe chưa sẵn sàng. Vui lòng thử lại.");
+                        onPaymentError("Stripe is not ready yet. Please try again.");
                         return;
                 }
 
                 const cardNumberElement = elements.getElement(CardNumberElement);
                 if (!cardNumberElement) {
-                        onPaymentError("Không tìm thấy form thẻ tín dụng.");
+                        onPaymentError("Card form not found.");
                         return;
                 }
 
@@ -39,7 +39,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                         });
 
                         if (error) {
-                                onPaymentError(error.message || "Thanh toán thất bại. Vui lòng thử lại.");
+                                onPaymentError(error.message || "Payment failed. Please try again.");
                                 setIsProcessing(false);
                                 return;
                         }
@@ -49,12 +49,12 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                                 // This prevents duplicate success toasts
                                 onPaymentSuccess();
                         } else {
-                                onPaymentError("Thanh toán chưa hoàn tất. Vui lòng thử lại.");
+                                onPaymentError("Payment was not completed. Please try again.");
                                 setIsProcessing(false);
                         }
                 } catch (error) {
                         console.error("Stripe payment error:", error);
-                        onPaymentError("Đã xảy ra lỗi khi xử lý thanh toán. Vui lòng thử lại.");
+                        onPaymentError("An error occurred while processing the payment. Please try again.");
                         setIsProcessing(false);
                 }
         };
@@ -79,7 +79,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                         {/* Card Number */}
                         <div className="space-y-2">
                                 <label htmlFor="card-number" className="block text-sm font-medium text-gray-700">
-                                        Số thẻ
+                                        Card number
                                 </label>
                                 <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-brand-purple focus-within:border-brand-purple transition-all">
                                         <CardNumberElement
@@ -136,7 +136,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                                 disabled={!stripe || isProcessing}
                                 className="w-full bg-brand-purple text-white font-semibold py-3 px-4 rounded-lg hover:bg-brand-purple/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-6"
                         >
-                                {isProcessing ? "Đang xử lý..." : "Xác nhận thanh toán"}
+                                {isProcessing ? "Processing..." : "Confirm payment"}
                         </button>
                 </form>
         );

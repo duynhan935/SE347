@@ -42,7 +42,7 @@ export const OrderItemRow = ({ item, orderId }: { item: OrderListItem; orderId: 
                         (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
                 
                 if (!user && !isAuthenticated && !hasToken) {
-                        toast.error("Vui lòng đăng nhập để mua lại");
+                        toast.error("Please sign in to buy again.");
                         setIsAdding(false);
                         isProcessingRef.current = false;
                         router.push("/login");
@@ -50,7 +50,7 @@ export const OrderItemRow = ({ item, orderId }: { item: OrderListItem; orderId: 
                 }
 
                 if (!item.restaurantId) {
-                        toast.error("Không tìm thấy thông tin nhà hàng");
+                        toast.error("Restaurant information not found.");
                         setIsAdding(false);
                         isProcessingRef.current = false;
                         return;
@@ -78,7 +78,7 @@ export const OrderItemRow = ({ item, orderId }: { item: OrderListItem; orderId: 
                         router.push(`/payment?restaurantId=${item.restaurantId}`);
                 } catch (error) {
                         console.error("Failed to add item to cart:", error);
-                        toast.error("Không thể thêm vào giỏ hàng");
+                        toast.error("Failed to add to cart.");
                 } finally {
                         setIsAdding(false);
                         isProcessingRef.current = false;

@@ -40,16 +40,39 @@ interface CartState {
         userId: string | null;
         isLoading: boolean;
         isAddingItem: boolean;
+        pendingAdds: Record<string, number>; // itemKey -> timestamp (ms)
 
         // Actions
         setUserId: (userId: string | null) => void;
         fetchCart: (options?: { forceUpdate?: boolean }) => Promise<void>;
-        addItem: (itemToAdd: Omit<CartItem, "quantity">, quantity: number) => Promise<void>;
+        addItem: (itemToAdd: AddToCartItem, quantity: number) => Promise<void>;
         removeItem: (itemId: string, restaurantId: string, options?: { silent?: boolean }) => Promise<void>;
         updateQuantity: (itemId: string, restaurantId: string, quantity: number) => Promise<void>;
         clearCart: (options?: { silent?: boolean }) => Promise<void>;
         clearRestaurant: (restaurantId: string, options?: { silent?: boolean }) => Promise<void>;
 }
+
+const getItemKey = (itemId: string, restaurantId: string): string => `${restaurantId}::${itemId}`;
+
+const mergeWithPendingAdds = (backendItems: CartItem[], currentItems: CartItem[], pendingAdds: Record<string, number>) => {
+        const now = Date.now();
+        const ttlMs = 30000;
+
+        const backendKeys = new Set(backendItems.map((it) => getItemKey(it.id, it.restaurantId)));
+        const merged = [...backendItems];
+
+        for (const localItem of currentItems) {
+                const key = getItemKey(localItem.id, localItem.restaurantId);
+                const pendingAt = pendingAdds[key];
+                if (!pendingAt) continue;
+                if (now - pendingAt > ttlMs) continue;
+                if (backendKeys.has(key)) continue;
+                merged.push(localItem);
+        }
+
+        merged.sort((a, b) => a.restaurantName.localeCompare(b.restaurantName));
+        return merged;
+};
 
 type CartItemOptions = {
     categoryId?: string;
@@ -61,24 +84,45 @@ type CartItemOptions = {
 };
 
 const base64UrlEncode = (input: string): string => {
-    const bytes = new TextEncoder().encode(input);
-    let binary = "";
-    for (const byte of bytes) {
-        binary += String.fromCharCode(byte);
-    }
-    const base64 = btoa(binary);
-    return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+        const hasBtoa = typeof globalThis !== "undefined" && typeof (globalThis as unknown as { btoa?: unknown }).btoa === "function";
+        const hasBuffer = typeof globalThis !== "undefined" &&
+                typeof (globalThis as unknown as { Buffer?: unknown }).Buffer !== "undefined";
+
+        if (!hasBtoa && hasBuffer) {
+                const base64 = (globalThis as unknown as { Buffer: { from: (s: string, enc: string) => { toString: (enc: string) => string } } }).Buffer
+                        .from(input, "utf8")
+                        .toString("base64");
+                return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+        }
+
+        const bytes = new TextEncoder().encode(input);
+        let binary = "";
+        for (const byte of bytes) {
+                binary += String.fromCharCode(byte);
+        }
+        const base64 = btoa(binary);
+        return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 };
 
 const base64UrlDecode = (input: string): string => {
     const base64 = input.replace(/-/g, "+").replace(/_/g, "/");
     const padded = base64 + "===".slice((base64.length + 3) % 4);
-    const binary = atob(padded);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-    }
-    return new TextDecoder().decode(bytes);
+        const hasAtob = typeof globalThis !== "undefined" && typeof (globalThis as unknown as { atob?: unknown }).atob === "function";
+        const hasBuffer = typeof globalThis !== "undefined" &&
+                typeof (globalThis as unknown as { Buffer?: unknown }).Buffer !== "undefined";
+
+        if (!hasAtob && hasBuffer) {
+                return (globalThis as unknown as { Buffer: { from: (s: string, enc: string) => { toString: (enc: string) => string } } }).Buffer
+                        .from(padded, "base64")
+                        .toString("utf8");
+        }
+
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+        }
+        return new TextDecoder().decode(bytes);
 };
 
 const normalizeOptions = (options: CartItemOptions): CartItemOptions => {
@@ -183,26 +227,22 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
                 return;
             }
 
-                        const imageURL = itemRecord["imageURL"];
-                        // Use imageURL if it exists and is not empty, otherwise use placeholder
-                        // Always ensure we have a valid image URL string
-                        let image = "/placeholder.png";
-                        if (
-                                imageURL !== undefined &&
-                                imageURL !== null &&
-                                typeof imageURL === "string" &&
-                                imageURL.trim() !== ""
-                        ) {
-                                image = imageURL.trim();
-                        }
-                        const sizeId = typeof itemRecord["sizeId"] === "string" ? itemRecord["sizeId"] : undefined;
-                        const sizeName =
-                                typeof itemRecord["sizeName"] === "string" ? itemRecord["sizeName"] : undefined;
-                        const rawCustomizations = itemRecord["customizations"];
-                        const customizations =
-                                typeof rawCustomizations === "string" && rawCustomizations.trim().length > 0
-                                        ? rawCustomizations
-                                        : undefined;
+            const { baseProductId, options } = parseCartItemId(productId);
+
+            const rawImageURL = itemRecord["imageURL"];
+            const imageFromRecord = typeof rawImageURL === "string" && rawImageURL.trim() !== "" ? rawImageURL.trim() : undefined;
+            const imageFromOptions = typeof options.imageURL === "string" && options.imageURL.trim() !== "" ? options.imageURL.trim() : undefined;
+            const image = imageFromOptions || imageFromRecord || "/placeholder.png";
+
+            const sizeId = typeof options.sizeId === "string" ? options.sizeId : undefined;
+            const sizeName = typeof options.sizeName === "string" ? options.sizeName : undefined;
+
+            const rawCustomizations = itemRecord["customizations"];
+            const customizationsFromRecord =
+                typeof rawCustomizations === "string" && rawCustomizations.trim().length > 0 ? rawCustomizations.trim() : undefined;
+            const customizationsFromOptions =
+                typeof options.customizations === "string" && options.customizations.trim().length > 0 ? options.customizations.trim() : undefined;
+            const customizations = customizationsFromOptions || customizationsFromRecord;
 
             const categoryId = typeof options.categoryId === "string" ? options.categoryId : undefined;
             const categoryName = typeof options.categoryName === "string" ? options.categoryName : undefined;
@@ -238,7 +278,16 @@ export const useCartStore = create<CartState>()(
                     return false;
                 }
 
-                set({ items: parsedItems });
+                                const state = get();
+                                const merged = mergeWithPendingAdds(parsedItems, state.items, state.pendingAdds);
+
+                                // Clear pending keys that are now present in backend response.
+                                const nextPendingAdds: Record<string, number> = { ...state.pendingAdds };
+                                for (const it of parsedItems) {
+                                                delete nextPendingAdds[getItemKey(it.id, it.restaurantId)];
+                                }
+
+                                set({ items: merged, pendingAdds: nextPendingAdds });
                 return true;
             };
 
@@ -247,6 +296,7 @@ export const useCartStore = create<CartState>()(
                                 userId: null,
                                 isLoading: false,
                                 isAddingItem: false,
+                                pendingAdds: {},
 
                 setUserId: (userId) => {
                     const currentUserId = get().userId;
@@ -277,7 +327,15 @@ export const useCartStore = create<CartState>()(
                                                 
                                                 if (parsedItems && parsedItems.length > 0) {
                                                         // Backend has items, always update store (source of truth)
-                                                        set({ items: parsedItems });
+                                                        const state = get();
+                                                        const merged = mergeWithPendingAdds(parsedItems, state.items, state.pendingAdds);
+
+                                                        const nextPendingAdds: Record<string, number> = { ...state.pendingAdds };
+                                                        for (const it of parsedItems) {
+                                                                delete nextPendingAdds[getItemKey(it.id, it.restaurantId)];
+                                                        }
+
+                                                        set({ items: merged, pendingAdds: nextPendingAdds });
                                                         console.log(`[CartStore] Fetched ${parsedItems.length} items from backend`);
                                                 } else {
                                                         // Backend returned empty cart
@@ -382,10 +440,13 @@ export const useCartStore = create<CartState>()(
                                                 }
                                         }
 
+
                                         // Save current state for potential revert on error
                                         const previousItems = [...get().items];
+                                                        let pendingKey: string | null = null;
                                         
                                         try {
+                                                set({ isAddingItem: true });
                                                 // Get image URL - itemToAdd.image should already be processed from FoodCard/MenuItemCard
                                                 // but we'll process it again to handle both string and StaticImageData cases
                                                 const imageUrlToSend = getImageUrl(itemToAdd.image);
@@ -397,18 +458,66 @@ export const useCartStore = create<CartState>()(
                                                                 ? imageUrlToSend.trim()
                                                                 : "/placeholder.png";
 
+                                                const cartItemId = createCartItemId(itemToAdd.id, {
+                                                        categoryId: itemToAdd.categoryId,
+                                                        categoryName: itemToAdd.categoryName,
+                                                        sizeId: itemToAdd.sizeId,
+                                                        sizeName: itemToAdd.sizeName,
+                                                        customizations: itemToAdd.customizations,
+                                                        imageURL: finalImageURL,
+                                                });
+
+                                                                const key = getItemKey(cartItemId, itemToAdd.restaurantId);
+                                                                pendingKey = key;
+
+                                                // Mark as pending to prevent stale backend fetches from wiping it.
+                                                                set((state) => ({ pendingAdds: { ...state.pendingAdds, [key]: Date.now() } }));
+
+                                                // Optimistic update (fixes "first item invisible" + keeps UI responsive)
+                                                set((state) => {
+                                                        const existingItemIndex = state.items.findIndex(
+                                                                (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId
+                                                        );
+
+                                                        if (existingItemIndex >= 0) {
+                                                                const updatedItems = [...state.items];
+                                                                const existingItem = updatedItems[existingItemIndex];
+                                                                updatedItems[existingItemIndex] = {
+                                                                        ...existingItem,
+                                                                        quantity: existingItem.quantity + quantity,
+                                                                };
+                                                                return { items: updatedItems };
+                                                        }
+
+                                                        const newItem: CartItem = {
+                                                                id: cartItemId,
+                                                                baseProductId: itemToAdd.id,
+                                                                name: itemToAdd.name,
+                                                                price: itemToAdd.price,
+                                                                image: finalImageURL,
+                                                                quantity,
+                                                                restaurantId: itemToAdd.restaurantId,
+                                                                restaurantName: itemToAdd.restaurantName,
+                                                                categoryId: itemToAdd.categoryId,
+                                                                categoryName: itemToAdd.categoryName,
+                                                                sizeId: itemToAdd.sizeId,
+                                                                sizeName: itemToAdd.sizeName,
+                                                                customizations: itemToAdd.customizations,
+                                                        };
+
+                                                        return { items: [...state.items, newItem] };
+                                                });
+
                                                 const requestPayload = {
                                                         restaurant: {
                                                                 restaurantId: itemToAdd.restaurantId,
                                                                 restaurantName: itemToAdd.restaurantName,
                                                         },
                                                         item: {
-                                                                productId: itemToAdd.id,
+                                                                productId: cartItemId,
                                                                 productName: itemToAdd.name,
                                                                 price: itemToAdd.price,
                                                                 quantity,
-                                                                sizeId: itemToAdd.sizeId,
-                                                                sizeName: itemToAdd.sizeName,
                                                                 customizations: itemToAdd.customizations,
                                                                 imageURL: finalImageURL,
                                                         },
@@ -438,7 +547,15 @@ export const useCartStore = create<CartState>()(
                                                 
                                                 if (parsedItems !== null && parsedItems.length > 0) {
                                                         // Backend returned valid cart data with items, use it as source of truth
-                                                        set({ items: parsedItems });
+                                                        const state = get();
+                                                        const merged = mergeWithPendingAdds(parsedItems, state.items, state.pendingAdds);
+
+                                                        const nextPendingAdds: Record<string, number> = { ...state.pendingAdds };
+                                                        for (const it of parsedItems) {
+                                                                delete nextPendingAdds[getItemKey(it.id, it.restaurantId)];
+                                                        }
+
+                                                        set({ items: merged, pendingAdds: nextPendingAdds });
                                                         console.log(`[CartStore] Cart updated from backend response, items count: ${parsedItems.length}`);
                                                 } else if (parsedItems !== null && parsedItems.length === 0) {
                                                         // Backend returned empty cart (shouldn't happen after adding item, but handle it)
@@ -448,7 +565,15 @@ export const useCartStore = create<CartState>()(
                                                                 const fetchedCart = await cartApi.getCart(userId);
                                                                 const fetchedItems = mapCartToItems(fetchedCart);
                                                                 if (fetchedItems !== null) {
-                                                                        set({ items: fetchedItems });
+                                                                        const state = get();
+                                                                        const merged = mergeWithPendingAdds(fetchedItems, state.items, state.pendingAdds);
+
+                                                                        const nextPendingAdds: Record<string, number> = { ...state.pendingAdds };
+                                                                        for (const it of fetchedItems) {
+                                                                                delete nextPendingAdds[getItemKey(it.id, it.restaurantId)];
+                                                                        }
+
+                                                                        set({ items: merged, pendingAdds: nextPendingAdds });
                                                                         console.log(`[CartStore] Cart fetched and updated, items count: ${fetchedItems.length}`);
                                                                 } else {
                                                                         // Still empty, use optimistic update
@@ -459,10 +584,7 @@ export const useCartStore = create<CartState>()(
                                                                 // Fallback to optimistic update
                                                                 const currentItems = get().items;
                                                                 const existingItemIndex = currentItems.findIndex(
-                                                                        (item) =>
-                                                                                item.id === itemToAdd.id &&
-                                                                                item.restaurantId === itemToAdd.restaurantId &&
-                                                                                item.sizeId === itemToAdd.sizeId
+                                                                        (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId
                                                                 );
 
                                                                 let optimisticItems: CartItem[];
@@ -475,13 +597,16 @@ export const useCartStore = create<CartState>()(
                                                                         };
                                                                 } else {
                                                                         const newItem: CartItem = {
-                                                                                id: itemToAdd.id,
+                                                                                id: cartItemId,
+                                                                                baseProductId: itemToAdd.id,
                                                                                 name: itemToAdd.name,
                                                                                 price: itemToAdd.price,
                                                                                 image: finalImageURL,
                                                                                 quantity,
                                                                                 restaurantId: itemToAdd.restaurantId,
                                                                                 restaurantName: itemToAdd.restaurantName,
+                                                                                categoryId: itemToAdd.categoryId,
+                                                                                categoryName: itemToAdd.categoryName,
                                                                                 sizeId: itemToAdd.sizeId,
                                                                                 sizeName: itemToAdd.sizeName,
                                                                                 customizations: itemToAdd.customizations,
@@ -501,7 +626,15 @@ export const useCartStore = create<CartState>()(
                                                                 const fetchedCart = await cartApi.getCart(userId);
                                                                 const fetchedItems = mapCartToItems(fetchedCart);
                                                                 if (fetchedItems !== null) {
-                                                                        set({ items: fetchedItems });
+                                                                        const state = get();
+                                                                        const merged = mergeWithPendingAdds(fetchedItems, state.items, state.pendingAdds);
+
+                                                                        const nextPendingAdds: Record<string, number> = { ...state.pendingAdds };
+                                                                        for (const it of fetchedItems) {
+                                                                                delete nextPendingAdds[getItemKey(it.id, it.restaurantId)];
+                                                                        }
+
+                                                                        set({ items: merged, pendingAdds: nextPendingAdds });
                                                                         console.log(`[CartStore] Cart fetched after parse failure, items count: ${fetchedItems.length}`);
                                                                 } else {
                                                                         // Still can't parse, use optimistic update
@@ -512,10 +645,7 @@ export const useCartStore = create<CartState>()(
                                                                 // Last resort: optimistic update
                                                                 const currentItems = get().items;
                                                                 const existingItemIndex = currentItems.findIndex(
-                                                                        (item) =>
-                                                                                item.id === itemToAdd.id &&
-                                                                                item.restaurantId === itemToAdd.restaurantId &&
-                                                                                item.sizeId === itemToAdd.sizeId
+                                                                        (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId
                                                                 );
 
                                                                 let optimisticItems: CartItem[];
@@ -528,13 +658,16 @@ export const useCartStore = create<CartState>()(
                                                                         };
                                                                 } else {
                                                                         const newItem: CartItem = {
-                                                                                id: itemToAdd.id,
+                                                                                id: cartItemId,
+                                                                                baseProductId: itemToAdd.id,
                                                                                 name: itemToAdd.name,
                                                                                 price: itemToAdd.price,
                                                                                 image: finalImageURL,
                                                                                 quantity,
                                                                                 restaurantId: itemToAdd.restaurantId,
                                                                                 restaurantName: itemToAdd.restaurantName,
+                                                                                categoryId: itemToAdd.categoryId,
+                                                                                categoryName: itemToAdd.categoryName,
                                                                                 sizeId: itemToAdd.sizeId,
                                                                                 sizeName: itemToAdd.sizeName,
                                                                                 customizations: itemToAdd.customizations,
@@ -546,12 +679,18 @@ export const useCartStore = create<CartState>()(
                                                         }
                                                 }
                                                 
-                                                toast.success("Đã thêm vào giỏ hàng!");
+                                                toast.success("Added to cart.");
                                         } catch (error) {
                                                 console.error("Failed to add item:", error);
                                                 toast.error("Failed to add item to cart");
                                                 // Revert optimistic update on error - restore previous state
-                                                set({ items: previousItems });
+                                                set((state) => {
+                                                        const nextPendingAdds = { ...state.pendingAdds };
+                                                                        if (pendingKey) {
+                                                                                delete nextPendingAdds[pendingKey];
+                                                                        }
+                                                        return { items: previousItems, pendingAdds: nextPendingAdds };
+                                                });
                                                 console.log("[CartStore] Reverted optimistic update due to error");
                                         } finally {
                                                 set({ isAddingItem: false });

@@ -1,4 +1,4 @@
-import { Address, AddressRequest, User, UserUpdateAfterLogin } from "@/types";
+import { Address, AddressRequest, PageableResponse, User, UserUpdateAfterLogin } from "@/types";
 import api from "../axios";
 
 interface LoginResponse {
@@ -37,36 +37,6 @@ interface RejectionRequest {
     reason: string;
 }
 
-// ✅ ADD: Paginated response type from Spring Data
-interface PageableResponse<T> {
-    content: T[];
-    pageable: {
-        pageNumber: number;
-        pageSize: number;
-        sort: {
-            empty: boolean;
-            sorted: boolean;
-            unsorted: boolean;
-        };
-        offset: number;
-        paged: boolean;
-        unpaged: boolean;
-    };
-    last: boolean;
-    totalElements: number;
-    totalPages: number;
-    size: number;
-    number: number;
-    sort: {
-        empty: boolean;
-        sorted: boolean;
-        unsorted: boolean;
-    };
-    first: boolean;
-    numberOfElements: number;
-    empty: boolean;
-}
-
 export const authApi = {
     // Authentication endpoints
     login: async (credentials: { username: string; password: string }) => {
@@ -97,7 +67,7 @@ export const authApi = {
     // Token endpoints
     getUserByAccessToken: async () => {
         const response = await api.get<User>("/users/accesstoken", {
-            timeout: 30000, // Tăng timeout lên 30 giây cho endpoint này
+            timeout: 30000,
         });
         return response.data;
     },
@@ -117,9 +87,10 @@ export const authApi = {
     },
 
     // User endpoints
-    // ✅ FIXED: Return PageableResponse instead of User[]
-    getAllUsers: async () => {
-        const response = await api.get<PageableResponse<User>>("/users");
+    getAllUsers: async (params?: { page?: number; size?: number; sort?: string }) => {
+        const response = await api.get<PageableResponse<User>>("/users", {
+            params,
+        });
         return response.data;
     },
     getUserById: async (id: string) => {
@@ -161,6 +132,14 @@ export const authApi = {
         return response.data;
     },
 
+
+    // Merchant approval queue
+    getMerchantsPendingConsideration: async (params?: { page?: number; size?: number; sort?: string }) => {
+        const response = await api.get<PageableResponse<User>>("/users/merchants/consideration", {
+            params,
+        });
+        return response.data;
+    },
     // Address endpoints
     addAddress: async (userId: string, address: AddressRequest) => {
         const response = await api.post<AddressResponse>(`/users/address/${userId}`, address);

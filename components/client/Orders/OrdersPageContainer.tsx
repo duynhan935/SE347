@@ -40,7 +40,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
     return (
         <div className="custom-container p-3 sm:p-1 md:p-12">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-16 items-start">
-                {/* Cột bên trái: Danh sách đơn hàng */}
+                {/* Left column: order list */}
                 <div className="lg:col-span-2">
                     {/* Filter options */}
                     <div className="flex justify-between items-center mb-8">
@@ -81,12 +81,12 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                     
                                     {/* Title */}
                                     <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                        Chưa có đơn hàng nào
+                                        No orders yet
                                     </h3>
                                     
                                     {/* Description */}
                                     <p className="text-gray-600 mb-8 max-w-md">
-                                        Bạn chưa đặt đơn hàng nào. Hãy khám phá các nhà hàng và món ăn ngon để bắt đầu đặt hàng nhé!
+                                        You have not placed any orders yet. Browse restaurants and discover great food to get started.
                                     </p>
                                     
                                     {/* CTA Buttons */}
@@ -95,14 +95,14 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                             href="/restaurants"
                                             className="bg-brand-purple text-white px-6 py-3 rounded-full font-bold hover:bg-brand-purple/90 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
                                         >
-                                            Khám phá nhà hàng
+                                            Browse restaurants
                                         </Link>
                                         {onRetry && (
                                             <button
                                                 onClick={onRetry}
                                                 className="border-2 border-gray-300 text-gray-700 px-6 py-3 rounded-full font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
                                             >
-                                                Thử lại
+                                                Retry
                                             </button>
                                         )}
                                     </div>
@@ -115,44 +115,44 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                 const orderDate = new Date(order.createdAt);
                                 const formattedDate = isNaN(orderDate.getTime())
                                     ? order.createdAt
-                                    : orderDate.toLocaleDateString();
+                                    : orderDate.toLocaleDateString("en-US");
 
                                 // Get status display info - Solid colors, no icons
                                 const getStatusInfo = (status?: OrderStatus) => {
                                     switch (status) {
                                         case OrderStatus.PENDING:
                                             return {
-                                                text: "Chờ xác nhận",
+                                                text: "Pending confirmation",
                                                 className: "bg-yellow-100 text-yellow-800",
                                             };
                                         case OrderStatus.CONFIRMED:
                                             return {
-                                                text: "Đã xác nhận",
+                                                text: "Confirmed",
                                                 className: "bg-blue-100 text-blue-800",
                                             };
                                         case OrderStatus.PREPARING:
                                             return {
-                                                text: "Đang chuẩn bị",
+                                                text: "Preparing",
                                                 className: "bg-purple-100 text-purple-800",
                                             };
                                         case OrderStatus.READY:
                                             return {
-                                                text: "Sẵn sàng",
+                                                text: "Ready",
                                                 className: "bg-indigo-100 text-indigo-800",
                                             };
                                         case OrderStatus.COMPLETED:
                                             return {
-                                                text: "Hoàn thành",
+                                                text: "Completed",
                                                 className: "bg-green-100 text-green-800",
                                             };
                                         case OrderStatus.CANCELLED:
                                             return {
-                                                text: "Đã hủy",
+                                                text: "Cancelled",
                                                 className: "bg-red-100 text-red-800",
                                             };
                                         default:
                                             return {
-                                                text: "Không xác định",
+                                                text: "Unknown",
                                                 className: "bg-gray-100 text-gray-800",
                                             };
                                     }
@@ -203,7 +203,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                     </div>
                 </div>
 
-                {/* Cột bên phải: Quảng cáo */}
+                {/* Right column: promo */}
                 <div className="lg:col-span-1 hidden lg:block">
                     <div className="bg-green-100 p-3 rounded-lg sticky top-24">
                         <Image src={Hero} alt="Food Delivery" className="w-full h-auto rounded-md" />

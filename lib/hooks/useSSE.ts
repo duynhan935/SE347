@@ -99,12 +99,12 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
                                 
                                 addNotification({
                                         type: "ORDER_ACCEPTED",
-                                        title: "Đơn hàng được chấp nhận",
-                                        message: restaurantName ? `${restaurantName} đã chấp nhận đơn hàng của bạn` : message,
+                                        title: "Order accepted",
+                                        message: restaurantName ? `${restaurantName} accepted your order.` : message,
                                         restaurantName,
                                 });
 
-                                toast.success(restaurantName ? `${restaurantName} đã chấp nhận đơn hàng` : "Đơn hàng được chấp nhận", {
+                                toast.success(restaurantName ? `${restaurantName} accepted your order.` : "Order accepted", {
                                         icon: "✅",
                                         duration: 5000,
                                 });
@@ -120,12 +120,12 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
                                 
                                 addNotification({
                                         type: "ORDER_REJECTED",
-                                        title: "Đơn hàng bị từ chối",
-                                        message: restaurantName ? `${restaurantName} đã từ chối đơn hàng của bạn` : message,
+                                        title: "Order rejected",
+                                        message: restaurantName ? `${restaurantName} rejected your order.` : message,
                                         restaurantName,
                                 });
 
-                                toast.error(restaurantName ? `${restaurantName} đã từ chối đơn hàng` : "Đơn hàng bị từ chối", {
+                                toast.error(restaurantName ? `${restaurantName} rejected your order.` : "Order rejected", {
                                         icon: "❌",
                                         duration: 5000,
                                 });

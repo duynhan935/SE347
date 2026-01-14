@@ -19,15 +19,15 @@ export function useGeolocation(): GeolocationResult {
 
         useEffect(() => {
                 if (!("geolocation" in navigator)) {
-                        setError("Trình duyệt không hỗ trợ Geolocation API");
+                        setError("This browser does not support the Geolocation API.");
                         setLoading(false);
                         return;
                 }
 
                 const options: PositionOptions = {
-                        enableHighAccuracy: true, // dùng GPS nếu có thể
-                        timeout: 10000, // 10s timeout
-                        maximumAge: 0, // không dùng vị trí cũ cache
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0,
                 };
 
                 navigator.geolocation.getCurrentPosition(
@@ -39,16 +39,16 @@ export function useGeolocation(): GeolocationResult {
                         (err: GeolocationPositionError) => {
                                 switch (err.code) {
                                         case err.PERMISSION_DENIED:
-                                                setError("Người dùng từ chối quyền truy cập vị trí.");
+                                                setError("Location permission was denied.");
                                                 break;
                                         case err.POSITION_UNAVAILABLE:
-                                                setError("Không thể xác định vị trí hiện tại.");
+                                                setError("Unable to determine your current location.");
                                                 break;
                                         case err.TIMEOUT:
-                                                setError("Lấy vị trí quá thời gian cho phép.");
+                                                setError("Location request timed out.");
                                                 break;
                                         default:
-                                                setError("Lỗi không xác định khi lấy vị trí.");
+                                                setError("An unknown error occurred while fetching location.");
                                 }
                                 setLoading(false);
                         },

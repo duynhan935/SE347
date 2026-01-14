@@ -83,7 +83,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                         <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Tìm kiếm..."
+                            placeholder="Search..."
                             className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                         />
                     </div>
@@ -156,14 +156,14 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                                     className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                                     onClick={() => setDropdownOpen(false)}
                                 >
-                                    Hồ sơ
+                                    Profile
                                 </Link>
                                 <Link
                                     href="/admin/settings"
                                     className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                                     onClick={() => setDropdownOpen(false)}
                                 >
-                                    Cài đặt
+                                    Settings
                                 </Link>
                                 <hr className="my-2 border-gray-200 dark:border-gray-700" />
                                 <button
@@ -173,7 +173,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                                     }}
                                     className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
-                                    Đăng xuất
+                                    Logout
                                 </button>
                             </div>
                         )}

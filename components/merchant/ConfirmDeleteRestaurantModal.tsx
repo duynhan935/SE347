@@ -24,13 +24,13 @@ export default function ConfirmDeleteRestaurantModal({
                         <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md mx-4 border border-gray-200 dark:border-gray-700">
                                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
                                         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                                Xóa nhà hàng
+                                                Delete restaurant
                                         </h3>
                                         <button
                                                 type="button"
                                                 onClick={onCancel}
                                                 className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                                                aria-label="Đóng"
+                                                aria-label="Close"
                                         >
                                                 <X className="w-4 h-4 text-gray-500" />
                                         </button>
@@ -43,25 +43,24 @@ export default function ConfirmDeleteRestaurantModal({
                                                 </div>
                                                 <div>
                                                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                                Bạn có chắc muốn xóa nhà hàng này?
+                                                                Are you sure you want to delete this restaurant?
                                                         </p>
                                                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                                                 {restaurantName ? (
                                                                         <>
-                                                                                Nhà hàng:{" "}
+                                                                                Restaurant:{" "}
                                                                                 <span className="font-semibold">
                                                                                         {restaurantName}
                                                                                 </span>
                                                                         </>
                                                                 ) : (
-                                                                        "Hành động này không thể hoàn tác."
+                                                                        "This action cannot be undone."
                                                                 )}
                                                         </p>
                                                 </div>
                                         </div>
                                         <p className="text-xs text-gray-500 dark:text-gray-500">
-                                                Sau khi xóa, toàn bộ dữ liệu liên quan đến nhà hàng này sẽ không thể
-                                                khôi phục.
+                                                After deleting, all related data for this restaurant cannot be restored.
                                         </p>
                                 </div>
 
@@ -72,7 +71,7 @@ export default function ConfirmDeleteRestaurantModal({
                                                 disabled={loading}
                                                 className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
-                                                Hủy
+                                                Cancel
                                         </button>
                                         <button
                                                 type="button"
@@ -81,7 +80,7 @@ export default function ConfirmDeleteRestaurantModal({
                                                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:bg-red-400 transition-colors"
                                         >
                                                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                                Xóa vĩnh viễn
+                                                Delete permanently
                                         </button>
                                 </div>
                         </div>
