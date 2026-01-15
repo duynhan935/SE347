@@ -1,12 +1,14 @@
 "use client";
 
 import { authApi } from "@/lib/api/authApi";
+import { useNotificationStore } from "@/stores/useNotificationStore";
 import { User as UserType } from "@/types";
 import { Calendar, CheckCircle, Loader2, Mail, RefreshCw, Search, User, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function MerchantRequestsPage() {
+    const { markAsRead } = useNotificationStore();
     const [requests, setRequests] = useState<UserType[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
@@ -54,6 +56,13 @@ export default function MerchantRequestsPage() {
         try {
             await authApi.approveMerchant(userId);
             toast.success("Đã phê duyệt merchant thành công!");
+            
+            // Mark related notifications as read
+            const { notifications } = useNotificationStore.getState();
+            notifications
+                .filter((n) => n.type === "ADMIN_MERCHANT_REQUEST" && n.merchantId === userId)
+                .forEach((n) => markAsRead(n.id));
+            
             fetchMerchantRequests();
         } catch (error: unknown) {
             const errorMessage =
@@ -76,6 +85,13 @@ export default function MerchantRequestsPage() {
         try {
             await authApi.rejectMerchant(userId, { reason: reason.trim() });
             toast.success("Đã từ chối merchant thành công!");
+            
+            // Mark related notifications as read
+            const { notifications } = useNotificationStore.getState();
+            notifications
+                .filter((n) => n.type === "ADMIN_MERCHANT_REQUEST" && n.merchantId === userId)
+                .forEach((n) => markAsRead(n.id));
+            
             fetchMerchantRequests();
         } catch (error: unknown) {
             const errorMessage =

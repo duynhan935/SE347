@@ -5,6 +5,7 @@ import { chatApi } from "@/lib/api/chatApi";
 import { useChatSocket } from "@/lib/hooks/useChatSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatStore } from "@/stores/useChatStore";
+import { useNotificationStore } from "@/stores/useNotificationStore";
 import { ChatRoom, MessageDTO } from "@/types";
 import { ReactNode, createContext, useContext, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
@@ -149,7 +150,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                                         if (message.receiverId === user.id) {
                                                 incrementUnreadCount(message.roomId);
                                                 
-                                                // Get sender name for notification
+                                                // Create notification for new message
                                                 const getSenderName = async () => {
                                                         try {
                                                                 const sender = await authApi.getUserById(message.senderId);
@@ -159,8 +160,17 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                                                         }
                                                 };
                                                 
-                                                // Show toast notification with sender name
+                                                // Add notification and show toast with sender name
                                                 getSenderName().then((senderName) => {
+                                                        useNotificationStore.getState().addNotification({
+                                                                type: "MESSAGE_RECEIVED",
+                                                                title: "Tin nhắn mới",
+                                                                message: `${senderName}: ${message.content.substring(0, 50)}${message.content.length > 50 ? "..." : ""}`,
+                                                                roomId: message.roomId,
+                                                                senderId: message.senderId,
+                                                                senderName: senderName,
+                                                        });
+                                                        
                                                         toast.success(`Tin nhắn mới từ ${senderName}`, {
                                                                 duration: 4000,
                                                                 icon: "💬",

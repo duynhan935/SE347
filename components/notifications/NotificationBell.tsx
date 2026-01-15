@@ -14,12 +14,13 @@ import { useNotificationStore } from "@/stores/useNotificationStore";
 import { OrderStatus } from "@/types/order.type";
 import { Bell } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function NotificationBell() {
     const { user, isAuthenticated } = useAuthStore();
-    const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
+    const { notifications, markAsRead, markAllAsRead, unreadCount, initializeFromOrders } = useNotificationStore();
     const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const initializedRef = useRef(false);
 
     // Listen for order status updates via socket
     useOrderSocket({
@@ -39,10 +40,18 @@ export function NotificationBell() {
             } else if (status === "cancelled") {
                 useNotificationStore.getState().addNotification({
                     type: "ORDER_REJECTED",
-                    title: "Order rejected",
-                    message: `Order ${orderId} was rejected. ${
-                        notification.data.reason ? `Reason: ${notification.data.reason}` : ""
+                    title: "Đơn hàng đã bị hủy",
+                    message: `Đơn hàng ${orderId} đã bị hủy. ${
+                        notification.data.reason ? `Lý do: ${notification.data.reason}` : ""
                     }`,
+                    orderId,
+                    restaurantName: notification.data.restaurantName,
+                });
+            } else if (status === "completed") {
+                useNotificationStore.getState().addNotification({
+                    type: "ORDER_COMPLETED",
+                    title: "Đơn hàng đã hoàn thành",
+                    message: `Đơn hàng ${orderId} đã được giao thành công.`,
                     orderId,
                     restaurantName: notification.data.restaurantName,
                 });
@@ -72,16 +81,24 @@ export function NotificationBell() {
                     if (previousStatus === "pending" && currentStatus === "confirmed") {
                         useNotificationStore.getState().addNotification({
                             type: "ORDER_ACCEPTED",
-                            title: "Order accepted",
-                            message: `Order ${orderId} was accepted and is being prepared.`,
+                            title: "Đơn hàng đã được xác nhận",
+                            message: `Đơn hàng ${orderId} đã được xác nhận và đang được chuẩn bị.`,
                             orderId,
                             restaurantName: order.restaurant?.name,
                         });
                     } else if (previousStatus === "pending" && currentStatus === "cancelled") {
                         useNotificationStore.getState().addNotification({
                             type: "ORDER_REJECTED",
-                            title: "Order rejected",
-                            message: `Order ${orderId} was rejected.`,
+                            title: "Đơn hàng đã bị hủy",
+                            message: `Đơn hàng ${orderId} đã bị hủy.`,
+                            orderId,
+                            restaurantName: order.restaurant?.name,
+                        });
+                    } else if (previousStatus !== "completed" && currentStatus === "completed") {
+                        useNotificationStore.getState().addNotification({
+                            type: "ORDER_COMPLETED",
+                            title: "Đơn hàng đã hoàn thành",
+                            message: `Đơn hàng ${orderId} đã được giao thành công.`,
                             orderId,
                             restaurantName: order.restaurant?.name,
                         });
@@ -99,6 +116,19 @@ export function NotificationBell() {
     useEffect(() => {
         if (!isAuthenticated || !user?.id) return;
 
+        // Initialize notifications from order history on first load
+        if (!initializedRef.current) {
+            orderApi
+                .getOrdersByUser(user.id)
+                .then(({ orders }) => {
+                    initializeFromOrders(orders);
+                    initializedRef.current = true;
+                })
+                .catch((error) => {
+                    console.error("Failed to initialize notifications from orders:", error);
+                });
+        }
+
         // Initial check
         checkOrderStatus();
 
@@ -110,49 +140,61 @@ export function NotificationBell() {
                 clearInterval(checkIntervalRef.current);
             }
         };
-    }, [isAuthenticated, user?.id, checkOrderStatus]);
+    }, [isAuthenticated, user?.id, checkOrderStatus, initializeFromOrders]);
+
+    const [isOpen, setIsOpen] = useState(false);
 
     if (!isAuthenticated) return null;
 
-    const unread = unreadCount();
+    // Only count order-related notifications (exclude messages, merchant orders, admin requests)
+    const orderNotifications = notifications.filter(
+        (n) =>
+            n.type !== "MERCHANT_NEW_ORDER" &&
+            n.type !== "ADMIN_MERCHANT_REQUEST" &&
+            n.type !== "MESSAGE_RECEIVED"
+    );
+    const unread = orderNotifications.filter((n) => !n.read).length;
 
     return (
-        <DropdownMenu>
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenuTrigger className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
                 <Bell className="h-5 w-5 text-brand-black dark:text-white" />
                 {unread > 0 && (
-                    <span className="absolute top-0 right-0 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                        {unread > 9 ? "9+" : unread}
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#EE4D2D] text-white text-xs rounded-full flex items-center justify-center font-bold shadow-md">
+                        {unread > 99 ? "99+" : unread}
                     </span>
                 )}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
                 <div className="flex items-center justify-between p-3 border-b">
-                    <h3 className="font-semibold text-sm">Notifications</h3>
+                    <h3 className="font-semibold text-sm">Thông báo</h3>
                     {unread > 0 && (
                         <button
                             onClick={markAllAsRead}
-                            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                            className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium"
                         >
-                            Mark all as read
+                            Đánh dấu đã đọc
                         </button>
                     )}
                 </div>
 
                 {notifications.length === 0 ? (
-                    <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">No notifications.</div>
+                    <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                        Không có thông báo nào
+                    </div>
                 ) : (
                     <>
-                        {notifications.map((notif) => (
+                        {orderNotifications.map((notif) => (
                             <DropdownMenuItem
                                 key={notif.id}
                                 className={`flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                                    !notif.read ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                                    !notif.read ? "bg-orange-50 dark:bg-orange-900/20" : ""
                                 }`}
                                 onClick={() => {
                                     markAsRead(notif.id);
+                                    setIsOpen(false);
                                     if (notif.orderId) {
-                                        // Navigate to order page
+                                        window.location.href = `/orders/${notif.orderId}`;
                                     }
                                 }}
                             >
@@ -164,24 +206,54 @@ export function NotificationBell() {
                                         <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{notif.message}</p>
                                         {notif.restaurantName && (
                                             <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                                Restaurant: {notif.restaurantName}
+                                                Nhà hàng: {notif.restaurantName}
                                             </p>
                                         )}
                                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                            {new Date(notif.createdAt).toLocaleString("en-US")}
+                                            {new Date(notif.createdAt).toLocaleString("vi-VN")}
                                         </p>
                                     </div>
                                     {!notif.read && (
-                                        <div className="h-2 w-2 bg-blue-500 rounded-full ml-2 mt-1 flex-shrink-0" />
+                                        <div className="h-2 w-2 bg-[#EE4D2D] rounded-full ml-2 mt-1 flex-shrink-0" />
                                     )}
                                 </div>
                                 {notif.orderId && (
                                     <Link
                                         href={`/orders/${notif.orderId}`}
-                                        className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 mt-2"
-                                        onClick={(e) => e.stopPropagation()}
+                                        className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-2 font-medium"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            markAsRead(notif.id);
+                                            setIsOpen(false);
+                                        }}
                                     >
-                                        View order details →
+                                        Xem chi tiết đơn hàng →
+                                    </Link>
+                                )}
+                                {notif.roomId && (
+                                    <Link
+                                        href="/messages"
+                                        className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-2 font-medium"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            markAsRead(notif.id);
+                                            setIsOpen(false);
+                                        }}
+                                    >
+                                        Xem tin nhắn →
+                                    </Link>
+                                )}
+                                {notif.roomId && (
+                                    <Link
+                                        href="/messages"
+                                        className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-2 font-medium"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            markAsRead(notif.id);
+                                            setIsOpen(false);
+                                        }}
+                                    >
+                                        Xem tin nhắn →
                                     </Link>
                                 )}
                             </DropdownMenuItem>
@@ -189,9 +261,10 @@ export function NotificationBell() {
                         <DropdownMenuSeparator />
                         <Link
                             href="/account/orders"
-                            className="p-3 text-center text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                            className="p-3 text-center text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium"
+                            onClick={() => setIsOpen(false)}
                         >
-                            View all orders
+                            Xem tất cả đơn hàng
                         </Link>
                     </>
                 )}

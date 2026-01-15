@@ -1,0 +1,316 @@
+"use client";
+
+import { reviewApi } from "@/lib/api/reviewApi";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { Order } from "@/types/order.type";
+import { Star } from "lucide-react";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+
+interface ReviewFormProps {
+    order: Order;
+    onReviewSubmitted?: () => void;
+}
+
+interface ProductReview {
+    productId: string;
+    productName: string;
+    rating: number;
+    title: string;
+    content: string;
+}
+
+export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps) {
+    const { user } = useAuthStore();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [restaurantRating, setRestaurantRating] = useState(0);
+    const [restaurantTitle, setRestaurantTitle] = useState("");
+    const [restaurantContent, setRestaurantContent] = useState("");
+    const [productReviews, setProductReviews] = useState<Record<string, ProductReview>>({});
+
+    // Initialize product reviews
+    useEffect(() => {
+        const initial: Record<string, ProductReview> = {};
+        order.items.forEach((item) => {
+            if (!initial[item.productId]) {
+                initial[item.productId] = {
+                    productId: item.productId,
+                    productName: item.productName,
+                    rating: 0,
+                    title: "",
+                    content: "",
+                };
+            }
+        });
+        setProductReviews(initial);
+    }, [order.items]);
+
+    const updateProductReview = (productId: string, field: keyof ProductReview, value: string | number) => {
+        setProductReviews((prev) => ({
+            ...prev,
+            [productId]: {
+                ...prev[productId],
+                [field]: value,
+            },
+        }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!user?.id) {
+            toast.error("Vui lòng đăng nhập để đánh giá");
+            return;
+        }
+
+        // Validate restaurant review
+        if (restaurantRating === 0) {
+            toast.error("Vui lòng đánh giá nhà hàng");
+            return;
+        }
+
+        if (!restaurantTitle.trim() || !restaurantContent.trim()) {
+            toast.error("Vui lòng điền đầy đủ tiêu đề và nội dung đánh giá nhà hàng");
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            // Submit restaurant review
+            await reviewApi.createReview({
+                userId: user.id,
+                reviewId: order.restaurantId || order.restaurant?.id || "",
+                reviewType: "RESTAURANT",
+                title: restaurantTitle.trim(),
+                content: restaurantContent.trim(),
+                rating: restaurantRating,
+            });
+
+            // Submit product reviews (only for products with rating > 0)
+            const productReviewPromises = Object.values(productReviews)
+                .filter((review) => review.rating > 0)
+                .map((review) => {
+                    if (!review.title.trim() || !review.content.trim()) {
+                        return Promise.resolve(); // Skip if incomplete
+                    }
+                    return reviewApi.createReview({
+                        userId: user.id,
+                        reviewId: review.productId,
+                        reviewType: "PRODUCT",
+                        title: review.title.trim(),
+                        content: review.content.trim(),
+                        rating: review.rating,
+                    });
+                });
+
+            await Promise.all(productReviewPromises);
+
+            toast.success("Đánh giá của bạn đã được gửi thành công!");
+            
+            // Reset form
+            setRestaurantRating(0);
+            setRestaurantTitle("");
+            setRestaurantContent("");
+            const resetInitial: Record<string, ProductReview> = {};
+            order.items.forEach((item) => {
+                if (!resetInitial[item.productId]) {
+                    resetInitial[item.productId] = {
+                        productId: item.productId,
+                        productName: item.productName,
+                        rating: 0,
+                        title: "",
+                        content: "",
+                    };
+                }
+            });
+            setProductReviews(resetInitial);
+
+            if (onReviewSubmitted) {
+                onReviewSubmitted();
+            }
+        } catch (error: unknown) {
+            const errorMessage =
+                (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+                (error as { message?: string })?.message ||
+                "Không thể gửi đánh giá. Vui lòng thử lại.";
+            toast.error(errorMessage);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const renderStarRating = (
+        rating: number,
+        onRatingChange: (rating: number) => void,
+        size: "sm" | "md" | "lg" = "md"
+    ) => {
+        const starSize = size === "sm" ? "w-4 h-4" : size === "lg" ? "w-8 h-8" : "w-6 h-6";
+        return (
+            <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                        key={star}
+                        type="button"
+                        onClick={() => onRatingChange(star)}
+                        className={`${starSize} transition-colors ${
+                            star <= rating ? "text-yellow-400" : "text-gray-300"
+                        } hover:text-yellow-400`}
+                        disabled={isSubmitting}
+                        title={`${star} sao`}
+                        aria-label={`Đánh giá ${star} sao`}
+                    >
+                        <Star className="w-full h-full fill-current" />
+                    </button>
+                ))}
+            </div>
+        );
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Restaurant Review Section */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">
+                    Đánh giá nhà hàng: {order.restaurant?.name || "Restaurant"}
+                </h3>
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Đánh giá sao <span className="text-red-500">*</span>
+                        </label>
+                        {renderStarRating(restaurantRating, setRestaurantRating, "lg")}
+                    </div>
+
+                    <div>
+                        <label htmlFor="restaurant-title" className="block text-sm font-medium text-gray-700 mb-2">
+                            Tiêu đề <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            id="restaurant-title"
+                            type="text"
+                            value={restaurantTitle}
+                            onChange={(e) => setRestaurantTitle(e.target.value)}
+                            placeholder="Nhập tiêu đề đánh giá"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                            required
+                            disabled={isSubmitting}
+                            maxLength={100}
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="restaurant-content" className="block text-sm font-medium text-gray-700 mb-2">
+                            Nội dung đánh giá <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            id="restaurant-content"
+                            value={restaurantContent}
+                            onChange={(e) => setRestaurantContent(e.target.value)}
+                            placeholder="Chia sẻ trải nghiệm của bạn về nhà hàng..."
+                            rows={4}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                            required
+                            disabled={isSubmitting}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Product Reviews Section */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Đánh giá món ăn (Tùy chọn)</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                    Bạn có thể đánh giá từng món ăn trong đơn hàng. Đánh giá món ăn là tùy chọn.
+                </p>
+
+                <div className="space-y-6">
+                    {order.items.map((item) => {
+                        const review = productReviews[item.productId] || {
+                            productId: item.productId,
+                            productName: item.productName,
+                            rating: 0,
+                            title: "",
+                            content: "",
+                        };
+
+                        return (
+                            <div key={item.productId} className="border-b border-gray-100 last:border-b-0 pb-6 last:pb-0">
+                                <h4 className="font-semibold text-gray-900 mb-3">{item.productName}</h4>
+                                
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Đánh giá sao
+                                        </label>
+                                        {renderStarRating(review.rating, (rating) => 
+                                            updateProductReview(item.productId, "rating", rating)
+                                        )}
+                                    </div>
+
+                                    {review.rating > 0 && (
+                                        <>
+                                            <div>
+                                                <label 
+                                                    htmlFor={`product-title-${item.productId}`}
+                                                    className="block text-sm font-medium text-gray-700 mb-2"
+                                                >
+                                                    Tiêu đề
+                                                </label>
+                                                <input
+                                                    id={`product-title-${item.productId}`}
+                                                    type="text"
+                                                    value={review.title}
+                                                    onChange={(e) => 
+                                                        updateProductReview(item.productId, "title", e.target.value)
+                                                    }
+                                                    placeholder="Nhập tiêu đề đánh giá"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                                                    disabled={isSubmitting}
+                                                    maxLength={100}
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label 
+                                                    htmlFor={`product-content-${item.productId}`}
+                                                    className="block text-sm font-medium text-gray-700 mb-2"
+                                                >
+                                                    Nội dung đánh giá
+                                                </label>
+                                                <textarea
+                                                    id={`product-content-${item.productId}`}
+                                                    value={review.content}
+                                                    onChange={(e) => 
+                                                        updateProductReview(item.productId, "content", e.target.value)
+                                                    }
+                                                    placeholder="Chia sẻ trải nghiệm của bạn về món ăn này..."
+                                                    rows={3}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                                                    disabled={isSubmitting}
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-end">
+                <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6 py-3 bg-[#EE4D2D] text-white font-semibold rounded-lg hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                >
+                    {isSubmitting ? "Đang gửi..." : "Gửi đánh giá"}
+                </button>
+            </div>
+        </form>
+    );
+}
+

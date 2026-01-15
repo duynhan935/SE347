@@ -1,9 +1,11 @@
 "use client";
 
 import { authApi } from "@/lib/api/authApi";
-import { Menu, Moon, Sun, Bell, Search } from "lucide-react";
+import { Menu, Moon, Sun, Search } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { AdminNotificationBell } from "./AdminNotificationBell";
+import { MerchantNotificationBell } from "../merchant/MerchantNotificationBell";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 
@@ -18,51 +20,17 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
     const logout = useAuthStore((state) => state.logout);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [notifOpen, setNotifOpen] = useState(false);
-    const notifRef = useRef<HTMLDivElement>(null);
-    const [pendingMerchantCount, setPendingMerchantCount] = useState(0);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setDropdownOpen(false);
             }
-            if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
-                setNotifOpen(false);
-            }
         };
 
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-
-    useEffect(() => {
-        let cancelled = false;
-
-        const pollPendingMerchants = async () => {
-            if (!user?.id || user.role !== "ADMIN") return;
-            try {
-                const usersPage = await authApi.getAllUsers();
-                const users = Array.isArray(usersPage?.content) ? usersPage.content : [];
-                const pending = users.filter((u) => u.role === "MERCHANT" && u.enabled === false).length;
-                if (!cancelled) {
-                    setPendingMerchantCount(pending);
-                }
-            } catch {
-                if (!cancelled) {
-                    setPendingMerchantCount(0);
-                }
-            }
-        };
-
-        void pollPendingMerchants();
-        const intervalId = window.setInterval(pollPendingMerchants, 30000);
-
-        return () => {
-            cancelled = true;
-            window.clearInterval(intervalId);
-        };
-    }, [user?.id, user?.role]);
 
     return (
         <header className="sticky top-0 z-40 flex w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
@@ -100,40 +68,11 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                     </button>
 
                     {/* Notifications */}
-                    <div className="relative" ref={notifRef}>
-                        <button
-                            onClick={() => setNotifOpen((v) => !v)}
-                            className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300"
-                            aria-label="Notifications"
-                        >
-                            <Bell size={20} />
-                            {pendingMerchantCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 bg-red-500 text-white text-[11px] rounded-full flex items-center justify-center font-bold">
-                                    {pendingMerchantCount > 99 ? "99+" : pendingMerchantCount}
-                                </span>
-                            )}
-                        </button>
-
-                        {notifOpen && (
-                            <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Notifications</p>
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                        Pending merchant requests: {pendingMerchantCount}
-                                    </p>
-                                </div>
-                                <div className="p-2">
-                                    <Link
-                                        href="/admin/merchant-requests"
-                                        className="block rounded-md px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                        onClick={() => setNotifOpen(false)}
-                                    >
-                                        View merchant requests
-                                    </Link>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    {user?.role === "ADMIN" ? (
+                        <AdminNotificationBell />
+                    ) : user?.role === "MERCHANT" ? (
+                        <MerchantNotificationBell />
+                    ) : null}
 
                     {/* User dropdown */}
                     <div className="relative" ref={dropdownRef}>

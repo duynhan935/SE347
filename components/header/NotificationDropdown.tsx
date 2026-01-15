@@ -67,15 +67,22 @@ const getNotificationImage = (type: string): string => {
 
 export default function NotificationDropdown() {
     const { isAuthenticated, user, loading } = useAuthStore();
-    const { notifications } = useNotifications(); // Track order status changes and create notifications
-    const { markAsRead, unreadCount } = useNotificationStore();
+    useNotifications(); // Track order status changes and create notifications
+    const { notifications: allNotifications, markAsRead } = useNotificationStore();
     const [isOpen, setIsOpen] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const router = useRouter();
 
-    const unread = unreadCount();
+    // Only show order-related notifications (exclude messages, merchant orders, admin requests)
+    const orderNotifications = allNotifications.filter(
+        (n) =>
+            n.type !== "MERCHANT_NEW_ORDER" &&
+            n.type !== "ADMIN_MERCHANT_REQUEST" &&
+            n.type !== "MESSAGE_RECEIVED"
+    );
+    const unread = orderNotifications.filter((n) => !n.read).length;
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -168,14 +175,14 @@ export default function NotificationDropdown() {
 
                     {/* Notifications List */}
                     <div className="overflow-y-auto flex-1">
-                        {notifications.length === 0 ? (
+                        {orderNotifications.length === 0 ? (
                             <div className="p-8 text-center">
                                 <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                                 <p className="text-sm text-gray-500">Không có thông báo nào</p>
                             </div>
                         ) : (
                             <div className="divide-y divide-gray-100">
-                                {notifications.slice(0, 10).map((notif) => (
+                                {orderNotifications.slice(0, 10).map((notif) => (
                                     <button
                                         key={notif.id}
                                         onClick={() => handleNotificationClick(notif.id, notif.orderId)}
@@ -240,7 +247,7 @@ export default function NotificationDropdown() {
                     </div>
 
                     {/* Footer */}
-                    {notifications.length > 0 && (
+                    {orderNotifications.length > 0 && (
                         <div className="border-t border-gray-200 px-4 py-3">
                             <Link
                                 href="/account/orders"
@@ -250,7 +257,7 @@ export default function NotificationDropdown() {
                                 }}
                                 className="block w-full text-center text-sm font-medium text-[#EE4D2D] hover:text-[#EE4D2D]/80 transition-colors"
                             >
-                                Xem tất cả
+                                Xem tất cả đơn hàng
                             </Link>
                         </div>
                     )}

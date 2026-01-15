@@ -27,8 +27,6 @@ const formatPriceVND = (priceUSD: number): string => {
     });
 };
 
-type PaymentMethod = "cash" | "card";
-
 export default function PaymentPageClient() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -43,7 +41,6 @@ export default function PaymentPageClient() {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [deliverStyle, setDeliverStyle] = useState<"delivery" | "pickup">("delivery");
-    const [paymentMethod] = useState<PaymentMethod>("card"); // Always use card payment (Stripe)
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const [useNewAddress, setUseNewAddress] = useState(false);
     
@@ -51,7 +48,9 @@ export default function PaymentPageClient() {
     const [createdOrderIds, setCreatedOrderIds] = useState<string[]>([]);
     const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
     const [isProcessingCardPayment, setIsProcessingCardPayment] = useState(false);
+    // paymentId is stored but not used for API calls - Stripe webhook handles payment completion
     const [paymentId, setPaymentId] = useState<string | null>(null);
+    const [isPaymentSuccess, setIsPaymentSuccess] = useState(false);
 
     const [formData, setFormData] = useState({
         name: user?.username || "",
@@ -180,9 +179,9 @@ export default function PaymentPageClient() {
         router,
     ]);
 
-    // Check if cart is empty
+    // Check if cart is empty (but skip if payment just succeeded to avoid redirect conflict)
     useEffect(() => {
-        if (!user || cartLoading || !cartFetched) return;
+        if (!user || cartLoading || !cartFetched || isPaymentSuccess) return;
 
         const delay = 300;
         const checkTimer = setTimeout(() => {
@@ -194,7 +193,7 @@ export default function PaymentPageClient() {
         }, delay);
 
         return () => clearTimeout(checkTimer);
-    }, [user, orderItems, items, cartUserId, cartFetched, cartLoading, router, restaurantId]);
+    }, [user, orderItems, items, cartUserId, cartFetched, cartLoading, router, restaurantId, isPaymentSuccess]);
 
     useEffect(() => {
         if (locationError) {
@@ -202,14 +201,6 @@ export default function PaymentPageClient() {
         }
     }, [locationError]);
 
-    // Debug: Log state changes
-    useEffect(() => {
-        console.log("[PaymentPage] State changed:", {
-            isProcessingCardPayment,
-            stripeClientSecret: stripeClientSecret ? `${stripeClientSecret.substring(0, 20)}...` : null,
-            paymentMethod,
-        });
-    }, [isProcessingCardPayment, stripeClientSecret, paymentMethod]);
 
     // Handle address selection
     const handleAddressSelect = (addressId: string) => {
@@ -345,25 +336,15 @@ export default function PaymentPageClient() {
 
             const order = await orderApi.createOrder(payload);
 
-            // Clear cart for this restaurant
-            if (restaurantId) {
-                clearRestaurant(restaurantId);
-            }
-
-            // Handle payment based on selected method
-            if (paymentMethod === "cash") {
-                // For COD, redirect immediately
-                toast.success("Order placed successfully!");
-                router.push(`/orders/${order.orderId}`);
-            } else if (paymentMethod === "card") {
-                // For card payment, create payment and show Stripe form
-                // Save order ID for payment step
-                setCreatedOrderIds([order.orderId]);
-                // CRITICAL: Set isProcessingCardPayment BEFORE calling handleCardPayment
-                // This ensures the UI updates immediately
-                setIsProcessingCardPayment(true);
-                await handleCardPayment(order);
-            }
+            // For Stripe payment, DON'T clear cart yet - wait for payment success
+            // Save order ID for payment step
+            setCreatedOrderIds([order.orderId]);
+            
+            // Set isProcessingCardPayment to show loading state
+            setIsProcessingCardPayment(true);
+            
+            // Create payment and show Stripe form
+            await handleCardPayment(order);
         } catch (error: unknown) {
             console.error("Failed to create order:", error);
             const errorMessage =
@@ -392,19 +373,12 @@ export default function PaymentPageClient() {
         }
 
         // isProcessingCardPayment is already set to true in handleSubmit
-        const loadingToast = toast.loading("Preparing payment...");
+        const loadingToast = toast.loading("Đang chuẩn bị thanh toán...");
 
         try {
             // Calculate total amount
             const tax = subtotal * 0.05;
             const calculatedTotal = subtotal + shipping + tax;
-
-            console.log("[PaymentPage] Creating payment intent:", {
-                orderId: order.orderId,
-                userId: user.id,
-                amount: calculatedTotal,
-                currency: "USD",
-            });
 
             // Create payment
             const paymentResponse = await paymentApi.createPayment({
@@ -415,10 +389,6 @@ export default function PaymentPageClient() {
                 paymentMethod: "card",
             });
 
-            console.log("[PaymentPage] Payment response:", JSON.stringify(paymentResponse, null, 2));
-            console.log("[PaymentPage] Payment response type:", typeof paymentResponse);
-            console.log("[PaymentPage] Payment response keys:", Object.keys(paymentResponse || {}));
-
             // Check response structure
             if (!paymentResponse) {
                 throw new Error("Payment response is null or undefined");
@@ -428,79 +398,39 @@ export default function PaymentPageClient() {
             // But paymentApi.createPayment returns response.data, so it might be the data directly
             const responseData = (paymentResponse as { data?: unknown }).data || paymentResponse;
             
-            console.log("[PaymentPage] Response data:", JSON.stringify(responseData, null, 2));
-            console.log("[PaymentPage] Response data type:", typeof responseData);
-            console.log("[PaymentPage] Response data keys:", Object.keys(responseData || {}));
-            
             if (!responseData || typeof responseData !== "object") {
-                console.error("[PaymentPage] Response data is missing or invalid:", responseData);
                 throw new Error("Payment response data is missing or invalid");
             }
 
             const responseDataObj = responseData as Record<string, unknown>;
             const clientSecret = responseDataObj.clientSecret as string | undefined;
             const paymentIdFromResponse = responseDataObj.paymentId as string | undefined;
-            
-            console.log("[PaymentPage] Extracted clientSecret:", clientSecret ? `${clientSecret.substring(0, 20)}...` : "null");
-            console.log("[PaymentPage] Extracted paymentId:", paymentIdFromResponse);
 
             if (!clientSecret) {
-                console.error("[PaymentPage] Client secret is missing:", responseData);
                 throw new Error("Failed to get payment client secret from backend");
             }
 
             if (!paymentIdFromResponse) {
-                console.error("[PaymentPage] Payment ID is missing:", responseData);
                 throw new Error("Failed to get payment ID from backend");
             }
 
             // Set states to show Stripe form
-            console.log("[PaymentPage] Setting Stripe client secret:", clientSecret);
-            console.log("[PaymentPage] Setting payment ID:", paymentIdFromResponse);
-            console.log("[PaymentPage] Current isProcessingCardPayment:", true);
-            
-            // Set states synchronously to ensure React batches updates correctly
             setStripeClientSecret(clientSecret);
             setPaymentId(paymentIdFromResponse);
             
-            // Use flushSync to force immediate re-render (if needed)
-            // But first, let's ensure state is set
-            console.log("[PaymentPage] States set, waiting for re-render...");
-            
-            // Force a small delay to ensure state is set before dismissing toast
-            await new Promise((resolve) => setTimeout(resolve, 100));
-            
-            // Verify state was actually set
-            const currentState = {
-                isProcessingCardPayment: true, // This should still be true
-                stripeClientSecret: clientSecret, // This should be set
-            };
-            console.log("[PaymentPage] State verification:", currentState);
-            
+            // Dismiss loading toast
             toast.dismiss(loadingToast);
-            toast.success("Please complete your payment", { duration: 3000 });
             
-            console.log("[PaymentPage] Stripe form should now be visible");
-            console.log("[PaymentPage] Final state check:", {
-                isProcessingCardPayment: true,
-                stripeClientSecret: clientSecret ? `${clientSecret.substring(0, 20)}...` : null,
-            });
-            
-            // Scroll to payment form if it exists
+            // Scroll to payment form after a short delay to ensure it's rendered
             setTimeout(() => {
                 const paymentForm = document.querySelector('[data-payment-form]');
                 if (paymentForm) {
                     paymentForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    console.log("[PaymentPage] Scrolled to payment form");
-                } else {
-                    console.warn("[PaymentPage] Payment form element not found");
                 }
-            }, 200);
+            }, 300);
         } catch (error: unknown) {
-            console.error("[PaymentPage] Failed to create payment:", error);
-            
             // Extract error message
-            let errorMessage = "Failed to create payment. Please try again.";
+            let errorMessage = "Không thể tạo thanh toán. Vui lòng thử lại.";
             
             if (error && typeof error === "object") {
                 const errorObj = error as { response?: { data?: { message?: string } }; message?: string };
@@ -521,28 +451,49 @@ export default function PaymentPageClient() {
 
     // Handle payment success
     const handlePaymentSuccess = async () => {
-        toast.success("Payment completed successfully!");
+        // Stripe webhook will automatically update payment status
+        // No need to call completePayment API - webhook handles it
         
-        // Complete payment on backend
-        if (paymentId) {
-            try {
-                await paymentApi.completePayment(paymentId);
-            } catch (error) {
-                console.error("Failed to complete payment:", error);
-            }
+        // Set payment success flag to prevent cart empty check from redirecting
+        setIsPaymentSuccess(true);
+        
+        // Reset payment states first
+        setIsProcessingCardPayment(false);
+        setStripeClientSecret(null);
+        setPaymentId(null);
+
+        // Show success message
+        toast.success("Thanh toán thành công! Đơn hàng của bạn đã được đặt.", {
+            duration: 3000,
+        });
+
+        // Clear cart silently (no toast) immediately
+        if (restaurantId) {
+            clearRestaurant(restaurantId, { silent: true });
         }
 
-        // Redirect to order detail
-        if (createdOrderIds.length > 0) {
-            router.push(`/orders/${createdOrderIds[0]}`);
-        }
+        // Wait a bit for Stripe webhook to process and update payment status
+        // Then redirect to order detail page with timestamp to force refresh
+        setTimeout(() => {
+            if (createdOrderIds.length > 0) {
+                // Add timestamp to force Next.js to revalidate and fetch fresh data
+                router.push(`/orders/${createdOrderIds[0]}?t=${Date.now()}`);
+            }
+        }, 2000); // 2 seconds delay to allow webhook to process
     };
 
     // Handle payment error
     const handlePaymentError = (error: string) => {
-        toast.error(error);
-        setIsProcessingCardPayment(false);
-        setStripeClientSecret(null);
+        // If PaymentIntent is in terminal state, reset states to allow creating new payment
+        if (error.includes("terminal state") || error.includes("terminal") || error.includes("cannot be used")) {
+            toast.error("Payment Intent đã được sử dụng hoặc đã hết hạn. Vui lòng đặt hàng lại.", { duration: 5000 });
+            setIsProcessingCardPayment(false);
+            setStripeClientSecret(null);
+            setPaymentId(null);
+        } else {
+            toast.error(error, { duration: 5000 });
+            // Keep the form visible so user can retry for other errors
+        }
     };
 
     if (authLoading || cartLoading || !cartFetched || loadingAddresses) {
@@ -714,32 +665,24 @@ export default function PaymentPageClient() {
 
                     {/* Block B: Payment Method */}
                     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6" data-payment-form>
-                        <h2 className="text-xl font-bold mb-4">Payment Method</h2>
+                        <h2 className="text-xl font-bold mb-4">Phương thức thanh toán</h2>
                         {isProcessingCardPayment && stripeClientSecret ? (
-                            (() => {
-                                console.log("[PaymentPage] Rendering PaymentMethodSelector with:", {
-                                    stripeClientSecret: stripeClientSecret ? `${stripeClientSecret.substring(0, 20)}...` : null,
-                                    isProcessingCardPayment,
-                                });
-                                return (
-                                    <PaymentMethodSelector
-                                        key={stripeClientSecret} // Force re-render when clientSecret changes
-                                        stripeClientSecret={stripeClientSecret}
-                                        isProcessingCardPayment={isProcessingCardPayment}
-                                        onPaymentSuccess={handlePaymentSuccess}
-                                        onPaymentError={handlePaymentError}
-                                    />
-                                );
-                            })()
+                            <PaymentMethodSelector
+                                key={stripeClientSecret} // Force re-render when clientSecret changes
+                                stripeClientSecret={stripeClientSecret}
+                                isProcessingCardPayment={isProcessingCardPayment}
+                                onPaymentSuccess={handlePaymentSuccess}
+                                onPaymentError={handlePaymentError}
+                            />
                         ) : (
                             <div className="text-gray-500 text-sm py-8 text-center">
                                 {isProcessingCardPayment ? (
                                     <div className="flex items-center justify-center space-x-2">
                                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#EE4D2D]"></div>
-                                        <span>Preparing payment form...</span>
+                                        <span>Đang chuẩn bị form thanh toán...</span>
                                     </div>
                                 ) : (
-                                    "Please click 'Place Order' to proceed with payment"
+                                    "Vui lòng nhấn 'Đặt hàng' để tiếp tục thanh toán"
                                 )}
                             </div>
                         )}
@@ -817,7 +760,7 @@ export default function PaymentPageClient() {
                                 disabled={isSubmitting}
                                 className="w-full bg-[#EE4D2D] text-white font-semibold py-4 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {isSubmitting ? "Placing Order..." : "Place Order"}
+                                {isSubmitting ? "Đang đặt hàng..." : "Đặt hàng"}
                             </button>
                         )}
                     </div>
@@ -967,32 +910,24 @@ export default function PaymentPageClient() {
 
                 {/* Payment Method */}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4" data-payment-form>
-                    <h2 className="text-lg font-bold mb-4">Payment Method</h2>
+                    <h2 className="text-lg font-bold mb-4">Phương thức thanh toán</h2>
                     {isProcessingCardPayment && stripeClientSecret ? (
-                        (() => {
-                            console.log("[PaymentPage Mobile] Rendering PaymentMethodSelector with:", {
-                                stripeClientSecret: stripeClientSecret ? `${stripeClientSecret.substring(0, 20)}...` : null,
-                                isProcessingCardPayment,
-                            });
-                            return (
-                                <PaymentMethodSelector
-                                    key={stripeClientSecret} // Force re-render when clientSecret changes
-                                    stripeClientSecret={stripeClientSecret}
-                                    isProcessingCardPayment={isProcessingCardPayment}
-                                    onPaymentSuccess={handlePaymentSuccess}
-                                    onPaymentError={handlePaymentError}
-                                />
-                            );
-                        })()
+                        <PaymentMethodSelector
+                            key={stripeClientSecret} // Force re-render when clientSecret changes
+                            stripeClientSecret={stripeClientSecret}
+                            isProcessingCardPayment={isProcessingCardPayment}
+                            onPaymentSuccess={handlePaymentSuccess}
+                            onPaymentError={handlePaymentError}
+                        />
                     ) : (
                         <div className="text-gray-500 text-sm py-8 text-center">
                             {isProcessingCardPayment ? (
                                 <div className="flex items-center justify-center space-x-2">
                                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#EE4D2D]"></div>
-                                    <span>Preparing payment form...</span>
+                                    <span>Đang chuẩn bị form thanh toán...</span>
                                 </div>
                             ) : (
-                                "Please click 'Place Order' to proceed with payment"
+                                "Vui lòng nhấn 'Đặt hàng' để tiếp tục thanh toán"
                             )}
                         </div>
                     )}
@@ -1074,7 +1009,7 @@ export default function PaymentPageClient() {
                             disabled={isSubmitting}
                             className="w-full bg-[#EE4D2D] text-white font-semibold py-3 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSubmitting ? "Placing Order..." : "Place Order"}
+                            {isSubmitting ? "Đang đặt hàng..." : "Đặt hàng"}
                         </button>
                     )}
                 </div>
