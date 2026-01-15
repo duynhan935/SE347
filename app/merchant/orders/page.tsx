@@ -4,6 +4,7 @@ import { orderApi } from "@/lib/api/orderApi";
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useMerchantOrderStore } from "@/stores/useMerchantOrderStore";
 import { Order, OrderStatus } from "@/types/order.type";
 import { CheckCircle, Package, RefreshCw, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -11,6 +12,7 @@ import toast from "react-hot-toast";
 
 export default function MerchantOrdersPage() {
     const { user } = useAuthStore();
+    const { setPendingOrdersCount } = useMerchantOrderStore();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<OrderStatus | "ALL">("ALL");
@@ -115,6 +117,11 @@ export default function MerchantOrdersPage() {
                 // Keep a snapshot of order ids for background change detection.
                 knownOrderIdsRef.current = new Set(restaurantOrders.map((o) => o.orderId));
                 setOrders(restaurantOrders);
+                
+                // Update pending orders count
+                const pendingCount = restaurantOrders.filter((o) => o.status === OrderStatus.PENDING).length;
+                setPendingOrdersCount(pendingCount);
+                
                 return restaurantOrders;
             } catch (error) {
                 console.error("Failed to fetch orders:", error);
@@ -259,6 +266,11 @@ export default function MerchantOrdersPage() {
                 }
                 const next = [incoming, ...prev];
                 next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                
+                // Update pending orders count
+                const pendingCount = next.filter((o) => o.status === OrderStatus.PENDING).length;
+                setPendingOrdersCount(pendingCount);
+                
                 return next;
             });
             knownOrderIdsRef.current.add(incoming.orderId);
@@ -283,6 +295,11 @@ export default function MerchantOrdersPage() {
                         const existing = new Set(prev.map((o) => o.orderId));
                         const merged = [...newOnes.filter((o) => !existing.has(o.orderId)), ...prev];
                         merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                        
+                        // Update pending orders count
+                        const pendingCount = merged.filter((o) => o.status === OrderStatus.PENDING).length;
+                        setPendingOrdersCount(pendingCount);
+                        
                         return merged;
                     });
                 }

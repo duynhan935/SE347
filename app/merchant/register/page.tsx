@@ -135,7 +135,8 @@ export default function MerchantRegisterPage() {
                     await restaurantApi.createRestaurant(restaurantData, restaurantImage || undefined);
 
                     toast.success(
-                        "Merchant registration request and restaurant creation submitted successfully! Please wait for admin approval. You will receive an email notification when approved."
+                        "Đăng ký merchant thành công! Yêu cầu của bạn đã được gửi và đang chờ admin phê duyệt. Bạn sẽ nhận được email thông báo khi được phê duyệt.",
+                        { duration: 5000 }
                     );
                 } catch (restaurantError: unknown) {
                     const errorMsg =
@@ -165,7 +166,8 @@ export default function MerchantRegisterPage() {
                     localStorage.setItem(`pending_restaurant_${email}`, JSON.stringify(restaurantInfo));
 
                     toast.success(
-                        "Merchant registration request submitted successfully! Restaurant information has been saved. The restaurant will be created after approval. You will receive an email notification when approved."
+                        "Đăng ký merchant thành công! Thông tin nhà hàng đã được lưu. Nhà hàng sẽ được tạo sau khi được phê duyệt. Bạn sẽ nhận được email thông báo khi được phê duyệt.",
+                        { duration: 5000 }
                     );
                 }
             } else {
@@ -190,11 +192,16 @@ export default function MerchantRegisterPage() {
                 localStorage.setItem(`pending_restaurant_${email}`, JSON.stringify(restaurantInfo));
 
                 toast.success(
-                    "Merchant registration request submitted successfully! Restaurant information has been saved. The restaurant will be created after approval. You will receive an email notification when approved."
+                    "Đăng ký merchant thành công! Thông tin nhà hàng đã được lưu. Nhà hàng sẽ được tạo sau khi được phê duyệt. Bạn sẽ nhận được email thông báo khi được phê duyệt.",
+                    { duration: 5000 }
                 );
             }
 
-            router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+            // Redirect to login page after successful registration
+            // Merchant will be able to login only after admin approval
+            setTimeout(() => {
+                router.push("/login");
+            }, 2000);
         } catch (error: unknown) {
             let errorMessage = "Unable to submit request. Please try again.";
 
@@ -598,10 +605,10 @@ export default function MerchantRegisterPage() {
 
                         {/* Info Note */}
                         <div className="bg-blue-50 border border-blue-200 rounded-md p-4 text-sm text-blue-800">
-                            <p className="font-semibold mb-1">Note:</p>
+                            <p className="font-semibold mb-1">Lưu ý:</p>
                             <p>
-                                Your request will be sent to admin for approval. You will receive an email notification
-                                when approved or rejected. Restaurant information will be created after you are approved.
+                                Yêu cầu của bạn sẽ được gửi đến admin để phê duyệt. Bạn sẽ nhận được email thông báo khi được phê duyệt hoặc từ chối. 
+                                Thông tin nhà hàng sẽ được tạo sau khi bạn được phê duyệt. Bạn có thể đăng nhập sau khi được phê duyệt.
                             </p>
                         </div>
 

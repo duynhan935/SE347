@@ -23,44 +23,34 @@ export default function PaymentMethodSelector({
     const [stripeInstance, setStripeInstance] = useState<import("@stripe/stripe-js").Stripe | null>(null);
     const [isLoadingStripe, setIsLoadingStripe] = useState(true);
     const [stripeError, setStripeError] = useState<string | null>(null);
+    const [paymentIntentError, setPaymentIntentError] = useState<string | null>(null);
 
-    // Debug logging
+    // Reset paymentIntentError when clientSecret changes
     useEffect(() => {
-        console.log("[PaymentMethodSelector] Component mounted/updated");
-        console.log("[PaymentMethodSelector] Props received:", {
-            stripeClientSecret: stripeClientSecret ? `${stripeClientSecret.substring(0, 20)}...` : null,
-            isProcessingCardPayment,
-            hasStripeInstance: !!stripeInstance,
-            isLoadingStripe,
-            stripeError,
-        });
-        console.log("[PaymentMethodSelector] Should render form:", isProcessingCardPayment && stripeClientSecret && stripeInstance);
-    }, [stripeClientSecret, isProcessingCardPayment, stripeInstance, isLoadingStripe, stripeError]);
+        if (stripeClientSecret) {
+            setPaymentIntentError(null);
+        }
+    }, [stripeClientSecret]);
 
     useEffect(() => {
         if (!stripePublishableKey) {
             setStripeError("Stripe publishable key is not configured");
             setIsLoadingStripe(false);
-            console.error("[PaymentMethodSelector] Stripe publishable key is missing");
             return;
         }
 
         // Load Stripe
         const loadStripeInstance = async () => {
             try {
-                console.log("[PaymentMethodSelector] Loading Stripe...");
                 setIsLoadingStripe(true);
                 const stripe = await loadStripe(stripePublishableKey);
                 if (stripe) {
-                    console.log("[PaymentMethodSelector] Stripe loaded successfully");
                     setStripeInstance(stripe);
                     setStripeError(null);
                 } else {
-                    console.error("[PaymentMethodSelector] Stripe returned null");
                     setStripeError("Failed to load Stripe");
                 }
-            } catch (error) {
-                console.error("[PaymentMethodSelector] Failed to load Stripe:", error);
+            } catch {
                 setStripeError("Failed to initialize Stripe");
             } finally {
                 setIsLoadingStripe(false);
@@ -70,25 +60,15 @@ export default function PaymentMethodSelector({
         loadStripeInstance();
     }, []);
 
-    console.log("[PaymentMethodSelector] Render called with:", {
-        stripeClientSecret: stripeClientSecret ? `${stripeClientSecret.substring(0, 20)}...` : null,
-        isProcessingCardPayment,
-        hasStripeInstance: !!stripeInstance,
-        isLoadingStripe,
-        stripeError,
-    });
-
     return (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h2 className="text-xl font-bold mb-4">Payment Method</h2>
-            
+        <div>
             {/* Credit/Debit Card Section */}
             <div className="border-2 border-[#EE4D2D] bg-orange-50 rounded-lg p-4">
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-5 h-5 rounded-full bg-[#EE4D2D]" aria-hidden />
                     <div className="flex-grow">
-                        <div className="font-semibold text-gray-900">Credit/Debit Card (Stripe)</div>
-                        <div className="text-sm text-gray-500">Pay securely with Stripe</div>
+                        <div className="font-semibold text-gray-900">Thẻ tín dụng/Ghi nợ (Stripe)</div>
+                        <div className="text-sm text-gray-500">Thanh toán an toàn với Stripe</div>
                     </div>
                 </div>
 
@@ -107,23 +87,41 @@ export default function PaymentMethodSelector({
                             <div className="mt-4 text-sm text-gray-600">
                                 <div className="flex items-center space-x-2">
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#EE4D2D]"></div>
-                                    <p>Loading Stripe...</p>
+                                    <p>Đang tải Stripe...</p>
                                 </div>
                             </div>
                         ) : stripeInstance ? (
                             <div className="mt-4">
-                                <Elements stripe={stripeInstance} options={{ clientSecret: stripeClientSecret }}>
-                                    <StripeCardElement
-                                        clientSecret={stripeClientSecret}
-                                        onPaymentSuccess={onPaymentSuccess}
-                                        onPaymentError={onPaymentError}
-                                    />
-                                </Elements>
+                                {paymentIntentError ? (
+                                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                                        <p className="font-medium">⚠️ Lỗi Payment Intent</p>
+                                        <p className="text-xs mt-1">{paymentIntentError}</p>
+                                        <p className="text-xs mt-2">
+                                            Payment Intent này đã được sử dụng hoặc đã hết hạn. Vui lòng đặt hàng lại.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <Elements 
+                                        stripe={stripeInstance} 
+                                        options={{ clientSecret: stripeClientSecret }}
+                                    >
+                                        <StripeCardElement
+                                            clientSecret={stripeClientSecret}
+                                            onPaymentSuccess={onPaymentSuccess}
+                                            onPaymentError={(error) => {
+                                                if (error?.includes("terminal state") || error?.includes("terminal") || error?.includes("cannot be used")) {
+                                                    setPaymentIntentError("Payment Intent đã ở trạng thái terminal và không thể sử dụng.");
+                                                }
+                                                onPaymentError(error);
+                                            }}
+                                        />
+                                    </Elements>
+                                )}
                             </div>
                         ) : (
                             <div className="mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-                                <p className="font-medium">⚠️ Stripe not loaded</p>
-                                <p className="text-xs mt-1">Please refresh the page and try again.</p>
+                                <p className="font-medium">⚠️ Stripe chưa được tải</p>
+                                <p className="text-xs mt-1">Vui lòng làm mới trang và thử lại.</p>
                             </div>
                         )}
                     </>
@@ -131,20 +129,20 @@ export default function PaymentMethodSelector({
                     <div className="mt-4 text-sm text-gray-600">
                         <div className="flex items-center space-x-2">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#EE4D2D]"></div>
-                            <p>Preparing payment form...</p>
+                            <p>Đang chuẩn bị form thanh toán...</p>
                         </div>
                     </div>
                 ) : (
                     <div className="mt-4 space-y-3">
                         <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                            <p className="font-medium text-blue-900 mb-1">Pay with credit card</p>
+                            <p className="font-medium text-blue-900 mb-1">Thanh toán bằng thẻ tín dụng</p>
                             <p className="text-blue-700 text-xs">
-                                Click &quot;Place Order&quot; to proceed. You will then enter your card details to complete the payment.
+                                Nhấn &quot;Đặt hàng&quot; để tiếp tục. Sau đó bạn sẽ nhập thông tin thẻ để hoàn tất thanh toán.
                             </p>
                         </div>
                         <div className="text-xs text-gray-500">
-                            <p>✓ Secure payment with Stripe</p>
-                            <p>✓ Supports Visa, Mastercard, Amex</p>
+                            <p>✓ Thanh toán an toàn với Stripe</p>
+                            <p>✓ Hỗ trợ Visa, Mastercard, Amex</p>
                         </div>
                     </div>
                 )}

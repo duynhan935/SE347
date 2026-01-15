@@ -39,7 +39,12 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
             });
 
             if (error) {
-                onPaymentError(error.message || "Payment failed. Please try again.");
+                // Check if PaymentIntent is in terminal state
+                if (error.message?.includes("terminal state") || error.message?.includes("cannot be used")) {
+                    onPaymentError("Payment Intent đã được sử dụng hoặc đã hết hạn. Vui lòng đặt hàng lại.");
+                } else {
+                    onPaymentError(error.message || "Payment failed. Please try again.");
+                }
                 setIsProcessing(false);
                 return;
             }
@@ -52,9 +57,16 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                 onPaymentError("Payment was not completed. Please try again.");
                 setIsProcessing(false);
             }
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Stripe payment error:", error);
-            onPaymentError("An error occurred while processing the payment. Please try again.");
+            const errorMessage = error instanceof Error ? error.message : "An error occurred while processing the payment. Please try again.";
+            
+            // Check if PaymentIntent is in terminal state
+            if (errorMessage.includes("terminal state") || errorMessage.includes("cannot be used")) {
+                onPaymentError("Payment Intent đã được sử dụng hoặc đã hết hạn. Vui lòng đặt hàng lại.");
+            } else {
+                onPaymentError(errorMessage);
+            }
             setIsProcessing(false);
         }
     };
@@ -79,9 +91,9 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
             {/* Card Number */}
             <div className="space-y-2">
                 <label htmlFor="card-number" className="block text-sm font-medium text-gray-700">
-                    Card number
+                    Số thẻ
                 </label>
-                <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-brand-purple focus-within:border-brand-purple transition-all">
+                <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-[#EE4D2D] focus-within:border-[#EE4D2D] transition-all">
                     <CardNumberElement
                         id="card-number"
                         options={{
@@ -99,7 +111,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                     <label htmlFor="card-expiry" className="block text-sm font-medium text-gray-700">
                         Ngày hết hạn
                     </label>
-                    <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-brand-purple focus-within:border-brand-purple transition-all">
+                    <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-[#EE4D2D] focus-within:border-[#EE4D2D] transition-all">
                         <CardExpiryElement
                             id="card-expiry"
                             options={{
@@ -115,7 +127,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                     <label htmlFor="card-cvc" className="block text-sm font-medium text-gray-700">
                         CVC
                     </label>
-                    <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-brand-purple focus-within:border-brand-purple transition-all">
+                    <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-[#EE4D2D] focus-within:border-[#EE4D2D] transition-all">
                         <CardCvcElement
                             id="card-cvc"
                             options={{
@@ -131,9 +143,9 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
             <button
                 type="submit"
                 disabled={!stripe || isProcessing}
-                className="w-full bg-brand-purple text-white font-semibold py-3 px-4 rounded-lg hover:bg-brand-purple/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-6"
+                className="w-full bg-[#EE4D2D] text-white font-semibold py-3 px-4 rounded-lg hover:bg-[#EE4D2D]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-6"
             >
-                {isProcessing ? "Processing..." : "Confirm payment"}
+                {isProcessing ? "Đang xử lý..." : "Xác nhận thanh toán"}
             </button>
         </form>
     );

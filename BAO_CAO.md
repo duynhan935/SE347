@@ -914,47 +914,511 @@ frontend --> user: Hiển thị tin nhắn
 - **Timeline**: Hiển thị timeline các bước của đơn hàng
 - **Delivery Tracking**: Theo dõi đơn hàng đang giao (chưa có map real-time)
 
+**13. Group Order (Đặt nhóm) - Chi tiết**:
+- **Tạo Group Order**: 
+  - User tạo group order với restaurant, delivery address
+  - Hệ thống generate unique `shareToken` (UUID)
+  - Set thời gian hết hạn (mặc định 2 giờ)
+  - Chọn phương thức thanh toán: `split` (mỗi người tự thanh toán) hoặc `card` (chủ đơn thanh toán tất cả)
+- **Chia sẻ Group Order**:
+  - Link có dạng `/group-orders/{shareToken}`
+  - Bất kỳ ai có link đều có thể tham gia
+  - Hiển thị thông tin: creator, restaurant, participants, items, total amount
+- **Tham gia Group Order**:
+  - User click vào link → Load group order bằng token
+  - Thêm món của mình vào group order
+  - Xem tổng đơn hàng và items của tất cả participants
+  - Real-time update khi có người thêm món
+- **Quản lý Group Order**:
+  - **Lock Group**: Chủ đơn có thể khóa group, không cho thêm người
+  - **Confirm Order**: Chủ đơn xác nhận đặt hàng → Tạo order chính thức
+  - **Cancel Group**: Hủy group order nếu chưa confirm
+- **Thanh toán Group Order**:
+  - **Split Payment**: Mỗi người thanh toán phần của mình riêng biệt
+  - **Pay All**: Chủ đơn có thể thanh toán toàn bộ
+  - **Payment Status**: Track ai đã thanh toán, ai chưa
+  - **Partial Payment**: Order có thể ở trạng thái `partially_paid` nếu chưa tất cả thanh toán
+- **Expiration**: Group order tự động expire sau thời gian set, không thể tham gia nữa
+
+**14. Blog System - Chi tiết**:
+- **Blog Posts**:
+  - **Create**: Admin/Merchant tạo blog với title, content (HTML), excerpt, featured image
+  - **Categories**: recipe, review, tips, news, health, other
+  - **Tags**: Hỗ trợ tags để phân loại
+  - **SEO**: Meta title, meta description, keywords
+  - **Status**: draft, published
+  - **Views Counter**: Tự động tăng view khi user xem blog
+  - **Read Time**: Tính toán thời gian đọc dựa trên content length
+- **Blog Comments**:
+  - **Create Comment**: User có thể comment với text và images
+  - **Reply to Comment**: Reply nested comments (hỗ trợ nhiều cấp)
+  - **Like Comments**: Like/unlike comments
+  - **Edit Comment**: User có thể edit comment của mình
+  - **Delete Comment**: User xóa comment của mình hoặc admin xóa bất kỳ comment
+  - **Pagination**: Comments được paginate để tối ưu performance
+- **Blog Likes**:
+  - **Toggle Like**: Like/unlike blog posts
+  - **Likes Count**: Hiển thị số lượt like
+  - **User Liked**: Check xem user đã like chưa
+- **Blog Search**:
+  - **Full-text Search**: Tìm kiếm trong title và content
+  - **Filter by Category**: Lọc blog theo category
+  - **Popular Posts**: Hiển thị bài viết nổi bật theo lượt xem
+  - **Related Blogs**: Đề xuất blog liên quan (chưa implement AI-based)
+
+**15. Cart Management - Chi tiết**:
+- **Multi-Restaurant Cart**: 
+  - Giỏ hàng có thể chứa món từ nhiều nhà hàng khác nhau
+  - Mỗi restaurant có section riêng trong cart
+  - Tính tổng tiền riêng cho từng restaurant
+- **Cart Items**:
+  - **Product Info**: productId, productName, price, imageURL
+  - **Size Selection**: Chọn size (S, M, L, XL) với giá khác nhau
+  - **Quantity**: Số lượng món
+  - **Customizations**: Ghi chú đặc biệt cho món (không cay, thêm rau, etc.)
+  - **Subtotal**: Tự động tính subtotal = price × quantity
+- **Cart Operations**:
+  - **Add Item**: Thêm món vào giỏ với size và customizations
+  - **Update Quantity**: Tăng/giảm số lượng
+  - **Remove Item**: Xóa một món khỏi giỏ
+  - **Clear Restaurant**: Xóa tất cả món của một nhà hàng
+  - **Clear Cart**: Xóa toàn bộ giỏ hàng
+- **Cart Persistence**: 
+  - Cart được lưu trong MongoDB theo userId
+  - Persist giữa các sessions
+  - Auto-save khi có thay đổi
+- **Cart Validation**:
+  - Kiểm tra món còn available không
+  - Kiểm tra giá có thay đổi không (nếu có, hiển thị warning)
+  - Kiểm tra restaurant còn mở cửa không
+
+**16. Order Management - Chi tiết**:
+- **Order Creation**:
+  - Tạo order từ cart items
+  - Validate restaurant availability và giờ mở cửa
+  - Tính toán delivery fee dựa trên khoảng cách
+  - Tính tax và tổng tiền
+- **Order Status Flow**:
+  - `pending`: Đơn hàng mới tạo, chờ merchant accept
+  - `accepted`: Merchant đã accept đơn hàng
+  - `preparing`: Merchant đang chuẩn bị món
+  - `ready`: Món đã sẵn sàng
+  - `delivering`: Đang giao hàng
+  - `completed`: Đã giao hàng thành công
+  - `cancelled`: Đã hủy đơn hàng
+- **Merchant Order Actions**:
+  - **Accept Order**: Merchant accept đơn hàng → Status chuyển sang `accepted`
+  - **Reject Order**: Merchant reject với lý do → Status `cancelled`, refund payment
+  - **Update Status**: Merchant cập nhật trạng thái (preparing → ready → delivering → completed)
+- **User Order Actions**:
+  - **Cancel Order**: User có thể hủy đơn nếu status còn `pending` hoặc `accepted`
+  - **View Order Details**: Xem chi tiết đơn hàng, items, payment status
+  - **Reorder**: Đặt lại đơn hàng tương tự
+- **Order Notes**: 
+  - User có thể thêm ghi chú khi đặt hàng
+  - Merchant có thể thêm ghi chú nội bộ
+
+**17. Payment System - Chi tiết**:
+- **Payment Methods**:
+  - **Cash (Tiền mặt)**: Thanh toán khi nhận hàng
+  - **Card (Thẻ tín dụng)**: Stripe Checkout Session
+  - **Wallet (Ví điện tử)**: Trừ tiền từ ví nội bộ
+- **Stripe Integration**:
+  - **Create Checkout Session**: Tạo Stripe Checkout Session với order details
+  - **Webhook Handling**: Nhận webhook từ Stripe khi payment succeeded/failed
+  - **Payment Intent**: Tạo payment intent cho card payments
+  - **Security**: Không lưu thông tin thẻ trên server, PCI DSS compliant
+- **Wallet Payment**:
+  - **Check Balance**: Kiểm tra số dư trước khi thanh toán
+  - **Deduct Balance**: Trừ tiền từ wallet
+  - **Create Transaction**: Lưu transaction vào wallet_transactions
+  - **Insufficient Balance**: Hiển thị lỗi nếu không đủ tiền
+- **Payment Status**:
+  - `pending`: Chờ thanh toán
+  - `processing`: Đang xử lý
+  - `completed`: Thanh toán thành công
+  - `failed`: Thanh toán thất bại
+  - `refunded`: Đã hoàn tiền
+- **Refund System**:
+  - **Full Refund**: Hoàn tiền toàn bộ đơn hàng
+  - **Partial Refund**: Hoàn tiền một phần
+  - **Refund Reason**: Ghi lý do hoàn tiền
+  - **Refund Transaction**: Lưu refund transaction ID từ Stripe
+- **Payment History**:
+  - User xem lịch sử thanh toán của mình
+  - Filter theo payment method, status, date range
+  - Pagination cho danh sách payments
+
+**18. Wallet System - Chi tiết**:
+- **Wallet Creation**:
+  - Tự động tạo wallet khi user đăng ký
+  - Mỗi user có một wallet duy nhất
+  - Initial balance = 0
+- **Wallet Operations**:
+  - **Deposit**: Nạp tiền vào ví (chưa implement payment gateway cho deposit)
+  - **Withdraw**: Rút tiền từ ví (chỉ merchant)
+  - **Payment**: Trừ tiền khi thanh toán
+  - **Refund**: Nhận tiền hoàn lại
+- **Wallet Transactions**:
+  - **Types**: deposit, withdrawal, payment, refund
+  - **Amount**: Số tiền (có thể âm hoặc dương)
+  - **Description**: Mô tả giao dịch
+  - **Timestamp**: Thời gian giao dịch
+  - **Pagination**: Phân trang lịch sử giao dịch
+- **Payout Requests (Merchant)**:
+  - **Create Request**: Merchant tạo yêu cầu rút tiền với amount và bank info
+  - **Bank Info**: Tên ngân hàng, số tài khoản, tên chủ tài khoản
+  - **Status**: pending, completed, rejected
+  - **Admin Approval**: Admin phê duyệt hoặc từ chối payout request
+  - **Rejection Reason**: Admin có thể thêm lý do từ chối
+- **Admin Wallet Management**:
+  - **View All Payout Requests**: Xem tất cả yêu cầu rút tiền
+  - **Filter**: Theo status, merchant, date range
+  - **Approve/Reject**: Phê duyệt hoặc từ chối payout requests
+  - **View Wallet Balance**: Xem số dư của merchant wallets
+
+**19. Chat System - Chi tiết**:
+- **Chat Rooms**:
+  - **Auto Create**: Tự động tạo room khi user và merchant bắt đầu chat
+  - **Room ID**: Generate từ user1_id và user2_id
+  - **Last Message**: Lưu tin nhắn cuối để hiển thị preview
+  - **Last Message Time**: Timestamp của tin nhắn cuối
+- **Messages**:
+  - **Send Message**: Gửi tin nhắn với content (text)
+  - **Save to Database**: Lưu tất cả tin nhắn vào MySQL
+  - **Real-time Delivery**: Broadcast qua WebSocket/STOMP
+  - **Message Format**: senderId, receiverId, content, timestamp, roomId
+- **Read Status**:
+  - **Mark as Read**: Đánh dấu tin nhắn đã đọc khi user mở conversation
+  - **Unread Count**: Đếm số tin nhắn chưa đọc cho user
+  - **Unread Count by Room**: Đếm số tin nhắn chưa đọc trong một room cụ thể
+- **Message Pagination**:
+  - Load 20 tin nhắn mỗi lần
+  - Scroll up để load tin nhắn cũ hơn
+  - Reverse order để hiển thị từ cũ → mới
+- **WebSocket Connection**:
+  - **Auto Reconnect**: Tự động reconnect khi mất kết nối
+  - **Connection Status**: Hiển thị trạng thái kết nối (connected/disconnected)
+  - **Error Handling**: Handle connection errors gracefully
+
+**20. Authentication & Authorization - Chi tiết**:
+- **Registration**:
+  - **User Registration**: Đăng ký với username, email, password
+  - **Email Verification**: Gửi verification code qua email
+  - **Verify Email**: User nhập code để verify email
+  - **Resend Code**: Gửi lại verification code nếu hết hạn
+  - **Merchant Registration**: Đăng ký với role MERCHANT, kèm thông tin nhà hàng
+- **Login**:
+  - **Email/Password Login**: Đăng nhập với email và password
+  - **JWT Tokens**: Generate access token và refresh token
+  - **Token Storage**: Lưu tokens trong cookies (httpOnly, secure)
+  - **Remember Me**: Option để lưu session lâu hơn
+- **OAuth2 Integration**:
+  - **Google Login**: Đăng nhập với Google account
+  - **OAuth Flow**: Authorization code flow
+  - **Account Linking**: Link Google account với existing account
+- **Two-Factor Authentication (2FA)**:
+  - **Setup 2FA**: User setup 2FA với TOTP (Time-based One-Time Password)
+  - **QR Code**: Generate QR code để scan vào Google Authenticator
+  - **Verify 2FA**: Nhập code từ authenticator app khi login
+  - **Disable 2FA**: User có thể tắt 2FA nếu muốn
+- **Password Management**:
+  - **Password Reset**: Request reset password qua email
+  - **Reset Link**: Link reset password có expiration time
+  - **Change Password**: User đổi mật khẩu trong settings
+  - **Password Strength**: Validate password strength (min 6 characters)
+- **Session Management**:
+  - **Refresh Token**: Renew access token khi hết hạn
+  - **Logout**: Invalidate tokens và clear session
+  - **Multiple Sessions**: Hỗ trợ đăng nhập từ nhiều devices
+- **Role-Based Access Control**:
+  - **Roles**: USER, MERCHANT, ADMIN
+  - **Permission Check**: API Gateway kiểm tra role trước khi forward request
+  - **Protected Routes**: Frontend protect routes dựa trên role
+
+**21. Search & Filter System - Chi tiết**:
+- **Restaurant Search**:
+  - **Text Search**: Tìm kiếm theo tên nhà hàng, địa chỉ
+  - **Category Filter**: Lọc theo danh mục (Pizza, Burger, Asian, etc.)
+  - **Rating Filter**: Lọc theo rating (4+ stars, 3+ stars, etc.)
+  - **Distance Filter**: Tìm nhà hàng trong bán kính X km
+  - **Geolocation**: Sử dụng browser geolocation API để lấy vị trí hiện tại
+  - **Distance Calculation**: Tính khoảng cách dựa trên latitude/longitude
+- **Sort Options**:
+  - **By Rating**: Sort theo rating cao → thấp
+  - **By Distance**: Sort theo khoảng cách gần → xa
+  - **By Newest**: Sort theo thời gian tạo mới nhất
+  - **By Popular**: Sort theo số lượng reviews
+- **Pagination**:
+  - **Page-based**: Phân trang theo page number
+  - **Limit**: Số items mỗi trang (default 12)
+  - **Total Pages**: Hiển thị tổng số trang
+- **Product Search**:
+  - **Search by Name**: Tìm kiếm món ăn theo tên
+  - **Filter by Category**: Lọc món theo category
+  - **Filter by Restaurant**: Chỉ hiển thị món của restaurant cụ thể
+  - **Available Filter**: Chỉ hiển thị món còn available
+
+**22. Notification System**:
+- **Email Notifications**:
+  - **Registration**: Email xác thực khi đăng ký
+  - **Welcome**: Email chào mừng sau khi verify
+  - **Order Confirmation**: Email xác nhận đơn hàng
+  - **Order Status Update**: Email khi order status thay đổi
+  - **Merchant Approval**: Email khi merchant được phê duyệt/từ chối
+  - **Password Reset**: Email reset password
+  - **Payment Confirmation**: Email xác nhận thanh toán
+- **Email Templates**:
+  - **Thymeleaf Templates**: HTML email templates với Thymeleaf
+  - **Branding**: Email có logo và branding của hệ thống
+  - **Responsive**: Email responsive trên mobile và desktop
+- **In-App Notifications** (chưa implement đầy đủ):
+  - **Notification Bell**: Icon hiển thị số notifications chưa đọc
+  - **Notification List**: Danh sách notifications
+  - **Mark as Read**: Đánh dấu notification đã đọc
+
+**23. Admin Features - Chi tiết**:
+- **User Management**:
+  - **View All Users**: Xem danh sách tất cả users với pagination
+  - **Search Users**: Tìm kiếm user theo email, username
+  - **View User Details**: Xem chi tiết user (profile, orders, reviews)
+  - **Enable/Disable User**: Kích hoạt hoặc vô hiệu hóa tài khoản user
+  - **Delete User**: Xóa user (soft delete hoặc hard delete)
+- **Merchant Management**:
+  - **View All Merchants**: Xem danh sách tất cả merchants
+  - **Merchant Requests**: Xem danh sách yêu cầu merchant chờ phê duyệt
+  - **Approve Merchant**: Phê duyệt merchant → Enable user và restaurant
+  - **Reject Merchant**: Từ chối merchant → Gửi email thông báo
+  - **View Merchant Details**: Xem thông tin merchant và restaurant
+  - **Enable/Disable Merchant**: Kích hoạt hoặc vô hiệu hóa merchant
+- **Restaurant Management**:
+  - **View All Restaurants**: Xem danh sách tất cả restaurants
+  - **View Restaurant Details**: Xem chi tiết restaurant (info, menu, reviews)
+  - **Enable/Disable Restaurant**: Kích hoạt hoặc vô hiệu hóa restaurant
+  - **Edit Restaurant**: Admin có thể edit thông tin restaurant (nếu cần)
+- **Category Management**:
+  - **CRUD Categories**: Create, Read, Update, Delete categories
+  - **Category List**: Xem danh sách categories với pagination
+  - **Validation**: Kiểm tra category name không trùng
+- **Size Management**:
+  - **CRUD Sizes**: Create, Read, Update, Delete sizes (S, M, L, XL)
+  - **Size List**: Xem danh sách sizes
+  - **Validation**: Kiểm tra size name không trùng
+- **Promotion Management** (chưa implement đầy đủ):
+  - **Create Promotion**: Tạo khuyến mãi với discount, conditions
+  - **Edit Promotion**: Sửa thông tin promotion
+  - **Delete Promotion**: Xóa promotion
+  - **Promotion List**: Xem danh sách promotions
+- **Order Management**:
+  - **View All Orders**: Xem tất cả orders trong hệ thống
+  - **Filter Orders**: Filter theo status, date range, restaurant
+  - **Search Orders**: Tìm kiếm order theo order ID, user name
+  - **View Order Details**: Xem chi tiết order
+  - **Update Order Status**: Admin có thể update order status (nếu cần)
+- **Payout Management**:
+  - **View Payout Requests**: Xem tất cả payout requests từ merchants
+  - **Filter**: Filter theo status, merchant, date range
+  - **Approve Payout**: Phê duyệt và xử lý payout request
+  - **Reject Payout**: Từ chối với lý do
+- **Dashboard Analytics**:
+  - **System Overview**: Tổng số users, merchants, orders, revenue
+  - **Charts**: 
+    - Users growth chart (line chart)
+    - Orders per day (line chart)
+    - Revenue per day/week/month (bar chart)
+    - Top restaurants by revenue (bar chart)
+    - Orders by status (pie chart)
+  - **Date Range Filter**: Filter theo ngày/tuần/tháng/năm
+  - **Export Reports**: Export data ra CSV/PDF (chưa implement)
+
+**24. Merchant Features - Chi tiết**:
+- **Restaurant Management**:
+  - **View Restaurant**: Xem thông tin nhà hàng của mình
+  - **Update Restaurant**: Cập nhật tên, địa chỉ, giờ mở cửa, phone
+  - **Upload Image**: Upload ảnh nhà hàng lên Cloudinary
+  - **Delete Image**: Xóa ảnh nhà hàng
+  - **Restaurant Status**: Xem trạng thái enabled/disabled
+- **Menu Management**:
+  - **View Products**: Xem danh sách tất cả món ăn
+  - **Add Product**: Thêm món mới với name, description, image, category
+  - **Edit Product**: Sửa thông tin món ăn
+  - **Delete Product**: Xóa món ăn
+  - **Product Sizes**: Quản lý sizes và giá cho mỗi món
+  - **Product Availability**: Bật/tắt available status
+  - **Search Products**: Tìm kiếm món trong menu
+- **Order Management**:
+  - **View Orders**: Xem tất cả orders của nhà hàng
+  - **Filter Orders**: Filter theo status (pending, preparing, delivering, completed)
+  - **Order Details**: Xem chi tiết order (items, customer info, delivery address)
+  - **Accept Order**: Accept đơn hàng → Status chuyển sang `accepted`
+  - **Reject Order**: Reject đơn hàng với lý do → Status `cancelled`
+  - **Update Status**: Cập nhật order status (preparing → ready → delivering → completed)
+  - **Order Timeline**: Xem timeline các bước của order
+- **Dashboard & Reports**:
+  - **Revenue Stats**: Doanh thu hôm nay/tuần/tháng
+  - **Order Stats**: Số đơn hàng, số đơn đang xử lý
+  - **Rating Stats**: Rating trung bình, số reviews
+  - **Charts**: 
+    - Revenue chart theo ngày/tuần/tháng
+    - Top selling products (bar chart)
+    - Orders by status (pie chart)
+  - **Top Products**: Danh sách món bán chạy nhất
+  - **Recent Orders**: Danh sách đơn hàng gần đây
+- **Reviews Management**:
+  - **View Reviews**: Xem tất cả reviews của nhà hàng
+  - **Filter Reviews**: Filter theo rating (1-5 stars)
+  - **Reply to Reviews**: Merchant có thể reply reviews (chưa implement)
+  - **Review Stats**: Xem thống kê reviews (average rating, total reviews)
+- **Wallet Management**:
+  - **View Balance**: Xem số dư ví hiện tại
+  - **Transaction History**: Xem lịch sử giao dịch (deposits, withdrawals, payments)
+  - **Withdraw Request**: Tạo yêu cầu rút tiền với amount và bank info
+  - **Payout Status**: Xem trạng thái payout requests (pending, completed, rejected)
+- **Staff Management** (chưa implement đầy đủ):
+  - **View Staff**: Xem danh sách nhân viên
+  - **Add Staff**: Thêm nhân viên mới
+  - **Edit Staff**: Sửa thông tin nhân viên
+  - **Delete Staff**: Xóa nhân viên
+  - **Staff Roles**: Phân quyền nhân viên (chưa implement)
+
+**25. User Features - Chi tiết**:
+- **Profile Management**:
+  - **View Profile**: Xem thông tin cá nhân (username, email, phone)
+  - **Edit Profile**: Cập nhật username, phone, avatar (chưa implement upload avatar)
+  - **Change Password**: Đổi mật khẩu
+  - **2FA Settings**: Setup hoặc disable 2FA
+- **Order History**:
+  - **View Orders**: Xem tất cả đơn hàng đã đặt
+  - **Filter Orders**: Filter theo status, date range
+  - **Order Details**: Xem chi tiết từng đơn hàng
+  - **Reorder**: Đặt lại đơn hàng tương tự
+  - **Cancel Order**: Hủy đơn hàng nếu còn pending/accepted
+- **Address Management**:
+  - **View Addresses**: Xem danh sách địa chỉ đã lưu
+  - **Add Address**: Thêm địa chỉ mới với location, coordinates
+  - **Edit Address**: Sửa thông tin địa chỉ
+  - **Delete Address**: Xóa địa chỉ
+  - **Set Default**: Set một địa chỉ làm mặc định
+  - **Map Picker**: Chọn vị trí trên map để lấy coordinates
+  - **Geolocation**: Lấy vị trí hiện tại tự động
+- **Reviews & Ratings**:
+  - **Review Restaurant**: Đánh giá nhà hàng sau khi đặt hàng
+  - **Review Product**: Đánh giá từng món đã đặt
+  - **Edit Review**: Sửa review đã viết
+  - **Delete Review**: Xóa review của mình
+  - **View My Reviews**: Xem tất cả reviews đã viết
+- **Chat**:
+  - **View Conversations**: Xem danh sách conversations với merchants
+  - **Start Chat**: Bắt đầu chat với merchant từ restaurant page
+  - **Send Messages**: Gửi tin nhắn real-time
+  - **Unread Count**: Xem số tin nhắn chưa đọc
+- **Blog Interaction**:
+  - **View Blogs**: Xem danh sách blog posts
+  - **Read Blog**: Đọc chi tiết blog post
+  - **Like Blog**: Like/unlike blog posts
+  - **Comment**: Comment trên blog posts
+  - **Reply Comment**: Reply comments của người khác
+  - **Like Comments**: Like comments
+
 ### 3.3 Phân tích các Actor và Use Case
 
 #### 3.3.1 Các Actor trong hệ thống
 
 1. **User (Khách hàng)**:
-   - Đăng ký, đăng nhập
-   - Tìm kiếm nhà hàng và món ăn
-   - Xem chi tiết nhà hàng và món ăn
-   - Thêm món vào giỏ hàng
-   - Đặt hàng và thanh toán
-   - Theo dõi trạng thái đơn hàng
-   - Chat với merchant
-   - Đánh giá nhà hàng và món ăn
-   - Quản lý địa chỉ giao hàng
-   - Xem blog và comment
+   - **Authentication**: Đăng ký, đăng nhập (email/password hoặc Google OAuth), xác thực email, setup 2FA, đổi mật khẩu
+   - **Restaurant Discovery**: Tìm kiếm nhà hàng theo tên, địa chỉ, category, rating, khoảng cách; xem danh sách nhà hàng với filter và sort
+   - **Restaurant Details**: Xem chi tiết nhà hàng (thông tin, menu, reviews, giờ mở cửa, địa chỉ trên map)
+   - **Product Details**: Xem chi tiết món ăn (ảnh, mô tả, giá theo size, reviews, related products)
+   - **Cart Management**: Thêm món vào giỏ hàng (chọn size, số lượng, customizations), cập nhật giỏ hàng, xóa món, xem tổng tiền
+   - **Group Order**: Tạo group order, chia sẻ link, tham gia group order, thêm món vào group order, thanh toán riêng hoặc chung
+   - **Order Placement**: Đặt hàng từ giỏ hàng, chọn địa chỉ giao hàng, chọn phương thức thanh toán
+   - **Payment**: Thanh toán bằng tiền mặt, thẻ tín dụng (Stripe), hoặc ví điện tử; xem lịch sử thanh toán
+   - **Order Tracking**: Theo dõi trạng thái đơn hàng real-time, xem timeline, xem chi tiết đơn hàng, hủy đơn hàng, đặt lại đơn hàng
+   - **Chat**: Chat real-time với merchant, xem danh sách conversations, gửi/nhận tin nhắn, xem unread count
+   - **Reviews & Ratings**: Đánh giá nhà hàng và món ăn sau khi đặt hàng, sửa/xóa review của mình, xem reviews của người khác
+   - **Address Management**: Thêm/sửa/xóa địa chỉ giao hàng, chọn vị trí trên map, lấy vị trí tự động, set địa chỉ mặc định
+   - **Blog**: Xem danh sách blog posts, đọc chi tiết blog, like blog, comment và reply comments, like comments
+   - **Profile Management**: Xem/sửa profile, đổi mật khẩu, setup 2FA, xem lịch sử đơn hàng
+   - **Wallet**: Xem số dư ví, xem lịch sử giao dịch (deposits, payments, refunds)
 
 2. **Merchant (Chủ nhà hàng)**:
-   - Đăng ký tài khoản merchant (chờ admin phê duyệt)
-   - Quản lý thông tin nhà hàng (cập nhật địa chỉ, giờ mở cửa, ảnh)
-   - Quản lý menu (thêm/sửa/xóa món ăn, upload ảnh, set giá theo size)
-   - Quản lý categories của nhà hàng
-   - Xem và xử lý đơn hàng (cập nhật trạng thái: preparing, delivering, completed)
-   - Chat với khách hàng real-time
-   - Xem báo cáo doanh thu (theo ngày/tuần/tháng)
-   - Xem thống kê món bán chạy
-   - Quản lý ví điện tử và yêu cầu rút tiền
-   - Quản lý nhân viên (chưa implement đầy đủ)
-   - Xem reviews và rating của nhà hàng
+   - **Registration**: Đăng ký tài khoản merchant với thông tin user và nhà hàng, upload ảnh nhà hàng, chờ admin phê duyệt
+   - **Restaurant Management**: Xem/sửa thông tin nhà hàng (tên, địa chỉ, giờ mở cửa, phone), upload/xóa ảnh nhà hàng, xem trạng thái enabled/disabled
+   - **Menu Management**: 
+     - Xem danh sách món ăn với search và filter
+     - Thêm món mới với name, description, image, category, sizes và giá
+     - Sửa thông tin món ăn
+     - Xóa món ăn
+     - Quản lý sizes và giá cho mỗi món (S, M, L, XL)
+     - Bật/tắt available status cho món
+   - **Order Management**: 
+     - Xem tất cả orders của nhà hàng với filter theo status
+     - Xem chi tiết order (items, customer info, delivery address, notes)
+     - Accept/Reject orders với lý do
+     - Cập nhật order status (preparing → ready → delivering → completed)
+     - Xem timeline của order
+   - **Chat**: Chat real-time với khách hàng, xem danh sách conversations, gửi/nhận tin nhắn, xem unread count
+   - **Dashboard & Analytics**: 
+     - Xem thống kê tổng quan (doanh thu, số đơn hàng, rating trung bình)
+     - Xem charts (revenue theo ngày/tuần/tháng, top products, orders by status)
+     - Xem top selling products
+     - Xem recent orders
+   - **Reviews Management**: Xem tất cả reviews của nhà hàng, filter theo rating, xem review stats (average rating, total reviews)
+   - **Wallet Management**: 
+     - Xem số dư ví hiện tại
+     - Xem lịch sử giao dịch (deposits, withdrawals, payments)
+     - Tạo yêu cầu rút tiền với amount và bank info
+     - Xem trạng thái payout requests (pending, completed, rejected)
+   - **Staff Management**: Xem danh sách nhân viên, thêm/sửa/xóa nhân viên (chưa implement đầy đủ phân quyền)
 
 3. **Admin (Quản trị viên)**:
-   - Quản lý users (xem danh sách, chi tiết, enable/disable tài khoản)
-   - Phê duyệt/từ chối yêu cầu merchant (xem thông tin nhà hàng, approve/reject)
-   - Quản lý merchants (xem danh sách, enable/disable)
-   - Quản lý restaurants (xem tất cả nhà hàng, enable/disable, xem chi tiết)
-   - Quản lý categories (CRUD operations)
-   - Quản lý sizes (CRUD operations: S, M, L, XL)
-   - Quản lý promotions (tạo, sửa, xóa khuyến mãi - chưa implement đầy đủ)
-   - Xem tất cả đơn hàng (filter, search, xem chi tiết)
-   - Xem dashboard với thống kê tổng quan (users, merchants, orders, revenue)
-   - Quản lý payout requests từ merchants
-   - Xem system logs và monitoring (chưa implement)
+   - **User Management**: 
+     - Xem danh sách tất cả users với pagination và search
+     - Xem chi tiết user (profile, orders, reviews)
+     - Enable/Disable tài khoản user
+     - Xóa user (soft delete hoặc hard delete)
+   - **Merchant Management**: 
+     - Xem danh sách tất cả merchants
+     - Xem danh sách merchant requests chờ phê duyệt
+     - Xem chi tiết merchant request (thông tin user và restaurant)
+     - Phê duyệt merchant → Enable user và restaurant, gửi email thông báo
+     - Từ chối merchant → Gửi email thông báo từ chối
+     - Enable/Disable merchant
+   - **Restaurant Management**: 
+     - Xem danh sách tất cả restaurants với pagination
+     - Xem chi tiết restaurant (info, menu, reviews)
+     - Enable/Disable restaurant
+     - Edit restaurant info (nếu cần)
+   - **Category Management**: 
+     - Xem danh sách categories
+     - Create/Edit/Delete categories
+     - Validation: Kiểm tra category name không trùng
+   - **Size Management**: 
+     - Xem danh sách sizes (S, M, L, XL)
+     - Create/Edit/Delete sizes
+     - Validation: Kiểm tra size name không trùng
+   - **Promotion Management**: 
+     - Xem danh sách promotions
+     - Create/Edit/Delete promotions với discount và conditions (chưa implement đầy đủ)
+   - **Order Management**: 
+     - Xem tất cả orders trong hệ thống với pagination
+     - Filter orders theo status, date range, restaurant
+     - Search orders theo order ID, user name
+     - Xem chi tiết order
+     - Update order status (nếu cần)
+   - **Payout Management**: 
+     - Xem tất cả payout requests từ merchants với filter theo status, merchant, date range
+     - Xem chi tiết payout request (amount, bank info, merchant info)
+     - Approve payout request → Xử lý thanh toán
+     - Reject payout request với lý do
+   - **Dashboard & Analytics**: 
+     - Xem tổng quan hệ thống (tổng số users, merchants, orders, revenue)
+     - Xem charts (users growth, orders per day, revenue per day/week/month, top restaurants, orders by status)
+     - Filter theo date range (ngày/tuần/tháng/năm)
+     - Export reports ra CSV/PDF (chưa implement)
+   - **System Management**: 
+     - Xem system logs và monitoring (chưa implement đầy đủ)
+     - System settings và configuration
 
 #### 3.3.2 Sơ đồ Use Case tổng quát
 
@@ -992,6 +1456,114 @@ frontend --> user: Hiển thị tin nhắn
    │ Quản lý │         │ Phê duyệt │        │ Dashboard│
    │  users  │         │ merchant  │        │          │
    └─────────┘         └───────────┘        └─────────┘
+```
+
+**Sơ đồ Use Case - PlantUML**:
+
+```plantuml
+@startuml Use Case - Tổng quát
+left to right direction
+
+actor User as user
+actor Merchant as merchant
+actor Admin as admin
+
+rectangle "Hệ thống Quản lý Nhà hàng" {
+    package "User Features" {
+        user --> (Đăng ký)
+        user --> (Đăng nhập)
+        user --> (Xác thực email)
+        user --> (Setup 2FA)
+        user --> (OAuth Google)
+        user --> (Tìm kiếm nhà hàng)
+        user --> (Xem chi tiết nhà hàng)
+        user --> (Xem menu)
+        user --> (Thêm vào giỏ hàng)
+        user --> (Quản lý giỏ hàng)
+        user --> (Tạo group order)
+        user --> (Tham gia group order)
+        user --> (Đặt hàng)
+        user --> (Thanh toán)
+        user --> (Theo dõi đơn hàng)
+        user --> (Hủy đơn hàng)
+        user --> (Chat với merchant)
+        user --> (Đánh giá nhà hàng)
+        user --> (Đánh giá món ăn)
+        user --> (Quản lý địa chỉ)
+        user --> (Xem blog)
+        user --> (Like blog)
+        user --> (Comment blog)
+        user --> (Quản lý profile)
+        user --> (Xem ví điện tử)
+    }
+    
+    package "Merchant Features" {
+        merchant --> (Đăng ký merchant)
+        merchant --> (Quản lý thông tin nhà hàng)
+        merchant --> (Upload ảnh nhà hàng)
+        merchant --> (Quản lý menu)
+        merchant --> (Thêm món ăn)
+        merchant --> (Quản lý sizes và giá)
+        merchant --> (Xem đơn hàng)
+        merchant --> (Accept đơn hàng)
+        merchant --> (Reject đơn hàng)
+        merchant --> (Cập nhật trạng thái đơn hàng)
+        merchant --> (Chat với khách hàng)
+        merchant --> (Xem báo cáo doanh thu)
+        merchant --> (Xem thống kê món bán chạy)
+        merchant --> (Xem reviews)
+        merchant --> (Quản lý ví điện tử)
+        merchant --> (Yêu cầu rút tiền)
+        merchant --> (Quản lý nhân viên)
+    }
+    
+    package "Admin Features" {
+        admin --> (Quản lý users)
+        admin --> (Enable/Disable users)
+        admin --> (Xem merchant requests)
+        admin --> (Phê duyệt merchant)
+        admin --> (Từ chối merchant)
+        admin --> (Quản lý nhà hàng)
+        admin --> (Enable/Disable restaurants)
+        admin --> (Quản lý categories)
+        admin --> (Quản lý sizes)
+        admin --> (Quản lý promotions)
+        admin --> (Xem tất cả đơn hàng)
+        admin --> (Quản lý payout requests)
+        admin --> (Approve payout)
+        admin --> (Reject payout)
+        admin --> (Xem dashboard)
+        admin --> (Xem analytics)
+    }
+}
+
+note right of (Thanh toán)
+  Hỗ trợ nhiều phương thức:
+  - Tiền mặt
+  - Thẻ tín dụng (Stripe)
+  - Ví điện tử
+end note
+
+note right of (Chat với merchant)
+  Real-time chat
+  sử dụng WebSocket/STOMP
+  với unread count và
+  mark as read
+end note
+
+note right of (Tạo group order)
+  Cho phép nhiều người
+  cùng đặt chung một đơn hàng
+  với thanh toán riêng lẻ
+end note
+
+note right of (Xem báo cáo doanh thu)
+  Charts và graphs:
+  - Revenue theo ngày/tuần/tháng
+  - Top selling products
+  - Orders by status
+end note
+@enduml
 ```
 
 #### 3.3.3 Use Case chi tiết: Đặt hàng và thanh toán
@@ -1049,6 +1621,102 @@ frontend --> user: Hiển thị tin nhắn
 - 8a. Database error: Log error, nhưng vẫn broadcast message
 
 **Postconditions**: Tin nhắn được lưu trữ, cả hai bên nhận được message
+
+#### 3.3.5 Use Case chi tiết: Group Order
+
+**Actor**: User (Creator và Participants)
+
+**Preconditions**: User đã đăng nhập, có items trong giỏ hàng hoặc muốn tạo group order mới
+
+**Main Flow**:
+1. Creator tạo group order với restaurant, delivery address, expiration time
+2. Hệ thống generate unique shareToken
+3. Creator thêm món của mình vào group order
+4. Creator chia sẻ link `/group-orders/{shareToken}`
+5. Participants click vào link
+6. Hệ thống load group order bằng token
+7. Participants thêm món của họ vào group order
+8. Real-time update: Tất cả participants thấy items mới được thêm
+9. Creator xem tổng đơn hàng và có thể lock group
+10. Creator confirm order → Tạo order chính thức
+11. Chuyển đến trang thanh toán
+12. Nếu payment method = "split":
+    - Mỗi participant thanh toán phần của mình
+    - Hệ thống track payment status của từng người
+13. Nếu payment method = "card":
+    - Creator thanh toán toàn bộ
+14. Sau khi tất cả đã thanh toán → Order status = "paid"
+15. Gửi email xác nhận đến tất cả participants
+
+**Alternative Flows**:
+- 7a. Group order đã expired: Hiển thị lỗi "Group order đã hết hạn"
+- 9a. Creator cancel group: Hủy group order, không tạo order
+- 12a. Participant không thanh toán: Order status = "partially_paid", chờ thanh toán
+
+**Postconditions**: Order được tạo với status "paid" hoặc "partially_paid", tất cả participants nhận email
+
+#### 3.3.6 Use Case chi tiết: Merchant Registration và Approval
+
+**Actor**: User (Merchant), Admin
+
+**Preconditions**: User chưa có tài khoản merchant
+
+**Main Flow**:
+1. User điền form đăng ký merchant (thông tin user + restaurant)
+2. User submit form
+3. user-service tạo user với role MERCHANT, enabled=false
+4. Gửi email xác thực đến user
+5. restaurant-service tạo restaurant với enabled=false
+6. Upload ảnh nhà hàng lên Cloudinary
+7. Lưu thông tin restaurant vào database
+8. Hiển thị thông báo "Chờ admin phê duyệt"
+9. Admin xem danh sách merchant requests
+10. Admin xem chi tiết merchant request (user info, restaurant info, ảnh)
+11. Admin phê duyệt merchant
+12. user-service cập nhật user.enabled = true
+13. restaurant-service cập nhật restaurant.enabled = true
+14. Gửi email thông báo phê duyệt đến merchant
+15. Merchant có thể đăng nhập và sử dụng merchant dashboard
+
+**Alternative Flows**:
+- 2a. Email đã tồn tại: Hiển thị lỗi "Email đã được sử dụng"
+- 5a. Tạo restaurant thất bại: Lưu thông tin vào localStorage, tạo sau khi được phê duyệt
+- 11a. Admin từ chối: Gửi email thông báo từ chối, xóa restaurant (nếu đã tạo)
+
+**Postconditions**: Merchant được phê duyệt, có thể đăng nhập và quản lý nhà hàng
+
+#### 3.3.7 Use Case chi tiết: Merchant Order Management
+
+**Actor**: Merchant
+
+**Preconditions**: Merchant đã đăng nhập, có orders pending
+
+**Main Flow**:
+1. Merchant xem danh sách orders với filter theo status
+2. Merchant chọn một order để xem chi tiết
+3. Merchant xem thông tin order (items, customer, delivery address, notes, payment status)
+4. Merchant quyết định accept hoặc reject
+5. Nếu accept:
+   - Merchant click "Accept Order"
+   - Order status chuyển sang "accepted"
+   - Gửi email thông báo đến customer
+6. Nếu reject:
+   - Merchant nhập lý do từ chối
+   - Order status chuyển sang "cancelled"
+   - Refund payment (nếu đã thanh toán)
+   - Gửi email thông báo đến customer
+7. Sau khi accept, merchant cập nhật order status:
+   - "preparing": Đang chuẩn bị món
+   - "ready": Món đã sẵn sàng
+   - "delivering": Đang giao hàng
+   - "completed": Đã giao hàng thành công
+8. Mỗi lần cập nhật status → Gửi email thông báo đến customer
+
+**Alternative Flows**:
+- 5a. Order đã được accept bởi merchant khác: Hiển thị lỗi
+- 6a. Không thể refund: Log error, nhưng vẫn reject order
+
+**Postconditions**: Order status được cập nhật, customer nhận email thông báo
 
 ### 3.4 Sơ đồ hoạt động (Activity Diagram)
 
