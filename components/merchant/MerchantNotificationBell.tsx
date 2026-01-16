@@ -8,21 +8,23 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { orderApi } from "@/lib/api/orderApi";
+import { useMerchantRestaurant } from "@/lib/hooks/useMerchantRestaurant";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
 import { Bell } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function MerchantNotificationBell() {
     const { user, isAuthenticated } = useAuthStore();
     const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
+    const { currentRestaurant } = useMerchantRestaurant();
     const [isOpen, setIsOpen] = useState(false);
     const initializedRef = useRef(false);
 
-    // Get restaurant ID from user (assuming merchant has restaurantId)
-    const restaurantId = user?.restaurantId || null;
+    // Get restaurant ID from current restaurant
+    const restaurantId = currentRestaurant?.id || null;
 
     // Listen for new orders via socket
     useOrderSocket({
@@ -35,10 +37,13 @@ export function MerchantNotificationBell() {
 
             useNotificationStore.getState().addNotification({
                 type: "MERCHANT_NEW_ORDER",
-                title: "Đơn hàng mới",
-                message: `Bạn có đơn hàng mới #${orderId} với ${itemCount} món, tổng tiền: ${totalAmount?.toLocaleString("vi-VN")}₫`,
+                title: "New Order",
+                message: `You have a new order #${orderId} with ${itemCount} item(s), total: $${totalAmount?.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                })}`,
                 orderId,
-                restaurantName: user?.restaurantName,
+                restaurantName: notification.data.restaurantName,
             });
         },
     });
@@ -55,10 +60,10 @@ export function MerchantNotificationBell() {
                 pendingOrders.forEach((order) => {
                     useNotificationStore.getState().addNotification({
                         type: "MERCHANT_NEW_ORDER",
-                        title: "Đơn hàng mới",
-                        message: `Đơn hàng #${order.orderId} đang chờ xử lý`,
+                        title: "New Order",
+                        message: `Order #${order.orderId} is pending`,
                         orderId: order.orderId,
-                        restaurantName: order.restaurantName,
+                        restaurantName: order.restaurant?.name,
                     });
                 });
                 initializedRef.current = true;
@@ -85,20 +90,20 @@ export function MerchantNotificationBell() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
                 <div className="flex items-center justify-between p-3 border-b">
-                    <h3 className="font-semibold text-sm">Thông báo đơn hàng</h3>
+                    <h3 className="font-semibold text-sm">Order Notifications</h3>
                     {unread > 0 && (
                         <button
                             onClick={markAllAsRead}
                             className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium"
                         >
-                            Đánh dấu đã đọc
+                            Mark all as read
                         </button>
                     )}
                 </div>
 
                 {merchantNotifications.length === 0 ? (
                     <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                        Không có thông báo nào
+                        No notifications
                     </div>
                 ) : (
                     <>
@@ -123,7 +128,7 @@ export function MerchantNotificationBell() {
                                         </p>
                                         <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{notif.message}</p>
                                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                            {new Date(notif.createdAt).toLocaleString("vi-VN")}
+                                            {new Date(notif.createdAt).toLocaleString("en-US")}
                                         </p>
                                     </div>
                                     {!notif.read && (
@@ -140,7 +145,7 @@ export function MerchantNotificationBell() {
                                             setIsOpen(false);
                                         }}
                                     >
-                                        Xem đơn hàng →
+                                        View Order →
                                     </Link>
                                 )}
                             </DropdownMenuItem>
@@ -151,7 +156,7 @@ export function MerchantNotificationBell() {
                             className="p-3 text-center text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium"
                             onClick={() => setIsOpen(false)}
                         >
-                            Xem tất cả đơn hàng
+                            View All Orders
                         </Link>
                     </>
                 )}

@@ -21,9 +21,9 @@ export default function LoadingScreen() {
                         {/* Loading text with animation */}
                         <div className="text-center space-y-2 animate-fadeInUp">
                                 <h3 className="text-xl font-semibold text-brand-black font-roboto-serif">
-                                        Đang tải...
+                                        Loading...
                                 </h3>
-                                <p className="text-sm text-gray-600 font-manrope">Vui lòng đợi trong giây lát</p>
+                                <p className="text-sm text-gray-600 font-manrope">Please wait a moment</p>
                         </div>
 
                         {/* Progress bar with smooth animation */}

@@ -126,13 +126,12 @@ export const OrderItemRow = ({ item, orderId }: { item: OrderListItem; orderId: 
                     )}
                 </div>
 
-                {/* Item Price - VND format */}
+                {/* Item Price - USD format */}
                 <p className="font-semibold text-sm text-gray-600">
-                    {((item.price * item.quantity) * 25000).toLocaleString("en-US", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                    })}{" "}
-                    ₫
+                    ${((item.price * item.quantity)).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    })}
                 </p>
             </div>
 

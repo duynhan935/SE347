@@ -34,8 +34,8 @@ export function useNotifications() {
                 case OrderStatus.CONFIRMED:
                     addNotification({
                         type: "ORDER_ACCEPTED",
-                        title: "Đơn hàng đã được xác nhận",
-                        message: `Đơn hàng ${orderId} đã được nhà hàng xác nhận và đang được chuẩn bị.`,
+                        title: "Order Confirmed",
+                        message: `Order ${orderId} has been confirmed by the restaurant and is being prepared.`,
                         orderId,
                         restaurantName,
                     });
@@ -44,8 +44,8 @@ export function useNotifications() {
                 case OrderStatus.PREPARING:
                     addNotification({
                         type: "ORDER_CONFIRMED",
-                        title: "Đơn hàng đang được chuẩn bị",
-                        message: `Đơn hàng ${orderId} đang được nhà hàng chuẩn bị. Vui lòng chờ trong giây lát.`,
+                        title: "Order Being Prepared",
+                        message: `Order ${orderId} is being prepared by the restaurant. Please wait a moment.`,
                         orderId,
                         restaurantName,
                     });
@@ -54,8 +54,8 @@ export function useNotifications() {
                 case OrderStatus.READY:
                     addNotification({
                         type: "ORDER_CONFIRMED",
-                        title: "Đơn hàng sẵn sàng giao",
-                        message: `Đơn hàng ${orderId} đã sẵn sàng. Tài xế sẽ đến lấy hàng và giao đến bạn sớm nhất.`,
+                        title: "Order Ready for Delivery",
+                        message: `Order ${orderId} is ready. Driver will pick it up and deliver to you as soon as possible.`,
                         orderId,
                         restaurantName,
                     });
@@ -64,8 +64,8 @@ export function useNotifications() {
                 case OrderStatus.COMPLETED:
                     addNotification({
                         type: "ORDER_COMPLETED",
-                        title: "Đơn hàng đã giao thành công",
-                        message: `Đơn hàng ${orderId} đã được giao đến nơi. Cảm ơn bạn đã sử dụng dịch vụ!`,
+                        title: "Order Delivered Successfully",
+                        message: `Order ${orderId} has been delivered. Thank you for using our service!`,
                         orderId,
                         restaurantName,
                     });
@@ -74,9 +74,9 @@ export function useNotifications() {
                 case OrderStatus.CANCELLED:
                     addNotification({
                         type: "ORDER_REJECTED",
-                        title: "Đơn hàng đã bị hủy",
-                        message: `Đơn hàng ${orderId} đã bị hủy. ${
-                            notification.data.reason ? `Lý do: ${notification.data.reason}` : ""
+                        title: "Order Cancelled",
+                        message: `Order ${orderId} has been cancelled. ${
+                            notification.data.reason ? `Reason: ${notification.data.reason}` : ""
                         }`,
                         orderId,
                         restaurantName,
@@ -105,7 +105,7 @@ export function useNotifications() {
                 // Check if status changed using ref
                 const previousStatus = lastOrderCheckRef.current.get(orderId);
                 if (previousStatus && previousStatus !== currentStatus) {
-                    const restaurantName = order.restaurant?.name || "Nhà hàng";
+                    const restaurantName = order.restaurant?.name || "Restaurant";
 
                     // Create notification based on status transition
                     switch (currentStatus) {
@@ -113,8 +113,8 @@ export function useNotifications() {
                             if (previousStatus === OrderStatus.PENDING) {
                                 addNotification({
                                     type: "ORDER_ACCEPTED",
-                                    title: "Đơn hàng đã được xác nhận",
-                                    message: `Đơn hàng ${orderId} đã được nhà hàng xác nhận và đang được chuẩn bị.`,
+                                    title: "Order Confirmed",
+                                    message: `Order ${orderId} has been confirmed by the restaurant and is being prepared.`,
                                     orderId,
                                     restaurantName,
                                 });
@@ -125,8 +125,8 @@ export function useNotifications() {
                             if (previousStatus === OrderStatus.CONFIRMED || previousStatus === OrderStatus.PENDING) {
                                 addNotification({
                                     type: "ORDER_CONFIRMED",
-                                    title: "Đơn hàng đang được chuẩn bị",
-                                    message: `Đơn hàng ${orderId} đang được nhà hàng chuẩn bị. Vui lòng chờ trong giây lát.`,
+                                    title: "Order Being Prepared",
+                                    message: `Order ${orderId} is being prepared by the restaurant. Please wait a moment.`,
                                     orderId,
                                     restaurantName,
                                 });
@@ -140,8 +140,8 @@ export function useNotifications() {
                             ) {
                                 addNotification({
                                     type: "ORDER_CONFIRMED",
-                                    title: "Đơn hàng sẵn sàng giao",
-                                    message: `Đơn hàng ${orderId} đã sẵn sàng. Tài xế sẽ đến lấy hàng và giao đến bạn sớm nhất.`,
+                                    title: "Order Ready for Delivery",
+                                    message: `Order ${orderId} is ready. Driver will pick it up and deliver to you as soon as possible.`,
                                     orderId,
                                     restaurantName,
                                 });
@@ -155,8 +155,8 @@ export function useNotifications() {
                             ) {
                                 addNotification({
                                     type: "ORDER_COMPLETED",
-                                    title: "Đơn hàng đã giao thành công",
-                                    message: `Đơn hàng ${orderId} đã được giao đến nơi. Cảm ơn bạn đã sử dụng dịch vụ!`,
+                                    title: "Order Delivered Successfully",
+                                    message: `Order ${orderId} has been delivered. Thank you for using our service!`,
                                     orderId,
                                     restaurantName,
                                 });
@@ -167,8 +167,8 @@ export function useNotifications() {
                             if (previousStatus !== OrderStatus.CANCELLED) {
                                 addNotification({
                                     type: "ORDER_REJECTED",
-                                    title: "Đơn hàng đã bị hủy",
-                                    message: `Đơn hàng ${orderId} đã bị hủy.`,
+                                    title: "Order Cancelled",
+                                    message: `Order ${orderId} has been cancelled.`,
                                     orderId,
                                     restaurantName,
                                 });

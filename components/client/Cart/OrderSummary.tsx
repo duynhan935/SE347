@@ -9,12 +9,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-// Format price to VND
-const formatPriceVND = (priceUSD: number): string => {
-    const vndPrice = priceUSD * 25000; // Convert USD to VND
-    return vndPrice.toLocaleString("vi-VN", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
+// Format price to USD
+const formatPriceUSD = (priceUSD: number): string => {
+    return priceUSD.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     });
 };
 
@@ -86,7 +85,7 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems }: OrderSummar
                 <div className="flex items-start gap-3">
                     <MapPin className="w-5 h-5 text-[#EE4D2D] flex-shrink-0 mt-0.5" />
                     <div className="flex-grow min-w-0">
-                        <p className="text-xs text-gray-500 mb-1">Giao đến</p>
+                        <p className="text-xs text-gray-500 mb-1">Deliver to</p>
                         {loadingAddresses ? (
                             <p className="text-sm text-gray-400">Loading address...</p>
                         ) : addresses.length > 0 ? (
@@ -113,7 +112,7 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems }: OrderSummar
                                     className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-1 flex items-center gap-1"
                                 >
                                     <Edit2 className="w-3 h-3" />
-                                    <span>Sửa</span>
+                                    <span>Edit</span>
                                 </Link>
                             </>
                         ) : (
@@ -136,23 +135,23 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems }: OrderSummar
             <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="text-gray-900 font-medium">{formatPriceVND(subtotal)} ₫</span>
+                    <span className="text-gray-900 font-medium">{formatPriceUSD(subtotal)} $</span>
                 </div>
                 <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Shipping Fee</span>
                     <span className="text-gray-900 font-medium">
-                        {shippingFee === 0 ? "FREE" : `${formatPriceVND(shippingFee)} ₫`}
+                        {shippingFee === 0 ? "FREE" : `${formatPriceUSD(shippingFee)} $`}
                     </span>
                 </div>
                 {appliedVoucher && (
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Voucher Discount</span>
-                        <span className="text-green-600 font-medium">-{formatPriceVND(voucherDiscount)} ₫</span>
+                        <span className="text-green-600 font-medium">-{formatPriceUSD(voucherDiscount)} $</span>
                     </div>
                 )}
                 <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Tax</span>
-                    <span className="text-gray-900 font-medium">{formatPriceVND(tax)} ₫</span>
+                    <span className="text-gray-900 font-medium">{formatPriceUSD(tax)} $</span>
                 </div>
             </div>
 
@@ -193,8 +192,8 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems }: OrderSummar
             {/* Total */}
             <div className="mb-6">
                 <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold text-gray-900">Tổng cộng</span>
-                    <span className="text-2xl font-bold text-[#EE4D2D]">{formatPriceVND(total)} ₫</span>
+                    <span className="text-lg font-semibold text-gray-900">Total</span>
+                    <span className="text-2xl font-bold text-[#EE4D2D]">{formatPriceUSD(total)} $</span>
                 </div>
             </div>
 
@@ -203,7 +202,7 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems }: OrderSummar
                 href={restaurantId ? `/payment?restaurantId=${restaurantId}` : "/payment"}
                 className="block w-full bg-[#EE4D2D] text-white font-semibold py-4 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors text-center shadow-md hover:shadow-lg"
             >
-                Mua hàng ({totalItems})
+                Checkout ({totalItems})
             </Link>
         </div>
     );

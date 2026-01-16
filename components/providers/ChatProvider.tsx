@@ -164,14 +164,14 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                                                 getSenderName().then((senderName) => {
                                                         useNotificationStore.getState().addNotification({
                                                                 type: "MESSAGE_RECEIVED",
-                                                                title: "Tin nhắn mới",
+                                                                title: "New Message",
                                                                 message: `${senderName}: ${message.content.substring(0, 50)}${message.content.length > 50 ? "..." : ""}`,
                                                                 roomId: message.roomId,
                                                                 senderId: message.senderId,
                                                                 senderName: senderName,
                                                         });
                                                         
-                                                        toast.success(`Tin nhắn mới từ ${senderName}`, {
+                                                        toast.success(`New message from ${senderName}`, {
                                                                 duration: 4000,
                                                                 icon: "💬",
                                                         });

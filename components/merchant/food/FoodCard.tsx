@@ -28,7 +28,7 @@ export default function FoodCard({ food, onEdit, onDelete }: FoodCardProps) {
                                 : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                         }`}
                     >
-                        {food.available ? "Có sẵn" : "Hết hàng"}
+                        {food.available ? "Available" : "Out of Stock"}
                     </span>
                 </div>
             </div>
@@ -43,9 +43,12 @@ export default function FoodCard({ food, onEdit, onDelete }: FoodCardProps) {
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Danh mục: {food.categoryName}</span>
+                    <span className="text-gray-600 dark:text-gray-400">Category: {food.categoryName}</span>
                     <span className="text-lg font-bold text-brand-purple">
-                        {food.productSizes[0]?.price.toLocaleString("vi-VN") || "N/A"}đ
+                        ${food.productSizes[0]?.price.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                        }) || "N/A"}
                     </span>
                 </div>
 
@@ -56,14 +59,14 @@ export default function FoodCard({ food, onEdit, onDelete }: FoodCardProps) {
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
                         <Edit size={16} />
-                        Sửa
+                        Edit
                     </button>
                     <button
                         onClick={() => onDelete(food.id)}
                         className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                     >
                         <Trash2 size={16} />
-                        Xóa
+                        Delete
                     </button>
                 </div>
             </div>

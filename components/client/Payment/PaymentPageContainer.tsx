@@ -18,12 +18,11 @@ import PaymentMethodSelector from "./PaymentMethodSelector";
 
 const SHIPPING_FEE = 0; // Free shipping
 
-// Format price to VND
-const formatPriceVND = (priceUSD: number): string => {
-    const vndPrice = priceUSD * 25000; // Convert USD to VND
-    return vndPrice.toLocaleString("vi-VN", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
+// Format price to USD
+const formatPriceUSD = (priceUSD: number): string => {
+    return priceUSD.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     });
 };
 
@@ -373,7 +372,7 @@ export default function PaymentPageClient() {
         }
 
         // isProcessingCardPayment is already set to true in handleSubmit
-        const loadingToast = toast.loading("Đang chuẩn bị thanh toán...");
+        const loadingToast = toast.loading("Preparing payment...");
 
         try {
             // Calculate total amount
@@ -430,7 +429,7 @@ export default function PaymentPageClient() {
             }, 300);
         } catch (error: unknown) {
             // Extract error message
-            let errorMessage = "Không thể tạo thanh toán. Vui lòng thử lại.";
+            let errorMessage = "Unable to create payment. Please try again.";
             
             if (error && typeof error === "object") {
                 const errorObj = error as { response?: { data?: { message?: string } }; message?: string };
@@ -454,39 +453,40 @@ export default function PaymentPageClient() {
         // Stripe webhook will automatically update payment status
         // No need to call completePayment API - webhook handles it
         
-        // Set payment success flag to prevent cart empty check from redirecting
+        // Set payment success flag FIRST to prevent cart empty check from redirecting
         setIsPaymentSuccess(true);
         
-        // Reset payment states first
+        // Reset payment states
         setIsProcessingCardPayment(false);
         setStripeClientSecret(null);
         setPaymentId(null);
 
         // Show success message
-        toast.success("Thanh toán thành công! Đơn hàng của bạn đã được đặt.", {
+        toast.success("Payment successful! Your order has been placed.", {
             duration: 3000,
         });
 
-        // Clear cart silently (no toast) immediately
-        if (restaurantId) {
-            clearRestaurant(restaurantId, { silent: true });
+        // Redirect immediately to prevent cart empty check from triggering
+        // Use router.replace to prevent back navigation to payment page
+        if (createdOrderIds.length > 0) {
+            // Add timestamp to force Next.js to revalidate and fetch fresh data
+            router.replace(`/orders/${createdOrderIds[0]}?t=${Date.now()}`);
         }
 
-        // Wait a bit for Stripe webhook to process and update payment status
-        // Then redirect to order detail page with timestamp to force refresh
+        // Clear cart silently (no toast) after redirect has started
+        // This happens after redirect so it won't trigger the cart empty check
         setTimeout(() => {
-            if (createdOrderIds.length > 0) {
-                // Add timestamp to force Next.js to revalidate and fetch fresh data
-                router.push(`/orders/${createdOrderIds[0]}?t=${Date.now()}`);
+            if (restaurantId) {
+                clearRestaurant(restaurantId, { silent: true });
             }
-        }, 2000); // 2 seconds delay to allow webhook to process
+        }, 100);
     };
 
     // Handle payment error
     const handlePaymentError = (error: string) => {
         // If PaymentIntent is in terminal state, reset states to allow creating new payment
         if (error.includes("terminal state") || error.includes("terminal") || error.includes("cannot be used")) {
-            toast.error("Payment Intent đã được sử dụng hoặc đã hết hạn. Vui lòng đặt hàng lại.", { duration: 5000 });
+            toast.error("Payment Intent has been used or expired. Please place the order again.", { duration: 5000 });
             setIsProcessingCardPayment(false);
             setStripeClientSecret(null);
             setPaymentId(null);
@@ -665,7 +665,7 @@ export default function PaymentPageClient() {
 
                     {/* Block B: Payment Method */}
                     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6" data-payment-form>
-                        <h2 className="text-xl font-bold mb-4">Phương thức thanh toán</h2>
+                        <h2 className="text-xl font-bold mb-4">Payment Method</h2>
                         {isProcessingCardPayment && stripeClientSecret ? (
                             <PaymentMethodSelector
                                 key={stripeClientSecret} // Force re-render when clientSecret changes
@@ -679,10 +679,10 @@ export default function PaymentPageClient() {
                                 {isProcessingCardPayment ? (
                                     <div className="flex items-center justify-center space-x-2">
                                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#EE4D2D]"></div>
-                                        <span>Đang chuẩn bị form thanh toán...</span>
+                                        <span>Preparing payment form...</span>
                                     </div>
                                 ) : (
-                                    "Vui lòng nhấn 'Đặt hàng' để tiếp tục thanh toán"
+                                    "Please click 'Place Order' to continue with payment"
                                 )}
                             </div>
                         )}
@@ -717,11 +717,11 @@ export default function PaymentPageClient() {
                                         <div className="flex-grow min-w-0">
                                             <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
                                             <p className="text-xs text-gray-500">
-                                                {item.quantity} x {formatPriceVND(item.price)} ₫
+                                                {item.quantity} x {formatPriceUSD(item.price)} $
                                             </p>
                                         </div>
                                         <p className="text-sm font-semibold text-gray-900">
-                                            {formatPriceVND(item.price * item.quantity)} ₫
+                                            {formatPriceUSD(item.price * item.quantity)} $
                                         </p>
                                     </div>
                                 );
@@ -732,24 +732,24 @@ export default function PaymentPageClient() {
                         <div className="space-y-2 mb-6 pt-4 border-t border-gray-200">
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Subtotal</span>
-                                <span className="text-gray-900 font-medium">{formatPriceVND(subtotal)} ₫</span>
+                                <span className="text-gray-900 font-medium">{formatPriceUSD(subtotal)} $</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Shipping Fee</span>
                                 <span className="text-gray-900 font-medium">
-                                    {shipping === 0 ? "FREE" : `${formatPriceVND(shipping)} ₫`}
+                                    {shipping === 0 ? "FREE" : `${formatPriceUSD(shipping)} $`}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Tax</span>
-                                <span className="text-gray-900 font-medium">{formatPriceVND(tax)} ₫</span>
+                                <span className="text-gray-900 font-medium">{formatPriceUSD(tax)} $</span>
                             </div>
                         </div>
 
                         {/* Total */}
                         <div className="flex justify-between items-center mb-6 pt-4 border-t border-gray-200">
                             <span className="text-lg font-semibold text-gray-900">Total</span>
-                            <span className="text-2xl font-bold text-[#EE4D2D]">{formatPriceVND(total)} ₫</span>
+                            <span className="text-2xl font-bold text-[#EE4D2D]">{formatPriceUSD(total)} $</span>
                         </div>
 
                         {/* Place Order Button - Only show if not processing card payment */}
@@ -760,7 +760,7 @@ export default function PaymentPageClient() {
                                 disabled={isSubmitting}
                                 className="w-full bg-[#EE4D2D] text-white font-semibold py-4 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {isSubmitting ? "Đang đặt hàng..." : "Đặt hàng"}
+                                {isSubmitting ? "Placing order..." : "Place Order"}
                             </button>
                         )}
                     </div>
@@ -910,7 +910,7 @@ export default function PaymentPageClient() {
 
                 {/* Payment Method */}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4" data-payment-form>
-                    <h2 className="text-lg font-bold mb-4">Phương thức thanh toán</h2>
+                    <h2 className="text-lg font-bold mb-4">Payment Method</h2>
                     {isProcessingCardPayment && stripeClientSecret ? (
                         <PaymentMethodSelector
                             key={stripeClientSecret} // Force re-render when clientSecret changes
@@ -924,10 +924,10 @@ export default function PaymentPageClient() {
                             {isProcessingCardPayment ? (
                                 <div className="flex items-center justify-center space-x-2">
                                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#EE4D2D]"></div>
-                                    <span>Đang chuẩn bị form thanh toán...</span>
+                                    <span>Preparing payment form...</span>
                                 </div>
                             ) : (
-                                "Vui lòng nhấn 'Đặt hàng' để tiếp tục thanh toán"
+                                "Please click 'Place Order' to continue with payment"
                             )}
                         </div>
                     )}
@@ -960,11 +960,11 @@ export default function PaymentPageClient() {
                                     <div className="flex-grow min-w-0">
                                         <p className="text-xs font-medium text-gray-900 truncate">{item.name}</p>
                                         <p className="text-xs text-gray-500">
-                                            {item.quantity} x {formatPriceVND(item.price)} ₫
+                                            {item.quantity} x {formatPriceUSD(item.price)} $
                                         </p>
                                     </div>
                                     <p className="text-xs font-semibold text-gray-900">
-                                        {formatPriceVND(item.price * item.quantity)} ₫
+                                        {formatPriceUSD(item.price * item.quantity)} $
                                     </p>
                                 </div>
                             );
@@ -975,24 +975,24 @@ export default function PaymentPageClient() {
                     <div className="space-y-1.5 mb-4 pt-3 border-t border-gray-200">
                         <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Subtotal</span>
-                            <span className="text-gray-900 font-medium">{formatPriceVND(subtotal)} ₫</span>
+                            <span className="text-gray-900 font-medium">{formatPriceUSD(subtotal)} $</span>
                         </div>
                         <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Shipping</span>
                             <span className="text-gray-900 font-medium">
-                                {shipping === 0 ? "FREE" : `${formatPriceVND(shipping)} ₫`}
+                                {shipping === 0 ? "FREE" : `${formatPriceUSD(shipping)} $`}
                             </span>
                         </div>
                         <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Tax</span>
-                            <span className="text-gray-900 font-medium">{formatPriceVND(tax)} ₫</span>
+                            <span className="text-gray-900 font-medium">{formatPriceUSD(tax)} $</span>
                         </div>
                     </div>
 
                     {/* Total */}
                     <div className="flex justify-between items-center pt-3 border-t border-gray-200">
                         <span className="text-base font-semibold text-gray-900">Total</span>
-                        <span className="text-xl font-bold text-[#EE4D2D]">{formatPriceVND(total)} ₫</span>
+                        <span className="text-xl font-bold text-[#EE4D2D]">{formatPriceUSD(total)} $</span>
                     </div>
                 </div>
 
@@ -1000,7 +1000,7 @@ export default function PaymentPageClient() {
                 <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 p-4">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-sm text-gray-600">Total</span>
-                        <span className="text-lg font-bold text-[#EE4D2D]">{formatPriceVND(total)} ₫</span>
+                        <span className="text-lg font-bold text-[#EE4D2D]">{formatPriceUSD(total)} $</span>
                     </div>
                     {!isProcessingCardPayment && (
                         <button
@@ -1009,7 +1009,7 @@ export default function PaymentPageClient() {
                             disabled={isSubmitting}
                             className="w-full bg-[#EE4D2D] text-white font-semibold py-3 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSubmitting ? "Đang đặt hàng..." : "Đặt hàng"}
+                            {isSubmitting ? "Placing order..." : "Place Order"}
                         </button>
                     )}
                 </div>

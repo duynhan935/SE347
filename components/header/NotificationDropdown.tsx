@@ -9,27 +9,27 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-// Format time ago (e.g., "2 phút trước", "1 giờ trước")
+// Format time ago (e.g., "2 minutes ago", "1 hour ago")
 const formatTimeAgo = (date: Date): string => {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
     if (diffInSeconds < 60) {
-        return "Vừa xong";
+        return "Just now";
     }
 
     const diffInMinutes = Math.floor(diffInSeconds / 60);
     if (diffInMinutes < 60) {
-        return `${diffInMinutes} phút trước`;
+        return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
     }
 
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) {
-        return `${diffInHours} giờ trước`;
+        return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
     }
 
     const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} ngày trước`;
+        return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
 };
 
 // Get notification icon based on type
@@ -165,10 +165,10 @@ export default function NotificationDropdown() {
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-                        <h3 className="text-sm font-semibold text-gray-900">Thông báo mới nhận</h3>
+                        <h3 className="text-sm font-semibold text-gray-900">New Notifications</h3>
                         {unread > 0 && (
                             <span className="text-xs text-gray-500">
-                                {unread} {unread === 1 ? "chưa đọc" : "chưa đọc"}
+                                {unread} {unread === 1 ? "unread" : "unread"}
                             </span>
                         )}
                     </div>
@@ -178,7 +178,7 @@ export default function NotificationDropdown() {
                         {orderNotifications.length === 0 ? (
                             <div className="p-8 text-center">
                                 <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                <p className="text-sm text-gray-500">Không có thông báo nào</p>
+                                <p className="text-sm text-gray-500">No notifications</p>
                             </div>
                         ) : (
                             <div className="divide-y divide-gray-100">
@@ -225,7 +225,7 @@ export default function NotificationDropdown() {
                                                 </p>
                                                 <p className="text-xs text-gray-600 line-clamp-2 mb-2">{notif.message}</p>
                                                 {notif.restaurantName && (
-                                                    <p className="text-xs text-gray-500 mb-1">Nhà hàng: {notif.restaurantName}</p>
+                                                    <p className="text-xs text-gray-500 mb-1">Restaurant: {notif.restaurantName}</p>
                                                 )}
                                                 <div className="flex items-center gap-2 text-xs text-gray-400">
                                                     <Clock className="w-3 h-3" />
@@ -257,7 +257,7 @@ export default function NotificationDropdown() {
                                 }}
                                 className="block w-full text-center text-sm font-medium text-[#EE4D2D] hover:text-[#EE4D2D]/80 transition-colors"
                             >
-                                Xem tất cả đơn hàng
+                                View All Orders
                             </Link>
                         </div>
                     )}

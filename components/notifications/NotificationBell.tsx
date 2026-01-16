@@ -40,9 +40,9 @@ export function NotificationBell() {
             } else if (status === "cancelled") {
                 useNotificationStore.getState().addNotification({
                     type: "ORDER_REJECTED",
-                    title: "Đơn hàng đã bị hủy",
-                    message: `Đơn hàng ${orderId} đã bị hủy. ${
-                        notification.data.reason ? `Lý do: ${notification.data.reason}` : ""
+                    title: "Order Cancelled",
+                    message: `Order ${orderId} has been cancelled. ${
+                        notification.data.reason ? `Reason: ${notification.data.reason}` : ""
                     }`,
                     orderId,
                     restaurantName: notification.data.restaurantName,
@@ -50,8 +50,8 @@ export function NotificationBell() {
             } else if (status === "completed") {
                 useNotificationStore.getState().addNotification({
                     type: "ORDER_COMPLETED",
-                    title: "Đơn hàng đã hoàn thành",
-                    message: `Đơn hàng ${orderId} đã được giao thành công.`,
+                    title: "Order Completed",
+                    message: `Order ${orderId} has been delivered successfully.`,
                     orderId,
                     restaurantName: notification.data.restaurantName,
                 });
@@ -81,24 +81,24 @@ export function NotificationBell() {
                     if (previousStatus === "pending" && currentStatus === "confirmed") {
                         useNotificationStore.getState().addNotification({
                             type: "ORDER_ACCEPTED",
-                            title: "Đơn hàng đã được xác nhận",
-                            message: `Đơn hàng ${orderId} đã được xác nhận và đang được chuẩn bị.`,
+                            title: "Order Confirmed",
+                            message: `Order ${orderId} has been confirmed and is being prepared.`,
                             orderId,
                             restaurantName: order.restaurant?.name,
                         });
                     } else if (previousStatus === "pending" && currentStatus === "cancelled") {
                         useNotificationStore.getState().addNotification({
                             type: "ORDER_REJECTED",
-                            title: "Đơn hàng đã bị hủy",
-                            message: `Đơn hàng ${orderId} đã bị hủy.`,
+                            title: "Order Cancelled",
+                            message: `Order ${orderId} has been cancelled.`,
                             orderId,
                             restaurantName: order.restaurant?.name,
                         });
                     } else if (previousStatus !== "completed" && currentStatus === "completed") {
                         useNotificationStore.getState().addNotification({
                             type: "ORDER_COMPLETED",
-                            title: "Đơn hàng đã hoàn thành",
-                            message: `Đơn hàng ${orderId} đã được giao thành công.`,
+                            title: "Order Completed",
+                            message: `Order ${orderId} has been delivered successfully.`,
                             orderId,
                             restaurantName: order.restaurant?.name,
                         });
@@ -167,20 +167,20 @@ export function NotificationBell() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
                 <div className="flex items-center justify-between p-3 border-b">
-                    <h3 className="font-semibold text-sm">Thông báo</h3>
+                    <h3 className="font-semibold text-sm">Notifications</h3>
                     {unread > 0 && (
                         <button
                             onClick={markAllAsRead}
                             className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium"
                         >
-                            Đánh dấu đã đọc
+                            Mark all as read
                         </button>
                     )}
                 </div>
 
                 {notifications.length === 0 ? (
                     <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                        Không có thông báo nào
+                        No notifications
                     </div>
                 ) : (
                     <>
@@ -206,11 +206,11 @@ export function NotificationBell() {
                                         <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{notif.message}</p>
                                         {notif.restaurantName && (
                                             <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                                Nhà hàng: {notif.restaurantName}
+                                                Restaurant: {notif.restaurantName}
                                             </p>
                                         )}
                                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                            {new Date(notif.createdAt).toLocaleString("vi-VN")}
+                                            {new Date(notif.createdAt).toLocaleString("en-US")}
                                         </p>
                                     </div>
                                     {!notif.read && (
@@ -227,7 +227,7 @@ export function NotificationBell() {
                                             setIsOpen(false);
                                         }}
                                     >
-                                        Xem chi tiết đơn hàng →
+                                        View order details →
                                     </Link>
                                 )}
                                 {notif.roomId && (
@@ -240,7 +240,7 @@ export function NotificationBell() {
                                             setIsOpen(false);
                                         }}
                                     >
-                                        Xem tin nhắn →
+                                        View message →
                                     </Link>
                                 )}
                                 {notif.roomId && (
@@ -253,7 +253,7 @@ export function NotificationBell() {
                                             setIsOpen(false);
                                         }}
                                     >
-                                        Xem tin nhắn →
+                                        View message →
                                     </Link>
                                 )}
                             </DropdownMenuItem>
@@ -264,7 +264,7 @@ export function NotificationBell() {
                             className="p-3 text-center text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium"
                             onClick={() => setIsOpen(false)}
                         >
-                            Xem tất cả đơn hàng
+                            View all orders
                         </Link>
                     </>
                 )}

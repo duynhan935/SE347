@@ -1,5 +1,6 @@
 "use client";
 
+import Pagination from "@/components/client/Pagination";
 import { blogApi } from "@/lib/api/blogApi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Comment } from "@/types/blog.type";
@@ -7,7 +8,6 @@ import { Edit2, Heart, Image as ImageIcon, Reply, Send, Trash2, X } from "lucide
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import Pagination from "@/components/client/Pagination";
 
 interface BlogCommentsProps {
     blogId: string;
@@ -41,7 +41,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
             setTotalPages(response.pagination.pages);
         } catch (error) {
             console.error("Failed to fetch comments:", error);
-            toast.error("Không thể tải bình luận");
+            toast.error("Unable to load comments");
         } finally {
             setLoading(false);
         }
@@ -49,12 +49,12 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
 
     const handleSubmitComment = async () => {
         if (!isAuthenticated || !user) {
-            toast.error("Vui lòng đăng nhập để bình luận");
+            toast.error("Please login to comment");
             return;
         }
 
         if (!newComment.trim() && commentImages.length === 0) {
-            toast.error("Vui lòng nhập nội dung hoặc chọn ảnh");
+            toast.error("Please enter content or select an image");
             return;
         }
 
@@ -68,24 +68,24 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                 },
                 images: commentImages,
             });
-            toast.success("Đã thêm bình luận");
+            toast.success("Comment added");
             setNewComment("");
             setCommentImages([]);
             fetchComments();
         } catch (error) {
             console.error("Failed to create comment:", error);
-            toast.error("Không thể thêm bình luận");
+            toast.error("Unable to add comment");
         }
     };
 
     const handleReply = async (parentId: string) => {
         if (!isAuthenticated || !user) {
-            toast.error("Vui lòng đăng nhập để trả lời");
+            toast.error("Please login to reply");
             return;
         }
 
         if (!replyContent.trim() && replyImages.length === 0) {
-            toast.error("Vui lòng nhập nội dung hoặc chọn ảnh");
+            toast.error("Please enter content or select an image");
             return;
         }
 
@@ -99,20 +99,20 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                 },
                 images: replyImages,
             });
-            toast.success("Đã trả lời bình luận");
+            toast.success("Reply posted");
             setReplyingTo(null);
             setReplyContent("");
             setReplyImages([]);
             fetchComments();
         } catch (error) {
             console.error("Failed to reply comment:", error);
-            toast.error("Không thể trả lời bình luận");
+            toast.error("Unable to reply to comment");
         }
     };
 
     const handleLikeComment = async (commentId: string) => {
         if (!isAuthenticated) {
-            toast.error("Vui lòng đăng nhập để thích bình luận");
+            toast.error("Please login to like comment");
             return;
         }
 
@@ -121,13 +121,13 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
             fetchComments();
         } catch (error) {
             console.error("Failed to like comment:", error);
-            toast.error("Không thể thích bình luận");
+            toast.error("Unable to like comment");
         }
     };
 
     const handleEditComment = async (commentId: string) => {
         if (!editContent.trim()) {
-            toast.error("Vui lòng nhập nội dung");
+            toast.error("Please enter content");
             return;
         }
 
@@ -135,33 +135,33 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
             await blogApi.updateComment(blogId, commentId, {
                 content: editContent,
             });
-            toast.success("Đã cập nhật bình luận");
+            toast.success("Comment updated");
             setEditingComment(null);
             setEditContent("");
             fetchComments();
         } catch (error) {
             console.error("Failed to update comment:", error);
-            toast.error("Không thể cập nhật bình luận");
+            toast.error("Unable to update comment");
         }
     };
 
     const handleDeleteComment = async (commentId: string) => {
-        if (!confirm("Bạn có chắc muốn xóa bình luận này?")) return;
+        if (!confirm("Are you sure you want to delete this comment?")) return;
 
         try {
             await blogApi.deleteComment(blogId, commentId);
-            toast.success("Đã xóa bình luận");
+            toast.success("Comment deleted");
             fetchComments();
         } catch (error) {
             console.error("Failed to delete comment:", error);
-            toast.error("Không thể xóa bình luận");
+            toast.error("Unable to delete comment");
         }
     };
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>, type: "comment" | "reply") => {
         const files = Array.from(e.target.files || []);
         if (files.length > 6) {
-            toast.error("Tối đa 6 ảnh");
+            toast.error("Maximum 6 images");
             return;
         }
         if (type === "comment") {
@@ -179,11 +179,11 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
         const hours = Math.floor(diff / 3600000);
         const days = Math.floor(diff / 86400000);
 
-        if (minutes < 1) return "Vừa xong";
-        if (minutes < 60) return `${minutes} phút trước`;
-        if (hours < 24) return `${hours} giờ trước`;
-        if (days < 7) return `${days} ngày trước`;
-        return date.toLocaleDateString("vi-VN");
+        if (minutes < 1) return "Just now";
+        if (minutes < 60) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+        if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+        if (days < 7) return `${days} day${days > 1 ? "s" : ""} ago`;
+        return date.toLocaleDateString("en-US");
     };
 
     const isLiked = (comment: Comment) => {
@@ -196,7 +196,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
 
     return (
         <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Bình luận ({comments.length})</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Comments ({comments.length})</h2>
 
             {/* Comment Form */}
             {isAuthenticated ? (
@@ -204,7 +204,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                     <textarea
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Viết bình luận..."
+                        placeholder="Write a comment..."
                         className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple mb-3"
                         rows={4}
                     />
@@ -244,20 +244,20 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                         >
                             <ImageIcon className="w-5 h-5" />
-                            <span>Thêm ảnh</span>
+                            <span>Add Image</span>
                         </button>
                         <button
                             onClick={handleSubmitComment}
                             className="flex items-center gap-2 px-6 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90"
                         >
                             <Send className="w-5 h-5" />
-                            <span>Gửi</span>
+                            <span>Send</span>
                         </button>
                     </div>
                 </div>
             ) : (
                 <div className="mb-8 pb-6 border-b border-gray-200 text-center py-8">
-                    <p className="text-gray-600 mb-4">Vui lòng đăng nhập để bình luận</p>
+                    <p className="text-gray-600 mb-4">Please login to comment</p>
                 </div>
             )}
 
@@ -267,7 +267,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                     <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-brand-purple"></div>
                 </div>
             ) : comments.length === 0 ? (
-                <div className="text-center py-8 text-gray-600">Chưa có bình luận nào</div>
+                <div className="text-center py-8 text-gray-600">No comments yet</div>
             ) : (
                 <div className="space-y-6">
                     {comments.map((comment) => (
@@ -308,7 +308,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                                     onClick={() => handleEditComment(comment._id)}
                                                     className="px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90"
                                                 >
-                                                    Lưu
+                                                    Save
                                                 </button>
                                                 <button
                                                     onClick={() => {
@@ -317,7 +317,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                                     }}
                                                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                                                 >
-                                                    Hủy
+                                                    Cancel
                                                 </button>
                                             </div>
                                         </div>
@@ -360,7 +360,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                             className="flex items-center gap-1 text-sm text-gray-600 hover:text-brand-purple"
                                         >
                                             <Reply className="w-4 h-4" />
-                                            <span>Trả lời</span>
+                                            <span>Reply</span>
                                         </button>
                                         {canEditDelete(comment) && (
                                             <>
@@ -372,14 +372,14 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                                     className="flex items-center gap-1 text-sm text-gray-600 hover:text-brand-purple"
                                                 >
                                                     <Edit2 className="w-4 h-4" />
-                                                    <span>Sửa</span>
+                                                    <span>Edit</span>
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteComment(comment._id)}
                                                     className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
-                                                    <span>Xóa</span>
+                                                    <span>Delete</span>
                                                 </button>
                                             </>
                                         )}
@@ -391,7 +391,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                             <textarea
                                                 value={replyContent}
                                                 onChange={(e) => setReplyContent(e.target.value)}
-                                                placeholder="Viết trả lời..."
+                                                placeholder="Write a reply..."
                                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple mb-2"
                                                 rows={3}
                                             />
@@ -435,13 +435,13 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                                     className="flex items-center gap-1 px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
                                                 >
                                                     <ImageIcon className="w-4 h-4" />
-                                                    <span>Ảnh</span>
+                                                    <span>Image</span>
                                                 </button>
                                                 <button
                                                     onClick={() => handleReply(comment._id)}
                                                     className="px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 text-sm"
                                                 >
-                                                    Gửi
+                                                    Send
                                                 </button>
                                                 <button
                                                     onClick={() => {
@@ -451,7 +451,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                                     }}
                                                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
                                                 >
-                                                    Hủy
+                                                    Cancel
                                                 </button>
                                             </div>
                                         </div>

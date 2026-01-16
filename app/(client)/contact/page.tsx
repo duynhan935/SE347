@@ -20,10 +20,10 @@ export default function ContactPage() {
 
         const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
-                // Đây là nơi bạn sẽ xử lý logic gửi form (ví dụ: gọi API)
+                // This is where you would handle the form submission logic (e.g., call API)
                 console.log("Form data submitted:", formData);
                 alert("Thank you for your message! We will get back to you shortly.");
-                // Reset form sau khi gửi (tùy chọn)
+                // Reset form after submission (optional)
                 setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
         };
 

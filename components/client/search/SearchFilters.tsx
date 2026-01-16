@@ -7,34 +7,34 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const priceRanges = [
-    { value: "0-30000", label: "Dưới 30.000đ", min: 0, max: 30000 },
-    { value: "30000-50000", label: "30.000đ - 50.000đ", min: 30000, max: 50000 },
-    { value: "50000-100000", label: "50.000đ - 100.000đ", min: 50000, max: 100000 },
-    { value: "100000+", label: "Trên 100.000đ", min: 100000, max: null },
+    { value: "0-30000", label: "Under $1.20", min: 0, max: 30000 },
+    { value: "30000-50000", label: "$1.20 - $2.00", min: 30000, max: 50000 },
+    { value: "50000-100000", label: "$2.00 - $4.00", min: 50000, max: 100000 },
+    { value: "100000+", label: "Over $4.00", min: 100000, max: null },
 ];
 
 const ratingOptions = [
-    { value: "5", label: "5 sao" },
-    { value: "4", label: "Từ 4 sao trở lên" },
-    { value: "3", label: "Từ 3 sao trở lên" },
+    { value: "5", label: "5 stars" },
+    { value: "4", label: "4 stars and above" },
+    { value: "3", label: "3 stars and above" },
 ];
 
 const districts = [
-    "Quận 1",
-    "Quận 2",
-    "Quận 3",
-    "Quận 4",
-    "Quận 5",
-    "Quận 7",
-    "Quận Bình Thạnh",
-    "Quận Tân Bình",
-    "Quận Phú Nhuận",
+    "District 1",
+    "District 2",
+    "District 3",
+    "District 4",
+    "District 5",
+    "District 7",
+    "Binh Thanh District",
+    "Tan Binh District",
+    "Phu Nhuan District",
 ];
 
 const specialFilters = [
-    { value: "freeship", label: "Miễn phí ship" },
-    { value: "deal", label: "Deal hời" },
-    { value: "favorite", label: "Yêu thích" },
+    { value: "freeship", label: "Free Shipping" },
+    { value: "deal", label: "Great Deals" },
+    { value: "favorite", label: "Favorites" },
 ];
 
 interface SearchFiltersProps {
@@ -58,7 +58,7 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
     }, [fetchAllCategories]);
 
     useEffect(() => {
-        // Sync với URL params
+        // Sync with URL params
         setSelectedCategories(searchParams.getAll("category") || []);
         setSelectedPriceRange(searchParams.get("priceRange") || "");
         setSelectedRating(searchParams.get("rating") || "");

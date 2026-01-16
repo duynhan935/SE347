@@ -5,7 +5,7 @@ import { Restaurant, RestaurantData } from "@/types";
 import { CheckCircle, Edit, Loader2, Plus, Search, Trash, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import RestaurantFormModal from "./RestaurantFormModal";
-// 1. Import Pagination và các hooks cần thiết
+// 1. Import Pagination and necessary hooks
 import Pagination from "@/components/client/Pagination";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -24,29 +24,29 @@ export default function RestaurantList() {
         const [isModalOpen, setIsModalOpen] = useState(false);
         const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
 
-        // 2. Sử dụng hooks để đọc URL
+        // 2. Use hooks to read URL
         const searchParams = useSearchParams();
         const router = useRouter();
         const pathname = usePathname();
 
-        const ITEMS_PER_PAGE = 6; // Số lượng mục mỗi trang
+        const ITEMS_PER_PAGE = 6; // Number of items per page
 
-        // 3. Đọc trang hiện tại từ URL, thay vì dùng useState
+        // 3. Read current page from URL, instead of using useState
         const currentPage = Number(searchParams.get("page")) || 1;
 
         useEffect(() => {
                         getAllRestaurants(new URLSearchParams());
         }, [getAllRestaurants]);
 
-        // Logic filter (giữ nguyên)
+        // Filter logic (unchanged)
         const filteredRestaurants = useMemo(() => {
                 if (!searchTerm) return restaurants;
-                // Reset về trang 1 khi tìm kiếm
-                // Bằng cách xóa param 'page' khỏi URL
+                // Reset to page 1 when searching
+                // By removing 'page' param from URL
                 const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
                 if (currentParams.has("page")) {
                         currentParams.delete("page");
-                        // Dùng replace để không thêm vào history của trình duyệt
+                        // Use replace to avoid adding to browser history
                         router.replace(`${pathname}?${currentParams.toString()}`, { scroll: false });
                 }
 
@@ -59,14 +59,14 @@ export default function RestaurantList() {
 
         const totalPages = Math.max(1, Math.ceil(filteredRestaurants.length / ITEMS_PER_PAGE));
 
-        // Logic cắt (slice) dữ liệu cho trang hiện tại (giữ nguyên)
+        // Logic to slice data for current page (unchanged)
         const paginatedRestaurants = useMemo(() => {
                 const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
                 const endIndex = startIndex + ITEMS_PER_PAGE;
                 return filteredRestaurants.slice(startIndex, endIndex);
         }, [filteredRestaurants, currentPage]);
 
-        // --- Các hàm xử lý (handleOpenModal, handleCloseModal, v.v...) giữ nguyên ---
+        // --- Handler functions (handleOpenModal, handleCloseModal, etc.) unchanged ---
         const handleOpenModal = (restaurant: Restaurant | null) => {
                 setCurrentRestaurant(restaurant);
                 setIsModalOpen(true);
@@ -257,7 +257,7 @@ export default function RestaurantList() {
                                                 </table>
                                         </div>
 
-                                                                        {/* 4. Render component Pagination với props mới */}
+                                                                        {/* 4. Render Pagination component with new props */}
                                                                         <Pagination currentPage={currentPage} totalPages={totalPages} />
                                 </>
                         )}

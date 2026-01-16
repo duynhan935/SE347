@@ -45,12 +45,11 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
         return acc;
     }, {} as Record<string, DisplayOrderItem[]>);
 
-    // Format price to VND
+    // Format price to USD
     const formatPrice = (priceUSD: number): string => {
-        const vndPrice = priceUSD * 25000; // Convert USD to VND
-        return vndPrice.toLocaleString("en-US", {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
+        return priceUSD.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
         });
     };
 
@@ -82,13 +81,13 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                             {!showReviewForm && !hasReviewed && (
                                 <div className="text-center py-4">
                                     <p className="text-gray-600 mb-4">
-                                        Đơn hàng của bạn đã hoàn thành. Hãy chia sẻ đánh giá của bạn!
+                                        Your order has been completed. Please share your review!
                                     </p>
                                     <button
                                         onClick={() => setShowReviewForm(true)}
                                         className="px-6 py-3 bg-[#EE4D2D] text-white font-semibold rounded-lg hover:bg-[#EE4D2D]/90 transition-colors shadow-md hover:shadow-lg"
                                     >
-                                        Đánh giá đơn hàng
+                                        Review Order
                                     </button>
                                 </div>
                             )}
@@ -100,7 +99,7 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                             {hasReviewed && (
                                 <div className="text-center py-4">
                                     <p className="text-green-600 font-medium">
-                                        ✓ Cảm ơn bạn đã đánh giá đơn hàng này!
+                                        ✓ Thank you for reviewing this order!
                                     </p>
                                 </div>
                             )}
@@ -167,7 +166,7 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                     </div>
                 </div>
 
-                {/* Cột phải: Tóm tắt đơn hàng */}
+                {/* Right column: Order summary */}
                 <div className="lg:col-span-1">
                     <OrderSummary order={order} />
                 </div>

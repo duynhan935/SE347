@@ -135,7 +135,7 @@ export default function MerchantRegisterPage() {
                     await restaurantApi.createRestaurant(restaurantData, restaurantImage || undefined);
 
                     toast.success(
-                        "Đăng ký merchant thành công! Yêu cầu của bạn đã được gửi và đang chờ admin phê duyệt. Bạn sẽ nhận được email thông báo khi được phê duyệt.",
+                        "Merchant registration successful! Your request has been submitted and is pending admin approval. You will receive an email notification when approved.",
                         { duration: 5000 }
                     );
                 } catch (restaurantError: unknown) {
@@ -166,7 +166,7 @@ export default function MerchantRegisterPage() {
                     localStorage.setItem(`pending_restaurant_${email}`, JSON.stringify(restaurantInfo));
 
                     toast.success(
-                        "Đăng ký merchant thành công! Thông tin nhà hàng đã được lưu. Nhà hàng sẽ được tạo sau khi được phê duyệt. Bạn sẽ nhận được email thông báo khi được phê duyệt.",
+                        "Merchant registration successful! Restaurant information has been saved. Restaurant will be created after approval. You will receive an email notification when approved.",
                         { duration: 5000 }
                     );
                 }
@@ -192,7 +192,7 @@ export default function MerchantRegisterPage() {
                 localStorage.setItem(`pending_restaurant_${email}`, JSON.stringify(restaurantInfo));
 
                 toast.success(
-                    "Đăng ký merchant thành công! Thông tin nhà hàng đã được lưu. Nhà hàng sẽ được tạo sau khi được phê duyệt. Bạn sẽ nhận được email thông báo khi được phê duyệt.",
+                    "Merchant registration successful! Restaurant information has been saved. Restaurant will be created after approval. You will receive an email notification when approved.",
                     { duration: 5000 }
                 );
             }
@@ -222,11 +222,11 @@ export default function MerchantRegisterPage() {
                     errorData.errorCode === "CONFLICT" ||
                     errorData.errorCode === "ILLEGAL_ARGUMENT" ||
                     errorData.message?.includes("Duplicate entry") ||
-                    errorData.message?.includes("đã được sử dụng") ||
+                    errorData.message?.includes("already in use") ||
                     errorData.message?.toLowerCase().includes("email") ||
                     errorData.message?.toLowerCase().includes("duplicate")
                 ) {
-                    if (errorData.message?.includes("đã được sử dụng")) {
+                    if (errorData.message?.includes("already in use")) {
                         errorMessage = errorData.message;
                     } else {
                         errorMessage =
@@ -605,10 +605,10 @@ export default function MerchantRegisterPage() {
 
                         {/* Info Note */}
                         <div className="bg-blue-50 border border-blue-200 rounded-md p-4 text-sm text-blue-800">
-                            <p className="font-semibold mb-1">Lưu ý:</p>
+                            <p className="font-semibold mb-1">Note:</p>
                             <p>
-                                Yêu cầu của bạn sẽ được gửi đến admin để phê duyệt. Bạn sẽ nhận được email thông báo khi được phê duyệt hoặc từ chối. 
-                                Thông tin nhà hàng sẽ được tạo sau khi bạn được phê duyệt. Bạn có thể đăng nhập sau khi được phê duyệt.
+                                Your request will be sent to admin for approval. You will receive an email notification when approved or rejected. 
+                                Restaurant information will be created after you are approved. You can log in after approval.
                             </p>
                         </div>
 

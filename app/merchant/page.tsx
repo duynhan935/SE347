@@ -9,32 +9,32 @@ export default function MerchantDashboard() {
 
     const stats = [
         {
-            title: "Tổng Món Ăn",
+            title: "Total Food Items",
             value: "0",
             icon: Store,
             bgColor: "bg-blue-500",
-            subtitle: "Trong menu",
+            subtitle: "In menu",
         },
         {
-            title: "Tổng Doanh Thu",
-            value: "0 VNĐ",
+            title: "Total Revenue",
+            value: "$0",
             icon: DollarSign,
             bgColor: "bg-green-500",
-            subtitle: "Tháng này",
+            subtitle: "This month",
         },
         {
-            title: "Tổng Nhân Viên",
+            title: "Total Staff",
             value: "0",
             icon: Users,
             bgColor: "bg-orange-500",
-            subtitle: "Tất cả vị trí",
+            subtitle: "All positions",
         },
         {
-            title: "Tăng Trưởng",
+            title: "Growth",
             value: "0%",
             icon: TrendingUp,
             bgColor: "bg-purple-500",
-            subtitle: "So với tháng trước",
+            subtitle: "Compared to last month",
         },
     ];
 
@@ -45,7 +45,7 @@ export default function MerchantDashboard() {
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Merchant Dashboard</h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">
-                        Xin chào, {user?.username || "Merchant"}! Chào mừng trở lại.
+                        Hello, {user?.username || "Merchant"}! Welcome back.
                     </p>
                 </div>
                 <Link
@@ -53,7 +53,7 @@ export default function MerchantDashboard() {
                     className="flex items-center gap-2 px-4 py-2 bg-brand-yellow hover:bg-brand-yellow/90 text-white rounded-lg transition-colors"
                 >
                     <Plus className="h-5 w-5" />
-                    Thêm Món Ăn
+                    Add Food Item
                 </Link>
             </div>
 
@@ -85,7 +85,7 @@ export default function MerchantDashboard() {
 
             {/* Quick Actions */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Hành Động Nhanh</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Link
                         href="/merchant/food"
@@ -93,8 +93,8 @@ export default function MerchantDashboard() {
                     >
                         <Store className="h-8 w-8 text-brand-yellow" />
                         <div>
-                            <p className="font-medium text-gray-900 dark:text-white">Quản Lý Món Ăn</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Thêm và quản lý menu</p>
+                            <p className="font-medium text-gray-900 dark:text-white">Manage Food Items</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Add and manage menu</p>
                         </div>
                     </Link>
                     <Link
@@ -103,8 +103,8 @@ export default function MerchantDashboard() {
                     >
                         <Users className="h-8 w-8 text-brand-yellow" />
                         <div>
-                            <p className="font-medium text-gray-900 dark:text-white">Quản Lý Nhân Viên</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Thêm và quản lý staff</p>
+                            <p className="font-medium text-gray-900 dark:text-white">Manage Staff</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Add and manage staff</p>
                         </div>
                     </Link>
                     <Link
@@ -113,8 +113,8 @@ export default function MerchantDashboard() {
                     >
                         <BarChart3 className="h-8 w-8 text-brand-yellow" />
                         <div>
-                            <p className="font-medium text-gray-900 dark:text-white">Báo Cáo</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Xem thống kê và báo cáo</p>
+                            <p className="font-medium text-gray-900 dark:text-white">Reports</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">View statistics and reports</p>
                         </div>
                     </Link>
                 </div>
@@ -122,8 +122,8 @@ export default function MerchantDashboard() {
 
             {/* Recent Activity */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Hoạt Động Gần Đây</h2>
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">Chưa có hoạt động nào</div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Recent Activity</h2>
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">No activity yet</div>
             </div>
         </div>
     );

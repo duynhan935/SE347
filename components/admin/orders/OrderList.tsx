@@ -18,14 +18,14 @@ export default function OrderList({ initialOrders }: { initialOrders: Order[] })
         );
     }, [orders, searchTerm]);
 
-    // Admin thường không xóa đơn hàng, chỉ có thể cập nhật trạng thái (ví dụ: hủy đơn)
-    // Hoặc xem chi tiết
+    // Admin usually doesn't delete orders, only can update status (e.g., cancel order)
+    // Or view details
 
-    // Ví dụ hàm cập nhật trạng thái (bạn sẽ cần 1 modal/form cho việc này)
+    // Example function to update status (you will need a modal/form for this)
     const handleUpdateStatus = (orderId: string) => {
-        // Mở modal để chọn trạng thái mới
-        console.log(`Mở modal cập nhật trạng thái cho ${orderId}`);
-        // Logic: gọi API, sau đó setOrders(...)
+        // Open modal to select new status
+        console.log(`Open status update modal for ${orderId}`);
+        // Logic: call API, then setOrders(...)
     };
 
     return (
@@ -94,7 +94,7 @@ export default function OrderList({ initialOrders }: { initialOrders: Order[] })
                                         <Edit className="w-5 h-5 inline-block" />
                                     </button>
                                     <Link
-                                        href={`/admin/order/${order.orderId}`} // Link đến trang chi tiết
+                                        href={`/admin/order/${order.orderId}`} // Link to detail page
                                         className="text-gray-600 hover:text-gray-900"
                                         title="View Details"
                                     >

@@ -6,7 +6,7 @@ export interface ManagerCredentials {
     password: string;
 }
 
-// Hàm sinh thông tin tài khoản manager dựa trên dữ liệu restaurant (deterministic)
+// Function to generate manager account information based on restaurant data (deterministic)
 export function generateManagerCredentials(restaurant: Restaurant): ManagerCredentials {
     const base =
         restaurant.slug ||

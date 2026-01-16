@@ -5,19 +5,19 @@ import { Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-// 1. Định nghĩa Props
+// 1. Define Props
 type UserFormModalProps = {
         isOpen: boolean;
         onClose: () => void;
-        // userToEdit = null: Chế độ "Add New"
-        // userToEdit = User: Chế độ "Edit"
+        // userToEdit = null: "Add New" mode
+        // userToEdit = User: "Edit" mode
         userToEdit: User | null;
-        // Hàm onSave sẽ nhận dữ liệu form để component cha xử lý
+        // onSave function will receive form data for parent component to handle
         onSave: (userData: { username: string; phone: string }) => void;
 };
 
 export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: UserFormModalProps) {
-        // 2. State nội bộ của form
+        // 2. Internal form state
         const [username, setUsername] = useState("");
         const [phone, setPhone] = useState("");
         const [loading, setLoading] = useState(false);
@@ -25,23 +25,23 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
         const isEditMode = userToEdit !== null;
         const title = isEditMode ? "Edit User" : "Add New User";
 
-        // 3. Effect để đồng bộ props 'userToEdit' vào state của form
-        // Khi modal mở hoặc user để edit thay đổi -> cập nhật form
+        // 3. Effect to sync 'userToEdit' props into form state
+        // When modal opens or user to edit changes -> update form
         useEffect(() => {
                 if (isOpen) {
                         if (isEditMode && userToEdit) {
-                                // Chế độ Edit: Nạp dữ liệu của user vào form
+                                // Edit mode: Load user data into form
                                 setUsername(userToEdit.username || "");
                                 setPhone(userToEdit.phone || "");
                         } else {
-                                // Chế độ Add: Reset form
+                                // Add mode: Reset form
                                 setUsername("");
                                 setPhone("");
                         }
                 }
         }, [isOpen, userToEdit, isEditMode]);
 
-        // 4. Xử lý khi submit form
+        // 4. Handle form submission
         const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
 
@@ -52,7 +52,7 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
 
                 setLoading(true);
                 try {
-                        // Gửi dữ liệu lên component cha (UserList)
+                        // Send data to parent component (UserList)
                         await onSave({ username: username.trim(), phone: phone.trim() });
                 } catch (error) {
                         // Error handling is done in parent component
@@ -61,24 +61,24 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                 }
         };
 
-        // 5. Nếu modal không mở (isOpen=false) -> không render gì cả
+        // 5. If modal is not open (isOpen=false) -> render nothing
         if (!isOpen) {
                 return null;
         }
 
-        // 6. Render giao diện Modal
+        // 6. Render Modal UI
         return (
-                // Lớp phủ (backdrop)
+                // Backdrop
                 <div
                         onClick={onClose}
                         className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex justify-center items-center transition-opacity"
                 >
-                        {/* Nội dung Modal */}
+                        {/* Modal Content */}
                         <div
-                                onClick={(e) => e.stopPropagation()} // Ngăn bấm vào modal bị đóng
+                                onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
                                 className="relative bg-white p-6 rounded-lg shadow-xl w-full max-w-lg"
                         >
-                                {/* Nút đóng (X) */}
+                                {/* Close Button (X) */}
                                 <button
                                         title="Close Modal"
                                         onClick={onClose}
@@ -87,7 +87,7 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                                         <X className="w-6 h-6" />
                                 </button>
 
-                                {/* Tiêu đề */}
+                                {/* Title */}
                                 <h2 className="text-2xl font-bold mb-6">{title}</h2>
 
                                 {/* Form */}
@@ -173,10 +173,10 @@ export default function UserFormModal({ isOpen, onClose, userToEdit, onSave }: U
                                                 </>
                                         )}
 
-                                        {/* Nút bấm */}
+                                        {/* Buttons */}
                                         <div className="flex justify-end gap-3 pt-4">
                                                 <button
-                                                        type="button" // Quan trọng: type="button" để không submit form
+                                                        type="button" // Important: type="button" to prevent form submission
                                                         onClick={onClose}
                                                         className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                                         disabled={loading}

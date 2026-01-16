@@ -4,10 +4,10 @@ import { ChevronDown, MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const popularAddresses = [
-    "123 Nguyễn Huệ, Quận 1, TP.HCM",
-    "456 Lê Lợi, Quận 1, TP.HCM",
-    "789 Điện Biên Phủ, Quận Bình Thạnh, TP.HCM",
-    "321 Võ Văn Tần, Quận 3, TP.HCM",
+    "123 Main Street, District 1, HCMC",
+    "456 Second Avenue, District 1, HCMC",
+    "789 Third Boulevard, Binh Thanh District, HCMC",
+    "321 Fourth Road, District 3, HCMC",
 ];
 
 export default function AddressSelector() {

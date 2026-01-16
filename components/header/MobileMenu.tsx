@@ -54,7 +54,7 @@ export default function MobileMenu() {
                     href="/?type=foods"
                     prefetch={true}
                     className="relative p-2 rounded-full hover:bg-gray-50 transition-colors"
-                    aria-label="Khám phá món ăn"
+                    aria-label="Explore foods"
                 >
                     <UtensilsCrossed
                         className={`w-5 h-5 ${pathname === "/" ? "text-brand-orange" : "text-brand-grey"}`}

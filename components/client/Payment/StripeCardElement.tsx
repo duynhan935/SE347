@@ -41,7 +41,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
             if (error) {
                 // Check if PaymentIntent is in terminal state
                 if (error.message?.includes("terminal state") || error.message?.includes("cannot be used")) {
-                    onPaymentError("Payment Intent đã được sử dụng hoặc đã hết hạn. Vui lòng đặt hàng lại.");
+                    onPaymentError("Payment Intent has already been used or expired. Please place order again.");
                 } else {
                     onPaymentError(error.message || "Payment failed. Please try again.");
                 }
@@ -63,7 +63,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
             
             // Check if PaymentIntent is in terminal state
             if (errorMessage.includes("terminal state") || errorMessage.includes("cannot be used")) {
-                onPaymentError("Payment Intent đã được sử dụng hoặc đã hết hạn. Vui lòng đặt hàng lại.");
+                onPaymentError("Payment Intent has already been used or expired. Please place order again.");
             } else {
                 onPaymentError(errorMessage);
             }
@@ -91,7 +91,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
             {/* Card Number */}
             <div className="space-y-2">
                 <label htmlFor="card-number" className="block text-sm font-medium text-gray-700">
-                    Số thẻ
+                    Card Number
                 </label>
                 <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-[#EE4D2D] focus-within:border-[#EE4D2D] transition-all">
                     <CardNumberElement
@@ -109,7 +109,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                 {/* Expiry Date */}
                 <div className="space-y-2">
                     <label htmlFor="card-expiry" className="block text-sm font-medium text-gray-700">
-                        Ngày hết hạn
+                        Expiry Date
                     </label>
                     <div className="border border-gray-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-[#EE4D2D] focus-within:border-[#EE4D2D] transition-all">
                         <CardExpiryElement
@@ -145,7 +145,7 @@ export default function StripeCardElement({ clientSecret, onPaymentSuccess, onPa
                 disabled={!stripe || isProcessing}
                 className="w-full bg-[#EE4D2D] text-white font-semibold py-3 px-4 rounded-lg hover:bg-[#EE4D2D]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-6"
             >
-                {isProcessing ? "Đang xử lý..." : "Xác nhận thanh toán"}
+                {isProcessing ? "Processing..." : "Confirm Payment"}
             </button>
         </form>
     );

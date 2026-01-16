@@ -7,11 +7,11 @@ type ScrollRevealProps = {
         children: React.ReactNode;
         delay?: number;
         className?: string;
-        // ✨ 1. Thêm prop 'variants' để có thể tùy chỉnh animation
+        // ✨ 1. Add 'variants' prop to allow customizing animation
         variants?: Variants;
 };
 
-// ✨ 2. Tạo một bộ variant mặc định
+// ✨ 2. Create a default set of variants
 const defaultVariants: Variants = {
         hidden: { opacity: 0, y: 50 },
         visible: { opacity: 1, y: 0 },
@@ -21,7 +21,7 @@ export default function ScrollReveal({
         children,
         delay = 0,
         className,
-        variants = defaultVariants, // Sử dụng variant mặc định nếu không có tùy chỉnh
+        variants = defaultVariants, // Use default variant if no customization
 }: ScrollRevealProps) {
         const ref = useRef(null);
         const isInView = useInView(ref, { once: true, amount: 0.2 });

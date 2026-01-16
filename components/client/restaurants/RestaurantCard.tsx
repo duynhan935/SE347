@@ -30,7 +30,7 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => (
             <h3 className="font-bold text-lg truncate" title={restaurant.resName}>
                 {restaurant.resName}
             </h3>
-            {/* FIX: Kiểm tra distance trước khi gọi toFixed */}
+            {/* FIX: Check distance before calling toFixed */}
             <p className="text-sm text-gray-500 mt-1">
                 {restaurant.distance != null ? `${restaurant.distance.toFixed(1)} km` : "Distance not available"}
             </p>

@@ -84,12 +84,11 @@ export default function OrderHistoryPage() {
                     ? `${orderId}-${new Date(order.createdAt).getTime()}`
                     : `${orderId}-${index}`;
 
-                // Format price to VND
+                // Format price to USD
                 const formatPrice = (priceUSD: number): string => {
-                    const vndPrice = priceUSD * 25000; // Convert USD to VND
-                    return vndPrice.toLocaleString("en-US", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
+                    return priceUSD.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
                     });
                 };
 
@@ -98,7 +97,7 @@ export default function OrderHistoryPage() {
                     uniqueKey,
                     displayId: order.orderId || `#${index + 1}`,
                     date: orderDate,
-                    total: `${formatPrice(Number(order.finalAmount || 0))} ₫`,
+                    total: `$${formatPrice(Number(order.finalAmount || 0))}`,
                     status,
                     statusClass: getStatusBadgeClass(status),
                     orderCode: order.orderId,

@@ -34,7 +34,7 @@ export default function RelatedBlogs({ currentBlogId, category }: RelatedBlogsPr
                         setBlogs(related);
                 } catch (error) {
                         console.error("Failed to fetch related blogs:", error);
-                        toast.error("Không thể tải bài viết liên quan");
+                        toast.error("Unable to load related articles");
                 } finally {
                         setLoading(false);
                 }
@@ -43,7 +43,7 @@ export default function RelatedBlogs({ currentBlogId, category }: RelatedBlogsPr
         if (loading) {
                 return (
                         <div className="bg-white rounded-lg shadow-md p-6">
-                                <h3 className="text-xl font-bold text-gray-900 mb-4">Bài viết liên quan</h3>
+                                <h3 className="text-xl font-bold text-gray-900 mb-4">Related Articles</h3>
                                 <div className="text-center py-4">
                                         <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-brand-purple"></div>
                                 </div>
@@ -57,7 +57,7 @@ export default function RelatedBlogs({ currentBlogId, category }: RelatedBlogsPr
 
         return (
                 <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">Bài viết liên quan</h3>
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">Related Articles</h3>
                         <div className="space-y-4">
                                 {blogs.map((blog) => (
                                         <Link
@@ -95,7 +95,7 @@ export default function RelatedBlogs({ currentBlogId, category }: RelatedBlogsPr
                                                                         </div>
                                                                         <div className="flex items-center gap-1">
                                                                                 <Clock className="w-3 h-3" />
-                                                                                <span>{blog.readTime} phút</span>
+                                                                                <span>{blog.readTime} min</span>
                                                                         </div>
                                                                 </div>
                                                         </div>

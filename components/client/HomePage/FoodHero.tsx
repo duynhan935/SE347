@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-// Category icons với emoji đa dạng
+// Category icons with diverse emojis
 const categoryIcons: { [key: string]: string } = {
         Burger: "🍔",
         Pizza: "🍕",
@@ -29,7 +29,7 @@ const categoryIcons: { [key: string]: string } = {
         Vietnamese: "🍜",
 };
 
-// Category colors - màu nền nhẹ khác nhau cho mỗi category
+// Category colors - different light background colors for each category
 const categoryColors: { [key: string]: { bg: string; activeBg: string; text: string } } = {
         Burger: { bg: "bg-orange-50", activeBg: "bg-orange-500", text: "text-orange-700" },
         Pizza: { bg: "bg-red-50", activeBg: "bg-red-500", text: "text-red-700" },
@@ -127,14 +127,14 @@ export default function FoodHero() {
                                         {/* Title Section - Compact */}
                                         <div className="text-center mb-6">
                                                 <h1 className="text-2xl lg:text-3xl font-bold font-roboto-serif text-brand-black mb-2">
-                                                        Đặt Đồ ăn, giao hàng từ 20&apos;
+                                                        Order Food, Delivery from 20&apos;
                                                 </h1>
                                                 <p className="text-brand-grey text-sm">
-                                                        Tìm kiếm và đặt món ăn yêu thích của bạn
+                                                        Search and order your favorite dishes
                                                 </p>
                                         </div>
 
-                                        {/* Tab Switcher - Ngay dưới title */}
+                                        {/* Tab Switcher - Right below title */}
                                         <div className="flex justify-center mb-6">
                                                 <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
                                                         <button
@@ -145,7 +145,7 @@ export default function FoodHero() {
                                                                                 : "text-gray-600 hover:bg-gray-50"
                                                                 }`}
                                                         >
-                                                                Món ăn
+                                                                Foods
                                                         </button>
                                                         <button
                                                                 onClick={() => handleTypeChange("restaurants")}
@@ -155,14 +155,14 @@ export default function FoodHero() {
                                                                                 : "text-gray-600 hover:bg-gray-50"
                                                                 }`}
                                                         >
-                                                                Nhà hàng
+                                                                Restaurants
                                                         </button>
                                                 </div>
                                         </div>
                                 </div>
                         </section>
 
-                        {/* Sticky Categories Section - Chỉ hiển thị trên Mobile khi type=foods */}
+                        {/* Sticky Categories Section - Only displayed on Mobile when type=foods */}
                         {searchType === "foods" && (
                                 <div
                                         ref={categoriesRef}
@@ -206,7 +206,7 @@ export default function FoodHero() {
                                                                                 }`}
                                                                         >
                                                                                 <span className="text-lg lg:text-2xl">🍽️</span>
-                                                                                <span className="text-[10px] lg:text-xs font-semibold leading-tight">Tất cả</span>
+                                                                                <span className="text-[10px] lg:text-xs font-semibold leading-tight">All</span>
                                                                         </button>
 
                                                                         {/* Other Categories */}

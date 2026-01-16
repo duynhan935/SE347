@@ -8,8 +8,8 @@ export default function Verify2FAPage() {
 
         const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
-                // Gửi code này lên server để xác thực
-                // Nếu đúng, server sẽ cấp session đăng nhập và chuyển hướng đến trang dashboard
+                // Send this code to server for verification
+                // If correct, server will grant login session and redirect to dashboard
                 console.log("Verifying login code:", verificationCode);
                 alert(`Submitting code: ${verificationCode}. If correct, you will be logged in.`);
         };

@@ -11,8 +11,8 @@ export interface User {
 // types/order.type.ts
 export interface Order {
         id: string;
-        customerName: string; // Giả định
-        restaurantName: string; // Giả định
+        customerName: string; // Assumed
+        restaurantName: string; // Assumed
         totalPrice: number;
         status: "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED";
         createdAt: string;

@@ -45,12 +45,11 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
         }
     };
 
-    // Format price to VND
+    // Format price to USD
     const formatPrice = (priceUSD: number): string => {
-        const vndPrice = priceUSD * 25000; // Convert USD to VND
-        return vndPrice.toLocaleString("en-US", {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
+        return priceUSD.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
         });
     };
 

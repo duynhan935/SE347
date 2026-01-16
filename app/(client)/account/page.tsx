@@ -140,12 +140,11 @@ export default function ProfilePage() {
                     ? `${orderId}-${new Date(order.createdAt).getTime()}`
                     : `${orderId}-${index}`;
 
-                // Format price to VND
+                // Format price to USD
                 const formatPriceLocal = (priceUSD: number): string => {
-                    const vndPrice = priceUSD * 25000; // Convert USD to VND
-                    return vndPrice.toLocaleString("en-US", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
+                    return priceUSD.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
                     });
                 };
 
@@ -153,7 +152,7 @@ export default function ProfilePage() {
                     id: uniqueId,
                     displayId: order.orderId || `#${index + 1}`,
                     date: orderDate,
-                    total: formatPriceLocal(Number(order.finalAmount || 0)) + " ₫",
+                    total: "$" + formatPriceLocal(Number(order.finalAmount || 0)),
                     status,
                     statusClass: getStatusBadgeClass(status),
                 };

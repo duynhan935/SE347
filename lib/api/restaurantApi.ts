@@ -52,17 +52,17 @@ export const restaurantApi = {
     getRestaurantByMerchantId: (merchantId: string) => api.get<Restaurant[]>(`/restaurant/merchant/${merchantId}`),
     getAllRestaurants: (params: URLSearchParams) => api.get<Restaurant[]>("/restaurant", { params: params }),
     createRestaurant: (restaurantData: RestaurantData, imageFile?: File) => {
-        // Sử dụng hàm helper mới
+        // Use new helper function
         const formData = buildRestaurantFormData(restaurantData, imageFile);
 
-        // Vẫn XÓA header đi! Axios sẽ tự động thêm Content-Type + boundary
+        // Still REMOVE header! Axios will automatically add Content-Type + boundary
         return api.post<Restaurant>("/restaurant", formData);
     },
     updateRestaurant: (restaurantId: string, restaurantData: RestaurantData, imageFile?: File) => {
-        // Sử dụng hàm helper mới
+        // Use new helper function
         const formData = buildRestaurantFormData(restaurantData, imageFile);
 
-        // Vẫn XÓA header đi!
+        // Still REMOVE header!
         return api.put<Restaurant>(`/restaurant/${restaurantId}`, formData);
     },
     updateRestaurantStatus: (restaurantId: string) => api.put<Restaurant>(`/restaurant/enable/${restaurantId}`),

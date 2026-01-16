@@ -12,41 +12,21 @@ export default function FeaturedFoodPanel() {
     const { fetchAllProducts, products, loading: productsLoading } = useProductStore();
 
     useEffect(() => {
-        const params = new URLSearchParams(Array.from(searchParams.entries()));
+        const params = new URLSearchParams();
         params.set("type", "foods");
         // Set location for distance calculation
         params.set("lat", "10.7626");
         params.set("lon", "106.6825");
-        // Sort by rating descending để lấy món nổi bật
-        params.set("order", "desc");
         fetchAllProducts(params);
-    }, [fetchAllProducts, searchParams]);
+    }, [fetchAllProducts]);
 
     // Use API data from store (already ensured to be array by store)
     const productsToUse = products;
 
-    // Filter và sort để lấy món ăn nổi bật
+    // Get first 12 products
     const featuredProducts = useMemo(() => {
         if (!productsToUse || productsToUse.length === 0) return [];
-
-        // Sort theo tiêu chí "nổi bật":
-        // 1. Rating cao (>= 4.0)
-        // 2. Nhiều đánh giá (> 20 reviews)
-        // 3. Sắp xếp theo rating giảm dần, sau đó theo số lượng đánh giá
-        return [...productsToUse]
-            .filter((product) => {
-                // Chỉ lấy món có rating >= 4.0 hoặc có nhiều đánh giá
-                return (product.rating >= 4.0 && product.rating > 0) || product.totalReview > 20;
-            })
-            .sort((a, b) => {
-                // Sort theo rating giảm dần
-                if (b.rating !== a.rating) {
-                    return b.rating - a.rating;
-                }
-                // Nếu rating bằng nhau, sort theo số lượng đánh giá giảm dần
-                return (b.totalReview || 0) - (a.totalReview || 0);
-            })
-            .slice(0, 12); // Lấy 12 món nổi bật nhất
+        return productsToUse.slice(0, 12);
     }, [productsToUse]);
 
     return (
@@ -54,10 +34,10 @@ export default function FeaturedFoodPanel() {
             {/* Header */}
             <div className="mb-6 pb-4 border-b border-gray-200 flex-shrink-0">
                 <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-                    Món ăn nổi bật
+                    Featured Foods
                 </h2>
                 <p className="text-sm text-gray-500">
-                    {productsLoading ? "Đang tải..." : `${featuredProducts.length} món ăn nổi bật`}
+                    {productsLoading ? "Loading..." : `${featuredProducts.length} featured items`}
                 </p>
             </div>
 
@@ -104,10 +84,10 @@ export default function FeaturedFoodPanel() {
 
                     {/* Empty State Content */}
                     <h3 className="text-xl font-bold text-gray-800 mb-2">
-                        Chưa có món ăn nổi bật
+                        No featured foods available
                     </h3>
                     <p className="text-sm text-gray-500 mb-6 max-w-md text-center">
-                        Hôm nay chưa có món này, thử tìm món khác nhé?
+                        No featured items today, try searching for other foods?
                     </p>
 
                     {/* CTA Buttons */}
@@ -116,13 +96,13 @@ export default function FeaturedFoodPanel() {
                             href="/restaurants"
                             className="px-6 py-3 bg-[#EE4D2D] text-white rounded-lg font-semibold hover:bg-[#EE4D2D]/90 transition-colors text-center shadow-md hover:shadow-lg"
                         >
-                            Xem tất cả nhà hàng
+                            View All Restaurants
                         </Link>
                         <Link
                             href="/"
                             className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-center"
                         >
-                            Xóa bộ lọc
+                            Clear Filters
                         </Link>
                     </div>
                 </div>

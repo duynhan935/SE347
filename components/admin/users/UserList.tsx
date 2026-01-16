@@ -12,9 +12,9 @@ export default function UserList() {
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
 
-    // 3. State quản lý modal
+    // 3. Modal state management
     const [isModalOpen, setIsModalOpen] = useState(false);
-    // State lưu user đang được edit (hoặc null nếu là "add new")
+    // State to store user being edited (or null if "add new")
     const [currentUser, setCurrentUser] = useState<User | null>(null);
 
     // Fetch users from API
@@ -37,7 +37,7 @@ export default function UserList() {
         }
     };
 
-    // Logic tìm kiếm (giữ nguyên)
+    // Search logic (unchanged)
     const filteredUsers = useMemo(() => {
         if (!searchTerm) return users;
         return users.filter(
@@ -47,21 +47,21 @@ export default function UserList() {
         );
     }, [users, searchTerm]);
 
-    // 4. Các hàm xử lý modal
+    // 4. Modal handler functions
     const handleOpenModal = (user: User | null) => {
-        setCurrentUser(user); // Set user (hoặc null)
-        setIsModalOpen(true); // Mở modal
+        setCurrentUser(user); // Set user (or null)
+        setIsModalOpen(true); // Open modal
     };
 
     const handleCloseModal = () => {
         setCurrentUser(null);
-        setIsModalOpen(false); // Đóng modal
+        setIsModalOpen(false); // Close modal
     };
 
-    // 5. Hàm xử lý logic Save (Create/Update)
+    // 5. Save logic handler (Create/Update)
     const handleSaveUser = async (formData: { username: string; phone: string }) => {
         if (currentUser) {
-            // --- Chế độ UPDATE ---
+            // --- UPDATE mode ---
             try {
                 const updatedUser = await authApi.updateUser(currentUser.id, {
                     username: formData.username,
@@ -81,19 +81,19 @@ export default function UserList() {
                 toast.error(errorMessage);
             }
         } else {
-            // --- Chế độ CREATE ---
+            // --- CREATE mode ---
             // Note: Backend doesn't have create user endpoint in user-service
             // Admin might need to use register endpoint or a separate admin service
             toast.error("Create user functionality is not available. Please use the register page.");
         }
 
-        // Tự động đóng modal sau khi lưu
+        // Automatically close modal after saving
         handleCloseModal();
         // Refresh users list
         fetchUsers();
     };
 
-    // Logic Xóa (giữ nguyên)
+    // Delete logic (unchanged)
     const handleDelete = async (userId: string) => {
         if (!window.confirm("Are you sure you want to delete this user?")) {
             return;
@@ -125,7 +125,7 @@ export default function UserList() {
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-sm">
-            {/* Header: Search và Nút Add New */}
+            {/* Header: Search and Add New Button */}
             <div className="flex justify-between items-center mb-4">
                 <div className="relative w-full max-w-sm">
                     <input
@@ -140,7 +140,7 @@ export default function UserList() {
 
                 {/* Note: Add User functionality disabled as backend doesn't have admin create endpoint */}
                 {/* <button
-                                        onClick={() => handleOpenModal(null)} // Mở modal ở chế độ "Add"
+                                        onClick={() => handleOpenModal(null)} // Open modal in "Add" mode
                                         className="flex items-center gap-2 bg-brand-purple text-white px-4 py-2 rounded-lg font-semibold hover:bg-brand-purple/90 transition-colors cursor-pointer"
                                 >
                                         <Plus className="w-5 h-5" />

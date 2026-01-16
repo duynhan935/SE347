@@ -106,7 +106,7 @@ export default function FilterSidebar() {
 
                 const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
 
-                // Nếu đang active "nearby" thì tắt đi
+                // If "nearby" is active, turn it off
                 if (currentParams.has("nearby")) {
                         currentParams.delete("nearby");
                         currentParams.delete("lat");

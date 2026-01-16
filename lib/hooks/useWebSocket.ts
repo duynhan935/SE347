@@ -29,7 +29,7 @@ export function useWebSocket({ roomId, userId, onMessageReceived, onError }: Use
             clientRef.current.deactivate();
         }
 
-        // Tạo SockJS connection
+        // Create SockJS connection
         const socket = new SockJS(`${WS_BASE_URL}/ws`);
         const client = new Client({
             webSocketFactory: () => socket,

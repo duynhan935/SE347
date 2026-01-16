@@ -12,7 +12,6 @@ import {
 import { getImageUrl } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatStore } from "@/stores/useChatStore";
-import { useNotificationStore } from "@/stores/useNotificationStore";
 import { LogOut, MessageCircle, Package, Settings, Store, User, UtensilsCrossed } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -26,7 +25,6 @@ export default function NavActions() {
     const { user, isAuthenticated, loading, logout } = useAuthStore();
     // Subscribe to unread count map to trigger re-render when it changes
     const unreadCountMap = useChatStore((state) => state.unreadCountMap);
-    const orderUnreadCount = useNotificationStore((state) => state.orderUnreadCount());
     const [mounted, setMounted] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const router = useRouter();
@@ -101,8 +99,8 @@ export default function NavActions() {
                 className={`relative p-2 rounded-lg hover:bg-gray-50 transition-colors ${
                     pathname === "/" ? "text-[#EE4D2D]" : "text-gray-600"
                 }`}
-                aria-label="Khám phá món ăn"
-                title="Khám phá món ăn"
+                aria-label="Explore foods"
+                title="Explore foods"
             >
                 <UtensilsCrossed className="w-5 h-5" />
                 {pathname === "/" && (
@@ -121,11 +119,6 @@ export default function NavActions() {
                     title="My orders"
                 >
                     <Package className="w-5 h-5" />
-                    {orderUnreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#EE4D2D] text-white text-xs rounded-full flex items-center justify-center font-bold shadow-md">
-                            {orderUnreadCount > 99 ? "99+" : orderUnreadCount}
-                        </span>
-                    )}
                     {pathname === "/orders" && (
                         <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#EE4D2D] rounded-full" />
                     )}
@@ -198,11 +191,6 @@ export default function NavActions() {
                                         <Package className="h-4 w-4 text-gray-600" />
                                         <span className="text-sm">My orders</span>
                                     </div>
-                                    {orderUnreadCount > 0 && (
-                                        <span className="ml-2 h-5 min-w-[20px] px-1.5 bg-[#EE4D2D] text-white text-xs rounded-full flex items-center justify-center font-bold">
-                                            {orderUnreadCount > 99 ? "99+" : orderUnreadCount}
-                                        </span>
-                                    )}
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>

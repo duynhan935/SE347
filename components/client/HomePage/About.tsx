@@ -104,7 +104,7 @@ const HomePageAbout = () => {
 
                                                         <Link href="/?type=foods" className="inline-block">
                                                                 <Button className="mt-[38px] bg-brand-purple text-brand-white cursor-pointer hover:bg-brand-purple/80 transition-all duration-300">
-                                                                        Khám phá món ăn
+                                                                        Explore Food
                                                                 </Button>
                                                         </Link>
                                                 </div>

@@ -40,7 +40,7 @@ export default function BlogPostPage() {
                         }
                 } catch (error) {
                         console.error("Failed to fetch blog:", error);
-                        toast.error("Không thể tải bài viết");
+                        toast.error("Unable to load article");
                 } finally {
                         setLoading(false);
                 }
@@ -48,7 +48,7 @@ export default function BlogPostPage() {
 
         const handleLike = async () => {
                 if (!isAuthenticated) {
-                        toast.error("Vui lòng đăng nhập để thích bài viết");
+                        toast.error("Please login to like article");
                         return;
                 }
 
@@ -56,16 +56,16 @@ export default function BlogPostPage() {
                         const response = await blogApi.toggleLike(blog!._id);
                         setLiked(response.liked);
                         setLikesCount(response.likesCount);
-                        toast.success(response.liked ? "Đã thích bài viết" : "Đã bỏ thích bài viết");
+                        toast.success(response.liked ? "Article liked" : "Article unliked");
                 } catch (error) {
                         console.error("Failed to toggle like:", error);
-                        toast.error("Không thể thích bài viết");
+                        toast.error("Unable to like article");
                 }
         };
 
         const formatDate = (dateString: string) => {
                 const date = new Date(dateString);
-                return date.toLocaleDateString("vi-VN", {
+                return date.toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
@@ -77,7 +77,7 @@ export default function BlogPostPage() {
                         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                                 <div className="text-center">
                                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple"></div>
-                                        <p className="mt-4 text-gray-600">Đang tải...</p>
+                                        <p className="mt-4 text-gray-600">Loading...</p>
                                 </div>
                         </div>
                 );
@@ -87,9 +87,9 @@ export default function BlogPostPage() {
                 return (
                         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                                 <div className="text-center">
-                                        <p className="text-gray-600 mb-4">Không tìm thấy bài viết</p>
+                                        <p className="text-gray-600 mb-4">Article not found</p>
                                         <Link href="/blog" className="text-brand-purple hover:underline">
-                                                Quay lại danh sách blog
+                                                Back to blog list
                                         </Link>
                                 </div>
                         </div>
@@ -105,7 +105,7 @@ export default function BlogPostPage() {
                                         className="inline-flex items-center gap-2 text-gray-600 hover:text-brand-purple mb-6 transition-colors"
                                 >
                                         <ArrowLeft className="w-5 h-5" />
-                                        <span>Quay lại danh sách blog</span>
+                                        <span>Back to blog list</span>
                                 </Link>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -168,11 +168,11 @@ export default function BlogPostPage() {
                                                                         )}
                                                                         <div className="flex items-center gap-1 text-gray-500">
                                                                                 <Clock className="w-4 h-4" />
-                                                                                <span>{blog.readTime} phút đọc</span>
+                                                                                <span>{blog.readTime} min read</span>
                                                                         </div>
                                                                         <div className="flex items-center gap-1 text-gray-500">
                                                                                 <Eye className="w-4 h-4" />
-                                                                                <span>{blog.views} lượt xem</span>
+                                                                                <span>{blog.views} views</span>
                                                                         </div>
                                                                 </div>
 
@@ -223,7 +223,7 @@ export default function BlogPostPage() {
                                                                         </div>
                                                                         <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                                                                                 <Share2 className="w-5 h-5" />
-                                                                                <span>Chia sẻ</span>
+                                                                                <span>Share</span>
                                                                         </button>
                                                                 </div>
                                                         </div>

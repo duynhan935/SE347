@@ -38,8 +38,8 @@ export function AdminNotificationBell() {
                 if (!existingMerchantIds.has(merchant.id)) {
                     useNotificationStore.getState().addNotification({
                         type: "ADMIN_MERCHANT_REQUEST",
-                        title: "Yêu cầu đăng ký merchant mới",
-                        message: `${merchant.username} (${merchant.email}) đã đăng ký trở thành merchant`,
+                        title: "New Merchant Registration Request",
+                        message: `${merchant.username} (${merchant.email}) has registered to become a merchant`,
                         merchantId: merchant.id,
                         merchantName: merchant.username,
                     });
@@ -86,20 +86,20 @@ export function AdminNotificationBell() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
                 <div className="flex items-center justify-between p-3 border-b">
-                    <h3 className="font-semibold text-sm">Thông báo merchant</h3>
+                    <h3 className="font-semibold text-sm">Merchant Notifications</h3>
                     {unread > 0 && (
                         <button
                             onClick={markAllAsRead}
                             className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium"
                         >
-                            Đánh dấu đã đọc
+                            Mark all as read
                         </button>
                     )}
                 </div>
 
                 {adminNotifications.length === 0 ? (
                     <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                        Không có thông báo nào
+                        No notifications
                     </div>
                 ) : (
                     <>
@@ -124,7 +124,7 @@ export function AdminNotificationBell() {
                                         </p>
                                         <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{notif.message}</p>
                                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                            {new Date(notif.createdAt).toLocaleString("vi-VN")}
+                                            {new Date(notif.createdAt).toLocaleString("en-US")}
                                         </p>
                                     </div>
                                     {!notif.read && (
@@ -141,7 +141,7 @@ export function AdminNotificationBell() {
                                             setIsOpen(false);
                                         }}
                                     >
-                                        Xem yêu cầu →
+                                        View Request →
                                     </Link>
                                 )}
                             </DropdownMenuItem>
@@ -152,7 +152,7 @@ export function AdminNotificationBell() {
                             className="p-3 text-center text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium"
                             onClick={() => setIsOpen(false)}
                         >
-                            Xem tất cả yêu cầu
+                            View All Requests
                         </Link>
                     </>
                 )}

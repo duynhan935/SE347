@@ -4,7 +4,7 @@ import Button from "@/components/client/Button";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
-// Định nghĩa các biến thể animation
+// Define animation variants
 const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
@@ -35,7 +35,7 @@ export default function NotFoundPage() {
                                 animate="visible"
                                 className="flex flex-col items-center gap-4"
                         >
-                                {/* ✨ Hiệu ứng cho từng chữ số "404" */}
+                                {/* ✨ Effect for each digit "404" */}
                                 <h1 className="text-8xl md:text-9xl font-bold font-roboto-serif text-brand-black flex gap-x-2 md:gap-x-4">
                                         <motion.span variants={itemVariants}>4</motion.span>
                                         <motion.span

@@ -13,7 +13,7 @@ type RestaurantFormModalProps = {
 };
 
 export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit, onSave }: RestaurantFormModalProps) {
-        // State cho form (giữ nguyên)
+        // State for form (keep as is)
         const [resName, setResName] = useState("");
         const [address, setAddress] = useState("");
         const [phone, setPhone] = useState("");
@@ -25,17 +25,17 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
         const [imageFile, setImageFile] = useState<File | undefined>();
         const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-        // 1. Dùng useRef để trigger input file
+        // 1. Use useRef to trigger input file
         const fileInputRef = useRef<HTMLInputElement>(null);
 
         const isEditMode = restaurantToEdit !== null;
         const title = isEditMode ? "Edit Restaurant" : "Add New Restaurant";
 
-        // Effect nạp dữ liệu (giữ nguyên)
+        // Effect to load data (keep as is)
         useEffect(() => {
                 if (isOpen) {
                         if (isEditMode) {
-                                // Chế độ Edit
+                                // Edit mode
                                 setResName(restaurantToEdit.resName);
                                 setAddress(restaurantToEdit.address);
                                 setPhone(restaurantToEdit.phone);
@@ -47,7 +47,7 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
                                 setPreviewUrl(restaurantToEdit.imageURL as string | null);
                                 setImageFile(undefined);
                         } else {
-                                // Chế độ Add
+                                // Add mode
                                 setResName("");
                                 setAddress("");
                                 setPhone("");
@@ -62,7 +62,7 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
                 }
         }, [isOpen, restaurantToEdit, isEditMode]);
 
-        // Xử lý khi chọn file ảnh (giữ nguyên)
+        // Handle when selecting image file (keep as is)
         const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -71,12 +71,12 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
                 }
         };
 
-        // 2. Hàm để bấm vào div cũng trigger input
+        // 2. Function to click on div also triggers input
         const handleImageContainerClick = () => {
                 fileInputRef.current?.click();
         };
 
-        // Xử lý submit (giữ nguyên)
+        // Handle submit (keep as is)
         const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
 
@@ -104,17 +104,17 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
         }
 
         return (
-                // Lớp phủ (backdrop)
+                // Overlay (backdrop)
                 <div
                         onClick={onClose}
                         className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex justify-center items-center"
                 >
-                        {/* Nội dung Modal */}
+                        {/* Modal content */}
                         <div
                                 onClick={(e) => e.stopPropagation()}
                                 className="relative bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
                         >
-                                {/* Nút đóng (X) */}
+                                {/* Close button (X) */}
                                 <button
                                         title="Close"
                                         onClick={onClose}
@@ -126,12 +126,12 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
 
                                 {/* Form */}
                                 <form onSubmit={handleSubmit} className="space-y-4">
-                                        {/* 3. Vùng upload ảnh ĐÃ SỬA */}
+                                        {/* 3. Image upload area FIXED */}
                                         <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                                         Restaurant Image
                                                 </label>
-                                                {/* Bấm vào div này để upload */}
+                                                {/* Click on this div to upload */}
                                                 <div
                                                         onClick={handleImageContainerClick}
                                                         className="cursor-pointer mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-brand-purple transition-colors"
@@ -159,7 +159,7 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
                                                                 </p>
                                                         </div>
                                                 </div>
-                                                {/* Input file bị ẩn đi */}
+                                                {/* Input file is hidden */}
                                                 <input
                                                         title="File Upload"
                                                         ref={fileInputRef}
@@ -172,7 +172,7 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
                                                 />
                                         </div>
 
-                                        {/* 4. Bố cục 2 cột */}
+                                        {/* 4. 2-column layout */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                         <label
@@ -206,7 +206,7 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
                                                 </div>
                                         </div>
 
-                                        {/* Bố cục 1 cột */}
+                                        {/* 1-column layout */}
                                         <div>
                                                 <label
                                                         htmlFor="address"
@@ -223,7 +223,7 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
                                                 />
                                         </div>
 
-                                        {/* Bố cục 2 cột */}
+                                        {/* 2-column layout */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="relative">
                                                         <label
@@ -259,7 +259,7 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
                                                 </div>
                                         </div>
 
-                                        {/* 5. Bố cục 3 cột */}
+                                        {/* 5. 3-column layout */}
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                 <div>
                                                         <label
@@ -314,7 +314,7 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurantToEdit,
                                                 </div>
                                         </div>
 
-                                        {/* 6. Style nút bấm */}
+                                        {/* 6. Button style */}
                                         <div className="flex justify-end gap-3 pt-4">
                                                 <button
                                                         type="button"

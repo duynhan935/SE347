@@ -6,17 +6,17 @@ export default function MerchantSettingsPage() {
 	return (
 		<div className="space-y-6">
 			<div>
-				<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Cài Đặt</h1>
-				<p className="text-gray-600 dark:text-gray-400 mt-1">Quản lý cài đặt tài khoản merchant</p>
+				<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
+				<p className="text-gray-600 dark:text-gray-400 mt-1">Manage merchant account settings</p>
 			</div>
 
 			<div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-				<h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Thông Tin Doanh Nghiệp</h2>
+				<h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Business Information</h2>
 				<form className="space-y-6">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
 							<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-								Tên Doanh Nghiệp
+								Business Name
 							</label>
 							<input
 								type="text"
@@ -25,7 +25,7 @@ export default function MerchantSettingsPage() {
 						</div>
 						<div>
 							<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-								Mã Số Thuế
+								Tax ID
 							</label>
 							<input
 								type="text"
@@ -39,7 +39,7 @@ export default function MerchantSettingsPage() {
 							className="flex items-center gap-2 px-6 py-2 bg-brand-yellow hover:bg-brand-yellow/90 text-white rounded-lg transition-colors"
 						>
 							<Save className="h-5 w-5" />
-							Lưu Thay Đổi
+							Save Changes
 						</button>
 					</div>
 				</form>

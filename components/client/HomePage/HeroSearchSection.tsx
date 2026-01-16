@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// Category icons với emoji đa dạng
+// Category icons with diverse emojis
 const categoryIcons: { [key: string]: string } = {
     Burger: "🍔",
     Pizza: "🍕",
@@ -27,8 +27,8 @@ const categoryIcons: { [key: string]: string } = {
     Vegetarian: "🥗",
     Vietnamese: "🍜",
     Com: "🍚",
-    "Trà sữa": "🧋",
-    "Đồ chay": "🥗",
+    "Bubble Tea": "🧋",
+    "Vegetarian": "🥗",
 };
 
 export default function HeroSearchSection() {
@@ -71,9 +71,9 @@ export default function HeroSearchSection() {
 
     // Popular categories for quick access
     const customCategories = [
-        { name: "Com", displayName: "Cơm" },
-        { name: "Trà sữa", displayName: "Trà sữa" },
-        { name: "Đồ chay", displayName: "Đồ chay" },
+        { name: "Com", displayName: "Rice" },
+        { name: "Bubble Tea", displayName: "Bubble Tea" },
+        { name: "Vegetarian", displayName: "Vegetarian" },
     ];
     
     const allCategories = [
@@ -98,12 +98,12 @@ export default function HeroSearchSection() {
             <div className="relative z-10 max-w-2xl">
                 {/* Title */}
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
-                    Đặt đồ ăn ngay,
+                    Order food now,
                     <br />
-                    <span className="text-[#EE4D2D]">giao hàng siêu tốc</span>
+                    <span className="text-[#EE4D2D]">super fast delivery</span>
                 </h1>
                 <p className="text-lg md:text-xl text-white/90 mb-8">
-                    Hơn 1000+ món ăn ngon, đặt món chỉ trong 1 phút
+                    Over 1000+ delicious dishes, order in just 1 minute
                 </p>
 
                 {/* Search Bar */}
@@ -111,7 +111,7 @@ export default function HeroSearchSection() {
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder="Tìm bún bò, trà sữa, gà rán..."
+                            placeholder="Search for beef noodle soup, bubble tea, fried chicken..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full py-4 pl-14 pr-6 bg-white rounded-full text-gray-900 placeholder:text-gray-400 text-base shadow-xl focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/50"
@@ -121,14 +121,14 @@ export default function HeroSearchSection() {
                             type="submit"
                             className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-2 bg-[#EE4D2D] text-white rounded-full font-semibold hover:bg-[#EE4D2D]/90 transition-colors shadow-lg"
                         >
-                            Tìm kiếm
+                            Search
                         </button>
                     </div>
                 </form>
 
                 {/* Category Tags */}
                 <div>
-                    <p className="text-white/80 text-sm mb-4 font-medium">Danh mục phổ biến:</p>
+                    <p className="text-white/80 text-sm mb-4 font-medium">Popular Categories:</p>
                     <div className="flex flex-wrap gap-3">
                         {/* All Category */}
                         <button
@@ -146,7 +146,7 @@ export default function HeroSearchSection() {
                             }`}
                         >
                             <span>🍽️</span>
-                            <span>Tất cả</span>
+                            <span>All</span>
                         </button>
 
                         {/* Popular Categories */}
