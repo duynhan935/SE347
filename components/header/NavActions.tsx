@@ -12,7 +12,7 @@ import {
 import { getImageUrl } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatStore } from "@/stores/useChatStore";
-import { LogOut, MessageCircle, Package, Settings, Store, User, UtensilsCrossed } from "lucide-react";
+import { BookOpen, LogOut, MessageCircle, Package, Settings, Store, User, UtensilsCrossed } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -207,6 +207,17 @@ export default function NavActions() {
                                             {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
                                         </span>
                                     )}
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    href="/blog"
+                                    className="flex items-center justify-between cursor-pointer w-full py-2.5 px-3 hover:bg-gray-50 transition-colors"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <BookOpen className="h-4 w-4 text-gray-600" />
+                                        <span className="text-sm">Blog</span>
+                                    </div>
                                 </Link>
                             </DropdownMenuItem>
                         </DropdownMenuGroup>

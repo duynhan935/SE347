@@ -2,7 +2,7 @@
 
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { Menu, MessageCircle, Package, ShoppingCart, User, UtensilsCrossed, X } from "lucide-react";
+import { BookOpen, Menu, MessageCircle, Package, ShoppingCart, User, UtensilsCrossed, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -131,6 +131,15 @@ export default function MobileMenu() {
                             >
                                 <MessageCircle className="w-5 h-5" />
                                 Messages
+                            </Link>
+                            <Link
+                                href="/blog"
+                                prefetch={true}
+                                onClick={() => setOpen(false)}
+                                className="text-brand-black text-p2 font-manrope font-medium py-3 px-4 rounded-lg hover:bg-brand-yellowlight hover:text-brand-orange transition-colors flex items-center gap-2"
+                            >
+                                <BookOpen className="w-5 h-5" />
+                                Blog
                             </Link>
                         </>
                     )}

@@ -1,6 +1,7 @@
 export * from "./blog.type";
 export * from "./category.type";
 export * from "./chat.type";
+export * from "./groupOrder.type";
 export * from "./order.type";
 export * from "./payment.type";
 export * from "./product.type";
