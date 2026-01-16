@@ -8,7 +8,7 @@ export const RadioField = ({ label, name, value, checked, onChange }: any) => (
                         value={value}
                         checked={checked}
                         onChange={onChange}
-                        className="sr-only" // Ẩn nút radio mặc định
+                        className="sr-only" // Hide default radio button
                 />
                 <div
                         className={`flex items-center justify-center w-full px-4 py-2 rounded-md border text-sm font-medium transition-colors ${

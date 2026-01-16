@@ -29,7 +29,7 @@ export default function RestaurantsPage() {
                         setRestaurants(Array.isArray(response.data) ? response.data : []);
                 } catch (error) {
                         console.error("Failed to fetch restaurants:", error);
-                        toast.error("Không thể tải danh sách nhà hàng");
+                        toast.error("Unable to load restaurants list");
                         setRestaurants([]);
                 } finally {
                         setLoading(false);
@@ -40,24 +40,24 @@ export default function RestaurantsPage() {
                 try {
                         if (editingRestaurant) {
                                 await restaurantApi.updateRestaurant(editingRestaurant.id, restaurantData, imageFile);
-                                toast.success("Đã cập nhật nhà hàng");
+                                toast.success("Restaurant updated successfully");
                         } else {
                                 await restaurantApi.createRestaurant(restaurantData, imageFile);
-                                toast.success("Đã thêm nhà hàng mới");
+                                toast.success("New restaurant added successfully");
                         }
                         setIsModalOpen(false);
                         setEditingRestaurant(null);
                         fetchRestaurants();
                 } catch (error) {
                         console.error("Failed to save restaurant:", error);
-                        toast.error("Không thể lưu nhà hàng");
+                        toast.error("Unable to save restaurant");
                 }
         };
 
         const handleToggleStatus = async (restaurant: Restaurant) => {
                 try {
                         await restaurantApi.updateRestaurantStatus(restaurant.id);
-                        toast.success("Đã thay đổi trạng thái nhà hàng");
+                        toast.success("Restaurant status updated successfully");
                         fetchRestaurants();
                 } catch (error: unknown) {
                         console.error("Failed to toggle status:", error);
@@ -66,20 +66,20 @@ export default function RestaurantsPage() {
                                         ? (error as { response?: { data?: { message?: string } } }).response?.data
                                                   ?.message
                                         : undefined;
-                        toast.error(errorMessage || "Không thể thay đổi trạng thái nhà hàng");
+                        toast.error(errorMessage || "Unable to change restaurant status");
                 }
         };
 
         const handleDeleteRestaurant = async (restaurantId: string) => {
-                if (!confirm("Bạn có chắc chắn muốn xóa nhà hàng này? Hành động này không thể hoàn tác.")) return;
+                if (!confirm("Are you sure you want to delete this restaurant? This action cannot be undone.")) return;
 
                 try {
                         await restaurantApi.deleteRestaurant(restaurantId);
-                        toast.success("Đã xóa nhà hàng");
+                        toast.success("Restaurant deleted successfully");
                         fetchRestaurants();
                 } catch (error) {
                         console.error("Failed to delete restaurant:", error);
-                        toast.error("Không thể xóa nhà hàng");
+                        toast.error("Unable to delete restaurant");
                 }
         };
 
@@ -99,10 +99,10 @@ export default function RestaurantsPage() {
                         <div className="flex items-center justify-between">
                                 <div>
                                         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                                                Quản lý Nhà hàng
+                                                Manage Restaurants
                                         </h1>
                                         <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                                Quản lý tất cả nhà hàng trong hệ thống
+                                                Manage all restaurants in the system
                                         </p>
                                 </div>
                                 <button
@@ -113,26 +113,26 @@ export default function RestaurantsPage() {
                                         className="flex items-center gap-2 px-4 py-2 bg-brand-yellow text-white rounded-lg hover:bg-brand-yellow/90 transition-colors"
                                 >
                                         <Plus size={20} />
-                                        Thêm Nhà hàng
+                                        Add Restaurant
                                 </button>
                         </div>
 
                         {/* Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Tổng nhà hàng</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Total Restaurants</p>
                                         <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                                                 {restaurants.length}
                                         </p>
                                 </div>
                                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Đang hoạt động</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Active</p>
                                         <p className="text-2xl font-bold text-green-600 mt-1">
                                                 {restaurants.filter((r) => r.enabled).length}
                                         </p>
                                 </div>
                                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Tạm dừng</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Inactive</p>
                                         <p className="text-2xl font-bold text-red-600 mt-1">
                                                 {restaurants.filter((r) => !r.enabled).length}
                                         </p>
@@ -150,7 +150,7 @@ export default function RestaurantsPage() {
                                                 />
                                                 <input
                                                         type="text"
-                                                        placeholder="Tìm kiếm theo tên hoặc địa chỉ..."
+                                                        placeholder="Search by name or address..."
                                                         value={searchTerm}
                                                         onChange={(e) => setSearchTerm(e.target.value)}
                                                         className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
@@ -162,12 +162,12 @@ export default function RestaurantsPage() {
                                                 value={filterStatus}
                                                 onChange={(e) => setFilterStatus(e.target.value)}
                                                 className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
-                                                aria-label="Lọc theo trạng thái nhà hàng"
-                                                title="Lọc theo trạng thái nhà hàng"
+                                                aria-label="Filter by restaurant status"
+                                                title="Filter by restaurant status"
                                         >
-                                                <option value="ALL">Tất cả trạng thái</option>
-                                                <option value="ACTIVE">Đang hoạt động</option>
-                                                <option value="INACTIVE">Tạm dừng</option>
+                                                <option value="ALL">All Status</option>
+                                                <option value="ACTIVE">Active</option>
+                                                <option value="INACTIVE">Inactive</option>
                                         </select>
                                 </div>
                         </div>
@@ -213,8 +213,8 @@ export default function RestaurantsPage() {
                                                                                         }`}
                                                                                 >
                                                                                         {restaurant.enabled
-                                                                                                ? "Hoạt động"
-                                                                                                : "Tạm dừng"}
+                                                                                                ? "Active"
+                                                                                                : "Inactive"}
                                                                                 </span>
                                                                         </div>
                                                                 </div>
@@ -265,7 +265,7 @@ export default function RestaurantsPage() {
                                                                                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                                                                 >
                                                                                         <Edit size={16} />
-                                                                                        Sửa
+                                                                                        Edit
                                                                                 </button>
                                                                                 <button
                                                                                         onClick={() =>
@@ -287,8 +287,8 @@ export default function RestaurantsPage() {
                                                                                                 />
                                                                                         )}
                                                                                         {restaurant.enabled
-                                                                                                ? "Tạm dừng"
-                                                                                                : "Kích hoạt"}
+                                                                                                ? "Deactivate"
+                                                                                                : "Activate"}
                                                                                 </button>
                                                                                 <button
                                                                                         onClick={() =>
@@ -299,7 +299,7 @@ export default function RestaurantsPage() {
                                                                                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                                                                 >
                                                                                         <Trash size={16} />
-                                                                                        Xóa
+                                                                                        Delete
                                                                                 </button>
                                                                         </div>
                                                                 </div>
@@ -309,7 +309,7 @@ export default function RestaurantsPage() {
                                 )}
                                 {!loading && filteredRestaurants.length === 0 && (
                                         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                                                Không tìm thấy nhà hàng nào
+                                                No restaurants found
                                         </div>
                                 )}
                         </div>

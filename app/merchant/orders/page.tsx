@@ -274,6 +274,54 @@ export default function MerchantOrdersPage() {
                 return next;
             });
             knownOrderIdsRef.current.add(incoming.orderId);
+            
+            // Refresh orders after a short delay to get updated payment status from webhook
+            // This ensures payment status is updated even if socket doesn't emit payment status update
+            setTimeout(() => {
+                fetchOrders({ background: true }).catch(() => {
+                    // Ignore background refresh failures
+                });
+            }, 2000); // Wait 2 seconds for webhook to process
+        },
+        onOrderStatusUpdate: (notification) => {
+            // Handle order status updates (including payment status updates)
+            const updated = normalizeSocketOrder(notification?.data);
+            
+            if (!updated) {
+                // If we can't normalize, refresh all orders
+                fetchOrders({ background: true }).catch(() => {
+                    // Ignore background refresh failures
+                });
+                return;
+            }
+
+            // Update the specific order in the list
+            setOrders((prev) => {
+                const existingIndex = prev.findIndex((o) => o.orderId === updated.orderId);
+                
+                if (existingIndex === -1) {
+                    // Order not found, add it
+                    const next = [updated, ...prev];
+                    next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                    
+                    // Update pending orders count
+                    const pendingCount = next.filter((o) => o.status === OrderStatus.PENDING).length;
+                    setPendingOrdersCount(pendingCount);
+                    
+                    return next;
+                }
+                
+                // Update existing order
+                const next = [...prev];
+                next[existingIndex] = updated;
+                next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                
+                // Update pending orders count
+                const pendingCount = next.filter((o) => o.status === OrderStatus.PENDING).length;
+                setPendingOrdersCount(pendingCount);
+                
+                return next;
+            });
         },
     });
 

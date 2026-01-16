@@ -115,7 +115,7 @@ export default function Pagination({
                                                         onClick={() => handlePageChange(currentPage - 1)}
                                                         disabled={currentPage === 1}
                                                         className="flex items-center justify-center px-3 h-10 ms-0 leading-tight text-gray-500 bg-white border border-e-0 border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                        aria-label="Trang trước"
+                                                        aria-label="Previous page"
                                                 >
                                                         <ChevronLeft className="w-4 h-4" />
                                                         <span className="sr-only">Previous</span>
@@ -133,7 +133,7 @@ export default function Pagination({
                                                                                         ? "bg-brand-purple text-white border-brand-purple z-10 font-semibold"
                                                                                         : "bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700"
                                                                         }`}
-                                                                        aria-label={`Trang ${page}`}
+                                                                        aria-label={`Page ${page}`}
                                                                         aria-current={
                                                                                 currentPage === page
                                                                                         ? "page"
@@ -156,7 +156,7 @@ export default function Pagination({
                                                         onClick={() => handlePageChange(currentPage + 1)}
                                                         disabled={currentPage === totalPages}
                                                         className="flex items-center justify-center px-3 h-10 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                        aria-label="Trang sau"
+                                                        aria-label="Next page"
                                                 >
                                                         <ChevronRight className="w-4 h-4" />
                                                         <span className="sr-only">Next</span>

@@ -33,27 +33,27 @@ const menuItems: MenuItem[] = [
         href: "/admin/dashboard",
     },
     {
-        label: "Tin nhắn",
+        label: "Messages",
         icon: MessageCircle,
         href: "/admin/messages",
     },
     {
-        label: "Quản lý Users",
+        label: "Manage Users",
         icon: Users,
         href: "/admin/users",
     },
     {
-        label: "Quản lý Merchants",
+        label: "Manage Merchants",
         icon: Store,
         href: "/admin/merchants",
     },
     {
-        label: "Yêu cầu Merchant",
+        label: "Merchant Requests",
         icon: Clock,
         href: "/admin/merchant-requests",
     },
     {
-        label: "Quản lý Nhà hàng",
+        label: "Manage Restaurants",
         icon: Utensils,
         href: "/admin/restaurants",
     },
@@ -68,12 +68,12 @@ const menuItems: MenuItem[] = [
         href: "/admin/sizes",
     },
     {
-        label: "Khuyến Mãi",
+        label: "Promotions",
         icon: Percent,
         href: "/admin/promotions",
     },
     {
-        label: "Cài đặt",
+        label: "Settings",
         icon: Settings,
         href: "/admin/settings",
     },

@@ -25,7 +25,7 @@ const categoryIcons: { [key: string]: string } = {
         American: "🇺🇸",
         Mexican: "🌮",
         Japanese: "🍣",
-        // Thêm các category khác nếu cần
+        // Add other categories if needed
 };
 
 export default function RestaurantList() {
@@ -73,6 +73,16 @@ export default function RestaurantList() {
 
         useEffect(() => {
                 const params = new URLSearchParams(Array.from(searchParams.entries()));
+                
+                // Convert category params to comma-separated lowercase string for backend
+                const categoryParams = searchParams.getAll("category");
+                params.delete("category"); // Remove all category params
+                if (categoryParams.length > 0) {
+                        // Convert to lowercase and join with comma
+                        const categoryString = categoryParams.map(cat => cat.toLowerCase()).join(",");
+                        params.set("category", categoryString);
+                }
+                
                 if (searchType === "restaurants") {
                         getAllRestaurants(params);
                 } else if (searchType === "foods") {
@@ -115,7 +125,7 @@ export default function RestaurantList() {
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                        {/* Nút cuộn trái */}
+                                        {/* Left scroll button */}
                                         <button
                                                 title="Scroll left"
                                                 onClick={() => handleScroll(-300)}
@@ -124,7 +134,7 @@ export default function RestaurantList() {
                                                 <ChevronLeft className="w-6 h-6" />
                                         </button>
 
-                                        {/* Thanh cuộn */}
+                                        {/* Scroll bar */}
                                         <div
                                                 ref={scrollContainerRef}
                                                 className="flex-grow flex items-center gap-4 overflow-x-auto scrollbar-hide"
@@ -154,7 +164,7 @@ export default function RestaurantList() {
                                                 ))}
                                         </div>
 
-                                        {/* Nút cuộn phải */}
+                                        {/* Right scroll button */}
                                         <button
                                                 title="Scroll right"
                                                 onClick={() => handleScroll(300)}

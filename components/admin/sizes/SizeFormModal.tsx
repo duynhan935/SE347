@@ -17,7 +17,7 @@ export default function SizeFormModal({ isOpen, onClose, size, onSave }: SizeFor
 	const [loading, setLoading] = useState(false);
 
 	const isEditMode = size !== null;
-	const title = isEditMode ? "Chỉnh sửa Size" : "Thêm Size mới";
+	const title = isEditMode ? "Edit Size" : "Add New Size";
 
 	useEffect(() => {
 		if (isOpen) {
@@ -33,7 +33,7 @@ export default function SizeFormModal({ isOpen, onClose, size, onSave }: SizeFor
 		e.preventDefault();
 
 		if (!name.trim()) {
-			toast.error("Tên size là bắt buộc");
+			toast.error("Size name is required");
 			return;
 		}
 
@@ -55,7 +55,7 @@ export default function SizeFormModal({ isOpen, onClose, size, onSave }: SizeFor
 		<div onClick={onClose} className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex justify-center items-center transition-opacity">
 			<div onClick={(e) => e.stopPropagation()} className="relative bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-lg">
 				<button
-					title="Đóng"
+					title="Close"
 					onClick={onClose}
 					className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
 				>
@@ -67,7 +67,7 @@ export default function SizeFormModal({ isOpen, onClose, size, onSave }: SizeFor
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div>
 						<label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-							Tên Size <span className="text-red-500">*</span>
+							Size Name <span className="text-red-500">*</span>
 						</label>
 						<input
 							id="name"
@@ -77,7 +77,7 @@ export default function SizeFormModal({ isOpen, onClose, size, onSave }: SizeFor
 							className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800"
 							required
 							disabled={loading}
-							placeholder="Nhập tên size"
+							placeholder="Enter size name"
 						/>
 					</div>
 
@@ -88,7 +88,7 @@ export default function SizeFormModal({ isOpen, onClose, size, onSave }: SizeFor
 							className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
 							disabled={loading}
 						>
-							Hủy
+							Cancel
 						</button>
 						<button
 							type="submit"
@@ -98,10 +98,10 @@ export default function SizeFormModal({ isOpen, onClose, size, onSave }: SizeFor
 							{loading ? (
 								<>
 									<Loader2 className="w-4 h-4 animate-spin" />
-									Đang lưu...
+									Saving...
 								</>
 							) : (
-								"Lưu"
+								"Save"
 							)}
 						</button>
 					</div>

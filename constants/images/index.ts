@@ -52,7 +52,7 @@ export const AboutPageImages = {
     OurStory,
 };
 
-// Export tất cả images
+// Export all images
 export const Images = {
     Common: CommonImages,
     HomePage: HomePageImages,
@@ -60,7 +60,7 @@ export const Images = {
     AboutPage: AboutPageImages,
 };
 
-// Export individual (với alias để tránh conflict)
+// Export individual (with alias to avoid conflict)
 export {
     Chef,
     DeliveryGreen,
@@ -76,7 +76,7 @@ export {
     OurStory,
     Partner,
     Pizza,
-    RestaurantBurger,
+    RestaurantBurger
 };
 
 export default Images;

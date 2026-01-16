@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
-import { OrderStatusSidebar } from "./OrderStatusSidebar";
 import { orderApi } from "@/lib/api/orderApi";
 import { Order } from "@/types/order.type";
+import { notFound } from "next/navigation";
+import { OrderStatusSidebar } from "./OrderStatusSidebar";
 
 type StatusType = "Pending" | "Success" | "Cancel";
 
@@ -82,7 +82,7 @@ export default async function OrderStatusPage({ params }: { params: { id: string
     return (
         <div className="custom-container py-12">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 items-start">
-                {/* Cột trái: Chi tiết đơn hàng */}
+                {/* Left column: Order details */}
                 <div className="lg:col-span-2 space-y-6 p-3 sm:p-1 md:p-12">
                     <h1 className="text-3xl font-bold">
                         Order Details ({totalItems} {totalItems > 1 ? "items" : "item"})
@@ -117,7 +117,7 @@ export default async function OrderStatusPage({ params }: { params: { id: string
                     </div>
                 </div>
 
-                {/* Cột phải: Thông tin trạng thái đơn hàng */}
+                {/* Right column: Order status information */}
                 <div className="lg:col-span-1">
                     <OrderStatusSidebar status={status} orderId={order.orderId} canCancel={canCancel} />
                 </div>

@@ -142,8 +142,8 @@ export const useNotificationStore = create<NotificationStore>()(
                             newNotifications.push({
                                 id: `notif-init-${order.orderId}-accepted`,
                                 type: "ORDER_ACCEPTED",
-                                title: "Đơn hàng đã được xác nhận",
-                                message: `Đơn hàng ${order.orderId} đã được xác nhận và đang được chuẩn bị.`,
+                                title: "Order Confirmed",
+                                message: `Order ${order.orderId} has been confirmed and is being prepared.`,
                                 orderId: order.orderId,
                                 restaurantName: order.restaurant?.name,
                                 read: false,
@@ -159,8 +159,8 @@ export const useNotificationStore = create<NotificationStore>()(
                             newNotifications.push({
                                 id: `notif-init-${order.orderId}-rejected`,
                                 type: "ORDER_REJECTED",
-                                title: "Đơn hàng đã bị hủy",
-                                message: `Đơn hàng ${order.orderId} đã bị hủy.`,
+                                title: "Order Cancelled",
+                                message: `Order ${order.orderId} has been cancelled.`,
                                 orderId: order.orderId,
                                 restaurantName: order.restaurant?.name,
                                 read: false,
@@ -176,8 +176,8 @@ export const useNotificationStore = create<NotificationStore>()(
                             newNotifications.push({
                                 id: `notif-init-${order.orderId}-completed`,
                                 type: "ORDER_COMPLETED",
-                                title: "Đơn hàng đã hoàn thành",
-                                message: `Đơn hàng ${order.orderId} đã được giao thành công.`,
+                            title: "Order Completed",
+                            message: `Order ${order.orderId} has been delivered successfully.`,
                                 orderId: order.orderId,
                                 restaurantName: order.restaurant?.name,
                                 read: false,

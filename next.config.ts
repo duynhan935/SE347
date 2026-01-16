@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-        reactStrictMode: false, // Tắt Strict Mode để tránh re-render 2 lần trong development
+        reactStrictMode: false, // Disable Strict Mode to avoid double re-render in development
     images: {
         remotePatterns: [
             {

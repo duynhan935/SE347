@@ -1,5 +1,5 @@
 // File: app/_components/about/ContentSection.tsx
-import Button from "@/components/Button"; // Giả sử bạn có component Button
+import Button from "@/components/Button"; // Assume you have Button component
 import Image, { StaticImageData } from "next/image";
 import Link from "next/link";
 
@@ -7,14 +7,14 @@ type ContentSectionProps = {
         image: StaticImageData;
         title: string;
         children: React.ReactNode;
-        reverse?: boolean; // Prop để đảo ngược layout
+        reverse?: boolean; // Prop to reverse layout
 };
 
 export default function ContentSection({ image, title, children, reverse = false }: ContentSectionProps) {
         return (
                 <section className="py-16 lg:py-24">
                         <div className="custom-container grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                                {/* Cột ảnh */}
+                                {/* Image column */}
                                 <div
                                         className={`relative h-80 lg:h-[400px] rounded-lg overflow-hidden ${
                                                 reverse ? "lg:order-last" : ""
@@ -23,7 +23,7 @@ export default function ContentSection({ image, title, children, reverse = false
                                         <Image src={image} alt={title} fill className="object-cover" />
                                 </div>
 
-                                {/* Cột nội dung */}
+                                {/* Content column */}
                                 <div className={`text-center lg:text-left ${reverse ? "lg:order-first" : ""}`}>
                                         <h2 className="font-roboto-serif text-3xl md:text-4xl font-semibold">
                                                 {title}

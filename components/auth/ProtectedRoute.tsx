@@ -3,7 +3,7 @@
 import { getRoleBasedRedirectPath, shouldRedirectFromPath } from "@/lib/utils/redirectUtils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 interface ProtectedRouteProps {
@@ -17,14 +17,71 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
         const { isAuthenticated, user, loading, isLoggingOut } = useAuthStore();
         const router = useRouter();
         const pathname = usePathname();
+        // Track previous authentication state to detect logout while on protected route
+        const prevIsAuthenticatedRef = useRef<boolean | null>(null);
+        const hasRedirectedRef = useRef(false);
 
         useEffect(() => {
                 setMounted(true);
         }, []);
 
+        // Listen for localStorage changes (handles multi-tab logout scenarios)
+        useEffect(() => {
+                if (!mounted || !requireAuth || typeof window === "undefined") return;
+
+                const handleStorageChange = (e: StorageEvent) => {
+                        // If tokens were removed in another tab, check authentication state
+                        if ((e.key === "accessToken" || e.key === "refreshToken") && !e.newValue) {
+                                const hasTokens =
+                                        localStorage.getItem("accessToken") || localStorage.getItem("refreshToken");
+                                
+                                // If no tokens exist and we're on a protected route, redirect
+                                if (!hasTokens && !isLoggingOut) {
+                                        const currentAuth = useAuthStore.getState().isAuthenticated;
+                                        // If store still thinks we're authenticated but tokens are gone, sync state
+                                        if (currentAuth) {
+                                                useAuthStore.getState().logout();
+                                        } else if (!currentAuth && !hasRedirectedRef.current) {
+                                                hasRedirectedRef.current = true;
+                                                toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                                                router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+                                        }
+                                }
+                        }
+                };
+
+                window.addEventListener("storage", handleStorageChange);
+                return () => {
+                        window.removeEventListener("storage", handleStorageChange);
+                };
+        }, [mounted, requireAuth, router, pathname, isLoggingOut]);
+
         useEffect(() => {
                 if (!mounted) return;
                 if (!requireAuth) return;
+
+                // Reset redirect flag when authentication state changes
+                if (isAuthenticated) {
+                        hasRedirectedRef.current = false;
+                }
+
+                // Detect logout while on protected route
+                // If user was authenticated before but now is not, they were logged out
+                const wasAuthenticated = prevIsAuthenticatedRef.current === true;
+                const isNowUnauthenticated = !isAuthenticated && !loading;
+                
+                if (wasAuthenticated && isNowUnauthenticated && !isLoggingOut) {
+                        // User was logged out while on protected route
+                        hasRedirectedRef.current = true;
+                        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                        router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+                        return;
+                }
+
+                // Update previous authentication state
+                if (!loading) {
+                        prevIsAuthenticatedRef.current = isAuthenticated;
+                }
 
                 // Check if tokens exist immediately (client-side only)
                 const hasTokens =
@@ -33,11 +90,12 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
 
                 // Fast path: If not loading and definitely not authenticated (no tokens and not authenticated)
                 // Redirect immediately without delay
-                if (!loading && !isAuthenticated && !hasTokens) {
+                if (!loading && !isAuthenticated && !hasTokens && !hasRedirectedRef.current) {
                         // Don't show toast if user is logging out (to avoid duplicate toasts)
                         if (!isLoggingOut) {
-                                toast.error("Please login to access this page");
+                                toast.error("Vui lòng đăng nhập để truy cập trang này");
                         }
+                        hasRedirectedRef.current = true;
                         router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
                         return;
                 }
@@ -46,7 +104,7 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
                 if (!loading && isAuthenticated && allowedRoles && user?.role) {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         if (!allowedRoles.includes(user.role as any)) {
-                                toast.error("You don't have permission to access this page");
+                                toast.error("Bạn không có quyền truy cập trang này");
                                 // Redirect to role-based dashboard instead of home
                                 const redirectPath = getRoleBasedRedirectPath(user.role);
                                 router.push(redirectPath);

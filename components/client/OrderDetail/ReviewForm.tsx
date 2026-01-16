@@ -59,18 +59,18 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
         e.preventDefault();
 
         if (!user?.id) {
-            toast.error("Vui lòng đăng nhập để đánh giá");
+            toast.error("Please login to submit a review");
             return;
         }
 
         // Validate restaurant review
         if (restaurantRating === 0) {
-            toast.error("Vui lòng đánh giá nhà hàng");
+            toast.error("Please rate the restaurant");
             return;
         }
 
         if (!restaurantTitle.trim() || !restaurantContent.trim()) {
-            toast.error("Vui lòng điền đầy đủ tiêu đề và nội dung đánh giá nhà hàng");
+            toast.error("Please fill in both title and content for restaurant review");
             return;
         }
 
@@ -88,12 +88,13 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
             });
 
             // Submit product reviews (only for products with rating > 0)
-            const productReviewPromises = Object.values(productReviews)
-                .filter((review) => review.rating > 0)
-                .map((review) => {
-                    if (!review.title.trim() || !review.content.trim()) {
-                        return Promise.resolve(); // Skip if incomplete
-                    }
+            const productReviewsToSubmit = Object.values(productReviews).filter(
+                (review) => review.rating > 0 && review.title.trim() && review.content.trim()
+            );
+
+            const productReviewResults = await Promise.allSettled(
+                productReviewsToSubmit.map((review) => {
+                    console.log(`Submitting review for productId: ${review.productId}`);
                     return reviewApi.createReview({
                         userId: user.id,
                         reviewId: review.productId,
@@ -102,11 +103,31 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                         content: review.content.trim(),
                         rating: review.rating,
                     });
-                });
+                })
+            );
 
-            await Promise.all(productReviewPromises);
+            // Check if there were any failures
+            const failedReviews = productReviewResults.filter(
+                (result) => result.status === "rejected"
+            );
 
-            toast.success("Đánh giá của bạn đã được gửi thành công!");
+            if (failedReviews.length > 0) {
+                console.error("Some product reviews failed:", failedReviews);
+                // Show warning if some reviews failed, but still show success for restaurant review
+                const totalProductReviews = productReviewResults.length - failedReviews.length;
+                if (totalProductReviews > 0) {
+                    toast.success(
+                        `Restaurant review and ${totalProductReviews} product review(s) submitted successfully!`
+                    );
+                } else {
+                    toast.success("Restaurant review submitted successfully!");
+                    toast.error(
+                        "Unable to review some products (products may have been deleted or no longer exist)."
+                    );
+                }
+            } else {
+                toast.success("Your review has been submitted successfully!");
+            }
             
             // Reset form
             setRestaurantRating(0);
@@ -133,7 +154,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
             const errorMessage =
                 (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
                 (error as { message?: string })?.message ||
-                "Không thể gửi đánh giá. Vui lòng thử lại.";
+                "Unable to submit review. Please try again.";
             toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
@@ -157,8 +178,8 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                             star <= rating ? "text-yellow-400" : "text-gray-300"
                         } hover:text-yellow-400`}
                         disabled={isSubmitting}
-                        title={`${star} sao`}
-                        aria-label={`Đánh giá ${star} sao`}
+                        title={`${star} star${star > 1 ? 's' : ''}`}
+                        aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
                     >
                         <Star className="w-full h-full fill-current" />
                     </button>
@@ -172,27 +193,27 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
             {/* Restaurant Review Section */}
             <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">
-                    Đánh giá nhà hàng: {order.restaurant?.name || "Restaurant"}
+                    Restaurant Review: {order.restaurant?.name || "Restaurant"}
                 </h3>
                 
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Đánh giá sao <span className="text-red-500">*</span>
+                            Star Rating <span className="text-red-500">*</span>
                         </label>
                         {renderStarRating(restaurantRating, setRestaurantRating, "lg")}
                     </div>
 
                     <div>
                         <label htmlFor="restaurant-title" className="block text-sm font-medium text-gray-700 mb-2">
-                            Tiêu đề <span className="text-red-500">*</span>
+                            Title <span className="text-red-500">*</span>
                         </label>
                         <input
                             id="restaurant-title"
                             type="text"
                             value={restaurantTitle}
                             onChange={(e) => setRestaurantTitle(e.target.value)}
-                            placeholder="Nhập tiêu đề đánh giá"
+                            placeholder="Enter review title"
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
                             required
                             disabled={isSubmitting}
@@ -202,13 +223,13 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
 
                     <div>
                         <label htmlFor="restaurant-content" className="block text-sm font-medium text-gray-700 mb-2">
-                            Nội dung đánh giá <span className="text-red-500">*</span>
+                            Review Content <span className="text-red-500">*</span>
                         </label>
                         <textarea
                             id="restaurant-content"
                             value={restaurantContent}
                             onChange={(e) => setRestaurantContent(e.target.value)}
-                            placeholder="Chia sẻ trải nghiệm của bạn về nhà hàng..."
+                            placeholder="Share your experience about the restaurant..."
                             rows={4}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
                             required
@@ -220,9 +241,9 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
 
             {/* Product Reviews Section */}
             <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Đánh giá món ăn (Tùy chọn)</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Product Reviews (Optional)</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                    Bạn có thể đánh giá từng món ăn trong đơn hàng. Đánh giá món ăn là tùy chọn.
+                    You can review each product in your order. Product reviews are optional.
                 </p>
 
                 <div className="space-y-6">
@@ -242,7 +263,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                                 <div className="space-y-3">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Đánh giá sao
+                                            Star Rating
                                         </label>
                                         {renderStarRating(review.rating, (rating) => 
                                             updateProductReview(item.productId, "rating", rating)
@@ -256,7 +277,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                                                     htmlFor={`product-title-${item.productId}`}
                                                     className="block text-sm font-medium text-gray-700 mb-2"
                                                 >
-                                                    Tiêu đề
+                                                    Title
                                                 </label>
                                                 <input
                                                     id={`product-title-${item.productId}`}
@@ -265,7 +286,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                                                     onChange={(e) => 
                                                         updateProductReview(item.productId, "title", e.target.value)
                                                     }
-                                                    placeholder="Nhập tiêu đề đánh giá"
+                                                    placeholder="Enter review title"
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
                                                     disabled={isSubmitting}
                                                     maxLength={100}
@@ -277,7 +298,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                                                     htmlFor={`product-content-${item.productId}`}
                                                     className="block text-sm font-medium text-gray-700 mb-2"
                                                 >
-                                                    Nội dung đánh giá
+                                                    Review Content
                                                 </label>
                                                 <textarea
                                                     id={`product-content-${item.productId}`}
@@ -285,7 +306,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                                                     onChange={(e) => 
                                                         updateProductReview(item.productId, "content", e.target.value)
                                                     }
-                                                    placeholder="Chia sẻ trải nghiệm của bạn về món ăn này..."
+                                                    placeholder="Share your experience about this product..."
                                                     rows={3}
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
                                                     disabled={isSubmitting}
@@ -307,7 +328,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                     disabled={isSubmitting}
                     className="px-6 py-3 bg-[#EE4D2D] text-white font-semibold rounded-lg hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                 >
-                    {isSubmitting ? "Đang gửi..." : "Gửi đánh giá"}
+                    {isSubmitting ? "Submitting..." : "Submit Review"}
                 </button>
             </div>
         </form>

@@ -1,7 +1,7 @@
 import FoodDetail from "@/components/client/Food/FoodDetail";
 import { productApi } from "@/lib/api/productApi";
-// import { restaurantApi } from "@/lib/api/restaurantApi"; // 1. Không cần gọi API này nữa
-import { Product } from "@/types"; // Giả sử types được export từ @/types
+// import { restaurantApi } from "@/lib/api/restaurantApi"; // 1. No longer need to call this API
+import { Product } from "@/types"; // Assume types are exported from @/types
 import { notFound } from "next/navigation";
 
 export default async function FoodDetailPage({ params }: { params: Promise<{ slug: string }> }) {

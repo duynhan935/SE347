@@ -51,7 +51,7 @@ export default function RestaurantsContainer() {
                                         </div>
                                 )}
 
-                                {/* --- Danh sách nhà hàng --- */}
+                                {/* --- Restaurant list --- */}
                                 <div className="col-span-1 lg:col-span-8">
                                         <RestaurantList />
                                 </div>

@@ -80,7 +80,7 @@ export default function Footer() {
                                             className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors flex items-center gap-1"
                                         >
                                             <Store className="w-4 h-4" />
-                                            Bán hàng cùng FoodEats
+                                            Sell with FoodEats
                                         </Link>
                                     </li>
                                 </ul>

@@ -59,6 +59,15 @@ export default function HomeFoodList() {
                         params.set("type", "foods");
                 }
                 
+                // Convert category params to comma-separated lowercase string for backend
+                const categoryParams = searchParams.getAll("category");
+                params.delete("category"); // Remove all category params
+                if (categoryParams.length > 0) {
+                        // Convert to lowercase and join with comma
+                        const categoryString = categoryParams.map(cat => cat.toLowerCase()).join(",");
+                        params.set("category", categoryString);
+                }
+                
                 if (searchType === "restaurants") {
                         getAllRestaurants(params);
                 } else {
@@ -74,7 +83,7 @@ export default function HomeFoodList() {
         const currentPage = Number(searchParams.get("page")) || 1;
         const isLoading = searchType === "restaurants" ? restaurantsLoading : productsLoading;
 
-        // Format result text - thân thiện hơn
+        // Format result text - user friendly
         const getResultText = () => {
                 if (isLoading) {
                         return <span className="inline-block h-8 w-48 bg-gray-200 rounded animate-pulse"></span>;
@@ -83,9 +92,9 @@ export default function HomeFoodList() {
                         return null; // Will show empty state instead
                 }
                 if (totalResults === 1) {
-                        return `Tìm thấy 1 ${searchType === "restaurants" ? "nhà hàng" : "món"} phù hợp`;
+                        return `Found 1 ${searchType === "restaurants" ? "restaurant" : "item"} matching`;
                 }
-                return `Tìm thấy ${totalResults} ${searchType === "restaurants" ? "nhà hàng" : "món"} phù hợp`;
+                return `Found ${totalResults} ${searchType === "restaurants" ? "restaurants" : "items"} matching`;
         };
 
         return (
@@ -184,16 +193,16 @@ export default function HomeFoodList() {
                                                         </>
                                                 )}
 
-                                                {/* Empty state - Đẹp hơn với icon */}
+                                                {/* Empty state - Beautiful with icon */}
                                                 {!isLoading && (!items || items.length === 0) && (
                                                         <div className="text-center py-20">
                                                                 <div className="flex flex-col items-center justify-center">
                                                                         <div className="text-6xl mb-4">🍽️</div>
                                                                         <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                                                                                Chưa có {searchType === "restaurants" ? "nhà hàng" : "món ăn"} trong danh mục này
+                                                                                No {searchType === "restaurants" ? "restaurants" : "food items"} in this category
                                                                         </h3>
                                                                         <p className="text-gray-500 text-sm max-w-md">
-                                                                                Hãy thử tìm kiếm với từ khóa khác hoặc chọn danh mục khác để khám phá thêm.
+                                                                                Try searching with different keywords or choose another category to explore more.
                                                                         </p>
                                                                 </div>
                                                         </div>

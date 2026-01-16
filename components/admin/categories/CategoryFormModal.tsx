@@ -17,7 +17,7 @@ export default function CategoryFormModal({ isOpen, onClose, category, onSave }:
 	const [loading, setLoading] = useState(false);
 
 	const isEditMode = category !== null;
-	const title = isEditMode ? "Chỉnh sửa Category" : "Thêm Category mới";
+	const title = isEditMode ? "Edit Category" : "Add New Category";
 
 	useEffect(() => {
 		if (isOpen) {
@@ -33,7 +33,7 @@ export default function CategoryFormModal({ isOpen, onClose, category, onSave }:
 		e.preventDefault();
 
 		if (!cateName.trim()) {
-			toast.error("Tên category là bắt buộc");
+			toast.error("Category name is required");
 			return;
 		}
 
@@ -55,7 +55,7 @@ export default function CategoryFormModal({ isOpen, onClose, category, onSave }:
 		<div onClick={onClose} className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex justify-center items-center transition-opacity">
 			<div onClick={(e) => e.stopPropagation()} className="relative bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-lg">
 				<button
-					title="Đóng"
+					title="Close"
 					onClick={onClose}
 					className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
 				>
@@ -67,7 +67,7 @@ export default function CategoryFormModal({ isOpen, onClose, category, onSave }:
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div>
 						<label htmlFor="cateName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-							Tên Category <span className="text-red-500">*</span>
+							Category Name <span className="text-red-500">*</span>
 						</label>
 						<input
 							id="cateName"
@@ -77,7 +77,7 @@ export default function CategoryFormModal({ isOpen, onClose, category, onSave }:
 							className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800"
 							required
 							disabled={loading}
-							placeholder="Nhập tên category"
+							placeholder="Enter category name"
 						/>
 					</div>
 
@@ -88,7 +88,7 @@ export default function CategoryFormModal({ isOpen, onClose, category, onSave }:
 							className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
 							disabled={loading}
 						>
-							Hủy
+							Cancel
 						</button>
 						<button
 							type="submit"
@@ -98,10 +98,10 @@ export default function CategoryFormModal({ isOpen, onClose, category, onSave }:
 							{loading ? (
 								<>
 									<Loader2 className="w-4 h-4 animate-spin" />
-									Đang lưu...
+									Saving...
 								</>
 							) : (
-								"Lưu"
+								"Save"
 							)}
 						</button>
 					</div>

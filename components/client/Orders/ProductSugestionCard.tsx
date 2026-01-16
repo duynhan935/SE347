@@ -96,7 +96,7 @@ export const ProductSuggestionCard = ({ product }: { product: SuggestedProduct }
                     disabled={isAdding || !isMounted}
                     className="cursor-pointer w-full bg-white border border-gray-300 font-semibold py-2 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isAdding ? "Đang thêm..." : "Add to Cart"}
+                    {isAdding ? "Adding..." : "Add to Cart"}
                 </button>
             ) : (
                 <div className="w-full rounded-md border border-brand-purple/20 bg-brand-purple/5 px-4 py-2 text-center text-sm font-semibold text-brand-purple">

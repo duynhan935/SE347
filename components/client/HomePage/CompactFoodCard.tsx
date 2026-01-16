@@ -68,12 +68,14 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
         return Math.round(duration).toString();
     }, [product.restaurant?.duration]);
 
-    // Format price to VNĐ
+    // Format price to USD
     const formatPrice = useMemo(() => {
         if (displayPrice === undefined) return null;
-        // Convert USD to VND (assuming 1 USD = 25,000 VND, adjust as needed)
-        const vndPrice = Math.round(displayPrice * 25000);
-        return new Intl.NumberFormat("vi-VN").format(vndPrice);
+        // Format USD with 2 decimal places
+        return displayPrice.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
     }, [displayPrice]);
 
     // Format review count
@@ -183,7 +185,7 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                     {isFavorite && (
                         <div className="absolute top-1.5 left-1.5 z-20 pointer-events-none">
                             <span className="bg-[#EE4D2D] text-white text-[9px] font-semibold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5">
-                                ❤️ Yêu thích
+                                ❤️ Favorite
                             </span>
                         </div>
                     )}
@@ -199,7 +201,7 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                     {!hasFlashSale && hasPromo && (
                         <div className="absolute top-1.5 right-1.5 z-20 pointer-events-none">
                             <span className="bg-[#EE4D2D] text-white text-[9px] font-semibold px-1.5 py-0.5 rounded shadow-sm">
-                                Mã giảm giá
+                                Promo Code
                             </span>
                         </div>
                     )}
@@ -219,7 +221,7 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                         onClick={handleAddToCart}
                         disabled={isAdding || !isMounted}
                         className="absolute bottom-2 right-2 z-30 w-8 h-8 bg-[#EE4D2D] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-[#EE4D2D]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto"
-                        title="Thêm vào giỏ"
+                        title="Add to cart"
                     >
                         {isAdding ? (
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -260,7 +262,7 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                             <span className="text-xs font-semibold text-gray-700">{product.rating.toFixed(1)}</span>
                         </div>
                         {formatReviewCount && (
-                            <span className="text-xs text-gray-500">({formatReviewCount} đánh giá)</span>
+                            <span className="text-xs text-gray-500">({formatReviewCount} reviews)</span>
                         )}
                     </div>
                 )}
@@ -269,10 +271,10 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                 <div className="pt-1">
                     {formatPrice ? (
                         <p className="text-base font-bold text-[#EE4D2D]">
-                            {formatPrice}đ
+                            ${formatPrice}
                         </p>
                     ) : (
-                        <p className="text-xs text-gray-400">Chưa có giá</p>
+                        <p className="text-xs text-gray-400">Price not available</p>
                     )}
                 </div>
             </div>

@@ -3,12 +3,11 @@ import { CartItem, useCartStore } from "@/stores/cartStore";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 
-// Format price to VND
-const formatPriceVND = (priceUSD: number): string => {
-    const vndPrice = priceUSD * 25000; // Convert USD to VND
-    return vndPrice.toLocaleString("vi-VN", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
+// Format price to USD
+const formatPriceUSD = (priceUSD: number): string => {
+    return priceUSD.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     });
 };
 
@@ -81,7 +80,7 @@ export const CartItemRow = ({ item, isSelected, onToggleSelect }: CartItemRowPro
                 </div>
 
                 {/* Price per item */}
-                <p className="text-sm text-gray-500 mb-2">{formatPriceVND(item.price)} ₫</p>
+                <p className="text-sm text-gray-500 mb-2">{formatPriceUSD(item.price)} $</p>
 
                 {/* Quantity Control */}
                 <div className="flex items-center gap-3">
@@ -119,7 +118,7 @@ export const CartItemRow = ({ item, isSelected, onToggleSelect }: CartItemRowPro
 
             {/* Total Item Price - Orange, Bold */}
             <div className="flex-shrink-0 text-right">
-                <p className="font-bold text-lg text-[#EE4D2D]">{formatPriceVND(itemTotal)} ₫</p>
+                <p className="font-bold text-lg text-[#EE4D2D]">{formatPriceUSD(itemTotal)} $</p>
             </div>
         </div>
     );

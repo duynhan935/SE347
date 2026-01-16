@@ -8,12 +8,11 @@ import { useEffect, useMemo, useState } from "react";
 import { CartItemRow } from "./CartItemRow";
 import { OrderSummary } from "./OrderSummary";
 
-// Format price to VND
-const formatPriceVND = (priceUSD: number): string => {
-    const vndPrice = priceUSD * 25000; // Convert USD to VND
-    return vndPrice.toLocaleString("vi-VN", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
+// Format price to USD
+const formatPriceUSD = (priceUSD: number): string => {
+    return priceUSD.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     });
 };
 
@@ -189,11 +188,11 @@ export default function CartPageContainer() {
                         </div>
 
                         {/* Title */}
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Giỏ hàng trống</h3>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Empty Cart</h3>
 
                         {/* Description */}
                         <p className="text-gray-600 mb-8 max-w-md">
-                            Bạn chưa thêm món ăn nào vào giỏ hàng. Hãy khám phá các nhà hàng và thêm món ăn ngon vào giỏ hàng của bạn.
+                            You haven't added any food items to your cart yet. Explore restaurants and add delicious dishes to your cart.
                         </p>
 
                         {/* CTA Button */}
@@ -328,9 +327,9 @@ export default function CartPageContainer() {
                     <div className="custom-container px-4 py-3">
                         <div className="flex items-center justify-between">
                             <div className="flex flex-col">
-                                <span className="text-xs text-gray-500">Tổng cộng</span>
+                                <span className="text-xs text-gray-500">Total</span>
                                 <span className="text-lg font-bold text-[#EE4D2D]">
-                                    {formatPriceVND(selectedSubtotal)} ₫
+                                    {formatPriceVND(selectedSubtotal)} $
                                 </span>
                             </div>
                             <Link
@@ -341,7 +340,7 @@ export default function CartPageContainer() {
                                 }
                                 className="bg-[#EE4D2D] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#EE4D2D]/90 transition-colors shadow-md"
                             >
-                                Mua hàng ({selectedTotalItems})
+                                Checkout ({selectedTotalItems})
                             </Link>
                         </div>
                     </div>

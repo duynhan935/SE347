@@ -113,7 +113,14 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
         set({ loading: true, error: null });
         try {
             const res = await restaurantApi.getAllRestaurants(params ?? new URLSearchParams());
-            set({ restaurants: res.data, loading: false });
+            // Handle Page response structure: { content: Restaurant[], ... } or direct array
+            const data = res.data;
+            const restaurantsArray = Array.isArray(data) 
+                ? data 
+                : (data && typeof data === 'object' && 'content' in data && Array.isArray(data.content))
+                    ? data.content
+                    : [];
+            set({ restaurants: restaurantsArray, loading: false });
         } catch (err: any) {
             set({
                 error: err.message || "Failed to load restaurant data.",

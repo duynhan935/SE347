@@ -51,8 +51,8 @@ export default function FoodPage() {
                 if (restaurantList.length === 0) {
                     setIsCreatingRestaurant(true);
                     const defaultRestaurantData: RestaurantData = {
-                        resName: user.username || "Nhà hàng của tôi",
-                        address: "Chưa cập nhật",
+                        resName: user.username || "My Restaurant",
+                        address: "Not updated",
                         longitude: 106.809883,
                         latitude: 10.841228,
                         openingTime: "09:00:00",
@@ -62,7 +62,7 @@ export default function FoodPage() {
                     };
 
                     await restaurantApi.createRestaurant(defaultRestaurantData);
-                    toast.success("Đã tự động tạo nhà hàng cho bạn!");
+                    toast.success("Restaurant automatically created for you!");
 
                     // Reload restaurant after creation
                     await getRestaurantByMerchantId(user.id);
@@ -73,7 +73,7 @@ export default function FoodPage() {
                 }
             } catch (error) {
                 console.error("Failed to load/create restaurant:", error);
-                toast.error("Không thể tải thông tin nhà hàng");
+                toast.error("Unable to load restaurant information");
                 setIsCreatingRestaurant(false);
             } finally {
                 setIsLoadingRestaurant(false);
@@ -89,7 +89,7 @@ export default function FoodPage() {
         if (currentRestaurant?.id && !isLoadingRestaurant && !isCreatingRestaurant) {
             fetchProductsByRestaurantId(currentRestaurant.id).catch((error) => {
                 console.error("Failed to load products:", error);
-                toast.error("Không thể tải danh sách món ăn");
+                toast.error("Unable to load food items list");
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,7 +107,7 @@ export default function FoodPage() {
                 setSizes(sizesRes.data);
             } catch (error) {
                 console.error("Failed to load categories/sizes:", error);
-                toast.error("Không thể tải danh mục và size");
+                toast.error("Unable to load categories and sizes");
             }
         };
         loadData();
@@ -141,14 +141,14 @@ export default function FoodPage() {
         try {
             setDeleteLoading(true);
             await deleteProduct(deleteTargetId);
-            toast.success("Xóa món ăn thành công");
+            toast.success("Food item deleted successfully");
             if (currentRestaurant) {
                 fetchProductsByRestaurantId(currentRestaurant.id);
             }
             closeDeleteModal();
         } catch (error) {
             console.error("Delete food error:", error);
-            toast.error("Xóa món ăn thất bại, vui lòng thử lại");
+            toast.error("Failed to delete food item, please try again");
         } finally {
             setDeleteLoading(false);
         }
@@ -187,12 +187,12 @@ export default function FoodPage() {
             <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="h-12 w-12 text-brand-purple animate-spin mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    {isCreatingRestaurant ? "Đang tạo nhà hàng..." : "Đang tải thông tin..."}
+                    {isCreatingRestaurant ? "Creating restaurant..." : "Loading information..."}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 text-center">
                     {isCreatingRestaurant
-                        ? "Hệ thống đang tự động tạo nhà hàng cho bạn. Vui lòng đợi..."
-                        : "Đang tải dữ liệu nhà hàng..."}
+                        ? "System is automatically creating a restaurant for you. Please wait..."
+                        : "Loading restaurant data..."}
                 </p>
             </div>
         );
@@ -203,9 +203,9 @@ export default function FoodPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Quản Lý Món Ăn</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Food Management</h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">
-                        Quản lý menu của nhà hàng: {currentRestaurant.resName}
+                        Manage restaurant menu: {currentRestaurant.resName}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -214,7 +214,7 @@ export default function FoodPage() {
                         className="flex items-center gap-2 px-4 py-2 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-lg transition-colors"
                     >
                         <Plus className="h-5 w-5" />
-                        Thêm Món Ăn
+                        Add Food Item
                     </Link>
                 </div>
             </div>
@@ -237,20 +237,20 @@ export default function FoodPage() {
                             <Plus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                                 {products.length === 0
-                                    ? "Chưa có món ăn nào"
-                                    : "Không tìm thấy món ăn phù hợp với từ khóa"}
+                                    ? "No food items yet"
+                                    : "No food items match your search"}
                             </h3>
                             <p className="text-gray-600 dark:text-gray-400 mb-4">
                                 {products.length === 0
-                                    ? "Bắt đầu bằng cách thêm món ăn đầu tiên của bạn"
-                                    : "Thử đổi từ khóa hoặc thêm món ăn mới"}
+                                    ? "Start by adding your first food item"
+                                    : "Try changing your search term or add a new food item"}
                             </p>
                             <Link
                                 href="/merchant/food/new"
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-lg transition-colors"
                             >
                                 <Plus className="h-5 w-5" />
-                                Thêm Món Ăn
+                                Add Food Item
                             </Link>
                         </div>
                     </div>

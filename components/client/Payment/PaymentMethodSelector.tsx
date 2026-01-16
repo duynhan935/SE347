@@ -67,8 +67,8 @@ export default function PaymentMethodSelector({
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-5 h-5 rounded-full bg-[#EE4D2D]" aria-hidden />
                     <div className="flex-grow">
-                        <div className="font-semibold text-gray-900">Thẻ tín dụng/Ghi nợ (Stripe)</div>
-                        <div className="text-sm text-gray-500">Thanh toán an toàn với Stripe</div>
+                        <div className="font-semibold text-gray-900">Credit/Debit Card (Stripe)</div>
+                        <div className="text-sm text-gray-500">Secure payment with Stripe</div>
                     </div>
                 </div>
 
@@ -87,17 +87,17 @@ export default function PaymentMethodSelector({
                             <div className="mt-4 text-sm text-gray-600">
                                 <div className="flex items-center space-x-2">
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#EE4D2D]"></div>
-                                    <p>Đang tải Stripe...</p>
+                                    <p>Loading Stripe...</p>
                                 </div>
                             </div>
                         ) : stripeInstance ? (
                             <div className="mt-4">
                                 {paymentIntentError ? (
                                     <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-                                        <p className="font-medium">⚠️ Lỗi Payment Intent</p>
+                                        <p className="font-medium">⚠️ Payment Intent Error</p>
                                         <p className="text-xs mt-1">{paymentIntentError}</p>
                                         <p className="text-xs mt-2">
-                                            Payment Intent này đã được sử dụng hoặc đã hết hạn. Vui lòng đặt hàng lại.
+                                            This Payment Intent has been used or expired. Please place the order again.
                                         </p>
                                     </div>
                                 ) : (
@@ -110,7 +110,7 @@ export default function PaymentMethodSelector({
                                             onPaymentSuccess={onPaymentSuccess}
                                             onPaymentError={(error) => {
                                                 if (error?.includes("terminal state") || error?.includes("terminal") || error?.includes("cannot be used")) {
-                                                    setPaymentIntentError("Payment Intent đã ở trạng thái terminal và không thể sử dụng.");
+                                                    setPaymentIntentError("Payment Intent is in a terminal state and cannot be used.");
                                                 }
                                                 onPaymentError(error);
                                             }}
@@ -120,8 +120,8 @@ export default function PaymentMethodSelector({
                             </div>
                         ) : (
                             <div className="mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-                                <p className="font-medium">⚠️ Stripe chưa được tải</p>
-                                <p className="text-xs mt-1">Vui lòng làm mới trang và thử lại.</p>
+                                <p className="font-medium">⚠️ Stripe not loaded</p>
+                                <p className="text-xs mt-1">Please refresh the page and try again.</p>
                             </div>
                         )}
                     </>
@@ -129,20 +129,20 @@ export default function PaymentMethodSelector({
                     <div className="mt-4 text-sm text-gray-600">
                         <div className="flex items-center space-x-2">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#EE4D2D]"></div>
-                            <p>Đang chuẩn bị form thanh toán...</p>
+                            <p>Preparing payment form...</p>
                         </div>
                     </div>
                 ) : (
                     <div className="mt-4 space-y-3">
                         <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                            <p className="font-medium text-blue-900 mb-1">Thanh toán bằng thẻ tín dụng</p>
+                            <p className="font-medium text-blue-900 mb-1">Pay with credit card</p>
                             <p className="text-blue-700 text-xs">
-                                Nhấn &quot;Đặt hàng&quot; để tiếp tục. Sau đó bạn sẽ nhập thông tin thẻ để hoàn tất thanh toán.
+                                Click &quot;Place Order&quot; to continue. Then you will enter your card information to complete the payment.
                             </p>
                         </div>
                         <div className="text-xs text-gray-500">
-                            <p>✓ Thanh toán an toàn với Stripe</p>
-                            <p>✓ Hỗ trợ Visa, Mastercard, Amex</p>
+                            <p>✓ Secure payment with Stripe</p>
+                            <p>✓ Supports Visa, Mastercard, Amex</p>
                         </div>
                     </div>
                 )}

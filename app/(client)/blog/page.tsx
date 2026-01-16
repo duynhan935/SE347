@@ -10,13 +10,13 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 const CATEGORIES: { value: BlogCategory | ""; label: string }[] = [
-        { value: "", label: "Tất cả" },
-        { value: "recipe", label: "Công thức" },
-        { value: "review", label: "Đánh giá" },
-        { value: "tips", label: "Mẹo vặt" },
-        { value: "news", label: "Tin tức" },
-        { value: "health", label: "Sức khỏe" },
-        { value: "other", label: "Khác" },
+        { value: "", label: "All" },
+        { value: "recipe", label: "Recipe" },
+        { value: "review", label: "Review" },
+        { value: "tips", label: "Tips" },
+        { value: "news", label: "News" },
+        { value: "health", label: "Health" },
+        { value: "other", label: "Other" },
 ];
 
 export default function BlogPage() {
@@ -41,7 +41,7 @@ export default function BlogPage() {
                         setTotalPages(response.pagination.pages);
                 } catch (error) {
                         console.error("Failed to fetch blogs:", error);
-                        toast.error("Không thể tải danh sách bài viết");
+                        toast.error("Unable to load articles list");
                 } finally {
                         setLoading(false);
                 }
@@ -64,7 +64,7 @@ export default function BlogPage() {
 
         const formatDate = (dateString: string) => {
                 const date = new Date(dateString);
-                return date.toLocaleDateString("vi-VN", {
+                return date.toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
@@ -76,9 +76,9 @@ export default function BlogPage() {
                         <div className="custom-container">
                                 {/* Header */}
                                 <div className="mb-8">
-                                        <h1 className="text-4xl font-bold text-gray-900 mb-4">Blog Ẩm Thực</h1>
+                                        <h1 className="text-4xl font-bold text-gray-900 mb-4">Food Blog</h1>
                                         <p className="text-gray-600">
-                                                Khám phá những bài viết hay về ẩm thực và cuộc sống
+                                                Discover great articles about food and life
                                         </p>
                                 </div>
 
@@ -90,7 +90,7 @@ export default function BlogPage() {
                                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                                                         <input
                                                                 type="text"
-                                                                placeholder="Tìm kiếm bài viết..."
+                                                                placeholder="Search articles..."
                                                                 value={searchInput}
                                                                 onChange={(e) => setSearchInput(e.target.value)}
                                                                 onKeyPress={(e) => e.key === "Enter" && handleSearch()}
@@ -101,7 +101,7 @@ export default function BlogPage() {
                                                         onClick={handleSearch}
                                                         className="px-6 py-3 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition-colors"
                                                 >
-                                                        Tìm kiếm
+                                                        Search
                                                 </button>
                                         </div>
 
@@ -127,11 +127,11 @@ export default function BlogPage() {
                                 {loading ? (
                                         <div className="text-center py-12">
                                                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple"></div>
-                                                <p className="mt-4 text-gray-600">Đang tải...</p>
+                                                <p className="mt-4 text-gray-600">Loading...</p>
                                         </div>
                                 ) : blogs.length === 0 ? (
                                         <div className="text-center py-12">
-                                                <p className="text-gray-600">Không tìm thấy bài viết nào</p>
+                                                <p className="text-gray-600">No articles found</p>
                                         </div>
                                 ) : (
                                         <>
@@ -171,7 +171,7 @@ export default function BlogPage() {
                                                                                                 (c) =>
                                                                                                         c.value ===
                                                                                                         blog.category
-                                                                                        )?.label || "Khác"}
+                                                                                        )?.label || "Other"}
                                                                                 </span>
 
                                                                                 {/* Title */}
@@ -219,7 +219,7 @@ export default function BlogPage() {
                                                                                                 <Clock className="w-4 h-4" />
                                                                                                 <span>
                                                                                                         {blog.readTime}{" "}
-                                                                                                        phút
+                                                                                                        min
                                                                                                 </span>
                                                                                         </div>
                                                                                 </div>

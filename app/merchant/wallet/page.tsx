@@ -6,12 +6,13 @@ import { Loader2, Wallet as WalletIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
-const formatVnd = (value: number) =>
-    new Intl.NumberFormat("vi-VN", {
+const formatUSD = (value: number) =>
+    new Intl.NumberFormat("en-US", {
         style: "currency",
-        currency: "VND",
-        maximumFractionDigits: 0,
-    }).format(value || 0);
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format((value || 0) / 25000);
 
 export default function MerchantWalletPage() {
     const [loading, setLoading] = useState(true);
@@ -32,7 +33,7 @@ export default function MerchantWalletPage() {
 
     const canSubmitWithdraw = useMemo(() => {
         if (submitting) return false;
-        if (!amount || amount < 50000) return false;
+        if (!amount || amount < 2) return false;
         if (!bankInfo.bankName.trim()) return false;
         if (!bankInfo.accountNumber.trim()) return false;
         if (!bankInfo.accountHolderName.trim()) return false;
@@ -52,7 +53,7 @@ export default function MerchantWalletPage() {
             setTotalPages(txRes.data.data.pagination.totalPages || 1);
         } catch (error) {
             console.error("Failed to load wallet:", error);
-            toast.error("Không thể tải dữ liệu ví");
+            toast.error("Unable to load wallet data");
         } finally {
             setLoading(false);
         }
@@ -77,9 +78,9 @@ export default function MerchantWalletPage() {
                 },
                 note: note.trim() || undefined,
             });
-            toast.success("Đã gửi yêu cầu rút tiền");
+            toast.success("Withdrawal request submitted successfully");
             setNote("");
-            setAmount(50000);
+            setAmount(2);
             setBankInfo({ bankName: "", accountNumber: "", accountHolderName: "" });
             await fetchAll(1);
             setPage(1);
@@ -89,7 +90,7 @@ export default function MerchantWalletPage() {
                 error && typeof error === "object" && "response" in error
                     ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
                     : undefined;
-            toast.error(message || "Không thể gửi yêu cầu rút tiền");
+            toast.error(message || "Unable to submit withdrawal request");
         } finally {
             setSubmitting(false);
         }
@@ -107,44 +108,44 @@ export default function MerchantWalletPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Ví nhà hàng</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">Theo dõi doanh thu và rút tiền</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Restaurant Wallet</h1>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">Track revenue and withdraw funds</p>
                 </div>
                 <div className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
                     <WalletIcon className="h-5 w-5" />
-                    <span className="font-semibold">{formatVnd(wallet?.balance ?? 0)}</span>
+                    <span className="font-semibold">{formatUSD(wallet?.balance ?? 0)}</span>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Số dư hiện tại</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Current Balance</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                        {formatVnd(wallet?.balance ?? 0)}
+                        {formatUSD(wallet?.balance ?? 0)}
                     </p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Tổng đã kiếm</p>
-                    <p className="text-2xl font-bold text-green-600 mt-1">{formatVnd(wallet?.totalEarned ?? 0)}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Earned</p>
+                    <p className="text-2xl font-bold text-green-600 mt-1">{formatUSD(wallet?.totalEarned ?? 0)}</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Tổng đã rút</p>
-                    <p className="text-2xl font-bold text-blue-600 mt-1">{formatVnd(wallet?.totalWithdrawn ?? 0)}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Withdrawn</p>
+                    <p className="text-2xl font-bold text-blue-600 mt-1">{formatUSD(wallet?.totalWithdrawn ?? 0)}</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Yêu cầu rút tiền</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Withdrawal Request</h2>
                     <form className="space-y-4" onSubmit={handleWithdraw}>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Số tiền (tối thiểu 50.000đ)
+                                Amount (minimum $2.00)
                             </label>
                             <input
                                 type="number"
-                                min={50000}
-                                step={1000}
+                                min={2}
+                                step={1}
                                 value={amount}
                                 onChange={(e) => setAmount(Number(e.target.value))}
                                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
@@ -153,7 +154,7 @@ export default function MerchantWalletPage() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Ngân hàng
+                                Bank Name
                             </label>
                             <input
                                 type="text"
@@ -165,7 +166,7 @@ export default function MerchantWalletPage() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Số tài khoản
+                                Account Number
                             </label>
                             <input
                                 type="text"
@@ -177,7 +178,7 @@ export default function MerchantWalletPage() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Chủ tài khoản
+                                Account Holder Name
                             </label>
                             <input
                                 type="text"
@@ -191,7 +192,7 @@ export default function MerchantWalletPage() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Ghi chú (tuỳ chọn)
+                                Note (optional)
                             </label>
                             <input
                                 type="text"
@@ -210,14 +211,14 @@ export default function MerchantWalletPage() {
                                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
                             }`}
                         >
-                            {submitting ? "Đang gửi..." : "Gửi yêu cầu"}
+                            {submitting ? "Submitting..." : "Submit Request"}
                         </button>
                     </form>
                 </div>
 
                 <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Giao dịch</h2>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Transactions</h2>
                         <div className="flex items-center gap-2">
                             <button
                                 disabled={page <= 1}
@@ -244,19 +245,19 @@ export default function MerchantWalletPage() {
                             <thead className="bg-gray-50 dark:bg-gray-900">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Thời gian
+                                        Time
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Loại
+                                        Type
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Số tiền
+                                        Amount
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Trạng thái
+                                        Status
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Mô tả
+                                        Description
                                     </th>
                                 </tr>
                             </thead>
@@ -267,21 +268,21 @@ export default function MerchantWalletPage() {
                                             colSpan={5}
                                             className="px-6 py-8 text-center text-gray-500 dark:text-gray-400"
                                         >
-                                            Chưa có giao dịch
+                                            No transactions yet
                                         </td>
                                     </tr>
                                 ) : (
                                     transactions.map((tx) => (
                                         <tr key={tx.id}>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">
-                                                {tx.createdAt ? new Date(tx.createdAt).toLocaleString("vi-VN") : ""}
+                                                {tx.createdAt ? new Date(tx.createdAt).toLocaleString("en-US") : ""}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">
-                                                {tx.type === "EARN" ? "Doanh thu" : "Rút tiền"}
+                                                {tx.type === "EARN" ? "Revenue" : "Withdrawal"}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
                                                 <span className={tx.amount >= 0 ? "text-green-600" : "text-red-600"}>
-                                                    {formatVnd(tx.amount)}
+                                                    {formatUSD(Math.abs(tx.amount))}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">

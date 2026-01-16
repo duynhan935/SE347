@@ -25,7 +25,7 @@ export default function CategoriesPage() {
 			setCategories(response.data);
 		} catch (error) {
 			console.error("Failed to fetch categories:", error);
-			toast.error("Không thể tải danh sách categories");
+			toast.error("Unable to load categories list");
 		} finally {
 			setLoading(false);
 		}
@@ -35,30 +35,30 @@ export default function CategoriesPage() {
 		try {
 			if (editingCategory) {
 				await categoryApi.updateCategory(editingCategory.id, categoryData);
-				toast.success("Đã cập nhật category");
+				toast.success("Category updated successfully");
 			} else {
 				await categoryApi.createCategory(categoryData);
-				toast.success("Đã thêm category mới");
+				toast.success("Category added successfully");
 			}
 			setIsModalOpen(false);
 			setEditingCategory(null);
 			fetchCategories();
 		} catch (error) {
 			console.error("Failed to save category:", error);
-			toast.error("Không thể lưu category");
+			toast.error("Unable to save category");
 		}
 	};
 
 	const handleDeleteCategory = async (categoryId: string) => {
-		if (!confirm("Bạn có chắc chắn muốn xóa category này?")) return;
+		if (!confirm("Are you sure you want to delete this category?")) return;
 
 		try {
 			await categoryApi.deleteCategory(categoryId);
-			toast.success("Đã xóa category");
+			toast.success("Category deleted successfully");
 			fetchCategories();
 		} catch (error) {
 			console.error("Failed to delete category:", error);
-			toast.error("Không thể xóa category");
+			toast.error("Unable to delete category");
 		}
 	};
 
@@ -71,8 +71,8 @@ export default function CategoriesPage() {
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Quản lý Categories</h1>
-					<p className="text-gray-600 dark:text-gray-400 mt-1">Quản lý danh mục món ăn trong hệ thống</p>
+					<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Manage Categories</h1>
+					<p className="text-gray-600 dark:text-gray-400 mt-1">Manage food categories in the system</p>
 				</div>
 				<button
 					onClick={() => {
@@ -82,13 +82,13 @@ export default function CategoriesPage() {
 					className="flex items-center gap-2 px-4 py-2 bg-brand-yellow text-white rounded-lg hover:bg-brand-yellow/90 transition-colors"
 				>
 					<Plus size={20} />
-					Thêm Category
+					Add Category
 				</button>
 			</div>
 
 			{/* Stats */}
 			<div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-				<p className="text-sm text-gray-600 dark:text-gray-400">Tổng số Categories</p>
+				<p className="text-sm text-gray-600 dark:text-gray-400">Total Categories</p>
 				<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{categories.length}</p>
 			</div>
 
@@ -98,7 +98,7 @@ export default function CategoriesPage() {
 					<Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
 					<input
 						type="text"
-						placeholder="Tìm kiếm category..."
+						placeholder="Search category..."
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
 						className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
@@ -118,13 +118,13 @@ export default function CategoriesPage() {
 							<thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
 								<tr>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-										STT
+										#
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-										Tên Category
+										Category Name
 									</th>
 									<th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-										Thao tác
+										Actions
 									</th>
 								</tr>
 							</thead>
@@ -150,14 +150,14 @@ export default function CategoriesPage() {
 														setIsModalOpen(true);
 													}}
 													className="p-2 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-													title="Chỉnh sửa"
+													title="Edit"
 												>
 													<Edit size={18} />
 												</button>
 												<button
 													onClick={() => handleDeleteCategory(category.id)}
 													className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-													title="Xóa"
+													title="Delete"
 												>
 													<Trash size={18} />
 												</button>
@@ -169,7 +169,7 @@ export default function CategoriesPage() {
 						</table>
 						{filteredCategories.length === 0 && (
 							<div className="text-center py-12 text-gray-500 dark:text-gray-400">
-								Không tìm thấy category nào
+								No categories found
 							</div>
 						)}
 					</div>

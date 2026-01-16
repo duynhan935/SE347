@@ -4,11 +4,11 @@
 import Image from "next/image";
 import { useState } from "react";
 
-// Giả sử bạn nhận được 2 props này từ Server Component cha
-// Trong thực tế, bạn sẽ fetch chúng từ một API route
+// Assume you receive these 2 props from parent Server Component
+// In practice, you will fetch them from an API route
 const MOCK_PROPS = {
-        qrCodeDataURL: "https://placehold.co/200x200?text=Scan+Me", // Đây là ảnh QR code
-        secretKey: "JBSWY3DPEHPK3PXP", // Đây là chuỗi bí mật
+        qrCodeDataURL: "https://placehold.co/200x200?text=Scan+Me", // This is the QR code image
+        secretKey: "JBSWY3DPEHPK3PXP", // This is the secret key
 };
 
 export default function Setup2FAPage() {
@@ -16,8 +16,8 @@ export default function Setup2FAPage() {
 
         const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
-                // Gửi verificationCode và secretKey lên server để xác thực
-                // Nếu server xác nhận code đúng, kích hoạt 2FA cho user trong database
+                // Send verificationCode and secretKey to server for verification
+                // If server confirms code is correct, activate 2FA for user in database
                 console.log("Verifying code:", verificationCode);
                 alert(`Submitting code: ${verificationCode}. If correct, 2FA will be enabled.`);
         };
@@ -30,7 +30,7 @@ export default function Setup2FAPage() {
                                         Scan the image below with your authenticator app (e.g., Google Authenticator).
                                 </p>
 
-                                {/* Hiển thị QR Code */}
+                                {/* Display QR Code */}
                                 <div className="flex justify-center mb-4">
                                         <Image
                                                 src={MOCK_PROPS.qrCodeDataURL}

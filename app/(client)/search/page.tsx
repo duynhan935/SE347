@@ -25,6 +25,15 @@ export default function SearchPage() {
         params.set("lat", "10.7626");
         params.set("lon", "106.6825");
 
+        // Convert category params to comma-separated lowercase string for backend
+        const categoryParams = searchParams.getAll("category");
+        params.delete("category"); // Remove all category params
+        if (categoryParams.length > 0) {
+            // Convert to lowercase and join with comma
+            const categoryString = categoryParams.map(cat => cat.toLowerCase()).join(",");
+            params.set("category", categoryString);
+        }
+
         // Add search query if present
         if (query) {
             params.set("search", query);
@@ -43,13 +52,12 @@ export default function SearchPage() {
         if (priceRange) {
             const [min, max] = priceRange.split("-");
             if (min) {
-                // Convert VND to USD (assuming 1 USD = 25,000 VND)
-                const minUSD = parseInt(min) / 25000;
-                params.set("minPrice", minUSD.toString());
+                // Price is already in USD
+                params.set("minPrice", min);
             }
             if (max && max !== "+") {
-                const maxUSD = parseInt(max) / 25000;
-                params.set("maxPrice", maxUSD.toString());
+                // Price is already in USD
+                params.set("maxPrice", max);
             }
         }
 

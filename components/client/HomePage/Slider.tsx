@@ -55,13 +55,13 @@ export default function Slider() {
                                         el: ".custom-pagination",
                                 }}
                                 spaceBetween={30}
-                                slidesPerView={1} // Mặc định hiển thị 1 slide trên mobile
+                                slidesPerView={1} // Default: show 1 slide on mobile
                                 breakpoints={{
-                                        // Khi màn hình từ 640px trở lên, hiển thị 2 slide
+                                        // When screen is 640px and above, show 2 slides
                                         640: {
                                                 slidesPerView: 2,
                                         },
-                                        // Khi màn hình từ 1024px trở lên, hiển thị 3 slide
+                                        // When screen is 1024px and above, show 3 slides
                                         1024: {
                                                 slidesPerView: 3,
                                         },

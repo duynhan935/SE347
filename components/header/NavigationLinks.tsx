@@ -1,10 +1,10 @@
 "use client";
 
-// NavigationLinks component - Đã được tối giản
-// Header giờ chỉ có: Logo | Search | Orders | Cart | User Avatar
-// Tất cả navigation links khác đã được chuyển vào user dropdown
+// NavigationLinks component - Has been simplified
+// Header now only has: Logo | Search | Orders | Cart | User Avatar
+// All other navigation links have been moved to user dropdown
 export default function NavigationLinks() {
-        // Component này giờ không render gì vì SearchBar đã có trong Header
-        // Giữ lại để không break code nếu có nơi nào import
+        // This component now doesn't render anything because SearchBar is already in Header
+        // Keep it to avoid breaking code if something imports it
         return null;
 }

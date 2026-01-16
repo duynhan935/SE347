@@ -41,12 +41,14 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
     const defaultSize = useMemo(() => product.productSizes?.[0], [product.productSizes]);
     const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
     
-    // Format price to VND (assuming 1 USD = 25,000 VND)
+    // Format price to USD
     const formattedPrice = useMemo(() => {
         if (displayPrice === undefined) return null;
-        const vndPrice = displayPrice * 25000;
-        // Format with comma separator, no decimals for VND
-        return vndPrice.toLocaleString("en-US");
+        // Format with comma separator, 2 decimals for USD
+        return displayPrice.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
     }, [displayPrice]);
     
     // Format sold count
@@ -218,7 +220,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                             )}
                             {!isBestSeller && isPopular && (
                                 <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
-                                    ⚡ Bán chạy
+                                    ⚡ Bestseller
                                 </span>
                             )}
                         </div>
@@ -334,7 +336,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200 rounded-l-2xl">
                             <div className="text-center">
                                 <span className="text-4xl md:text-5xl block mb-2">🍽️</span>
-                                <span className="text-xs md:text-sm text-gray-600 font-medium">Đang chuẩn bị...</span>
+                                <span className="text-xs md:text-sm text-gray-600 font-medium">Preparing...</span>
                             </div>
                         </div>
                     )}
@@ -362,7 +364,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         )}
                         {!isBestSeller && isPopular && (
                             <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
-                                ⚡ Bán chạy
+                                ⚡ Bestseller
                             </span>
                         )}
                     </div>
@@ -453,8 +455,8 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         onClick={handleAddToCart}
                         disabled={isAdding || !isMounted}
                         className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-[#EE4D2D] hover:bg-[#EE4D2D]/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 active:scale-95"
-                        title="Thêm vào giỏ"
-                        aria-label="Thêm vào giỏ"
+                        title="Add to cart"
+                        aria-label="Add to cart"
                     >
                         {isAdding ? (
                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

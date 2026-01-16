@@ -1,6 +1,6 @@
 "use client";
 
-// 1. Import thêm ProductSize
+// 1. Import ProductSize
 import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -99,10 +99,12 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
     const currentPrice = selectedSize?.price ?? 0;
     const totalPrice = (currentPrice * quantity).toFixed(2);
     
-    // Format price to VND (assuming 1 USD = 25,000 VND)
+    // Format price to USD
     const formatPrice = (price: number) => {
-        const vndPrice = price * 25000;
-        return vndPrice.toLocaleString("en-US");
+        return price.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
     };
 
     return (
@@ -173,10 +175,10 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
                             {foodItem.productName || "Special Beef Pho (Pho Dac Biet)"}
                         </h1>
-                        {/* Price - Prominent in VND */}
+                        {/* Price - Prominent in USD */}
                         {selectedSize ? (
                             <p className="text-3xl md:text-4xl font-bold text-[#EE4D2D]">
-                                {formatPrice(selectedSize.price)} đ
+                                ${formatPrice(selectedSize.price)}
                             </p>
                         ) : (
                             <p className="text-lg font-semibold text-[#EE4D2D]">Please select a size</p>
@@ -225,11 +227,11 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-bold text-[#EE4D2D]">
-                                                            {formatPrice(size.price)} đ
+                                                            {formatPrice(size.price)} $
                                                         </span>
                                                         {index > 0 && priceDiff > 0 && (
                                                             <span className="text-sm text-gray-500">
-                                                                (+{formatPrice(priceDiff)} đ)
+                                                                (+{formatPrice(priceDiff)} $)
                                                             </span>
                                                         )}
                                                     </div>
@@ -290,7 +292,7 @@ export default function FoodDetail({ foodItem, restaurant }: FoodDetailClientPro
                                     className="flex-1 bg-[#EE4D2D] text-white font-bold py-4 px-8 rounded-lg hover:bg-[#EE4D2D]/90 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
                                     disabled={!selectedSize || isAdding || !isMounted}
                                 >
-                                    {isAdding ? "Adding..." : `Add to Cart • ${formatPrice(parseFloat(totalPrice))} đ`}
+                                    {isAdding ? "Adding..." : `Add to Cart • ${formatPrice(parseFloat(totalPrice))} $`}
                                 </button>
                             )}
                             {!isMounted && (

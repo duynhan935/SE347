@@ -119,7 +119,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
 
             <div>
                 <label className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white">
-                    Tên Món Ăn <span className="text-red-500">*</span>
+                    Food Name <span className="text-red-500">*</span>
                 </label>
                 <input
                     type="text"
@@ -127,13 +127,13 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     value={formData.productName}
                     onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none transition focus:border-brand-purple focus:ring-4 focus:ring-brand-purple/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
-                    placeholder="Nhập tên món ăn"
+                    placeholder="Enter food name"
                 />
             </div>
 
             <div>
                 <label className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white">
-                    Mô Tả <span className="text-red-500">*</span>
+                    Description <span className="text-red-500">*</span>
                 </label>
                 <textarea
                     required
@@ -141,7 +141,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={4}
                     className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none transition focus:border-brand-purple focus:ring-4 focus:ring-brand-purple/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
-                    placeholder="Mô tả về món ăn"
+                    placeholder="Describe the food item"
                 />
             </div>
 
@@ -150,7 +150,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     htmlFor="category-select"
                     className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white"
                 >
-                    Danh Mục <span className="text-red-500">*</span>
+                    Category <span className="text-red-500">*</span>
                 </label>
                 <select
                     id="category-select"
@@ -159,7 +159,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none transition focus:border-brand-purple focus:ring-4 focus:ring-brand-purple/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
                 >
-                    <option value="">Chọn danh mục</option>
+                    <option value="">Select category</option>
                     {categories.map((cat) => (
                         <option key={cat.id} value={cat.id}>
                             {cat.cateName}
@@ -170,7 +170,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
 
             <div>
                 <label className="mb-2 block text-sm font-semibold text-gray-900 dark:text-white">
-                    Size & Giá <span className="text-red-500">*</span>
+                    Size & Price <span className="text-red-500">*</span>
                 </label>
 
                 <div className="space-y-2">
@@ -194,7 +194,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                                         checked={isSelected}
                                         onChange={() => handleSizeToggle(size.id)}
                                         className="h-4 w-4 accent-brand-purple"
-                                        aria-label={`Chọn size ${size.name}`}
+                                        aria-label={`Select size ${size.name}`}
                                     />
                                     <span className="font-medium text-gray-900 dark:text-white">{size.name}</span>
                                 </label>
@@ -209,7 +209,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                                             step="1000"
                                             value={selectedSize?.price ?? 0}
                                             onChange={(e) => handleSizePrice(size.id, Number(e.target.value))}
-                                            placeholder="Giá"
+                                            placeholder="Price"
                                             className="w-32 rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-900 outline-none focus:border-brand-purple focus:ring-4 focus:ring-brand-purple/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
                                         />
                                     </div>
@@ -228,7 +228,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                         onChange={(e) => setFormData({ ...formData, available: e.target.checked })}
                         className="h-4 w-4 accent-brand-purple"
                     />
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">Có sẵn</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">Available</span>
                 </label>
             </div>
 
@@ -237,7 +237,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     htmlFor="food-image-input"
                     className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white"
                 >
-                    Hình Ảnh Món Ăn
+                    Food Image
                 </label>
                 <input
                     id="food-image-input"
