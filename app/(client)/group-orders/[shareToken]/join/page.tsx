@@ -6,7 +6,7 @@ import { getImageUrl } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Product } from "@/types";
 import { GroupOrder, GroupOrderStatus, JoinGroupOrderRequest } from "@/types/groupOrder.type";
-import { ArrowLeft, Minus, Plus, ShoppingCart, X } from "lucide-react";
+import { ArrowLeft, Minus, Plus, ShoppingCart, Users, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -87,12 +87,21 @@ export default function JoinGroupOrderPage() {
         }
     };
 
+    // Check authentication and redirect if not logged in
     useEffect(() => {
-        if (shareToken) {
+        if (!isAuthenticated || !user) {
+            const currentPath = `/group-orders/${shareToken}/join`;
+            router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+            return;
+        }
+    }, [isAuthenticated, user, shareToken, router]);
+
+    useEffect(() => {
+        if (shareToken && isAuthenticated && user) {
             fetchGroupOrder();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [shareToken]);
+    }, [shareToken, isAuthenticated, user]);
 
     useEffect(() => {
         if (groupOrder?.restaurantId) {
@@ -198,6 +207,31 @@ export default function JoinGroupOrderPage() {
     const totalAmount = Array.from(selectedItems.values()).reduce((sum, item) => {
         return sum + (item.price * item.quantity);
     }, 0);
+
+    // Show loading or redirect message if not authenticated
+    if (!isAuthenticated || !user) {
+        return (
+            <main className="bg-gray-50 min-h-screen py-12">
+                <div className="custom-container">
+                    <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8 text-center">
+                        <div className="mb-4">
+                            <Users className="w-16 h-16 text-gray-400 mx-auto" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Đăng nhập để tham gia</h2>
+                        <p className="text-gray-600 mb-6">
+                            Bạn cần đăng nhập để có thể tham gia group order này và thêm món vào đơn.
+                        </p>
+                        <Link
+                            href={`/login?redirect=${encodeURIComponent(`/group-orders/${shareToken}/join`)}`}
+                            className="inline-block px-6 py-3 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors font-medium"
+                        >
+                            Đăng nhập ngay
+                        </Link>
+                    </div>
+                </div>
+            </main>
+        );
+    }
 
     if (loading) {
         return (

@@ -276,17 +276,30 @@ export default function GroupOrderPage() {
                         </div>
 
                         {/* Actions */}
-                        {isAuthenticated && user && (
-                            <div className="flex flex-wrap gap-3 mt-4">
-                                {canJoin && (
-                                    <Link
-                                        href={`/group-orders/${shareToken}/join`}
-                                        className="flex items-center gap-2 px-4 py-2 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors"
-                                    >
-                                        <Users className="w-4 h-4" />
-                                        Tham gia
-                                    </Link>
-                                )}
+                        <div className="flex flex-wrap gap-3 mt-4">
+                            {canJoin && (
+                                <>
+                                    {isAuthenticated && user ? (
+                                        <Link
+                                            href={`/group-orders/${shareToken}/join`}
+                                            className="flex items-center gap-2 px-4 py-2 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors"
+                                        >
+                                            <Users className="w-4 h-4" />
+                                            Tham gia
+                                        </Link>
+                                    ) : (
+                                        <Link
+                                            href={`/login?redirect=${encodeURIComponent(`/group-orders/${shareToken}/join`)}`}
+                                            className="flex items-center gap-2 px-4 py-2 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors"
+                                        >
+                                            <Users className="w-4 h-4" />
+                                            Đăng nhập để tham gia
+                                        </Link>
+                                    )}
+                                </>
+                            )}
+                            {isAuthenticated && user && (
+                                <>
                                 {canLock && (
                                     <button
                                         onClick={handleLock}
@@ -317,8 +330,9 @@ export default function GroupOrderPage() {
                                         Hủy
                                     </button>
                                 )}
-                            </div>
-                        )}
+                                </>
+                            )}
+                        </div>
                     </div>
 
                     {/* Participants */}
