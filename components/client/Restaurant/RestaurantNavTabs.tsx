@@ -14,7 +14,8 @@ export default function RestaurantNavTabs() {
 
         useEffect(() => {
                 const handleScroll = () => {
-                        const heroHeight = 400;
+                        // Account for new banner height (350px desktop) + overlapping card (~120px)
+                        const heroHeight = window.innerWidth >= 768 ? 470 : 370;
                         if (window.scrollY > heroHeight) setSticky(true);
                         else setSticky(false);
                 };

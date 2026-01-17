@@ -4,15 +4,24 @@ import BlogComments from "@/components/client/blog/BlogComments";
 import RelatedBlogs from "@/components/client/blog/RelatedBlogs";
 import { blogApi } from "@/lib/api/blogApi";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { Blog } from "@/types/blog.type";
-import { ArrowLeft, Calendar, Clock, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
+import { Blog, BlogCategory } from "@/types/blog.type";
+import { ArrowLeft, Heart, MessageCircle, Share2, Tag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+const CATEGORIES: Record<BlogCategory, string> = {
+        recipe: "Recipe",
+        review: "Review",
+        tips: "Tips",
+        news: "News",
+        health: "Health",
+        other: "Other",
+};
 
 export default function BlogPostPage() {
         const params = useParams();
@@ -23,10 +32,12 @@ export default function BlogPostPage() {
         const [loading, setLoading] = useState(true);
         const [liked, setLiked] = useState(false);
         const [likesCount, setLikesCount] = useState(0);
+        const [allTags, setAllTags] = useState<string[]>([]);
 
         useEffect(() => {
                 if (slug) {
                         fetchBlog();
+                        fetchAllTags();
                 }
                 // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [slug]);
@@ -42,26 +53,62 @@ export default function BlogPostPage() {
                         }
                 } catch (error) {
                         console.error("Failed to fetch blog:", error);
-                        toast.error("Unable to load article");
+                        toast.error("Failed to load blog post");
                 } finally {
                         setLoading(false);
                 }
         };
 
+        const fetchAllTags = async () => {
+                try {
+                        // Fetch recent blogs to get tags
+                        const response = await blogApi.getBlogs({ page: 1, limit: 50 });
+                        const tags = new Set<string>();
+                        response.data.forEach((b) => {
+                                if (b.tags && b.tags.length > 0) {
+                                        b.tags.forEach((tag) => tags.add(tag));
+                                }
+                        });
+                        setAllTags(Array.from(tags).slice(0, 20)); // Limit to 20 tags
+                } catch (error) {
+                        console.error("Failed to fetch tags:", error);
+                }
+        };
+
         const handleLike = async () => {
                 if (!isAuthenticated) {
-                        toast.error("Please login to like article");
+                        toast.error("Please login to like this post");
                         return;
                 }
 
+                if (!blog) return;
+
+                // Optimistic update: update UI immediately for better UX
+                const previousLiked = liked;
+                const previousLikesCount = likesCount;
+                const newLiked = !liked;
+                const newLikesCount = newLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
+
+                // Update UI immediately (Optimistic Update)
+                setLiked(newLiked);
+                setLikesCount(newLikesCount);
+
+                // Show toast with new state
+                toast.success(newLiked ? "Liked post" : "Unliked post");
+
                 try {
-                        const response = await blogApi.toggleLike(blog!._id);
-                        setLiked(response.liked);
-                        setLikesCount(response.likesCount);
-                        toast.success(response.liked ? "Article liked" : "Article unliked");
+                        const response = await blogApi.toggleLike(blog._id);
+                        // Sync with server response (ensure we have valid data)
+                        if (response && typeof response.liked === 'boolean' && typeof response.likesCount === 'number') {
+                                setLiked(response.liked);
+                                setLikesCount(response.likesCount);
+                        }
                 } catch (error) {
                         console.error("Failed to toggle like:", error);
-                        toast.error("Unable to like article");
+                        // Revert on error
+                        setLiked(previousLiked);
+                        setLikesCount(previousLikesCount);
+                        toast.error("Failed to like post. Please try again.");
                 }
         };
 
@@ -74,12 +121,37 @@ export default function BlogPostPage() {
                 });
         };
 
+        const handleShare = async () => {
+                if (navigator.share && blog) {
+                        try {
+                                await navigator.share({
+                                        title: blog.title,
+                                        text: blog.excerpt || "",
+                                        url: window.location.href,
+                                });
+                        } catch {
+                                // User cancelled or error
+                        }
+                } else {
+                        // Fallback: Copy to clipboard
+                        navigator.clipboard.writeText(window.location.href);
+                        toast.success("Link copied!");
+                }
+        };
+
+        // Get popular tags (most used)
+        const popularTags = useMemo(() => {
+                return allTags.slice(0, 10);
+        }, [allTags]);
+
         if (loading) {
                 return (
-                        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
                                 <div className="text-center">
-                                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple"></div>
-                                        <p className="mt-4 text-gray-600">Loading...</p>
+                                        <div 
+                                                className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-[#EE4D2D]"
+                                        ></div>
+                                        <p className="mt-6 text-gray-600 text-lg">Loading...</p>
                                 </div>
                         </div>
                 );
@@ -87,11 +159,15 @@ export default function BlogPostPage() {
 
         if (!blog) {
                 return (
-                        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
                                 <div className="text-center">
-                                        <p className="text-gray-600 mb-4">Article not found</p>
-                                        <Link href="/blog" className="text-brand-purple hover:underline">
-                                                Back to blog list
+                                        <p className="text-gray-600 mb-4 text-lg">Post not found</p>
+                                        <Link 
+                                                href="/blog" 
+                                                className="inline-flex items-center gap-2 text-[#EE4D2D] hover:underline font-medium"
+                                        >
+                                                <ArrowLeft className="w-4 h-4" />
+                                                Back to list
                                         </Link>
                                 </div>
                         </div>
@@ -99,183 +175,240 @@ export default function BlogPostPage() {
         }
 
         return (
-                <div className="min-h-screen bg-gray-50">
-                        <div className="custom-container py-8">
-                                {/* Back Button */}
-                                <Link
-                                        href="/blog"
-                                        className="inline-flex items-center gap-2 text-gray-600 hover:text-brand-purple mb-6 transition-colors"
-                                >
-                                        <ArrowLeft className="w-5 h-5" />
-                                        <span>Back to blog list</span>
-                                </Link>
+                <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+                        {/* Main Container - Grid 2 Columns */}
+                        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl">
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                                        {/* Main Content - 8 Columns */}
+                                        <article className="lg:col-span-8">
+                                                {/* Article Container */}
+                                                <div className="space-y-6">
+                                                        {/* Compact Header Section */}
+                                                        <header>
+                                                                {/* Breadcrumb & Meta Row - Gộp 1 dòng */}
+                                                                <div className="flex items-center justify-between mb-4">
+                                                                        {/* Left: Back Button */}
+                                                                        <Link
+                                                                                href="/blog"
+                                                                                className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#EE4D2D] transition-colors"
+                                                                        >
+                                                                                <ArrowLeft className="w-3.5 h-3.5" />
+                                                                                <span>Back</span>
+                                                                        </Link>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                                        {/* Main Content */}
-                                        <div className="lg:col-span-8">
-                                                <article className="bg-white rounded-lg shadow-md overflow-hidden">
-                                                        {/* Featured Image */}
+                                                                        {/* Right: Category Badge */}
+                                                                        {blog.category && (
+                                                                                <span 
+                                                                                        className="inline-block px-3 py-1 bg-[#EE4D2D] text-white text-xs font-semibold rounded-full shadow-sm"
+                                                                                >
+                                                                                        {CATEGORIES[blog.category] || blog.category}
+                                                                                </span>
+                                                                        )}
+                                                                </div>
+
+                                                                {/* Title - Compact Typography */}
+                                                                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight tracking-tight mb-2">
+                                                                        {blog.title}
+                                                                </h1>
+
+                                                                {/* Excerpt - Compact */}
+                                                                {blog.excerpt && (
+                                                                        <p className="text-lg text-gray-600 leading-relaxed mb-4 font-light">
+                                                                                {blog.excerpt}
+                                                                        </p>
+                                                                )}
+
+                                                                {/* Author & Meta Info - Single Line Horizontal */}
+                                                                <div className="flex items-center gap-3 text-sm text-gray-500 mb-0 pb-4 border-b border-gray-200">
+                                                                        {/* Avatar - Small */}
+                                                                        {blog.author?.avatar ? (
+                                                                                <Image
+                                                                                        src={blog.author.avatar}
+                                                                                        alt={blog.author.name || "Author"}
+                                                                                        width={32}
+                                                                                        height={32}
+                                                                                        className="rounded-full object-cover flex-shrink-0"
+                                                                                />
+                                                                        ) : (
+                                                                                <div 
+                                                                                        className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm bg-[#EE4D2D] flex-shrink-0"
+                                                                                >
+                                                                                        {blog.author?.name?.charAt(0).toUpperCase() || "?"}
+                                                                                </div>
+                                                                        )}
+
+                                                                        {/* Author Name */}
+                                                                        <span className="font-medium text-gray-700">
+                                                                                {blog.author?.name || "Author"}
+                                                                        </span>
+
+                                                                        {/* Separator */}
+                                                                        <span className="text-gray-300">•</span>
+
+                                                                        {/* Date */}
+                                                                        {blog.publishedAt && (
+                                                                                <>
+                                                                                        <span>{formatDate(blog.publishedAt)}</span>
+                                                                                        <span className="text-gray-300">•</span>
+                                                                                </>
+                                                                        )}
+
+                                                                        {/* Read Time */}
+                                                                        <span>{blog.readTime} min read</span>
+                                                                </div>
+                                                        </header>
+
+                                                        {/* Hero Image - Wide Aspect Ratio */}
                                                         {blog.featuredImage?.url && (
-                                                                <div className="relative w-full h-96 overflow-hidden">
+                                                                <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-2xl mt-6">
                                                                         <Image
                                                                                 src={blog.featuredImage.url}
-                                                                                alt={
-                                                                                        blog.featuredImage.alt ||
-                                                                                        blog.title
-                                                                                }
+                                                                                alt={blog.featuredImage.alt || blog.title}
                                                                                 fill
                                                                                 className="object-cover"
+                                                                                priority
                                                                         />
                                                                 </div>
                                                         )}
 
-                                                        {/* Content */}
-                                                        <div className="p-8">
-                                                                {/* Title */}
-                                                                <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                                                                        {blog.title}
-                                                                </h1>
-
-                                                                {/* Meta Info */}
-                                                                <div className="flex flex-wrap items-center gap-4 mb-6 pb-6 border-b border-gray-200">
-                                                                        <div className="flex items-center gap-2">
-                                                                                {blog.author.avatar ? (
-                                                                                        <Image
-                                                                                                src={blog.author.avatar}
-                                                                                                alt={blog.author.name}
-                                                                                                width={40}
-                                                                                                height={40}
-                                                                                                className="rounded-full"
-                                                                                        />
-                                                                                ) : (
-                                                                                        <div className="w-10 h-10 rounded-full bg-brand-purple flex items-center justify-center text-white font-semibold">
-                                                                                                {blog.author.name
-                                                                                                        .charAt(0)
-                                                                                                        .toUpperCase()}
-                                                                                        </div>
-                                                                                )}
-                                                                                <span className="font-medium text-gray-700">
-                                                                                        {blog.author.name}
+                                                        {/* Tags */}
+                                                        {blog.tags && blog.tags.length > 0 && (
+                                                                <div className="flex flex-wrap gap-2">
+                                                                        {blog.tags.map((tag, index) => (
+                                                                                <span
+                                                                                        key={index}
+                                                                                        className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-gray-200 transition-colors font-medium"
+                                                                                >
+                                                                                        #{tag}
                                                                                 </span>
-                                                                        </div>
-                                                                        {blog.publishedAt && (
-                                                                                <div className="flex items-center gap-1 text-gray-500">
-                                                                                        <Calendar className="w-4 h-4" />
-                                                                                        <span>
-                                                                                                {formatDate(
-                                                                                                        blog.publishedAt
-                                                                                                )}
-                                                                                        </span>
-                                                                                </div>
-                                                                        )}
-                                                                        <div className="flex items-center gap-1 text-gray-500">
-                                                                                <Clock className="w-4 h-4" />
-                                                                                <span>{blog.readTime} min read</span>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-1 text-gray-500">
-                                                                                <Eye className="w-4 h-4" />
-                                                                                <span>{blog.views} views</span>
-                                                                        </div>
+                                                                        ))}
                                                                 </div>
+                                                        )}
 
-                                                                {/* Tags */}
-                                                                {blog.tags && blog.tags.length > 0 && (
-                                                                        <div className="flex flex-wrap gap-2 mb-6">
-                                                                                {blog.tags.map((tag, index) => (
-                                                                                        <span
-                                                                                                key={index}
-                                                                                                className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
-                                                                                        >
-                                                                                                #{tag}
-                                                                                        </span>
-                                                                                ))}
-                                                                        </div>
-                                                                )}
-
-                                                                {/* Content Images Gallery */}
-                                                                {blog.images && blog.images.length > 0 && (
-                                                                        <div className="mb-8">
-                                                                                <h3 className="text-xl font-semibold text-gray-900 mb-4">Images</h3>
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                                                        {blog.images.map((image, index) => (
-                                                                                                <div key={index} className="relative w-full aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-brand-purple transition-colors">
-                                                                                                        <Image
-                                                                                                                src={image.url}
-                                                                                                                alt={image.alt || `Image ${index + 1}`}
-                                                                                                                fill
-                                                                                                                className="object-cover cursor-pointer"
-                                                                                                        />
-                                                                                                </div>
-                                                                                        ))}
-                                                                                </div>
-                                                                        </div>
-                                                                )}
-
-                                                                {/* Content */}
-                                                                <div className="prose prose-lg max-w-none mb-8">
-                                                                        {blog.contentHtml ? (
-                                                                                <div
-                                                                                        dangerouslySetInnerHTML={{
-                                                                                                __html: blog.contentHtml,
-                                                                                        }}
-                                                                                />
-                                                                        ) : (
+                                                        {/* Article Content - Typography Focused */}
+                                                        <div className="prose prose-lg md:prose-xl max-w-none blog-content">
+                                                                {blog.contentHtml ? (
+                                                                        <div
+                                                                                className="markdown-body"
+                                                                                dangerouslySetInnerHTML={{
+                                                                                        __html: blog.contentHtml,
+                                                                                }}
+                                                                        />
+                                                                ) : (
+                                                                        <div className="markdown-body">
                                                                                 <ReactMarkdown
                                                                                         remarkPlugins={[remarkGfm]}
-                                                                                        className="markdown-content"
                                                                                 >
                                                                                         {blog.content}
                                                                                 </ReactMarkdown>
-                                                                        )}
-                                                                </div>
-
-                                                                {/* Actions */}
-                                                                <div className="flex items-center gap-4 pt-6 border-t border-gray-200">
-                                                                        <button
-                                                                                onClick={handleLike}
-                                                                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                                                                                        liked
-                                                                                                ? "bg-red-100 text-red-600"
-                                                                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                                                                }`}
-                                                                        >
-                                                                                <Heart
-                                                                                        className={`w-5 h-5 ${
-                                                                                                liked
-                                                                                                        ? "fill-current"
-                                                                                                        : ""
-                                                                                        }`}
-                                                                                />
-                                                                                <span>{likesCount}</span>
-                                                                        </button>
-                                                                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg">
-                                                                                <MessageCircle className="w-5 h-5" />
-                                                                                <span>{blog.commentsCount || 0}</span>
                                                                         </div>
-                                                                        <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                                                                                <Share2 className="w-5 h-5" />
-                                                                                <span>Share</span>
-                                                                        </button>
-                                                                </div>
+                                                                )}
                                                         </div>
-                                                </article>
 
-                                                {/* Comments Section */}
-                                                <div className="mt-8">
-                                                        <BlogComments blogId={blog._id} />
+                                                        {/* Content Images Gallery */}
+                                                        {blog.images && blog.images.length > 0 && (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                                        {blog.images.map((image, index) => (
+                                                                                <div 
+                                                                                        key={index} 
+                                                                                        className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow border border-gray-200"
+                                                                                >
+                                                                                        <Image
+                                                                                                src={image.url}
+                                                                                                alt={image.alt || `Image ${index + 1}`}
+                                                                                                fill
+                                                                                                className="object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
+                                                                                        />
+                                                                                </div>
+                                                                        ))}
+                                                                </div>
+                                                        )}
+
+                                                        {/* Engagement Bar - Clean & Modern */}
+                                                        <div className="flex flex-wrap items-center gap-4 pt-6 pb-4 border-t border-gray-200 mt-6">
+                                                                <button
+                                                                        onClick={handleLike}
+                                                                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all font-medium border-2 active:scale-125 whitespace-nowrap min-w-fit ${
+                                                                                liked
+                                                                                        ? "bg-red-50 text-red-600 border-red-300 hover:bg-red-100"
+                                                                                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-red-300 hover:text-red-500"
+                                                                        }`}
+                                                                >
+                                                                        <Heart
+                                                                                className={`w-5 h-5 flex-shrink-0 transition-all ${
+                                                                                        liked
+                                                                                                ? "fill-current text-red-600"
+                                                                                                : "text-gray-500"
+                                                                                }`}
+                                                                        />
+                                                                        <span className="font-semibold whitespace-nowrap">{likesCount ?? 0}</span>
+                                                                </button>
+                                                                <div className="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 rounded-xl border-2 border-gray-300 whitespace-nowrap min-w-fit">
+                                                                        <MessageCircle className="w-5 h-5 flex-shrink-0" />
+                                                                        <span className="font-semibold whitespace-nowrap">{blog.commentsCount || 0}</span>
+                                                                </div>
+                                                                <button 
+                                                                        onClick={handleShare}
+                                                                        className="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 rounded-xl border-2 border-gray-300 hover:bg-gray-50 hover:border-[#EE4D2D] hover:text-[#EE4D2D] transition-all font-medium whitespace-nowrap min-w-fit"
+                                                                >
+                                                                        <Share2 className="w-5 h-5 flex-shrink-0" />
+                                                                        <span className="font-semibold whitespace-nowrap">Share</span>
+                                                                </button>
+                                                        </div>
+
+                                                        {/* Separator - Thin & Subtle */}
+                                                        <hr className="border-gray-100 my-6" />
+
+                                                        {/* Comments Section - Flat Style, Tight Spacing */}
+                                                        <div id="comments" className="mt-2">
+                                                                <BlogComments 
+                                                                        blogId={blog._id} 
+                                                                        onCommentAdded={() => {
+                                                                                // Update comments count immediately
+                                                                                setBlog((prev) => {
+                                                                                        if (!prev) return prev;
+                                                                                        return {
+                                                                                                ...prev,
+                                                                                                commentsCount: (prev.commentsCount || 0) + 1,
+                                                                                        };
+                                                                                });
+                                                                        }}
+                                                                />
+                                                        </div>
                                                 </div>
-                                        </div>
+                                        </article>
 
-                                        {/* Sidebar */}
-                                        <div className="lg:col-span-4">
-                                                <div className="sticky top-8 space-y-6">
-                                                        {/* Related Blogs */}
+                                        {/* Sidebar - 4 Columns - Sticky */}
+                                        <aside className="lg:col-span-4">
+                                                <div className="sticky top-24 space-y-8">
+                                                        {/* Related Articles */}
                                                         <RelatedBlogs
                                                                 currentBlogId={blog._id}
                                                                 category={blog.category}
                                                         />
+
+                                                        {/* Trending Tags */}
+                                                        {popularTags.length > 0 && (
+                                                                <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                                                                        <div className="flex items-center gap-2 mb-6">
+                                                                                <Tag className="w-5 h-5 text-[#EE4D2D]" />
+                                                                                <h3 className="text-xl font-bold text-gray-900">Trending Tags</h3>
+                                                                        </div>
+                                                                        <div className="flex flex-wrap gap-2">
+                                                                                {popularTags.map((tag, index) => (
+                                                                                        <Link
+                                                                                                key={index}
+                                                                                                href={`/blog?search=${encodeURIComponent(tag)}`}
+                                                                                                className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-[#EE4D2D] hover:text-white transition-all font-medium"
+                                                                                        >
+                                                                                                #{tag}
+                                                                                        </Link>
+                                                                                ))}
+                                                                        </div>
+                                                                </div>
+                                                        )}
                                                 </div>
-                                        </div>
+                                        </aside>
                                 </div>
                         </div>
                 </div>

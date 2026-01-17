@@ -1,24 +1,36 @@
 "use client";
 
+import { initializeDefaultLocation, useLocationStore } from "@/stores/useLocationStore";
 import { useProductStore } from "@/stores/useProductsStores";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { CompactFoodCard } from "./CompactFoodCard";
 import { CompactFoodCardSkeleton } from "./CompactFoodCardSkeleton";
 
 export default function FeaturedFoodPanel() {
-    const searchParams = useSearchParams();
     const { fetchAllProducts, products, loading: productsLoading } = useProductStore();
+    const { currentAddress, isLocationSet } = useLocationStore();
+
+    // Initialize default location if not set
+    useEffect(() => {
+        if (!isLocationSet || !currentAddress) {
+            initializeDefaultLocation();
+        }
+    }, [isLocationSet, currentAddress]);
 
     useEffect(() => {
+        // Don't fetch products until we have location coordinates
+        if (!currentAddress || !isLocationSet) {
+            return;
+        }
+
         const params = new URLSearchParams();
         params.set("type", "foods");
-        // Set location for distance calculation
-        params.set("lat", "10.7626");
-        params.set("lon", "106.6825");
+        // Set location for distance calculation from current address
+        params.set("lat", currentAddress.lat.toString());
+        params.set("lon", currentAddress.lng.toString());
         fetchAllProducts(params);
-    }, [fetchAllProducts]);
+    }, [fetchAllProducts, currentAddress, isLocationSet]);
 
     // Use API data from store (already ensured to be array by store)
     const productsToUse = products;
@@ -30,10 +42,10 @@ export default function FeaturedFoodPanel() {
     }, [productsToUse]);
 
     return (
-        <div className="bg-white rounded-2xl shadow-2xl p-6 lg:p-8 w-full h-full flex flex-col">
+        <div className="w-full">
             {/* Header */}
-            <div className="mb-6 pb-4 border-b border-gray-200 flex-shrink-0">
-                <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+            <div className="mb-8">
+                <h2 className="text-3xl font-bold text-gray-800 mb-2">
                     Featured Foods
                 </h2>
                 <p className="text-sm text-gray-500">
@@ -43,13 +55,13 @@ export default function FeaturedFoodPanel() {
 
             {/* Food Grid - Responsive Layout */}
             {productsLoading ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
                     {Array.from({ length: 8 }).map((_, index) => (
                         <CompactFoodCardSkeleton key={`skeleton-${index}`} />
                     ))}
                 </div>
             ) : featuredProducts && featuredProducts.length > 0 ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
                     {featuredProducts.map((product) => (
                         <CompactFoodCard key={product.id} product={product} />
                     ))}

@@ -82,7 +82,7 @@ export default function HeroSearchSection() {
     ];
 
     return (
-        <div className="relative w-full h-full flex flex-col justify-center px-4 md:px-8 lg:px-12 xl:px-16 py-12 lg:py-20">
+        <div className="relative w-full h-full flex flex-col items-center justify-center text-center px-4 md:px-8 lg:px-12">
             {/* Background Image with Overlay */}
             <div className="absolute inset-0 z-0">
                 <div
@@ -91,11 +91,11 @@ export default function HeroSearchSection() {
                         backgroundImage: "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&q=80')",
                     }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/60 to-black/40 w-full h-full" />
+                <div className="absolute inset-0 bg-black/60 w-full h-full" />
             </div>
 
-            {/* Content */}
-            <div className="relative z-10 max-w-2xl">
+            {/* Content - Centered */}
+            <div className="relative z-10 container mx-auto px-4 text-center text-white">
                 {/* Title */}
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
                     Order food now,
@@ -106,8 +106,8 @@ export default function HeroSearchSection() {
                     Over 1000+ delicious dishes, order in just 1 minute
                 </p>
 
-                {/* Search Bar */}
-                <form onSubmit={handleSearch} className="mb-8">
+                {/* Search Bar - Wider and More Prominent */}
+                <form onSubmit={handleSearch} className="mb-8 max-w-2xl mx-auto">
                     <div className="relative">
                         <input
                             type="text"
@@ -127,9 +127,9 @@ export default function HeroSearchSection() {
                 </form>
 
                 {/* Category Tags */}
-                <div>
+                <div className="mt-8">
                     <p className="text-white/80 text-sm mb-4 font-medium">Popular Categories:</p>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap justify-center gap-3">
                         {/* All Category */}
                         <button
                             onClick={() => {

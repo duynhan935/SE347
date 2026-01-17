@@ -225,7 +225,9 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                         className="text-sm font-bold text-gray-900 line-clamp-1 truncate mt-1 hover:text-[#EE4D2D] transition-colors"
                         title={product.productName}
                     >
-                        {product.productName}
+                        {product.productName && product.productName.length > 0
+                            ? product.productName.charAt(0).toUpperCase() + product.productName.slice(1)
+                            : product.productName}
                     </h3>
                 </Link>
 

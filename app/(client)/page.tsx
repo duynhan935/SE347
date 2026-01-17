@@ -17,34 +17,18 @@ export default function HomePage() {
         // They can freely switch between buying view and dashboard view
 
         return (
-                <main className="h-[calc(100vh-80px)] overflow-hidden">
-                        {/* Split-Hero Layout: Left (Search) + Right (Food Panel) */}
-                        <div className="flex h-full items-stretch">
-                                {/* Left Column: Hero Search Section - 40% width */}
-                                <div className="w-full lg:w-[40%] relative h-full flex-shrink-0">
-                                        <HeroSearchSection />
-                                </div>
+                <main className="min-h-screen bg-gray-50">
+                        {/* 1. HERO SECTION (Full Width) */}
+                        <section className="relative w-full h-[500px] md:h-[600px] flex items-center justify-center">
+                                <HeroSearchSection />
+                        </section>
 
-                                {/* Right Column: Featured Food Panel - 60% width */}
-                                <div className="hidden lg:flex w-[60%] h-full overflow-y-auto scrollbar-hide bg-gray-50 flex-shrink-0">
-                                        <div className="w-full flex items-start justify-center ">
-                                                <div className="w-full max-w-5xl">
-                                                        <Suspense fallback={<GlobalLoader label="Loading" sublabel="Loading food list" />}>
-                                                                <FeaturedFoodPanel />
-                                                        </Suspense>
-                                                </div>
-                                        </div>
-                                </div>
-
-                                {/* Mobile: Right Column below Left */}
-                                <div className="lg:hidden w-full h-auto overflow-y-auto scrollbar-hide bg-gray-50">
-                                        <div className="w-full p-4">
-                                                <Suspense fallback={<GlobalLoader label="Loading" sublabel="Loading food list" />}>
-                                                        <FeaturedFoodPanel />
-                                                </Suspense>
-                                        </div>
-                                </div>
-                        </div>
+                        {/* 2. FEATURED FOODS SECTION (Container) */}
+                        <section className="container mx-auto px-4 py-12 max-w-7xl">
+                                <Suspense fallback={<GlobalLoader label="Loading" sublabel="Loading food list" />}>
+                                        <FeaturedFoodPanel />
+                                </Suspense>
+                        </section>
                 </main>
         );
 }

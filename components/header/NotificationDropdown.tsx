@@ -3,7 +3,7 @@
 import { useNotifications } from "@/lib/hooks/useNotifications";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
-import { Bell, CheckCircle, Clock, Package, Truck, XCircle } from "lucide-react";
+import { Bell, CheckCircle, Clock, Package, Truck, X, XCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -68,7 +68,7 @@ const getNotificationImage = (type: string): string => {
 export default function NotificationDropdown() {
     const { isAuthenticated, user, loading } = useAuthStore();
     useNotifications(); // Track order status changes and create notifications
-    const { notifications: allNotifications, markAsRead } = useNotificationStore();
+    const { notifications: allNotifications, markAsRead, markAllAsRead } = useNotificationStore();
     const [isOpen, setIsOpen] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -165,11 +165,25 @@ export default function NotificationDropdown() {
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-                        <h3 className="text-sm font-semibold text-gray-900">New Notifications</h3>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                            {unread > 0 && (
+                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                    {unread} {unread === 1 ? "new" : "new"}
+                                </span>
+                            )}
+                        </div>
                         {unread > 0 && (
-                            <span className="text-xs text-gray-500">
-                                {unread} {unread === 1 ? "unread" : "unread"}
-                            </span>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    markAllAsRead();
+                                }}
+                                className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium transition-colors"
+                                title="Mark all as read"
+                            >
+                                Mark all read
+                            </button>
                         )}
                     </div>
 
@@ -183,64 +197,82 @@ export default function NotificationDropdown() {
                         ) : (
                             <div className="divide-y divide-gray-100">
                                 {orderNotifications.slice(0, 10).map((notif) => (
-                                    <button
+                                    <div
                                         key={notif.id}
-                                        onClick={() => handleNotificationClick(notif.id, notif.orderId)}
-                                        className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${
-                                            !notif.read ? "bg-orange-50" : "bg-white"
+                                        className={`group relative w-full text-left p-4 hover:bg-gray-50 transition-colors ${
+                                            !notif.read ? "bg-orange-50/50" : "bg-white"
                                         }`}
                                     >
-                                        <div className="flex items-start gap-3">
-                                            {/* Image/Icon */}
-                                            <div className="flex-shrink-0">
-                                                {notif.type === "ORDER_COMPLETED" ||
-                                                notif.type === "ORDER_CONFIRMED" ||
-                                                notif.type === "ORDER_ACCEPTED" ||
-                                                notif.type === "ORDER_REJECTED" ? (
-                                                    <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
-                                                        {getNotificationIcon(notif.type)}
-                                                    </div>
-                                                ) : (
-                                                    <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
-                                                        <Image
-                                                            src={getNotificationImage(notif.type)}
-                                                            alt={notif.title}
-                                                            width={48}
-                                                            height={48}
-                                                            className="object-cover"
-                                                            unoptimized
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Content */}
-                                            <div className="flex-1 min-w-0">
-                                                <p
-                                                    className={`text-sm font-medium text-gray-900 mb-1 ${
-                                                        !notif.read ? "font-semibold" : ""
-                                                    }`}
-                                                >
-                                                    {notif.title}
-                                                </p>
-                                                <p className="text-xs text-gray-600 line-clamp-2 mb-2">{notif.message}</p>
-                                                {notif.restaurantName && (
-                                                    <p className="text-xs text-gray-500 mb-1">Restaurant: {notif.restaurantName}</p>
-                                                )}
-                                                <div className="flex items-center gap-2 text-xs text-gray-400">
-                                                    <Clock className="w-3 h-3" />
-                                                    <span>{formatTimeAgo(notif.createdAt)}</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Unread Indicator */}
-                                            {!notif.read && (
+                                        <button
+                                            onClick={() => handleNotificationClick(notif.id, notif.orderId)}
+                                            className="w-full text-left"
+                                        >
+                                            <div className="flex items-start gap-3 pr-8">
+                                                {/* Image/Icon */}
                                                 <div className="flex-shrink-0">
-                                                    <div className="w-2 h-2 bg-[#EE4D2D] rounded-full" />
+                                                    {notif.type === "ORDER_COMPLETED" ||
+                                                    notif.type === "ORDER_CONFIRMED" ||
+                                                    notif.type === "ORDER_ACCEPTED" ||
+                                                    notif.type === "ORDER_REJECTED" ? (
+                                                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                                                            {getNotificationIcon(notif.type)}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
+                                                            <Image
+                                                                src={getNotificationImage(notif.type)}
+                                                                alt={notif.title}
+                                                                width={48}
+                                                                height={48}
+                                                                className="object-cover"
+                                                                unoptimized
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
-                                    </button>
+
+                                                {/* Content */}
+                                                <div className="flex-1 min-w-0">
+                                                    <p
+                                                        className={`text-sm font-medium text-gray-900 mb-1 ${
+                                                            !notif.read ? "font-semibold" : ""
+                                                        }`}
+                                                    >
+                                                        {notif.title}
+                                                    </p>
+                                                    <p className="text-xs text-gray-600 line-clamp-2 mb-2">{notif.message}</p>
+                                                    {notif.restaurantName && (
+                                                        <p className="text-xs text-gray-500 mb-1">Restaurant: {notif.restaurantName}</p>
+                                                    )}
+                                                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                                                        <Clock className="w-3 h-3" />
+                                                        <span>{formatTimeAgo(notif.createdAt)}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Unread Indicator */}
+                                                {!notif.read && (
+                                                    <div className="flex-shrink-0">
+                                                        <div className="w-2 h-2 bg-[#EE4D2D] rounded-full" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </button>
+
+                                        {/* Mark as Read Button (appears on hover) */}
+                                        {!notif.read && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    markAsRead(notif.id);
+                                                }}
+                                                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Mark as read"
+                                            >
+                                                <X className="w-4 h-4 text-gray-500" />
+                                            </button>
+                                        )}
+                                    </div>
                                 ))}
                             </div>
                         )}

@@ -9,7 +9,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 // Dynamic import để tránh lỗi SSR
@@ -47,6 +47,7 @@ export default function EditBlogPage() {
         const [status, setStatus] = useState<BlogStatus>("draft");
         const [loading, setLoading] = useState(false);
         const [fetching, setFetching] = useState(true);
+        const editorImageInputRef = useRef<HTMLInputElement>(null);
 
         // Redirect if not authenticated
         useEffect(() => {
@@ -174,6 +175,95 @@ export default function EditBlogPage() {
         const handleRemoveExistingImageAt = (index: number) => {
                 setExistingImageUrls(existingImageUrls.filter((_, i) => i !== index));
         };
+
+        // Handle image upload for markdown editor
+        const handleEditorImageUpload = async (file: File): Promise<string> => {
+                try {
+                        // Validate file size
+                        if (file.size > 5 * 1024 * 1024) {
+                                toast.error("Image size must be less than 5MB");
+                                throw new Error("Image too large");
+                        }
+
+                        // Upload image
+                        const response = await blogApi.uploadEditorImage(file);
+                        if (response.success && response.data?.url) {
+                                toast.success("Image uploaded successfully!");
+                                return response.data.url;
+                        } else {
+                                throw new Error("Upload failed");
+                        }
+                } catch (err) {
+                        console.error("Failed to upload image:", err);
+                        toast.error("Failed to upload image. Please try again.");
+                        throw err;
+                }
+        };
+
+        // Handle file selection for editor image
+        const handleEditorImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                try {
+                        const url = await handleEditorImageUpload(file);
+                        // Insert image markdown at the end of content
+                        const imageMarkdown = `![${file.name.replace(/\.[^/.]+$/, "")}](${url})`;
+                        setContent((prev) => `${prev}\n${imageMarkdown}\n`);
+                } catch (err) {
+                        // Error already handled
+                } finally {
+                        // Reset input
+                        if (e.target) {
+                                e.target.value = "";
+                        }
+                }
+        };
+
+        // Override image button click after editor mounts
+        useEffect(() => {
+                const overrideImageButton = () => {
+                        // Find all buttons in toolbar
+                        const toolbar = document.querySelector(".w-md-editor-toolbar");
+                        if (!toolbar) return;
+
+                        const buttons = toolbar.querySelectorAll("button");
+                        buttons.forEach((btn) => {
+                                const ariaLabel = btn.getAttribute("aria-label")?.toLowerCase() || "";
+                                const title = btn.getAttribute("title")?.toLowerCase() || "";
+                                const dataName = btn.getAttribute("data-name")?.toLowerCase() || "";
+                                
+                                // Check if this is the image button
+                                if (ariaLabel.includes("image") || title.includes("image") || dataName === "image") {
+                                        // Store original onclick
+                                        const originalOnClick = btn.onclick;
+                                        
+                                        // Override click
+                                        btn.onclick = (e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                editorImageInputRef.current?.click();
+                                        };
+                                }
+                        });
+                };
+
+                // Try immediately and after delay
+                overrideImageButton();
+                const timer = setTimeout(overrideImageButton, 500);
+                
+                // Also watch for DOM changes
+                const observer = new MutationObserver(overrideImageButton);
+                const editorContainer = document.querySelector(".w-md-editor");
+                if (editorContainer) {
+                        observer.observe(editorContainer, { childList: true, subtree: true });
+                }
+
+                return () => {
+                        clearTimeout(timer);
+                        observer.disconnect();
+                };
+        }, [content]);
 
         const handleSubmit = async (e: React.FormEvent) => {
                 e.preventDefault();
@@ -507,6 +597,14 @@ export default function EditBlogPage() {
                                                 <label htmlFor="content" className="block text-sm font-semibold text-gray-700 mb-2">
                                                         Content <span className="text-red-500">*</span>
                                                 </label>
+                                                <input
+                                                        ref={editorImageInputRef}
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleEditorImageSelect}
+                                                        className="hidden"
+                                                        aria-label="Upload image for editor"
+                                                />
                                                 <div data-color-mode="light">
                                                         <MDEditor
                                                                 value={content}
@@ -514,10 +612,39 @@ export default function EditBlogPage() {
                                                                 height={500}
                                                                 preview="edit"
                                                                 visibleDragbar={false}
+                                                                onDrop={(event) => {
+                                                                        const files = Array.from(event.dataTransfer.files);
+                                                                        const imageFile = files.find((file) => file.type.startsWith("image/"));
+                                                                        if (imageFile) {
+                                                                                event.preventDefault();
+                                                                                handleEditorImageUpload(imageFile).then((url) => {
+                                                                                        const imageMarkdown = `![${imageFile.name.replace(/\.[^/.]+$/, "")}](${url})`;
+                                                                                        setContent((prev) => `${prev}\n${imageMarkdown}\n`);
+                                                                                }).catch(() => {
+                                                                                        // Error already handled
+                                                                                });
+                                                                        }
+                                                                }}
+                                                                onPaste={(event) => {
+                                                                        const items = Array.from(event.clipboardData.items);
+                                                                        const imageItem = items.find((item) => item.type.startsWith("image/"));
+                                                                        if (imageItem) {
+                                                                                event.preventDefault();
+                                                                                const file = imageItem.getAsFile();
+                                                                                if (file) {
+                                                                                        handleEditorImageUpload(file).then((url) => {
+                                                                                                const imageMarkdown = `![${file.name.replace(/\.[^/.]+$/, "")}](${url})`;
+                                                                                                setContent((prev) => `${prev}\n${imageMarkdown}\n`);
+                                                                                        }).catch(() => {
+                                                                                                // Error already handled
+                                                                                        });
+                                                                                }
+                                                                        }
+                                                                }}
                                                         />
                                                 </div>
                                                 <p className="text-xs text-gray-500 mt-2">
-                                                        Write your article in Markdown format. Use <code className="bg-gray-100 px-1 rounded">#</code> for headings, <code className="bg-gray-100 px-1 rounded">**bold**</code> for bold text, and more.
+                                                        Write your article in Markdown format. Use <code className="bg-gray-100 px-1 rounded">#</code> for headings, <code className="bg-gray-100 px-1 rounded">**bold**</code> for bold text, and more. Click the image button to upload images.
                                                 </p>
                                         </div>
 
