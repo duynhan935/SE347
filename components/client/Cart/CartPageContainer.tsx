@@ -329,7 +329,7 @@ export default function CartPageContainer() {
                             <div className="flex flex-col">
                                 <span className="text-xs text-gray-500">Total</span>
                                 <span className="text-lg font-bold text-[#EE4D2D]">
-                                    {formatPriceVND(selectedSubtotal)} $
+                                    ${formatPriceUSD(selectedSubtotal)}
                                 </span>
                             </div>
                             <Link

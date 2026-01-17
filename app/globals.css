@@ -118,6 +118,153 @@
     .custom-pagination .swiper-pagination-bullet-active {
         @apply scale-125 opacity-100 bg-brand-black;
     }
+
+    /* Blog Content Typography - Medium Style */
+    .blog-content .markdown-body,
+    .markdown-body {
+        @apply text-gray-800 leading-relaxed;
+        font-size: 1.125rem; /* 18px */
+        line-height: 1.75; /* 28px */
+    }
+
+    .blog-content .markdown-body h1,
+    .markdown-body h1 {
+        @apply text-4xl md:text-5xl font-bold text-gray-900 mt-12 mb-6 leading-tight tracking-tight;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 0.5rem;
+    }
+
+    .blog-content .markdown-body h2,
+    .markdown-body h2 {
+        @apply text-3xl md:text-4xl font-bold text-gray-900 mt-10 mb-5 leading-tight tracking-tight;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 0.5rem;
+    }
+
+    .blog-content .markdown-body h3,
+    .markdown-body h3 {
+        @apply text-2xl md:text-3xl font-bold text-gray-900 mt-8 mb-4 leading-snug;
+    }
+
+    .blog-content .markdown-body h4,
+    .markdown-body h4 {
+        @apply text-xl md:text-2xl font-semibold text-gray-900 mt-6 mb-3;
+    }
+
+    .blog-content .markdown-body h5,
+    .markdown-body h5 {
+        @apply text-lg md:text-xl font-semibold text-gray-900 mt-5 mb-2;
+    }
+
+    .blog-content .markdown-body h6,
+    .markdown-body h6 {
+        @apply text-base md:text-lg font-semibold text-gray-800 mt-4 mb-2;
+    }
+
+    .blog-content .markdown-body p,
+    .markdown-body p {
+        @apply mb-6 text-gray-800 leading-relaxed;
+        font-size: 1.125rem;
+        line-height: 1.75;
+    }
+
+    .blog-content .markdown-body a,
+    .markdown-body a {
+        @apply text-[#EE4D2D] hover:text-[#c43e24] underline font-medium transition-colors;
+    }
+
+    .blog-content .markdown-body strong,
+    .markdown-body strong {
+        @apply font-bold text-gray-900;
+    }
+
+    .blog-content .markdown-body em,
+    .markdown-body em {
+        @apply italic text-gray-700;
+    }
+
+    .blog-content .markdown-body ul,
+    .markdown-body ul,
+    .blog-content .markdown-body ol,
+    .markdown-body ol {
+        @apply mb-6 pl-6 space-y-2;
+    }
+
+    .blog-content .markdown-body ul,
+    .markdown-body ul {
+        @apply list-disc;
+    }
+
+    .blog-content .markdown-body ol,
+    .markdown-body ol {
+        @apply list-decimal;
+    }
+
+    .blog-content .markdown-body li,
+    .markdown-body li {
+        @apply mb-2 text-gray-800 leading-relaxed;
+        font-size: 1.125rem;
+        line-height: 1.75;
+    }
+
+    .blog-content .markdown-body blockquote,
+    .markdown-body blockquote {
+        @apply border-l-4 border-[#EE4D2D] pl-6 pr-4 py-4 my-8 bg-gray-50 italic text-gray-700 rounded-r-lg;
+    }
+
+    .blog-content .markdown-body blockquote p,
+    .markdown-body blockquote p {
+        @apply mb-0;
+    }
+
+    .blog-content .markdown-body code,
+    .markdown-body code {
+        @apply bg-gray-100 text-[#EE4D2D] px-2 py-1 rounded text-sm font-mono;
+    }
+
+    .blog-content .markdown-body pre,
+    .markdown-body pre {
+        @apply bg-gray-900 text-gray-100 p-6 rounded-xl overflow-x-auto my-8 shadow-lg;
+    }
+
+    .blog-content .markdown-body pre code,
+    .markdown-body pre code {
+        @apply bg-transparent text-gray-100 p-0;
+    }
+
+    .blog-content .markdown-body img,
+    .markdown-body img {
+        @apply w-full h-auto rounded-2xl my-8 shadow-lg;
+        max-width: 100%;
+        height: auto;
+    }
+
+    .blog-content .markdown-body table,
+    .markdown-body table {
+        @apply w-full border-collapse my-8 shadow-md rounded-lg overflow-hidden;
+    }
+
+    .blog-content .markdown-body th,
+    .markdown-body th,
+    .blog-content .markdown-body td,
+    .markdown-body td {
+        @apply border border-gray-300 px-4 py-3 text-left;
+    }
+
+    .blog-content .markdown-body th,
+    .markdown-body th {
+        @apply bg-gray-100 font-bold text-gray-900;
+    }
+
+    .blog-content .markdown-body td,
+    .markdown-body td {
+        @apply bg-white text-gray-800;
+    }
+
+    .blog-content .markdown-body hr,
+    .markdown-body hr {
+        @apply border-0 border-t-2 border-gray-300 my-12;
+    }
 }
 
 /* Loading animations */

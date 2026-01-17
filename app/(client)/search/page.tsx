@@ -4,6 +4,7 @@ import { CompactFoodCard } from "@/components/client/HomePage/CompactFoodCard";
 import { CompactFoodCardSkeleton } from "@/components/client/HomePage/CompactFoodCardSkeleton";
 import SearchFilters from "@/components/client/search/SearchFilters";
 import SearchSortBar from "@/components/client/search/SearchSortBar";
+import { initializeDefaultLocation, useLocationStore } from "@/stores/useLocationStore";
 import { useProductStore } from "@/stores/useProductsStores";
 import { Filter } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -12,18 +13,31 @@ import { useEffect, useMemo, useState } from "react";
 export default function SearchPage() {
     const searchParams = useSearchParams();
     const { fetchAllProducts, products, loading: productsLoading } = useProductStore();
+    const { currentAddress, isLocationSet } = useLocationStore();
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     const query = searchParams.get("q") || "";
     const sort = searchParams.get("sort") || "relevance";
 
+    // Initialize default location if not set
     useEffect(() => {
+        if (!isLocationSet || !currentAddress) {
+            initializeDefaultLocation();
+        }
+    }, [isLocationSet, currentAddress]);
+
+    useEffect(() => {
+        // Don't fetch products until we have location coordinates
+        if (!currentAddress || !isLocationSet) {
+            return;
+        }
+
         const params = new URLSearchParams(Array.from(searchParams.entries()));
         params.set("type", "foods");
         
-        // Set location for distance calculation
-        params.set("lat", "10.7626");
-        params.set("lon", "106.6825");
+        // Set location for distance calculation from current address
+        params.set("lat", currentAddress.lat.toString());
+        params.set("lon", currentAddress.lng.toString());
 
         // Convert category params to comma-separated lowercase string for backend
         const categoryParams = searchParams.getAll("category");
@@ -68,7 +82,7 @@ export default function SearchPage() {
         }
 
         fetchAllProducts(params);
-    }, [fetchAllProducts, searchParams, sort, query]);
+    }, [fetchAllProducts, searchParams, sort, query, currentAddress, isLocationSet]);
 
     // Filter products based on URL params (client-side filtering for additional filters)
     const filteredProducts = useMemo(() => {

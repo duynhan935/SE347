@@ -2,6 +2,7 @@
 
 import OrdersPageContainer, { type OrdersPageOrder } from "@/components/client/Orders/OrdersPageContainer";
 import { orderApi } from "@/lib/api/orderApi";
+import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
 import { usePathname, useRouter } from "next/navigation";
@@ -201,6 +202,43 @@ const OrdersPage = () => {
         useEffect(() => {
                 hasMarkedAsReadRef.current = false;
         }, [userId]);
+
+        // Listen for order status updates via websocket and update orders list
+        useOrderSocket({
+                userId: userId || null,
+                onOrderStatusUpdate: (notification) => {
+                        const orderId = notification.data.orderId;
+                        const newStatus = notification.data.status as OrdersPageOrder["status"];
+
+                        if (!orderId || !newStatus) return;
+
+                        console.log("[Orders Page] Order status updated via websocket:", orderId, newStatus);
+
+                        // Update the order in the local state
+                        setOrders((prevOrders) => {
+                                const orderIndex = prevOrders.findIndex((o) => o.id === orderId);
+                                if (orderIndex === -1) {
+                                        // Order not found in current list, might be a new order or need to refresh
+                                        // Optionally refresh to get the updated order
+                                        setTimeout(() => {
+                                                fetchOrders().catch(() => {
+                                                        // Ignore errors
+                                                });
+                                        }, 500);
+                                        return prevOrders;
+                                }
+
+                                // Update the order's status
+                                const updatedOrders = [...prevOrders];
+                                updatedOrders[orderIndex] = {
+                                        ...updatedOrders[orderIndex],
+                                        status: newStatus,
+                                };
+
+                                return updatedOrders;
+                        });
+                },
+        });
 
         const handleRetry = useCallback(() => {
                 if (!userId) {

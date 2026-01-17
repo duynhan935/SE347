@@ -1,6 +1,7 @@
 "use client";
 
 import { orderApi } from "@/lib/api/orderApi";
+import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Order, OrderStatus } from "@/types/order.type";
 import { Loader2 } from "lucide-react";
@@ -123,6 +124,44 @@ export default function OrderHistoryPage() {
             fetchOrders();
         }
     }, [mounted, user?.id, authLoading, fetchOrders]);
+
+    // Listen for order status updates via websocket and update orders list
+    useOrderSocket({
+        userId: user?.id || null,
+        onOrderStatusUpdate: (notification) => {
+            const orderId = notification.data.orderId;
+            const newStatus = notification.data.status;
+
+            if (!orderId || !newStatus) return;
+
+            console.log("[Order History Page] Order status updated via websocket:", orderId, newStatus);
+
+            // Update the order in the local state
+            setOrders((prevOrders) => {
+                const orderIndex = prevOrders.findIndex((o) => o.id === orderId);
+                if (orderIndex === -1) {
+                    // Order not found in current list, refresh to get the updated order
+                    setTimeout(() => {
+                        fetchOrders().catch(() => {
+                            // Ignore errors
+                        });
+                    }, 500);
+                    return prevOrders;
+                }
+
+                // Update the order's status
+                const updatedOrders = [...prevOrders];
+                const updatedOrder = {
+                    ...updatedOrders[orderIndex],
+                    status: formatStatus(newStatus),
+                    statusClass: getStatusBadgeClass(newStatus),
+                };
+                updatedOrders[orderIndex] = updatedOrder;
+
+                return updatedOrders;
+            });
+        },
+    });
 
     if (!mounted || authLoading || isLoading) {
         return (

@@ -1,15 +1,15 @@
 import {
-        Blog,
-        BlogCreateRequest,
-        BlogDetailResponse,
-        BlogLikeResponse,
-        BlogListResponse,
-        BlogUpdateRequest,
-        CommentCreateRequest,
-        CommentListResponse,
-        CommentReplyRequest,
-        CommentResponse,
-        CommentUpdateRequest,
+    Blog,
+    BlogCreateRequest,
+    BlogDetailResponse,
+    BlogLikeResponse,
+    BlogListResponse,
+    BlogUpdateRequest,
+    CommentCreateRequest,
+    CommentListResponse,
+    CommentReplyRequest,
+    CommentResponse,
+    CommentUpdateRequest,
 } from "@/types/blog.type";
 import api from "../axios";
 
@@ -304,6 +304,18 @@ export const blogApi = {
         deleteComment: async (blogId: string, commentId: string): Promise<{ success: boolean; message: string }> => {
                 const response = await api.delete<{ success: boolean; message: string }>(
                         `/blogs/${blogId}/comments/${commentId}`
+                );
+                return response.data;
+        },
+
+        // Upload image for editor
+        uploadEditorImage: async (imageFile: File): Promise<{ success: boolean; data: { url: string; publicId: string } }> => {
+                const formData = new FormData();
+                formData.append("image", imageFile);
+
+                const response = await api.post<{ success: boolean; data: { url: string; publicId: string } }>(
+                        "/blogs/upload/editor-image",
+                        formData
                 );
                 return response.data;
         },
