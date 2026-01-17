@@ -40,7 +40,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
     const displayPrice = useMemo(() => product.productSizes?.[0]?.price, [product.productSizes]);
     const defaultSize = useMemo(() => product.productSizes?.[0], [product.productSizes]);
     const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
-    
+
     // Format price to USD
     const formattedPrice = useMemo(() => {
         if (displayPrice === undefined) return null;
@@ -50,11 +50,11 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
             maximumFractionDigits: 2,
         });
     }, [displayPrice]);
-    
-    // Format sold count
-    const soldCount = useMemo(() => {
-        const count = product.totalReview || Math.floor(Math.random() * 500) + 50; // Mock sold count if not available
-        if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+
+    const reviewCountText = useMemo(() => {
+        const count = typeof product.totalReview === "number" ? product.totalReview : 0;
+        if (!count) return null;
+        if (count >= 1000) return `${(count / 1000).toFixed(1)}k+`;
         return `${count}+`;
     }, [product.totalReview]);
 
@@ -72,17 +72,6 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
         return product.totalReview > 20 && product.rating >= 4.0;
     }, [product.totalReview, product.rating]);
 
-    // Check for promo/freeship (you can adjust logic based on your data)
-    const hasPromo = useMemo(() => {
-        // Example: Check if product has discount or special offer
-        return product.totalReview > 30 || Math.random() > 0.7; // Placeholder logic
-    }, [product.totalReview]);
-
-    const hasFreeship = useMemo(() => {
-        // Example: Check if restaurant offers free shipping
-        return product.restaurant?.duration && product.restaurant.duration <= 25;
-    }, [product.restaurant?.duration]);
-
     // Validate and format delivery time
     const deliveryTime = useMemo(() => {
         const duration = product.restaurant?.duration;
@@ -95,7 +84,6 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
         }
         return Math.round(duration).toString();
     }, [product.restaurant?.duration]);
-
 
     const handleAddToCart = useCallback(
         async (e: React.MouseEvent) => {
@@ -162,14 +150,17 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
         [isAdding, isMounted, user, product, defaultSize, cardImageUrl, addItem, router]
     );
 
-
     // Option 1: Grid Layout (ShopeeFood style) - RECOMMENDED
     if (layout === "grid") {
         return (
             <div className="group relative bg-white rounded-lg overflow-visible shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow,border] duration-300 h-full flex flex-col hover:-translate-y-1 hover:border-2 hover:border-[#EE4D2D]/30 max-w-[280px] mx-auto">
                 {/* Image Section - Rounded top corners */}
-                <Link 
-                    href={product.restaurant?.slug ? `/restaurants/${product.restaurant.slug}?productId=${product.id}` : `/food/${product.slug}`} 
+                <Link
+                    href={
+                        product.restaurant?.slug
+                            ? `/restaurants/${product.restaurant.slug}?productId=${product.id}`
+                            : `/food/${product.slug}`
+                    }
                     className="block relative"
                 >
                     <div className="relative w-full aspect-square overflow-hidden bg-gray-100 rounded-t-lg">
@@ -196,20 +187,6 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                                 </div>
                             </div>
                         )}
-
-                        {/* Promo/Freeship Badges - Top Right Corner */}
-                        <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
-                            {hasFreeship && (
-                                <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg whitespace-nowrap">
-                                    🚚 Freeship
-                                </span>
-                            )}
-                            {hasPromo && !hasFreeship && (
-                                <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg whitespace-nowrap">
-                                    🎁 Promo
-                                </span>
-                            )}
-                        </div>
 
                         {/* Best Seller/Popular Badges - Top Left */}
                         <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
@@ -240,14 +217,17 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                                 </div>
                             )}
                         </div>
-
                     </div>
                 </Link>
 
                 {/* Content Section - More padding for breathing room */}
                 <div className="p-5 flex-grow flex flex-col">
-                    <Link 
-                        href={product.restaurant?.slug ? `/restaurants/${product.restaurant.slug}?productId=${product.id}` : `/food/${product.slug}`} 
+                    <Link
+                        href={
+                            product.restaurant?.slug
+                                ? `/restaurants/${product.restaurant.slug}?productId=${product.id}`
+                                : `/food/${product.slug}`
+                        }
                         className="flex-grow flex flex-col"
                     >
                         {/* Product Name - Bold and Larger */}
@@ -263,10 +243,14 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                             {product.rating > 0 && (
                                 <div className="flex items-center gap-1">
                                     <span className="text-yellow-500 text-xs">⭐</span>
-                                    <span className="text-xs font-semibold text-gray-700">{product.rating.toFixed(1)}</span>
+                                    <span className="text-xs font-semibold text-gray-700">
+                                        {product.rating.toFixed(1)}
+                                    </span>
                                 </div>
                             )}
-                            <span className="text-xs text-gray-500">• {soldCount} sold</span>
+                            {reviewCountText && (
+                                <span className="text-xs text-gray-500">• {reviewCountText} reviews</span>
+                            )}
                         </div>
 
                         {/* Restaurant Name with Verified Icon */}
@@ -280,9 +264,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         {/* Price - Orange-Red color, Prominent */}
                         <div className="mt-auto pt-2 relative pr-14">
                             {formattedPrice ? (
-                                <p className="text-base md:text-lg font-bold text-[#EE4D2D]">
-                                    {formattedPrice} ₫
-                                </p>
+                                <p className="text-base md:text-lg font-bold text-[#EE4D2D]">{formattedPrice} ₫</p>
                             ) : (
                                 <p className="text-sm text-gray-400">No price</p>
                             )}
@@ -315,7 +297,11 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
         <div className="group relative bg-white rounded-2xl overflow-visible shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow,border] duration-300 flex flex-row h-full hover:-translate-y-1 hover:border-2 hover:border-[#EE4D2D]/30">
             {/* Image Section - Left - Much larger (60-65% width) */}
             <Link
-                href={product.restaurant?.slug ? `/restaurants/${product.restaurant.slug}?productId=${product.id}` : `/food/${product.slug}`}
+                href={
+                    product.restaurant?.slug
+                        ? `/restaurants/${product.restaurant.slug}?productId=${product.id}`
+                        : `/food/${product.slug}`
+                }
                 className="block relative flex-shrink-0 w-[60%] md:w-[65%] min-w-[200px]"
             >
                 <div className="relative w-full h-full min-h-[180px] md:min-h-[220px] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-l-2xl">
@@ -340,20 +326,6 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                             </div>
                         </div>
                     )}
-
-                    {/* Promo/Freeship Badges - Top Right Corner */}
-                    <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
-                        {hasFreeship && (
-                            <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg whitespace-nowrap">
-                                🚚 Freeship
-                            </span>
-                        )}
-                        {hasPromo && !hasFreeship && (
-                            <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg whitespace-nowrap">
-                                🎁 Promo
-                            </span>
-                        )}
-                    </div>
 
                     {/* Best Seller/Popular Badges - Top Left */}
                     <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
@@ -384,14 +356,17 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                             </div>
                         )}
                     </div>
-
                 </div>
             </Link>
 
             {/* Content Section - Right - More spacious and better layout */}
             <div className="flex-1 flex flex-col p-5 md:p-6 min-w-0 justify-between">
-                <Link 
-                    href={product.restaurant?.slug ? `/restaurants/${product.restaurant.slug}?productId=${product.id}` : `/food/${product.slug}`} 
+                <Link
+                    href={
+                        product.restaurant?.slug
+                            ? `/restaurants/${product.restaurant.slug}?productId=${product.id}`
+                            : `/food/${product.slug}`
+                    }
                     className="flex-grow flex flex-col min-w-0"
                 >
                     {/* Restaurant Name - Small, light gray at top */}
@@ -412,9 +387,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                     {/* Restaurant Name with Rating */}
                     {product.restaurant?.resName && (
                         <div className="flex items-center gap-2 mb-2">
-                            <p className="text-xs text-gray-500 flex-1">
-                                {product.restaurant.resName}
-                            </p>
+                            <p className="text-xs text-gray-500 flex-1">{product.restaurant.resName}</p>
                             {product.rating > 0 && (
                                 <div className="flex items-center gap-1 flex-shrink-0">
                                     <span className="text-yellow-500 text-xs">⭐</span>
@@ -434,7 +407,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                                 <span className="text-xs font-semibold text-gray-700">{product.rating.toFixed(1)}</span>
                             </div>
                         )}
-                        <span className="text-xs text-gray-500">• {soldCount} sold</span>
+                        {reviewCountText && <span className="text-xs text-gray-500">• {reviewCountText} reviews</span>}
                     </div>
 
                     {/* Price - Large, Orange-Red */}

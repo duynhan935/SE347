@@ -40,7 +40,7 @@ export default function ProductsList() {
                 productApi.getAllProducts(new URLSearchParams()),
                 categoryApi.getAllCategories(),
                 sizeApi.getAllSizes(),
-                restaurantApi.getAllRestaurants(new URLSearchParams()),
+                restaurantApi.getAllRestaurants(new URLSearchParams({ lat: "10.762622", lon: "106.660172" })),
             ]);
             setProducts(productsRes.data);
             setCategories(categoriesRes.data);
@@ -192,7 +192,9 @@ export default function ProductsList() {
                                     <tr key={product.id}>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="w-16 h-16 relative rounded-lg overflow-hidden">
-                                                {product.imageURL && typeof product.imageURL === "string" && product.imageURL.trim() !== "" ? (
+                                                {product.imageURL &&
+                                                typeof product.imageURL === "string" &&
+                                                product.imageURL.trim() !== "" ? (
                                                     <Image
                                                         src={product.imageURL}
                                                         alt={product.productName}

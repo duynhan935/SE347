@@ -1,10 +1,11 @@
 "use client";
 
 import { authApi } from "@/lib/api/authApi";
+import { dashboardApi, buildDateRangeQuery, type DashboardDateRangePreset } from "@/lib/api/dashboardApi";
 import { User } from "@/types";
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { orderApi } from "@/lib/api/orderApi";
-import { Order, OrderStatus } from "@/types/order.type";
+import { Order } from "@/types/order.type";
 import {
     AlertCircle,
     Clock,
@@ -17,22 +18,22 @@ import {
     Utensils,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import {
-    Area,
-    AreaChart,
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Legend,
-    Line,
-    LineChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from "recharts";
+
+function formatVnd(value: number): string {
+    try {
+        return new Intl.NumberFormat("vi-VN").format(value);
+    } catch {
+        return value.toLocaleString();
+    }
+}
+
+function formatDateLabel(dateLike: string): string {
+    const d = new Date(dateLike);
+    if (Number.isNaN(d.getTime())) return String(dateLike);
+    return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+}
 
 interface StatsCardProps {
     title: string;
@@ -64,40 +65,66 @@ function StatsCard({ title, value, icon: Icon, trend, trendUp, color }: StatsCar
     );
 }
 
-type GrowthPoint = { name: string; users: number; merchants: number; restaurants: number };
-type RevenuePoint = { name: string; revenue: number };
-type TopMerchantPoint = { name: string; restaurants: number; revenue: number };
+type TrendPoint = { date: string; revenue: number; orders: number };
+type TopMerchantPoint = { merchantId: string; revenue: number };
+type StatusBreakdownPoint = { name: string; count: number; amount: number };
+type PaymentBreakdownPoint = { name: string; count: number; amount: number };
+type RevenueByMerchantPoint = { merchantId: string; revenue: number; orders: number; aov: number };
+type MerchantPerformancePoint = {
+    merchantId: string;
+    restaurantName: string;
+    revenue: number;
+    orders: number;
+    completionRate: number;
+};
 
 export default function AdminDashboard() {
+    const [rangePreset, setRangePreset] = useState<DashboardDateRangePreset>("30d");
+    const dateQuery = useMemo(() => buildDateRangeQuery(rangePreset), [rangePreset]);
+
     const [stats, setStats] = useState({
-        totalUsers: 0,
-        totalMerchants: 0,
-        pendingMerchants: 0,
+        activeUsers: 0,
+        activeMerchants: 0,
         totalRestaurants: 0,
         activeRestaurants: 0,
         totalRevenue: 0,
         totalOrders: 0,
+        averageOrderValue: 0,
+        completionRate: 0,
+        pendingMerchants: 0,
     });
     const [pendingMerchantRequests, setPendingMerchantRequests] = useState<User[]>([]);
     const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-    const [platformGrowthData, setPlatformGrowthData] = useState<GrowthPoint[]>([]);
-    const [revenueData, setRevenueData] = useState<RevenuePoint[]>([]);
+    const [trendData, setTrendData] = useState<TrendPoint[]>([]);
     const [topMerchantsData, setTopMerchantsData] = useState<TopMerchantPoint[]>([]);
+    const [revenueBreakdown, setRevenueBreakdown] = useState<{
+        totalProductAmount: number;
+        totalDeliveryFee: number;
+        totalTax: number;
+        totalDiscount: number;
+    } | null>(null);
+    const [statusBreakdown, setStatusBreakdown] = useState<StatusBreakdownPoint[]>([]);
+    const [paymentBreakdown, setPaymentBreakdown] = useState<PaymentBreakdownPoint[]>([]);
+    const [revenueByMerchant, setRevenueByMerchant] = useState<RevenueByMerchantPoint[]>([]);
+    const [merchantPerformance, setMerchantPerformance] = useState<MerchantPerformancePoint[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetchDashboardData();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [rangePreset]);
 
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
-            // Users
-            const usersPage = await authApi.getAllUsers({ page: 0, size: 1000 });
-            const users = Array.isArray(usersPage?.content) ? usersPage.content : [];
-
-            const totalUsers = users.filter((u) => u.role === "USER").length;
-            const totalMerchants = users.filter((u) => u.role === "MERCHANT" && u.enabled).length;
+            // Admin dashboard APIs (order-service)
+            const [overview, revenue, ordersStats, revByMerchant, merchantsPerf] = await Promise.all([
+                dashboardApi.getAdminOverview(dateQuery),
+                dashboardApi.getAdminRevenueAnalytics(dateQuery),
+                dashboardApi.getAdminOrderStatistics(dateQuery),
+                dashboardApi.getAdminRevenueByMerchant(dateQuery),
+                dashboardApi.getAdminMerchantsPerformance(dateQuery),
+            ]);
 
             // Pending merchants (approval queue)
             const pendingPage = await authApi.getMerchantsPendingConsideration({ page: 0, size: 5 });
@@ -106,129 +133,93 @@ export default function AdminDashboard() {
                 typeof pendingPage?.totalElements === "number" ? pendingPage.totalElements : pendingList.length;
             setPendingMerchantRequests(pendingList);
 
-            // Restaurants
-            const restaurantsResponse = await restaurantApi.getAllRestaurants(new URLSearchParams());
-            const restaurants = Array.isArray(restaurantsResponse.data) ? restaurantsResponse.data : [];
-            const totalRestaurants = restaurants.length;
-            const activeRestaurants = restaurants.filter((r) => r.enabled).length;
-
-            const restaurantIdToMerchantId = new Map<string, string>();
-            const restaurantCountByMerchantId = new Map<string, number>();
-            for (const r of restaurants) {
-                restaurantIdToMerchantId.set(r.id, r.merchantId);
-                restaurantCountByMerchantId.set(r.merchantId, (restaurantCountByMerchantId.get(r.merchantId) || 0) + 1);
+            // Restaurants (enabled/disabled) from restaurant-service
+            let totalRestaurants = 0;
+            let activeRestaurants = 0;
+            try {
+                const params = new URLSearchParams({ lat: "10.762622", lon: "106.660172" }); // Default: HCM
+                const restaurantsResponse = await restaurantApi.getAllRestaurants(params);
+                const restaurants = Array.isArray(restaurantsResponse.data?.content)
+                    ? restaurantsResponse.data.content
+                    : [];
+                totalRestaurants = restaurants.length;
+                activeRestaurants = restaurants.filter((r) => r.enabled).length;
+            } catch {
+                // Fallback to overview's totalRestaurants (restaurants that had orders)
+                totalRestaurants = typeof overview?.totalRestaurants === "number" ? overview.totalRestaurants : 0;
+                activeRestaurants = 0;
             }
 
-            // Orders: totals
-            const totalsResult = await orderApi.getAllOrders({ page: 1, limit: 1 });
-            const totalOrders = totalsResult.pagination?.total || 0;
-
-            // Orders: recent activity
-            const recentResult = await orderApi.getAllOrders({ page: 1, limit: 5 });
-            setRecentOrders(recentResult.orders);
-
-            // Orders: revenue + charts (completed orders)
-            const completedOrders: Order[] = [];
-            let page = 1;
-            const limit = 100;
-            const maxPages = 20;
-            while (page <= maxPages) {
-                const result = await orderApi.getAllOrders({ page, limit, status: OrderStatus.COMPLETED });
-                completedOrders.push(...result.orders);
-                if (!result.pagination || page >= (result.pagination.totalPages || 1)) break;
-                page += 1;
+            // Recent orders (small list)
+            try {
+                const recentResult = await orderApi.getAllOrders({ page: 1, limit: 5 });
+                setRecentOrders(Array.isArray(recentResult.orders) ? recentResult.orders : []);
+            } catch {
+                setRecentOrders([]);
             }
 
-            const totalRevenue = completedOrders.reduce((sum, o) => sum + (o.finalAmount || 0), 0);
-
-            // Last 12 months helper
-            const now = new Date();
-            const months = Array.from({ length: 12 }, (_, i) => {
-                const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
-                const key = `${d.getFullYear()}-${d.getMonth()}`;
-                const label = `${d.toLocaleString("en-US", { month: "short" })} ${String(d.getFullYear()).slice(-2)}`;
-                return { key, label, start: d };
+            setRevenueBreakdown({
+                totalProductAmount: typeof revenue?.totalProductAmount === "number" ? revenue.totalProductAmount : 0,
+                totalDeliveryFee: typeof revenue?.totalDeliveryFee === "number" ? revenue.totalDeliveryFee : 0,
+                totalTax: typeof revenue?.totalTax === "number" ? revenue.totalTax : 0,
+                totalDiscount: typeof revenue?.totalDiscount === "number" ? revenue.totalDiscount : 0,
             });
 
-            const userCountByMonth = new Map<string, number>();
-            const merchantCountByMonth = new Map<string, number>();
-            for (const u of users) {
-                if (!u.createdAt) continue;
-                const d = new Date(u.createdAt);
-                if (Number.isNaN(d.getTime())) continue;
-                const key = `${d.getFullYear()}-${d.getMonth()}`;
-                if (u.role === "USER") userCountByMonth.set(key, (userCountByMonth.get(key) || 0) + 1);
-                if (u.role === "MERCHANT") merchantCountByMonth.set(key, (merchantCountByMonth.get(key) || 0) + 1);
-            }
-
-            const restaurantCountByMonth = new Map<string, number>();
-            for (const r of restaurants) {
-                if (!r.createdAt) continue;
-                const d = new Date(r.createdAt);
-                if (Number.isNaN(d.getTime())) continue;
-                const key = `${d.getFullYear()}-${d.getMonth()}`;
-                restaurantCountByMonth.set(key, (restaurantCountByMonth.get(key) || 0) + 1);
-            }
-
-            setPlatformGrowthData(
-                months.map((m) => ({
-                    name: m.label,
-                    users: userCountByMonth.get(m.key) || 0,
-                    merchants: merchantCountByMonth.get(m.key) || 0,
-                    restaurants: restaurantCountByMonth.get(m.key) || 0,
+            setStatusBreakdown(
+                (Array.isArray(ordersStats?.statusBreakdown) ? ordersStats.statusBreakdown : []).map((s) => ({
+                    name: String(s.status),
+                    count: typeof s.count === "number" ? s.count : 0,
+                    amount: typeof s.totalAmount === "number" ? s.totalAmount : 0,
                 }))
             );
 
-            const revenueByMonth = new Map<string, number>();
-            const revenueByMerchantId = new Map<string, number>();
-            for (const o of completedOrders) {
-                const d = new Date(o.createdAt);
-                if (!Number.isNaN(d.getTime())) {
-                    const key = `${d.getFullYear()}-${d.getMonth()}`;
-                    revenueByMonth.set(key, (revenueByMonth.get(key) || 0) + (o.finalAmount || 0));
-                }
-
-                const merchantId =
-                    o.merchantId || (o.restaurantId ? restaurantIdToMerchantId.get(o.restaurantId) : undefined);
-                if (merchantId) {
-                    revenueByMerchantId.set(
-                        merchantId,
-                        (revenueByMerchantId.get(merchantId) || 0) + (o.finalAmount || 0)
-                    );
-                }
-            }
-
-            setRevenueData(
-                months.map((m) => ({
-                    name: m.label,
-                    revenue: revenueByMonth.get(m.key) || 0,
+            setPaymentBreakdown(
+                (Array.isArray(ordersStats?.paymentBreakdown) ? ordersStats.paymentBreakdown : []).map((p) => ({
+                    name: String(p.paymentStatus),
+                    count: typeof p.count === "number" ? p.count : 0,
+                    amount: typeof p.totalAmount === "number" ? p.totalAmount : 0,
                 }))
             );
 
-            const merchantNameById = new Map<string, string>();
-            for (const u of users) {
-                if (u.role === "MERCHANT") merchantNameById.set(u.id, u.username);
-            }
+            setRevenueByMerchant(
+                (Array.isArray(revByMerchant) ? revByMerchant : []).slice(0, 10).map((r) => ({
+                    merchantId: String(r.merchantId),
+                    revenue: typeof r.totalRevenue === "number" ? r.totalRevenue : 0,
+                    orders: typeof r.totalOrders === "number" ? r.totalOrders : 0,
+                    aov: typeof r.averageOrderValue === "number" ? r.averageOrderValue : 0,
+                }))
+            );
 
-            const top = Array.from(revenueByMerchantId.entries())
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 5)
-                .map(([merchantId, revenue]) => ({
-                    name: merchantNameById.get(merchantId) || merchantId,
-                    restaurants: restaurantCountByMerchantId.get(merchantId) || 0,
-                    revenue,
-                }));
-
-            setTopMerchantsData(top);
+            setMerchantPerformance(
+                (Array.isArray(merchantsPerf) ? merchantsPerf : []).slice(0, 10).map((m) => ({
+                    merchantId: String(m.merchantId),
+                    restaurantName: String(m.restaurantName || "Restaurant"),
+                    revenue: typeof m.totalRevenue === "number" ? m.totalRevenue : 0,
+                    orders: typeof m.totalOrders === "number" ? m.totalOrders : 0,
+                    completionRate:
+                        typeof m.completionRate === "string"
+                            ? Number(m.completionRate)
+                            : typeof m.completionRate === "number"
+                            ? m.completionRate
+                            : 0,
+                }))
+            );
 
             setStats({
-                totalUsers,
-                totalMerchants,
-                pendingMerchants: pendingCount,
+                activeUsers: typeof overview?.totalUsers === "number" ? overview.totalUsers : 0,
+                activeMerchants: typeof overview?.totalMerchants === "number" ? overview.totalMerchants : 0,
                 totalRestaurants,
                 activeRestaurants,
-                totalRevenue,
-                totalOrders,
+                totalRevenue: typeof overview?.totalRevenue === "number" ? overview.totalRevenue : 0,
+                totalOrders: typeof overview?.totalOrders === "number" ? overview.totalOrders : 0,
+                averageOrderValue: typeof overview?.averageOrderValue === "number" ? overview.averageOrderValue : 0,
+                completionRate:
+                    typeof overview?.completionRate === "string"
+                        ? Number(overview.completionRate)
+                        : typeof overview?.completionRate === "number"
+                        ? overview.completionRate
+                        : 0,
+                pendingMerchants: pendingCount,
             });
         } catch (error) {
             console.error("Failed to fetch dashboard data:", error);
@@ -242,28 +233,37 @@ export default function AdminDashboard() {
         <div className="space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">System overview</p>
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+                        <p className="text-gray-600 dark:text-gray-400 mt-1">System overview (orders analytics)</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm text-gray-600 dark:text-gray-400">Range</label>
+                        <select
+                            value={rangePreset}
+                            onChange={(e) => setRangePreset(e.target.value as DashboardDateRangePreset)}
+                            className="h-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-gray-100"
+                        >
+                            <option value="7d">Last 7 days</option>
+                            <option value="30d">Last 30 days</option>
+                            <option value="90d">Last 90 days</option>
+                            <option value="ytd">Year to date</option>
+                            <option value="all">All time</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatsCard
-                    title="Total users"
-                    value={stats.totalUsers.toLocaleString()}
-                    icon={Users}
-                    trend={undefined}
-                    trendUp={undefined}
+                    title="Active users"
+                    value={stats.activeUsers.toLocaleString()}
+                    icon={UserCheck}
                     color="bg-blue-500"
                 />
-                <StatsCard
-                    title="Total merchants"
-                    value={stats.totalMerchants}
-                    icon={Store}
-                    trend={undefined}
-                    trendUp={undefined}
-                    color="bg-purple-500"
-                />
+                <StatsCard title="Active merchants" value={stats.activeMerchants} icon={Store} color="bg-purple-500" />
                 <StatsCard
                     title="Active restaurants"
                     value={`${stats.activeRestaurants}/${stats.totalRestaurants}`}
@@ -272,11 +272,30 @@ export default function AdminDashboard() {
                 />
                 <StatsCard
                     title="Total revenue"
-                    value={`${stats.totalRevenue.toLocaleString()}₫`}
+                    value={`${formatVnd(stats.totalRevenue)}₫`}
                     icon={DollarSign}
-                    trend={undefined}
-                    trendUp={undefined}
                     color="bg-yellow-500"
+                />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatsCard
+                    title="Total orders"
+                    value={stats.totalOrders.toLocaleString()}
+                    icon={ShoppingCart}
+                    color="bg-orange-500"
+                />
+                <StatsCard
+                    title="Avg order value"
+                    value={`${formatVnd(Math.round(stats.averageOrderValue))}₫`}
+                    icon={TrendingUp}
+                    color="bg-indigo-500"
+                />
+                <StatsCard
+                    title="Completion rate"
+                    value={`${stats.completionRate.toFixed(1)}%`}
+                    icon={TrendingUp}
+                    color="bg-emerald-500"
                 />
             </div>
 
@@ -367,101 +386,139 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Platform Growth Chart */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        Platform growth (new per month)
-                    </h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={platformGrowthData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis dataKey="name" stroke="#9CA3AF" />
-                            <YAxis stroke="#9CA3AF" />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: "#1F2937",
-                                    border: "1px solid #374151",
-                                    borderRadius: "0.5rem",
-                                }}
-                            />
-                            <Legend />
-                            <Line type="monotone" dataKey="users" stroke="#3B82F6" strokeWidth={2} name="Users" />
-                            <Line
-                                type="monotone"
-                                dataKey="merchants"
-                                stroke="#8B5CF6"
-                                strokeWidth={2}
-                                name="Merchants"
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="restaurants"
-                                stroke="#10B981"
-                                strokeWidth={2}
-                                name="Restaurants"
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Revenue Trend */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        Revenue (completed orders)
-                    </h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={revenueData}>
-                            <defs>
-                                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis dataKey="name" stroke="#9CA3AF" />
-                            <YAxis stroke="#9CA3AF" />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: "#1F2937",
-                                    border: "1px solid #374151",
-                                    borderRadius: "0.5rem",
-                                }}
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="revenue"
-                                stroke="#F59E0B"
-                                fillOpacity={1}
-                                fill="url(#colorRevenue)"
-                                name="Revenue (₫)"
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
+            {/* Order Status Summary */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Trạng thái đơn hàng</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {statusBreakdown.map((status) => (
+                        <div
+                            key={status.name}
+                            className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+                        >
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 capitalize">{status.name}</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{status.count}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{formatVnd(status.amount)}₫</p>
+                        </div>
+                    ))}
                 </div>
             </div>
 
-            {/* Top Merchants Performance */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top merchants by revenue</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={topMerchantsData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis type="number" stroke="#9CA3AF" />
-                        <YAxis dataKey="name" type="category" stroke="#9CA3AF" width={100} />
-                        <Tooltip
-                            contentStyle={{
-                                backgroundColor: "#1F2937",
-                                border: "1px solid #374151",
-                                borderRadius: "0.5rem",
-                            }}
-                        />
-                        <Legend />
-                        <Bar dataKey="revenue" fill="#F59E0B" name="Revenue (₫)" />
-                        <Bar dataKey="restaurants" fill="#3B82F6" name="Restaurants" />
-                    </BarChart>
-                </ResponsiveContainer>
+            {/* Payment Status Summary */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Trạng thái thanh toán</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {paymentBreakdown.map((payment) => (
+                        <div
+                            key={payment.name}
+                            className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+                        >
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 capitalize">{payment.name}</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{payment.count}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {formatVnd(payment.amount)}₫
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Revenue breakdown */}
+            {revenueBreakdown && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue breakdown</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Products</p>
+                            <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
+                                {formatVnd(revenueBreakdown.totalProductAmount)}₫
+                            </p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Delivery fee</p>
+                            <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
+                                {formatVnd(revenueBreakdown.totalDeliveryFee)}₫
+                            </p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Tax</p>
+                            <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
+                                {formatVnd(revenueBreakdown.totalTax)}₫
+                            </p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Discount</p>
+                            <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
+                                -{formatVnd(revenueBreakdown.totalDiscount)}₫
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Merchants tables */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Top merchants by revenue
+                    </h3>
+                    {revenueByMerchant.length === 0 ? (
+                        <div className="text-sm text-gray-500 dark:text-gray-400">No data.</div>
+                    ) : (
+                        <div className="space-y-3">
+                            {revenueByMerchant.map((m) => (
+                                <div
+                                    key={m.merchantId}
+                                    className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-900 px-4 py-3"
+                                >
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                            {m.merchantId}
+                                        </p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                                            {m.orders.toLocaleString()} orders • AOV {formatVnd(Math.round(m.aov))}₫
+                                        </p>
+                                    </div>
+                                    <div className="text-right flex-shrink-0">
+                                        <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                            {formatVnd(m.revenue)}₫
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Merchants performance</h3>
+                    {merchantPerformance.length === 0 ? (
+                        <div className="text-sm text-gray-500 dark:text-gray-400">No data.</div>
+                    ) : (
+                        <div className="space-y-3">
+                            {merchantPerformance.map((m) => (
+                                <div
+                                    key={`${m.merchantId}-${m.restaurantName}`}
+                                    className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-900 px-4 py-3"
+                                >
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                            {m.merchantId}
+                                        </p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                            {m.restaurantName} • {m.orders.toLocaleString()} orders •{" "}
+                                            {m.completionRate.toFixed(1)}% complete
+                                        </p>
+                                    </div>
+                                    <div className="text-right flex-shrink-0">
+                                        <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                            {formatVnd(m.revenue)}₫
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Recent Activity */}
@@ -489,7 +546,7 @@ export default function AdminDashboard() {
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
                                         {new Date(o.createdAt).toLocaleString("en-US")} •{" "}
-                                        {o.finalAmount.toLocaleString()}₫
+                                        {formatVnd(o.finalAmount || 0)}₫
                                     </p>
                                 </div>
                             </div>
