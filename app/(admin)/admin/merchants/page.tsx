@@ -25,7 +25,8 @@ export default function MerchantsPage() {
             const data = await merchantApi.getAllMerchants();
             const baseMerchants = Array.isArray(data) ? data : [];
 
-            const restaurantsResponse = await restaurantApi.getAllRestaurants(new URLSearchParams());
+            const params = new URLSearchParams({ lat: "10.762622", lon: "106.660172" }); // Default: HCM
+            const restaurantsResponse = await restaurantApi.getAllRestaurants(params);
             const restaurants = Array.isArray(restaurantsResponse.data) ? restaurantsResponse.data : [];
 
             const restaurantCountByMerchantId = new Map<string, number>();

@@ -50,7 +50,10 @@ export const restaurantApi = {
     },
     getByRestaurantId: (restaurantId: string) => api.get<Restaurant>(`/restaurant/admin/${restaurantId}`),
     getRestaurantByMerchantId: (merchantId: string) => api.get<Restaurant[]>(`/restaurant/merchant/${merchantId}`),
-    getAllRestaurants: (params: URLSearchParams) => api.get<Restaurant[]>("/restaurant", { params: params }),
+    getAllRestaurants: (params: URLSearchParams) =>
+        api.get<{ content: Restaurant[]; totalElements: number; totalPages: number }>("/restaurant", {
+            params: params,
+        }),
     createRestaurant: (restaurantData: RestaurantData, imageFile?: File) => {
         // Use new helper function
         const formData = buildRestaurantFormData(restaurantData, imageFile);

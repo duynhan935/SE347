@@ -27,7 +27,6 @@ interface OrderSummaryProps {
 export const OrderSummary = ({ subtotal, restaurantId, totalItems }: OrderSummaryProps) => {
     const { user, isAuthenticated } = useAuthStore();
     const [voucherCode, setVoucherCode] = useState("");
-    const [appliedVoucher, setAppliedVoucher] = useState<string | null>(null);
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [loadingAddresses, setLoadingAddresses] = useState(false);
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -54,29 +53,12 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems }: OrderSummar
     }, [user?.id, isAuthenticated]);
 
     const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId);
-    const deliveryAddress = selectedAddress?.location || (addresses.length > 0 ? addresses[0].location : "No address saved");
+    const deliveryAddress =
+        selectedAddress?.location || (addresses.length > 0 ? addresses[0].location : "No address saved");
 
     const shippingFee = 0; // Free shipping for now
     const tax = subtotal * 0.05; // 5% tax
-    const voucherDiscount = appliedVoucher ? subtotal * 0.1 : 0; // 10% discount if voucher applied
-    const total = subtotal + shippingFee + tax - voucherDiscount;
-
-    const handleApplyVoucher = () => {
-        if (voucherCode.trim()) {
-            // Mock voucher validation (TODO: Integrate with backend voucher API when available)
-            if (voucherCode.toUpperCase() === "SAVE10" || voucherCode.toUpperCase() === "DISCOUNT10") {
-                setAppliedVoucher(voucherCode.toUpperCase());
-                toast.success("Voucher applied successfully!");
-            } else {
-                toast.error("Invalid voucher code");
-            }
-        }
-    };
-
-    const handleRemoveVoucher = () => {
-        setAppliedVoucher(null);
-        setVoucherCode("");
-    };
+    const total = subtotal + shippingFee + tax;
 
     return (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
@@ -143,12 +125,6 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems }: OrderSummar
                         {shippingFee === 0 ? "FREE" : `${formatPriceUSD(shippingFee)} $`}
                     </span>
                 </div>
-                {appliedVoucher && (
-                    <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Voucher Discount</span>
-                        <span className="text-green-600 font-medium">-{formatPriceUSD(voucherDiscount)} $</span>
-                    </div>
-                )}
                 <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Tax</span>
                     <span className="text-gray-900 font-medium">{formatPriceUSD(tax)} $</span>
@@ -157,36 +133,26 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems }: OrderSummar
 
             {/* Voucher Input */}
             <div className="mb-6 pb-6 border-b border-gray-200">
-                {appliedVoucher ? (
-                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-green-700">{appliedVoucher}</span>
-                            <span className="text-xs text-green-600">Applied</span>
-                        </div>
-                        <button
-                            onClick={handleRemoveVoucher}
-                            className="text-xs text-green-700 hover:text-green-800 font-medium"
-                        >
-                            Remove
-                        </button>
-                    </div>
-                ) : (
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            placeholder="Enter voucher code"
-                            value={voucherCode}
-                            onChange={(e) => setVoucherCode(e.target.value)}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
-                        />
-                        <button
-                            onClick={handleApplyVoucher}
-                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-                        >
-                            Apply
-                        </button>
-                    </div>
-                )}
+                <p className="text-xs text-gray-500 mb-2">
+                    Vouchers are not available yet (waiting for backend support).
+                </p>
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        placeholder="Enter voucher code"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value)}
+                        disabled
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
+                    />
+                    <button
+                        onClick={() => toast("Voucher feature coming soon")}
+                        disabled
+                        className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed"
+                    >
+                        Apply
+                    </button>
+                </div>
             </div>
 
             {/* Total */}

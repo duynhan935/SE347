@@ -1,65 +1,207 @@
 "use client";
 
-import { DollarSign, Download, ShoppingBag, Store, TrendingUp } from "lucide-react";
+import { dashboardApi, buildDateRangeQuery, type DashboardDateRangePreset } from "@/lib/api/dashboardApi";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { DollarSign, Download, ShoppingBag, Star, Store } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import {
     Area,
     AreaChart,
     Bar,
     BarChart,
     CartesianGrid,
-    Cell,
     Legend,
     Line,
     LineChart,
-    Pie,
-    PieChart,
     ResponsiveContainer,
     Tooltip,
     XAxis,
     YAxis,
 } from "recharts";
 
-type PieLabelEntry = { name?: string; percent?: number };
+function formatVnd(value: number): string {
+    try {
+        return new Intl.NumberFormat("vi-VN").format(value);
+    } catch {
+        return value.toLocaleString();
+    }
+}
 
-const revenueData = [
-    { name: "Jan", revenue: 45000000, orders: 180, restaurants: 3 },
-    { name: "Feb", revenue: 52000000, orders: 210, restaurants: 3 },
-    { name: "Mar", revenue: 61000000, orders: 245, restaurants: 4 },
-    { name: "Apr", revenue: 58000000, orders: 230, restaurants: 4 },
-    { name: "May", revenue: 68000000, orders: 280, restaurants: 4 },
-    { name: "Jun", revenue: 75000000, orders: 310, restaurants: 5 },
-    { name: "Jul", revenue: 82000000, orders: 340, restaurants: 5 },
-    { name: "Aug", revenue: 79000000, orders: 325, restaurants: 5 },
-    { name: "Sep", revenue: 85000000, orders: 350, restaurants: 5 },
-    { name: "Oct", revenue: 92000000, orders: 380, restaurants: 6 },
-    { name: "Nov", revenue: 98000000, orders: 410, restaurants: 6 },
-    { name: "Dec", revenue: 105000000, orders: 450, restaurants: 6 },
-];
-
-const restaurantPerformance = [
-    { name: "Restaurant A", revenue: 35000000, orders: 150, rating: 4.8 },
-    { name: "Restaurant B", revenue: 28000000, orders: 120, rating: 4.6 },
-    { name: "Restaurant C", revenue: 22000000, orders: 95, rating: 4.5 },
-    { name: "Restaurant D", revenue: 15000000, orders: 65, rating: 4.3 },
-    { name: "Restaurant E", revenue: 12000000, orders: 55, rating: 4.2 },
-];
-
-const categoryData = [
-    { name: "Main Course", value: 40, color: "#3B82F6" },
-    { name: "Appetizer", value: 25, color: "#10B981" },
-    { name: "Dessert", value: 20, color: "#F59E0B" },
-    { name: "Beverage", value: 15, color: "#EF4444" },
-];
-
-const topProducts = [
-    { name: "Beef Pho", sales: 3250, revenue: 162500000, restaurants: 6 },
-    { name: "Grilled Pork Noodles", sales: 2580, revenue: 129000000, restaurants: 5 },
-    { name: "Broken Rice", sales: 2150, revenue: 96750000, restaurants: 6 },
-    { name: "Vietnamese Baguette", sales: 1820, revenue: 54600000, restaurants: 4 },
-    { name: "Spring Rolls", sales: 1650, revenue: 49500000, restaurants: 5 },
-];
+function formatDateLabel(dateLike: string): string {
+    const d = new Date(dateLike);
+    if (Number.isNaN(d.getTime())) return String(dateLike);
+    return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+}
 
 export default function MerchantReportsPage() {
+    const { user } = useAuthStore();
+
+    const [rangePreset, setRangePreset] = useState<DashboardDateRangePreset>("30d");
+    const dateQuery = useMemo(() => buildDateRangeQuery(rangePreset), [rangePreset]);
+
+    const [loading, setLoading] = useState(true);
+    const [restaurantOverview, setRestaurantOverview] = useState<{
+        restaurantId: string;
+        restaurantName: string;
+        restaurantSlug: string;
+    } | null>(null);
+
+    const [revenueAnalytics, setRevenueAnalytics] = useState<{
+        totalRevenue: number;
+        totalOrders: number;
+        averageOrderValue: number;
+        revenueByRestaurant: Array<{ restaurantName: string; totalRevenue: number; totalOrders: number }>;
+    } | null>(null);
+    const [revenueTrend, setRevenueTrend] = useState<Array<{ name: string; revenue: number; orders: number }>>([]);
+    const [hourlyStats, setHourlyStats] = useState<Array<{ hour: string; orders: number; revenue: number }>>([]);
+    const [weekdayStats, setWeekdayStats] = useState<Array<{ name: string; orders: number; revenue: number }>>([]);
+    const [timeSummary, setTimeSummary] = useState<{
+        peakHour: { hour: number; totalOrders: number; totalRevenue: number };
+        busiestDay: { dayName: string; totalOrders: number; totalRevenue: number };
+    } | null>(null);
+
+    const [topProducts, setTopProducts] = useState<
+        Array<{
+            productId: string;
+            productName: string;
+            totalQuantity: number;
+            orderCount: number;
+            totalRevenue: number;
+        }>
+    >([]);
+
+    const [ratingStats, setRatingStats] = useState<{ averageRating: number; totalRatings: number } | null>(null);
+
+    useEffect(() => {
+        if (!user?.id) {
+            setLoading(false);
+            return;
+        }
+
+        const run = async () => {
+            setLoading(true);
+            try {
+                const merchantId = user.id;
+                const [restaurant, revenue, trend, hourly, timeAnalytics, top, ratings] = await Promise.all([
+                    dashboardApi.getMerchantRestaurantOverview(merchantId),
+                    dashboardApi.getMerchantRevenue(merchantId, dateQuery),
+                    dashboardApi.getMerchantRevenueTrend(merchantId, dateQuery),
+                    dashboardApi.getMerchantHourlyStatistics(merchantId, dateQuery),
+                    dashboardApi.getMerchantTimeAnalytics(merchantId, dateQuery),
+                    dashboardApi.getMerchantTopProducts(merchantId, { limit: 5, ...dateQuery }),
+                    dashboardApi.getMerchantRatingStats(merchantId, dateQuery),
+                ]);
+
+                setRestaurantOverview({
+                    restaurantId: restaurant.restaurantId,
+                    restaurantName: restaurant.restaurantName,
+                    restaurantSlug: restaurant.restaurantSlug,
+                });
+
+                setRevenueAnalytics({
+                    totalRevenue: typeof revenue.totalRevenue === "number" ? revenue.totalRevenue : 0,
+                    totalOrders: typeof revenue.totalOrders === "number" ? revenue.totalOrders : 0,
+                    averageOrderValue: typeof revenue.averageOrderValue === "number" ? revenue.averageOrderValue : 0,
+                    revenueByRestaurant: (Array.isArray(revenue.revenueByRestaurant)
+                        ? revenue.revenueByRestaurant
+                        : []
+                    ).map((r) => ({
+                        restaurantName: r.restaurantName || "Restaurant",
+                        totalRevenue: typeof r.totalRevenue === "number" ? r.totalRevenue : 0,
+                        totalOrders: typeof r.totalOrders === "number" ? r.totalOrders : 0,
+                    })),
+                });
+
+                setRevenueTrend(
+                    (Array.isArray(trend) ? trend : []).map((p) => ({
+                        name: formatDateLabel(p.date),
+                        revenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
+                        orders: typeof p.totalOrders === "number" ? p.totalOrders : 0,
+                    }))
+                );
+
+                setHourlyStats(
+                    (Array.isArray(hourly) ? hourly : []).map((h) => ({
+                        hour: `${String(h.hour).padStart(2, "0")}:00`,
+                        orders: typeof h.totalOrders === "number" ? h.totalOrders : 0,
+                        revenue: typeof h.totalRevenue === "number" ? h.totalRevenue : 0,
+                    }))
+                );
+
+                setWeekdayStats(
+                    (Array.isArray(timeAnalytics.weekdayStatistics) ? timeAnalytics.weekdayStatistics : []).map(
+                        (d) => ({
+                            name: d.dayName,
+                            orders: typeof d.totalOrders === "number" ? d.totalOrders : 0,
+                            revenue: typeof d.totalRevenue === "number" ? d.totalRevenue : 0,
+                        })
+                    )
+                );
+
+                setTimeSummary({
+                    peakHour: timeAnalytics.peakHour,
+                    busiestDay: timeAnalytics.busiestDay,
+                });
+
+                setTopProducts(
+                    (Array.isArray(top) ? top : []).map((p) => ({
+                        productId: p.productId,
+                        productName: p.productName,
+                        totalQuantity: typeof p.totalQuantity === "number" ? p.totalQuantity : 0,
+                        orderCount: typeof p.orderCount === "number" ? p.orderCount : 0,
+                        totalRevenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
+                    }))
+                );
+
+                setRatingStats({
+                    averageRating: typeof ratings.averageRating === "number" ? ratings.averageRating : 0,
+                    totalRatings: typeof ratings.totalRatings === "number" ? ratings.totalRatings : 0,
+                });
+            } catch (error) {
+                console.error("Failed to load merchant reports:", error);
+                toast.error("Failed to load reports.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        run();
+    }, [user?.id, dateQuery]);
+
+    const handleExport = async () => {
+        if (!user?.id) {
+            toast.error("Please sign in.");
+            return;
+        }
+
+        if (!dateQuery.startDate || !dateQuery.endDate) {
+            toast.error("Please pick a finite date range to export.");
+            return;
+        }
+
+        try {
+            const { blob, filename } = await dashboardApi.downloadMerchantPdfReport(user.id, {
+                startDate: dateQuery.startDate,
+                endDate: dateQuery.endDate,
+            });
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Export report failed:", error);
+            toast.error("Export failed.");
+        }
+    };
+
+    const restaurantsCount = revenueAnalytics?.revenueByRestaurant?.length || 0;
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -67,13 +209,34 @@ export default function MerchantReportsPage() {
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reports Summary</h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">
-                        Analyze revenue for all restaurants in the system
+                        {restaurantOverview?.restaurantName
+                            ? `Analytics for ${restaurantOverview.restaurantName}`
+                            : "Merchant analytics"}
                     </p>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-brand-yellow hover:bg-brand-yellow/90 text-white rounded-lg transition-colors">
-                    <Download className="h-5 w-5" />
-                    Export Report
-                </button>
+                <div className="flex items-center gap-3">
+                    <label className="text-sm text-gray-600 dark:text-gray-400">Range</label>
+                    <select
+                        value={rangePreset}
+                        onChange={(e) => setRangePreset(e.target.value as DashboardDateRangePreset)}
+                        className="h-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-gray-100"
+                    >
+                        <option value="7d">Last 7 days</option>
+                        <option value="30d">Last 30 days</option>
+                        <option value="90d">Last 90 days</option>
+                        <option value="ytd">Year to date</option>
+                        <option value="all">All time</option>
+                    </select>
+
+                    <button
+                        onClick={handleExport}
+                        disabled={loading || !dateQuery.startDate || !dateQuery.endDate}
+                        className="flex items-center gap-2 px-4 py-2 bg-brand-yellow hover:bg-brand-yellow/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                    >
+                        <Download className="h-5 w-5" />
+                        Export Report
+                    </button>
+                </div>
             </div>
 
             {/* Stats Overview */}
@@ -82,8 +245,12 @@ export default function MerchantReportsPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">$4,200.00</p>
-                            <p className="text-sm text-green-600 dark:text-green-400 mt-2">+15.2% vs last month</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                                {formatVnd(revenueAnalytics?.totalRevenue || 0)}₫
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                Avg order: {formatVnd(Math.round(revenueAnalytics?.averageOrderValue || 0))}₫
+                            </p>
                         </div>
                         <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-lg">
                             <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -95,8 +262,10 @@ export default function MerchantReportsPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">450</p>
-                            <p className="text-sm text-green-600 dark:text-green-400 mt-2">+12.5% vs last month</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                                {(revenueAnalytics?.totalOrders || 0).toLocaleString()}
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">From selected range</p>
                         </div>
                         <div className="bg-blue-100 dark:bg-blue-900/20 p-3 rounded-lg">
                             <ShoppingBag className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -108,8 +277,8 @@ export default function MerchantReportsPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Number of Restaurants</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">6</p>
-                            <p className="text-sm text-green-600 dark:text-green-400 mt-2">+1 new restaurant</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{restaurantsCount}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">With orders in range</p>
                         </div>
                         <div className="bg-purple-100 dark:bg-purple-900/20 p-3 rounded-lg">
                             <Store className="h-6 w-6 text-purple-600 dark:text-purple-400" />
@@ -120,12 +289,16 @@ export default function MerchantReportsPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Growth</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">18.5%</p>
-                            <p className="text-sm text-green-600 dark:text-green-400 mt-2">Compared to last quarter</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Ratings</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                                {(ratingStats?.averageRating || 0).toFixed(1)}
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                {(ratingStats?.totalRatings || 0).toLocaleString()} ratings
+                            </p>
                         </div>
                         <div className="bg-orange-100 dark:bg-orange-900/20 p-3 rounded-lg">
-                            <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                            <Star className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                         </div>
                     </div>
                 </div>
@@ -137,7 +310,7 @@ export default function MerchantReportsPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue Trend</h3>
                     <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={revenueData}>
+                        <AreaChart data={revenueTrend}>
                             <defs>
                                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8} />
@@ -148,6 +321,11 @@ export default function MerchantReportsPage() {
                             <XAxis dataKey="name" stroke="#9CA3AF" />
                             <YAxis stroke="#9CA3AF" />
                             <Tooltip
+                                formatter={(value: unknown, name: string) => {
+                                    if (name === "revenue") return [`${formatVnd(Number(value || 0))}₫`, "Revenue"];
+                                    if (name === "orders") return [Number(value || 0), "Orders"];
+                                    return [String(value), name];
+                                }}
                                 contentStyle={{
                                     backgroundColor: "#1F2937",
                                     border: "1px solid #374151",
@@ -161,23 +339,26 @@ export default function MerchantReportsPage() {
                                 stroke="#F59E0B"
                                 fillOpacity={1}
                                 fill="url(#colorRevenue)"
-                                name="Revenue ($)"
+                                name="Revenue (₫)"
                             />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
 
-                {/* Orders Trend */}
+                {/* Hourly Orders */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        Total Orders by Month
-                    </h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Orders by hour</h3>
                     <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={revenueData}>
+                        <BarChart data={hourlyStats}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis dataKey="name" stroke="#9CA3AF" />
+                            <XAxis dataKey="hour" stroke="#9CA3AF" />
                             <YAxis stroke="#9CA3AF" />
                             <Tooltip
+                                formatter={(value: unknown, name: string) => {
+                                    if (name === "revenue") return [`${formatVnd(Number(value || 0))}₫`, "Revenue"];
+                                    if (name === "orders") return [Number(value || 0), "Orders"];
+                                    return [String(value), name];
+                                }}
                                 contentStyle={{
                                     backgroundColor: "#1F2937",
                                     border: "1px solid #374151",
@@ -185,29 +366,29 @@ export default function MerchantReportsPage() {
                                 }}
                             />
                             <Legend />
-                            <Line
-                                type="monotone"
-                                dataKey="orders"
-                                stroke="#F59E0B"
-                                strokeWidth={2}
-                                name="Number of Orders"
-                            />
-                        </LineChart>
+                            <Bar dataKey="orders" fill="#3B82F6" name="Orders" />
+                        </BarChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
             {/* Charts Row 2 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Restaurant Performance */}
+                {/* Revenue by restaurant */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Restaurant Performance</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue by restaurant</h3>
                     <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={restaurantPerformance} layout="vertical">
+                        <BarChart data={revenueAnalytics?.revenueByRestaurant || []} layout="vertical">
                             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                             <XAxis type="number" stroke="#9CA3AF" />
-                            <YAxis dataKey="name" type="category" stroke="#9CA3AF" width={100} />
+                            <YAxis dataKey="restaurantName" type="category" stroke="#9CA3AF" width={120} />
                             <Tooltip
+                                formatter={(value: unknown, name: string) => {
+                                    if (name === "totalRevenue")
+                                        return [`${formatVnd(Number(value || 0))}₫`, "Revenue"];
+                                    if (name === "totalOrders") return [Number(value || 0), "Orders"];
+                                    return [String(value), name];
+                                }}
                                 contentStyle={{
                                     backgroundColor: "#1F2937",
                                     border: "1px solid #374151",
@@ -215,35 +396,55 @@ export default function MerchantReportsPage() {
                                 }}
                             />
                             <Legend />
-                            <Bar dataKey="revenue" fill="#F59E0B" name="Revenue ($)" />
+                            <Bar dataKey="totalRevenue" fill="#F59E0B" name="Revenue (₫)" />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
 
-                {/* Category Distribution */}
+                {/* Weekday trend */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Category Distribution</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Weekday activity</h3>
                     <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                            <Pie
-                                data={categoryData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={(entry: PieLabelEntry) =>
-                                    `${entry.name ?? ""}: ${((entry.percent ?? 0) * 100).toFixed(0)}%`
-                                }
-                                outerRadius={100}
-                                fill="#8884d8"
-                                dataKey="value"
-                            >
-                                {categoryData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                        </PieChart>
+                        <LineChart data={weekdayStats}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                            <XAxis dataKey="name" stroke="#9CA3AF" />
+                            <YAxis stroke="#9CA3AF" />
+                            <Tooltip
+                                formatter={(value: unknown, name: string) => {
+                                    if (name === "revenue") return [`${formatVnd(Number(value || 0))}₫`, "Revenue"];
+                                    if (name === "orders") return [Number(value || 0), "Orders"];
+                                    return [String(value), name];
+                                }}
+                                contentStyle={{
+                                    backgroundColor: "#1F2937",
+                                    border: "1px solid #374151",
+                                    borderRadius: "0.5rem",
+                                }}
+                            />
+                            <Legend />
+                            <Line type="monotone" dataKey="orders" stroke="#3B82F6" strokeWidth={2} name="Orders" />
+                            <Line
+                                type="monotone"
+                                dataKey="revenue"
+                                stroke="#F59E0B"
+                                strokeWidth={2}
+                                name="Revenue (₫)"
+                            />
+                        </LineChart>
                     </ResponsiveContainer>
+                    {timeSummary && (
+                        <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                            Peak hour:{" "}
+                            <span className="font-medium text-gray-900 dark:text-white">
+                                {timeSummary.peakHour.hour}:00
+                            </span>
+                            {" · "}
+                            Busiest day:{" "}
+                            <span className="font-medium text-gray-900 dark:text-white">
+                                {timeSummary.busiestDay.dayName}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -252,34 +453,41 @@ export default function MerchantReportsPage() {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     Top 5 Best Selling Products
                 </h3>
-                <div className="space-y-4">
-                    {topProducts.map((product, index) => (
-                        <div
-                            key={index}
-                            className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-brand-yellow/10 text-brand-yellow font-bold text-lg">
-                                    {index + 1}
+                {loading ? (
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+                ) : topProducts.length === 0 ? (
+                    <div className="text-sm text-gray-500 dark:text-gray-400">No data.</div>
+                ) : (
+                    <div className="space-y-4">
+                        {topProducts.map((p, index) => (
+                            <div
+                                key={p.productId || `${p.productName}-${index}`}
+                                className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-brand-yellow/10 text-brand-yellow font-bold text-lg">
+                                        {index + 1}
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900 dark:text-white">{p.productName}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            {p.totalQuantity} items • {p.orderCount} orders
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="font-semibold text-gray-900 dark:text-white">{product.name}</p>
+                                <div className="text-right">
+                                    <p className="font-bold text-gray-900 dark:text-white text-lg">
+                                        {formatVnd(p.totalRevenue)}₫
+                                    </p>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        {product.sales} orders • {product.restaurants} restaurants
+                                        {formatVnd(p.orderCount > 0 ? Math.round(p.totalRevenue / p.orderCount) : 0)}
+                                        ₫/order
                                     </p>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className="font-bold text-gray-900 dark:text-white text-lg">
-                                    ${(product.revenue / 25000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    ${(Math.round(product.revenue / product.sales) / 25000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/order
-                                </p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

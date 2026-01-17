@@ -42,15 +42,6 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
         setImageError(false);
     }, [cardImageUrl]);
 
-    // Check for promo/flash sale
-    const hasFlashSale = useMemo(() => {
-        return product.totalReview > 30 || Math.random() > 0.6;
-    }, [product.totalReview]);
-
-    const hasPromo = useMemo(() => {
-        return product.totalReview > 20 || Math.random() > 0.7;
-    }, [product.totalReview]);
-
     // Check if favorite (high rating or many reviews)
     const isFavorite = useMemo(() => {
         return product.rating >= 4.5 || product.totalReview > 50;
@@ -156,7 +147,11 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
         <div className="group relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1">
             {/* Image Section */}
             <Link
-                href={product.restaurant?.slug ? `/restaurants/${product.restaurant.slug}?productId=${product.id}` : `/food/${product.slug}`}
+                href={
+                    product.restaurant?.slug
+                        ? `/restaurants/${product.restaurant.slug}?productId=${product.id}`
+                        : `/food/${product.slug}`
+                }
                 className="block relative w-full aspect-square overflow-hidden"
             >
                 <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-lg">
@@ -186,22 +181,6 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                         <div className="absolute top-1.5 left-1.5 z-20 pointer-events-none">
                             <span className="bg-[#EE4D2D] text-white text-[9px] font-semibold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5">
                                 ❤️ Favorite
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Flash Sale / Promo Badge - Top Right */}
-                    {hasFlashSale && (
-                        <div className="absolute top-1.5 right-1.5 z-20 pointer-events-none">
-                            <span className="bg-[#EE4D2D] text-white text-[9px] font-semibold px-1.5 py-0.5 rounded shadow-sm">
-                                Flash Sale
-                            </span>
-                        </div>
-                    )}
-                    {!hasFlashSale && hasPromo && (
-                        <div className="absolute top-1.5 right-1.5 z-20 pointer-events-none">
-                            <span className="bg-[#EE4D2D] text-white text-[9px] font-semibold px-1.5 py-0.5 rounded shadow-sm">
-                                Promo Code
                             </span>
                         </div>
                     )}
@@ -236,7 +215,11 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
             <div className="p-3 space-y-1.5">
                 {/* Product Name - Truncate 1 line */}
                 <Link
-                    href={product.restaurant?.slug ? `/restaurants/${product.restaurant.slug}?productId=${product.id}` : `/food/${product.slug}`}
+                    href={
+                        product.restaurant?.slug
+                            ? `/restaurants/${product.restaurant.slug}?productId=${product.id}`
+                            : `/food/${product.slug}`
+                    }
                 >
                     <h3
                         className="text-sm font-bold text-gray-900 line-clamp-1 truncate mt-1 hover:text-[#EE4D2D] transition-colors"
@@ -270,9 +253,7 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                 {/* Price */}
                 <div className="pt-1">
                     {formatPrice ? (
-                        <p className="text-base font-bold text-[#EE4D2D]">
-                            ${formatPrice}
-                        </p>
+                        <p className="text-base font-bold text-[#EE4D2D]">${formatPrice}</p>
                     ) : (
                         <p className="text-xs text-gray-400">Price not available</p>
                     )}
@@ -283,4 +264,3 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
 });
 
 CompactFoodCard.displayName = "CompactFoodCard";
-
