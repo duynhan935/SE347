@@ -26,6 +26,9 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
     const [editContent, setEditContent] = useState("");
     const [commentImages, setCommentImages] = useState<File[]>([]);
     const [replyImages, setReplyImages] = useState<File[]>([]);
+    const [replies, setReplies] = useState<Record<string, Comment[]>>({});
+    const [loadingReplies, setLoadingReplies] = useState<Record<string, boolean>>({});
+    const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
     const fileInputRef = useRef<HTMLInputElement>(null);
     const replyFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -96,7 +99,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                 author: {
                     userId: user.id,
                     name: user.username,
-                    avatar: undefined,
+                    avatar: typeof user.avatar === "string" ? user.avatar : undefined,
                 },
                 images: replyImages,
             });
@@ -104,10 +107,35 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
             setReplyingTo(null);
             setReplyContent("");
             setReplyImages([]);
-            fetchComments();
+            // Refresh replies for this comment
+            fetchReplies(parentId);
         } catch (error) {
             console.error("Failed to reply comment:", error);
             toast.error("Unable to reply to comment");
+        }
+    };
+
+    const fetchReplies = async (commentId: string) => {
+        if (loadingReplies[commentId]) return;
+        
+        setLoadingReplies((prev) => ({ ...prev, [commentId]: true }));
+        try {
+            const response = await blogApi.getReplies(blogId, commentId);
+            setReplies((prev) => ({ ...prev, [commentId]: response.data || [] }));
+            setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
+        } catch (error) {
+            console.error("Failed to fetch replies:", error);
+        } finally {
+            setLoadingReplies((prev) => ({ ...prev, [commentId]: false }));
+        }
+    };
+
+    const toggleReplies = (commentId: string) => {
+        const isExpanded = expandedReplies[commentId];
+        if (!isExpanded && !replies[commentId]) {
+            fetchReplies(commentId);
+        } else {
+            setExpandedReplies((prev) => ({ ...prev, [commentId]: !isExpanded }));
         }
     };
 
@@ -360,12 +388,25 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                             onClick={() => {
                                                 setReplyingTo(comment._id);
                                                 setReplyContent("");
+                                                // Auto-expand replies when replying
+                                                if (!expandedReplies[comment._id] && !replies[comment._id]) {
+                                                    fetchReplies(comment._id);
+                                                }
                                             }}
                                             className="flex items-center gap-1 text-sm text-gray-600 hover:text-brand-purple"
                                         >
                                             <Reply className="w-4 h-4" />
                                             <span>Reply</span>
                                         </button>
+                                        {(replies[comment._id] && replies[comment._id].length > 0) && !expandedReplies[comment._id] && (
+                                            <button
+                                                onClick={() => toggleReplies(comment._id)}
+                                                className="flex items-center gap-1 text-sm text-gray-600 hover:text-brand-purple"
+                                            >
+                                                <Reply className="w-4 h-4" />
+                                                <span>View {replies[comment._id].length} reply(ies)</span>
+                                            </button>
+                                        )}
                                         {canEditDelete(comment) && (
                                             <>
                                                 <button
@@ -388,6 +429,92 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                             </>
                                         )}
                                     </div>
+
+                                    {/* Replies Section */}
+                                    {replies[comment._id] && replies[comment._id].length > 0 && expandedReplies[comment._id] && (
+                                        <div className="mt-4 ml-14 space-y-4 border-l-2 border-gray-200 pl-4">
+                                            {replies[comment._id].map((reply) => (
+                                                <div key={reply._id} className="flex gap-3">
+                                                    {reply.author.avatar ? (
+                                                        <Image
+                                                            src={reply.author.avatar}
+                                                            alt={reply.author.name}
+                                                            width={32}
+                                                            height={32}
+                                                            className="rounded-full flex-shrink-0"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-8 h-8 rounded-full bg-brand-purple flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                                            {reply.author.name.charAt(0).toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="font-semibold text-gray-900 text-sm">{reply.author.name}</span>
+                                                            <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
+                                                        </div>
+                                                        <p className="text-gray-700 text-sm mb-2">{reply.content}</p>
+                                                        {reply.images && reply.images.length > 0 && (
+                                                            <div className="flex flex-wrap gap-2 mb-2">
+                                                                {reply.images.map((img, index) => (
+                                                                    <Image
+                                                                        key={index}
+                                                                        src={img.url}
+                                                                        alt={`Reply image ${index}`}
+                                                                        width={100}
+                                                                        height={100}
+                                                                        className="rounded-lg object-cover"
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        <div className="flex items-center gap-3">
+                                                            <button
+                                                                onClick={() => handleLikeComment(reply._id)}
+                                                                className={`flex items-center gap-1 text-xs ${
+                                                                    isLiked(reply) ? "text-red-600" : "text-gray-600"
+                                                                }`}
+                                                            >
+                                                                <Heart className={`w-3 h-3 ${isLiked(reply) ? "fill-current" : ""}`} />
+                                                                <span>{reply.likesCount || reply.likes?.length || 0}</span>
+                                                            </button>
+                                                            {canEditDelete(reply) && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setEditingComment(reply._id);
+                                                                            setEditContent(reply.content);
+                                                                        }}
+                                                                        className="flex items-center gap-1 text-xs text-gray-600 hover:text-brand-purple"
+                                                                    >
+                                                                        <Edit2 className="w-3 h-3" />
+                                                                        <span>Edit</span>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteComment(reply._id)}
+                                                                        className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700"
+                                                                    >
+                                                                        <Trash2 className="w-3 h-3" />
+                                                                        <span>Delete</span>
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Show/Hide Replies Button */}
+                                    {replies[comment._id] && replies[comment._id].length > 0 && (
+                                        <button
+                                            onClick={() => toggleReplies(comment._id)}
+                                            className="mt-2 ml-14 text-sm text-gray-600 hover:text-brand-purple"
+                                        >
+                                            {expandedReplies[comment._id] ? "Hide replies" : `Show ${replies[comment._id].length} reply(ies)`}
+                                        </button>
+                                    )}
 
                                     {/* Reply Form */}
                                     {replyingTo === comment._id && (

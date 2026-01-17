@@ -2985,17 +2985,18 @@ end note
 #### 4.2.1 Màn hình Client (User)
 
 1. **Trang chủ** (`/`)
-   - Hero section với slider
-   - Danh sách nhà hàng nổi bật
-   - Features section
-   - Reviews từ khách hàng
-   - Newsletter subscription
+   - Split layout: Hero Search Section (bên trái) + Featured Food Panel (bên phải)
+   - Hero Search Section: Search bar, category tags (All, Rice, Bubble Tea, Vegetarian, và các category khác)
+   - Featured Food Panel: Danh sách món ăn nổi bật với grid layout
+   - Responsive: Mobile hiển thị Featured Food Panel bên dưới Hero Search Section
 
-2. **Danh sách nhà hàng** (`/restaurants`)
-   - Filter sidebar (theo danh mục, khoảng cách, rating)
-   - Grid/List view của restaurants
-   - Search bar
+2. **Trang tìm kiếm** (`/search`)
+   - Filter sidebar (theo danh mục, khoảng giá, rating, special filters)
+   - Grid view của món ăn (food items)
+   - Search bar với query từ URL
+   - Sort bar (relevance, rating, popular, distance)
    - Pagination
+   - Mobile: Filter drawer
 
 3. **Chi tiết nhà hàng** (`/restaurants/[slug]`)
    - Hero section với ảnh nhà hàng
@@ -3003,6 +3004,7 @@ end note
    - Menu với các danh mục
    - Reviews section
    - Chat button
+   - Group Order button
 
 4. **Chi tiết món ăn** (`/food/[slug]`)
    - Ảnh món ăn
@@ -3067,6 +3069,7 @@ end note
     - Filter theo category
     - Search
     - Pagination
+    - Button "My Blogs" và "Create Article" (nếu đã đăng nhập)
 
 15. **Chi tiết blog** (`/blog/[slug]`)
     - Nội dung blog post
@@ -3074,21 +3077,64 @@ end note
     - Related blogs
     - Like button
 
-16. **Đăng ký** (`/register`)
+16. **Tạo blog** (`/blog/create`)
+    - Form tạo blog post mới
+    - Rich text editor
+    - Upload ảnh
+    - Chọn category
+
+17. **Sửa blog** (`/blog/edit/[id]`)
+    - Form sửa blog post
+    - Rich text editor
+    - Upload ảnh
+    - Chọn category
+
+18. **Blog của tôi** (`/blog/my-blogs`)
+    - Danh sách blog posts của user
+    - Filter và search
+    - Edit/Delete buttons
+
+19. **Group Order** (`/group-orders/[shareToken]`)
+    - Tạo hoặc xem group order
+    - Danh sách participants
+    - Menu để thêm món
+    - Share link
+
+20. **Tham gia Group Order** (`/group-orders/[shareToken]/join`)
+    - Form tham gia group order
+    - Xem menu và participants
+    - Thêm món vào order
+
+21. **Giới thiệu** (`/about`)
+    - Thông tin về website
+    - Team members
+    - Mission và values
+
+22. **Liên hệ** (`/contact`)
+    - Form liên hệ
+    - Thông tin liên hệ
+    - Map
+
+23. **FAQ** (`/FAQ`)
+    - Danh sách câu hỏi thường gặp
+    - Accordion layout
+    - Search trong FAQ
+
+24. **Đăng ký** (`/register`)
     - Form đăng ký (username, email, password)
     - Validation
     - Link đến đăng nhập
 
-17. **Đăng nhập** (`/login`)
+25. **Đăng nhập** (`/login`)
     - Form đăng nhập (email, password)
     - "Quên mật khẩu" link
     - OAuth buttons (Google)
 
-18. **Xác thực email** (`/verify-email`)
+26. **Xác thực email** (`/verify-email`)
     - Form nhập mã xác thực
     - Resend code button
 
-19. **Đăng ký Merchant** (`/partnerRegister`)
+27. **Đăng ký Merchant** (`/merchant/register`)
     - Form đăng ký tài khoản merchant
     - Form thông tin nhà hàng
     - Upload ảnh nhà hàng
@@ -3191,144 +3237,311 @@ end note
 #### 4.3.1 Trang chủ (`/`)
 
 **Các thành phần chính**:
-- **Header**: Logo, navigation menu, search bar, cart icon, user menu
-- **Hero Section**: Slider với các hình ảnh nhà hàng nổi bật, call-to-action buttons
-- **Features Section**: Giới thiệu các tính năng chính (đặt món nhanh, thanh toán an toàn, giao hàng tận nơi)
-- **Restaurants Section**: Hiển thị danh sách nhà hàng nổi bật với rating và ảnh
-- **Reviews Section**: Hiển thị một số reviews từ khách hàng
-- **Newsletter Section**: Form đăng ký nhận tin tức
-- **Footer**: Links, thông tin liên hệ, social media
+- **Header**: Logo, Address Selector, Search Bar, Navigation Icons (Browse Foods, Orders, Chat, Cart), User Menu
+- **Split Layout**:
+  - **Left Column (40% width) - Hero Search Section**:
+    - Background image với gradient overlay
+    - Title: "Order food now, super fast delivery"
+    - Search bar với placeholder và submit button
+    - Popular Categories tags (All, Rice, Bubble Tea, Vegetarian, và các category từ API)
+    - Category tags có emoji icons và active state
+  - **Right Column (60% width) - Featured Food Panel**:
+    - Header: "Featured Foods" với số lượng items
+    - Grid layout (2 columns mobile, 3 columns tablet, 4 columns desktop)
+    - Compact Food Cards hiển thị: ảnh, tên, restaurant, rating, giá
+    - Scrollable area với custom scrollbar
+- **Mobile Layout**: Featured Food Panel hiển thị bên dưới Hero Search Section
 
-**Chức năng các nút**:
-- "Xem thêm" → Navigate đến `/restaurants`
-- "Đặt món ngay" → Navigate đến `/restaurants`
-- Restaurant cards → Navigate đến `/restaurants/[slug]`
+**Chức năng**:
+- Search bar: Submit → Navigate đến `/search?q={query}`
+- Category tags: Click → Filter foods trên cùng trang (update URL params)
+- Food cards: Click → Navigate đến `/food/[slug]`
+- Responsive design với breakpoints
 
-#### 4.3.2 Chi tiết nhà hàng (`/restaurants/[slug]`)
+#### 4.3.2 Trang tìm kiếm (`/search`)
 
 **Các thành phần chính**:
-- **Hero Section**: Ảnh cover nhà hàng, tên, rating, địa chỉ
-- **Restaurant Info**: Giờ mở cửa, số điện thoại, địa chỉ trên map
-- **Actions Bar**: Button "Chat với nhà hàng", "Chia sẻ"
-- **Navigation Tabs**: Menu, Reviews, About
-- **Menu Section**: 
-  - Categories sidebar
-  - Grid của các món ăn với ảnh, tên, giá
-  - Click vào món → Navigate đến `/food/[slug]`
-- **Reviews Section**: 
-  - Danh sách reviews với rating, comment
-  - Form để thêm review (nếu đã đặt hàng)
+- **Filter Sidebar (Desktop)**:
+  - Category filters (checkboxes)
+  - Price range slider
+  - Rating filter (radio buttons)
+  - Special filters (Favorite, etc.)
+- **Mobile Filter Drawer**: Button mở filter drawer overlay
+- **Main Content Area**:
+  - Search results header với query và số lượng results
+  - Sort bar (Relevance, Rating, Popular, Distance)
+  - Grid view của food items (responsive: 1-4 columns)
+  - Empty state khi không có results
+- **Pagination**: (nếu có)
 
-**Chức năng các nút**:
-- "Chat với nhà hàng" → Mở chat window hoặc navigate đến `/chat`
-- Món ăn card → Navigate đến `/food/[slug]`
-- "Thêm vào giỏ" → Thêm món vào cart (cần chọn size trước)
+**Chức năng**:
+- Filter sidebar: Update URL params và filter results
+- Sort bar: Sort results theo tiêu chí
+- Food cards: Click → Navigate đến `/food/[slug]`
+- Search từ URL query params
 
-#### 4.3.3 Giỏ hàng (`/cart`)
+#### 4.3.3 Chi tiết nhà hàng (`/restaurants/[slug]`)
+
+**Các thành phần chính**:
+- **Restaurant Hero**: Ảnh cover nhà hàng, tên, rating, địa chỉ
+- **Restaurant Nav Tabs**: Sticky tabs (Menu, About, Reviews) với smooth scroll
+- **Breadcrumb**: Home > Restaurant name
+- **Main Layout (3 columns)**:
+  - **Left Column (2/3 width)**:
+    - **Menu Section**: 
+      - Categories sidebar (sticky)
+      - Grid của các món ăn với ảnh, tên, giá, rating
+      - Click vào món → Navigate đến `/food/[slug]`
+    - **About Section**: Thông tin nhà hàng (address, phone, opening hours)
+    - **Reviews Section**: 
+      - Danh sách reviews với rating, comment, user info
+      - Form để thêm review (nếu đã đặt hàng)
+  - **Right Column (1/3 width, sticky)**:
+    - **Restaurant Actions**:
+      - Button "Chat với nhà hàng" → Navigate đến `/chat`
+      - Button "Tạo Group Order" → Navigate đến group order page
+      - Share button
+
+**Chức năng**:
+- Nav tabs: Smooth scroll đến section tương ứng
+- Menu items: Click → Navigate đến `/food/[slug]`
+- Chat button: Mở conversation với restaurant
+- Group Order: Tạo group order và share link
+
+#### 4.3.4 Chi tiết món ăn (`/food/[slug]`)
+
+**Các thành phần chính**:
+- **Product Hero**: Ảnh món ăn (large)
+- **Product Info**:
+  - Tên món ăn
+  - Restaurant name (link đến `/restaurants/[slug]`)
+  - Rating và số reviews
+  - Mô tả
+- **Size Selection**: Radio buttons cho các size (S, M, L, XL) với giá tương ứng
+- **Quantity Selector**: Input với +/- buttons
+- **Add to Cart Button**: Thêm món vào giỏ với size và quantity đã chọn
+- **Related Products**: Grid của các món ăn liên quan
+- **Reviews Section**: Danh sách reviews với rating và comment
+
+**Chức năng**:
+- Size selection: Update giá hiển thị
+- Add to cart: Validate size và quantity, thêm vào cart, show toast notification
+- Related products: Click → Navigate đến `/food/[slug]` khác
+
+#### 4.3.5 Giỏ hàng (`/cart`)
 
 **Các thành phần chính**:
 - **Cart Items List**: 
   - Mỗi item hiển thị: ảnh, tên, size, giá, số lượng
+  - Checkbox để select/deselect items
   - Button tăng/giảm số lượng
   - Button xóa item
+  - Select all checkbox
 - **Delivery Address Section**:
   - Dropdown chọn địa chỉ đã lưu
   - Button "Thêm địa chỉ mới" → Navigate đến `/account/addresses`
 - **Order Summary**:
-  - Tổng tiền món ăn
+  - Tổng tiền món ăn (chỉ tính selected items)
   - Phí giao hàng
   - Tổng cộng
 - **Action Buttons**:
-  - "Tiếp tục mua sắm" → Navigate đến `/restaurants`
-  - "Thanh toán" → Navigate đến `/payment`
+  - "Tiếp tục mua sắm" → Navigate đến `/` hoặc `/search`
+  - "Thanh toán" → Navigate đến `/payment` (chỉ với selected items)
 
 **Chức năng**:
-- Real-time update tổng tiền khi thay đổi số lượng
-- Validation: Phải chọn địa chỉ giao hàng trước khi thanh toán
+- Real-time update tổng tiền khi thay đổi số lượng hoặc select/deselect
+- Validation: Phải chọn địa chỉ giao hàng và có ít nhất 1 item selected trước khi thanh toán
+- Auto-select all items khi load trang
+- Sync với backend khi user đã đăng nhập
 
-#### 4.3.4 Thanh toán (`/payment`)
+#### 4.3.6 Thanh toán (`/payment`)
 
 **Các thành phần chính**:
 - **Progress Indicator**: Hiển thị các bước (Giỏ hàng → Thanh toán → Hoàn tất)
-- **Order Summary**: Tóm tắt đơn hàng (items, tổng tiền)
+- **Order Summary**: Tóm tắt đơn hàng (items với ảnh, tên, size, quantity, giá), tổng tiền
 - **Payment Method Selection**:
-  - Radio buttons: Tiền mặt, Thẻ tín dụng, Ví điện tử
-  - Nếu chọn thẻ: Hiển thị Stripe card element
-  - Nếu chọn ví: Hiển thị số dư và form xác nhận
-- **Delivery Info**: Địa chỉ giao hàng, ghi chú
+  - Radio buttons: Tiền mặt (Cash), Thẻ tín dụng (Card), Ví điện tử (Wallet)
+  - Nếu chọn Card: Hiển thị Stripe card element
+  - Nếu chọn Wallet: Hiển thị số dư và form xác nhận
+- **Delivery Info**: Địa chỉ giao hàng, ghi chú (optional)
 - **Action Buttons**:
   - "Quay lại" → Navigate đến `/cart`
   - "Xác nhận đặt hàng" → Submit payment
 
 **Chức năng**:
-- Validation payment method
-- Nếu ví không đủ tiền: Hiển thị thông báo, yêu cầu nạp tiền
+- Validation payment method và địa chỉ
+- Nếu ví không đủ tiền: Hiển thị thông báo, yêu cầu nạp tiền hoặc chọn phương thức khác
+- Stripe integration cho card payment
 - Sau khi thanh toán thành công: Navigate đến `/delivery/[orderId]`
 
-#### 4.3.5 Chat (`/chat`)
+#### 4.3.7 Theo dõi đơn hàng (`/delivery/[id]`)
+
+**Các thành phần chính**:
+- **Order Status Header**: Order ID, trạng thái hiện tại
+- **Timeline**: 
+  - Các bước: Pending → Confirmed → Preparing → Ready → Delivering → Completed
+  - Hiển thị bước hiện tại và các bước đã hoàn thành
+- **Order Details**:
+  - Danh sách món đã đặt với ảnh, tên, size, quantity, giá
+  - Tổng tiền, phí giao hàng, tổng cộng
+  - Địa chỉ giao hàng
+  - Phương thức thanh toán
+- **Map** (nếu có): Hiển thị vị trí delivery (optional)
+
+**Chức năng**:
+- Real-time updates qua SSE hoặc polling
+- Link đến chi tiết đơn hàng: `/orders/[id]`
+
+#### 4.3.8 Lịch sử đơn hàng (`/orders`)
+
+**Các thành phần chính**:
+- **Filter Bar**: Filter theo trạng thái (All, Pending, Preparing, Delivering, Completed, Cancelled)
+- **Orders List**:
+  - Mỗi order card hiển thị:
+    - Order ID
+    - Ngày đặt
+    - Trạng thái (badge với màu sắc)
+    - Tổng tiền
+    - Restaurant name
+    - Preview items (ảnh các món)
+  - Click vào order → Navigate đến `/orders/[id]`
+- **Pagination**: (nếu có nhiều orders)
+- **Empty State**: Khi chưa có đơn hàng nào
+
+**Chức năng**:
+- Filter orders theo trạng thái
+- Click order card → Xem chi tiết
+- Real-time updates trạng thái
+
+#### 4.3.9 Chi tiết đơn hàng (`/orders/[id]`)
+
+**Các thành phần chính**:
+- **Order Header**: Order ID, ngày đặt, trạng thái
+- **Order Items**: 
+  - Danh sách chi tiết món đã đặt: ảnh, tên, size, quantity, giá từng món
+  - Tổng tiền món ăn
+  - Phí giao hàng
+  - Tổng cộng
+- **Delivery Info**: Địa chỉ, ghi chú
+- **Payment Info**: Phương thức thanh toán, trạng thái thanh toán
+- **Action Buttons**:
+  - "Đặt lại" → Thêm tất cả món vào cart và navigate đến `/cart`
+  - "Theo dõi đơn hàng" → Navigate đến `/delivery/[id]` (nếu đang giao)
+
+**Chức năng**:
+- Đặt lại: Thêm tất cả món của order vào cart (với size và quantity tương ứng)
+
+#### 4.3.10 Chat (`/chat`)
 
 **Các thành phần chính**:
 - **Sidebar (ChatList)**:
-  - Danh sách conversations
+  - Danh sách conversations (với restaurants hoặc users)
   - Mỗi conversation hiển thị: avatar, tên, tin nhắn cuối, thời gian
   - Badge số tin nhắn chưa đọc (nếu có)
+  - Active state cho conversation đang mở
 - **Chat Window**:
-  - Header: Tên người đang chat
+  - Header: Tên người/restaurant đang chat, avatar
   - Messages area: 
-    - Tin nhắn của mình (align right)
-    - Tin nhắn của đối phương (align left)
+    - Tin nhắn của mình (align right, màu brand)
+    - Tin nhắn của đối phương (align left, màu gray)
     - Timestamp cho mỗi tin nhắn
+    - Auto scroll xuống tin nhắn mới nhất
   - Input area:
     - Text input
     - Button "Gửi"
     - Emoji picker (optional)
 
 **Chức năng**:
-- Real-time message updates qua WebSocket
-- Auto scroll xuống tin nhắn mới nhất
+- Real-time message updates qua WebSocket hoặc SSE
 - Mark as read khi mở conversation
 - Pagination khi load tin nhắn cũ (scroll up)
+- Click conversation trong sidebar → Load messages
 
-#### 4.3.6 Merchant Dashboard (`/merchant`)
+#### 4.3.11 Tài khoản (`/account`)
+
+**Các thành phần chính**:
+- **Welcome Banner**: Avatar, username, email, "Edit Profile" button
+- **Quick Stats Cards**:
+  - Total Orders
+  - Last Order Status
+  - Favorite Dish
+- **Recent Activity Section**:
+  - Danh sách 3 đơn hàng gần đây nhất
+  - Mỗi order hiển thị: Order ID, ngày, tổng tiền, trạng thái
+  - Link "View all orders" → `/account/orders`
+- **Edit Profile Modal**: Form sửa thông tin (name, phone, avatar)
+
+**Chức năng**:
+- Edit Profile: Mở modal, cập nhật thông tin
+- Click stats/orders → Navigate đến trang tương ứng
+
+#### 4.3.12 Blog (`/blog`)
+
+**Các thành phần chính**:
+- **Header Section**:
+  - Title "Blog"
+  - Buttons "My Blogs" và "Create Article" (nếu đã đăng nhập)
+- **Search and Filter**:
+  - Search bar
+  - Category filter
+- **Blog Posts Grid**:
+  - Mỗi post card hiển thị: ảnh cover, title, excerpt, author, date, category, like count
+  - Click → Navigate đến `/blog/[slug]`
+- **Pagination**: (nếu có nhiều posts)
+
+**Chức năng**:
+- Search: Filter posts theo keyword
+- Category filter: Filter theo category
+- Create Article: Navigate đến `/blog/create` (nếu đã đăng nhập)
+- My Blogs: Navigate đến `/blog/my-blogs` (nếu đã đăng nhập)
+
+#### 4.3.13 Merchant Dashboard (`/merchant`)
 
 **Các thành phần chính**:
 - **Stats Cards**:
-  - Tổng doanh thu (hôm nay/tuần/tháng)
+  - Tổng doanh thu (hôm nay/tuần/tháng) với percentage change
   - Số đơn hàng
   - Rating trung bình
   - Số món đang bán
 - **Charts Section**:
-  - Doanh thu theo ngày (line chart)
+  - Doanh thu theo ngày (line chart) với date range picker
   - Top selling products (bar chart)
   - Orders theo trạng thái (pie chart)
 - **Recent Orders Table**:
   - Danh sách đơn hàng gần đây
-  - Trạng thái, tổng tiền
+  - Columns: Order ID, Customer, Items, Total, Status, Actions
   - Link đến chi tiết
 
 **Chức năng các nút**:
 - "Xem tất cả đơn hàng" → Navigate đến `/merchant/orders`
 - "Thêm món mới" → Navigate đến `/merchant/food/new`
 - Order row → Navigate đến order details
+- Date range picker: Filter charts theo thời gian
 
-#### 4.3.7 Admin Dashboard (`/admin/dashboard`)
+#### 4.3.14 Admin Dashboard (`/admin/dashboard`)
 
 **Các thành phần chính**:
-- **Overview Stats**:
+- **Overview Stats Cards**:
   - Tổng số users
   - Tổng số merchants
   - Tổng số orders
   - Tổng doanh thu
-- **Charts**:
-  - Users growth (line chart)
-  - Orders theo ngày
-  - Top restaurants by revenue
-- **Recent Activities**:
-  - Danh sách các hoạt động gần đây (user đăng ký, merchant approval, etc.)
+- **Charts Section**:
+  - Users growth (line chart) theo thời gian
+  - Orders theo ngày (line/bar chart)
+  - Top restaurants by revenue (bar chart)
+- **Recent Activities Table**:
+  - Danh sách các hoạt động gần đây:
+    - User đăng ký
+    - Merchant approval/rejection
+    - Order status changes
+    - etc.
+  - Hiển thị: Type, Description, User/Merchant, Timestamp
 
 **Chức năng**:
-- Filter theo thời gian (ngày/tuần/tháng/năm)
-- Export reports (CSV/PDF)
+- Filter theo thời gian (ngày/tuần/tháng/năm) cho charts
+- Export reports (CSV/PDF) - optional
+- Click stats → Navigate đến trang quản lý tương ứng
 
 ---
 

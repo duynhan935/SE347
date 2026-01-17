@@ -33,6 +33,8 @@ export default function CreateBlogPage() {
         const [tagInput, setTagInput] = useState("");
         const [featuredImage, setFeaturedImage] = useState<File | null>(null);
         const [imagePreview, setImagePreview] = useState<string | null>(null);
+        const [images, setImages] = useState<File[]>([]);
+        const [imagePreviews, setImagePreviews] = useState<string[]>([]);
         const [status, setStatus] = useState<BlogStatus>("draft");
         const [loading, setLoading] = useState(false);
 
@@ -80,6 +82,44 @@ export default function CreateBlogPage() {
                 setImagePreview(null);
         };
 
+        const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                const files = Array.from(e.target.files || []);
+                if (files.length === 0) return;
+
+                // Validate file sizes
+                const invalidFiles = files.filter((file) => file.size > 5 * 1024 * 1024);
+                if (invalidFiles.length > 0) {
+                        toast.error(`${invalidFiles.length} image(s) exceed 5MB limit`);
+                        return;
+                }
+
+                // Limit to 10 images
+                const remainingSlots = 10 - images.length;
+                if (files.length > remainingSlots) {
+                        toast.error(`You can only upload up to 10 images. ${remainingSlots} slots remaining.`);
+                        files.splice(remainingSlots);
+                }
+
+                setImages([...images, ...files]);
+
+                // Create previews
+                files.forEach((file) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                                setImagePreviews((prev) => [...prev, reader.result as string]);
+                        };
+                        reader.readAsDataURL(file);
+                });
+
+                // Reset input
+                e.target.value = "";
+        };
+
+        const handleRemoveImageAt = (index: number) => {
+                setImages(images.filter((_, i) => i !== index));
+                setImagePreviews(imagePreviews.filter((_, i) => i !== index));
+        };
+
         const handleSubmit = async (e: React.FormEvent) => {
                 e.preventDefault();
                 
@@ -108,6 +148,7 @@ export default function CreateBlogPage() {
                                 tags: tags.length > 0 ? tags : undefined,
                                 status,
                                 featuredImage: featuredImage || undefined,
+                                images: images.length > 0 ? images : undefined,
                                 author: {
                                         userId: user.id,
                                         name: user.username,
@@ -224,6 +265,55 @@ export default function CreateBlogPage() {
                                                                         type="file"
                                                                         accept="image/*"
                                                                         onChange={handleImageChange}
+                                                                        className="hidden"
+                                                                />
+                                                        </label>
+                                                )}
+                                        </div>
+
+                                        {/* Content Images */}
+                                        <div>
+                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                        Content Images <span className="text-xs text-gray-500 font-normal">(Optional, up to 10 images)</span>
+                                                </label>
+                                                {imagePreviews.length > 0 && (
+                                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                                                                {imagePreviews.map((preview, index) => (
+                                                                        <div key={index} className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-300">
+                                                                                <Image
+                                                                                        src={preview}
+                                                                                        alt={`Preview ${index + 1}`}
+                                                                                        fill
+                                                                                        className="object-cover"
+                                                                                />
+                                                                                <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleRemoveImageAt(index)}
+                                                                                        className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                                                                        aria-label={`Remove image ${index + 1}`}
+                                                                                >
+                                                                                        <X className="w-3 h-3" />
+                                                                                </button>
+                                                                        </div>
+                                                                ))}
+                                                        </div>
+                                                )}
+                                                {images.length < 10 && (
+                                                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                                                <div className="flex flex-col items-center justify-center pt-3 pb-3">
+                                                                        <ImageIcon className="w-8 h-8 mb-2 text-gray-400" />
+                                                                        <p className="mb-1 text-sm text-gray-500">
+                                                                                <span className="font-semibold">Click to upload</span> multiple images
+                                                                        </p>
+                                                                        <p className="text-xs text-gray-500">
+                                                                                PNG, JPG, GIF up to 5MB each ({images.length}/10)
+                                                                        </p>
+                                                                </div>
+                                                                <input
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        multiple
+                                                                        onChange={handleImagesChange}
                                                                         className="hidden"
                                                                 />
                                                         </label>

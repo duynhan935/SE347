@@ -190,6 +190,25 @@ export default function BlogPostPage() {
                                                                         </div>
                                                                 )}
 
+                                                                {/* Content Images Gallery */}
+                                                                {blog.images && blog.images.length > 0 && (
+                                                                        <div className="mb-8">
+                                                                                <h3 className="text-xl font-semibold text-gray-900 mb-4">Images</h3>
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                                                        {blog.images.map((image, index) => (
+                                                                                                <div key={index} className="relative w-full aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-brand-purple transition-colors">
+                                                                                                        <Image
+                                                                                                                src={image.url}
+                                                                                                                alt={image.alt || `Image ${index + 1}`}
+                                                                                                                fill
+                                                                                                                className="object-cover cursor-pointer"
+                                                                                                        />
+                                                                                                </div>
+                                                                                        ))}
+                                                                                </div>
+                                                                        </div>
+                                                                )}
+
                                                                 {/* Content */}
                                                                 <div
                                                                         className="prose prose-lg max-w-none mb-8"
