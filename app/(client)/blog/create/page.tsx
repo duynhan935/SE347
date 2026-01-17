@@ -3,12 +3,17 @@
 import { blogApi } from "@/lib/api/blogApi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { BlogCategory, BlogStatus } from "@/types/blog.type";
+import "@uiw/react-md-editor/markdown-editor.css";
 import { ArrowLeft, Image as ImageIcon, Loader2, X } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+
+// Dynamic import để tránh lỗi SSR
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
 const CATEGORIES: { value: BlogCategory; label: string }[] = [
         { value: "recipe", label: "Recipe" },
@@ -412,17 +417,17 @@ export default function CreateBlogPage() {
                                                 <label htmlFor="content" className="block text-sm font-semibold text-gray-700 mb-2">
                                                         Content <span className="text-red-500">*</span>
                                                 </label>
-                                                <textarea
-                                                        id="content"
-                                                        value={content}
-                                                        onChange={(e) => setContent(e.target.value)}
-                                                        placeholder="Write your article content here... You can use HTML for formatting."
-                                                        rows={20}
-                                                        required
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] resize-y font-mono text-sm"
-                                                />
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                        HTML is supported. Use &lt;h2&gt;, &lt;p&gt;, &lt;strong&gt;, etc.
+                                                <div data-color-mode="light">
+                                                        <MDEditor
+                                                                value={content}
+                                                                onChange={(val) => setContent(val || "")}
+                                                                height={500}
+                                                                preview="edit"
+                                                                visibleDragbar={false}
+                                                        />
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-2">
+                                                        Write your article in Markdown format. Use <code className="bg-gray-100 px-1 rounded">#</code> for headings, <code className="bg-gray-100 px-1 rounded">**bold**</code> for bold text, and more.
                                                 </p>
                                         </div>
 
