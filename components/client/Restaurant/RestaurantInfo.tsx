@@ -10,10 +10,9 @@ type InfoProps = {
 };
 
 export default function RestaurantInfo({ name, about, address, phone, openingTime, closingTime }: InfoProps) {
-        // Generate Google Maps embed URL
-        const mapUrl = address 
-                ? `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6d-s6Y4cYZuGTtoY&q=${encodeURIComponent(address)}`
-                : null;
+        // Generate Google Maps embed URL (free, no API key required)
+        const addressToSearch = address || "Ho Chi Minh City, Vietnam";
+        const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(addressToSearch)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
 
         return (
                 <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -26,24 +25,24 @@ export default function RestaurantInfo({ name, about, address, phone, openingTim
                                 <div className="border-t pt-6">
                                         <h3 className="text-xl font-bold mb-4">Location & Hours</h3>
                                         
-                                        {/* Google Maps Embed */}
-                                        {mapUrl ? (
-                                                <div className="h-64 md:h-80 bg-gray-200 rounded-lg mb-4 overflow-hidden">
-                                                        <iframe
-                                                                width="100%"
-                                                                height="100%"
-                                                                style={{ border: 0 }}
-                                                                loading="lazy"
-                                                                allowFullScreen
-                                                                referrerPolicy="no-referrer-when-downgrade"
-                                                                src={mapUrl}
-                                                        />
-                                                </div>
-                                        ) : (
-                                                <div className="h-64 md:h-80 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                                                        <p className="text-gray-500">Map unavailable</p>
-                                                </div>
-                                        )}
+                                        {/* Google Maps Iframe Embed (Free, no API key) */}
+                                        <div className="w-full h-[300px] rounded-xl overflow-hidden bg-gray-100 shadow-sm border border-gray-200 mt-4">
+                                                <iframe
+                                                        width="100%"
+                                                        height="100%"
+                                                        id="gmap_canvas"
+                                                        src={mapUrl}
+                                                        frameBorder="0"
+                                                        scrolling="no"
+                                                        marginHeight={0}
+                                                        marginWidth={0}
+                                                        loading="lazy"
+                                                        allowFullScreen
+                                                        referrerPolicy="no-referrer-when-downgrade"
+                                                        title={`${name} Location Map`}
+                                                        className="border-0"
+                                                />
+                                        </div>
 
                                         <div className="space-y-3">
                                                 <div className="flex items-center gap-3 text-sm">
