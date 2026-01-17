@@ -57,69 +57,68 @@ export const blogApi = {
 
         // Create blog
         createBlog: async (blogData: BlogCreateRequest): Promise<BlogDetailResponse> => {
-                // If there's no featuredImage, send as JSON (backend supports both)
-                // If there's featuredImage, use FormData
-                if (!blogData.featuredImage) {
-                        // Send as JSON when no file
-                        const jsonData: Record<string, unknown> = {
-                                title: blogData.title,
-                                content: blogData.content,
-                                author: {
-                                        userId: blogData.author.userId,
-                                        name: blogData.author.name,
-                                },
-                        };
-
-                        if (blogData.excerpt) jsonData.excerpt = blogData.excerpt;
-                        if (blogData.author.avatar) {
-                                (jsonData.author as Record<string, unknown>).avatar = blogData.author.avatar;
-                        }
-                        if (blogData.category) jsonData.category = blogData.category;
-                        if (blogData.tags && blogData.tags.length > 0) jsonData.tags = blogData.tags;
-                        if (blogData.status) jsonData.status = blogData.status;
-                        if (blogData.seo) jsonData.seo = blogData.seo;
-
-                        const response = await api.post<BlogDetailResponse>("/blogs", jsonData, {
-                                headers: {
-                                        "Content-Type": "application/json",
-                                },
-                        });
-                        return response.data;
-                } else {
-                        // Use FormData when there's a file
-                        const formData = new FormData();
-                        formData.append("title", blogData.title);
-                        formData.append("content", blogData.content);
-                        if (blogData.excerpt) formData.append("excerpt", blogData.excerpt);
-                        formData.append("author[userId]", blogData.author.userId);
-                        formData.append("author[name]", blogData.author.name);
-                        if (blogData.author.avatar) formData.append("author[avatar]", blogData.author.avatar);
-                        formData.append("featuredImage", blogData.featuredImage);
-                        if (blogData.category) formData.append("category", blogData.category);
-                        if (blogData.tags && blogData.tags.length > 0) {
-                                formData.append("tags", blogData.tags.join(","));
-                        }
-                        if (blogData.status) formData.append("status", blogData.status);
-                        if (blogData.seo) {
-                                if (blogData.seo.metaTitle) formData.append("seo[metaTitle]", blogData.seo.metaTitle);
-                                if (blogData.seo.metaDescription)
-                                        formData.append("seo[metaDescription]", blogData.seo.metaDescription);
-                                if (blogData.seo.keywords && blogData.seo.keywords.length > 0) {
-                                        formData.append("seo[keywords]", blogData.seo.keywords.join(","));
-                                }
-                        }
-
-                        // DON'T set Content-Type header manually - let browser set it with boundary automatically
-                        const response = await api.post<BlogDetailResponse>("/blogs", formData);
-                        return response.data;
+                // Always use FormData because backend route uses multer middleware
+                const formData = new FormData();
+                
+                // Always append required fields (even if empty, to ensure req.body is not empty)
+                formData.append("title", blogData.title || "");
+                formData.append("content", blogData.content || "");
+                formData.append("author[userId]", blogData.author.userId || "");
+                formData.append("author[name]", blogData.author.name || "");
+                
+                // Optional fields
+                if (blogData.excerpt) {
+                        formData.append("excerpt", blogData.excerpt);
                 }
+                if (blogData.author.avatar) {
+                        formData.append("author[avatar]", blogData.author.avatar);
+                }
+                if (blogData.featuredImage) {
+                        formData.append("featuredImage", blogData.featuredImage);
+                }
+                // Append multiple images
+                if (blogData.images && blogData.images.length > 0) {
+                        blogData.images.forEach((image) => {
+                                formData.append("images", image);
+                        });
+                }
+                if (blogData.category) {
+                        formData.append("category", blogData.category);
+                }
+                if (blogData.tags && blogData.tags.length > 0) {
+                        formData.append("tags", blogData.tags.join(","));
+                }
+                if (blogData.status) {
+                        formData.append("status", blogData.status);
+                }
+                if (blogData.seo) {
+                        if (blogData.seo.metaTitle) {
+                                formData.append("seo[metaTitle]", blogData.seo.metaTitle);
+                        }
+                        if (blogData.seo.metaDescription) {
+                                formData.append("seo[metaDescription]", blogData.seo.metaDescription);
+                        }
+                        if (blogData.seo.keywords && blogData.seo.keywords.length > 0) {
+                                formData.append("seo[keywords]", blogData.seo.keywords.join(","));
+                        }
+                }
+
+                // Debug: Log FormData entries
+                console.log("FormData entries:");
+                for (const [key, value] of formData.entries()) {
+                        console.log(key, ":", value instanceof File ? `File: ${value.name}` : value);
+                }
+
+                // DON'T set Content-Type header manually - let browser set it with boundary automatically
+                const response = await api.post<BlogDetailResponse>("/blogs", formData);
+                return response.data;
         },
 
         // Update blog
         updateBlog: async (blogId: string, blogData: BlogUpdateRequest): Promise<BlogDetailResponse> => {
-                // If there's no featuredImage, send as JSON (backend supports both)
-                // If there's featuredImage, use FormData
-                if (!blogData.featuredImage) {
+                // If there's no featuredImage and no images, send as JSON (backend supports both)
+                // If there's featuredImage or images, use FormData
+                if (!blogData.featuredImage && (!blogData.images || blogData.images.length === 0)) {
                         // Send as JSON when no file
                         const jsonData: Record<string, unknown> = {};
 
@@ -144,7 +143,15 @@ export const blogApi = {
                         if (blogData.title) formData.append("title", blogData.title);
                         if (blogData.content) formData.append("content", blogData.content);
                         if (blogData.excerpt) formData.append("excerpt", blogData.excerpt);
-                        formData.append("featuredImage", blogData.featuredImage);
+                        if (blogData.featuredImage) {
+                                formData.append("featuredImage", blogData.featuredImage);
+                        }
+                        // Append multiple images
+                        if (blogData.images && blogData.images.length > 0) {
+                                blogData.images.forEach((image) => {
+                                        formData.append("images", image);
+                                });
+                        }
                         if (blogData.category) formData.append("category", blogData.category);
                         if (blogData.tags && blogData.tags.length > 0) {
                                 formData.append("tags", blogData.tags.join(","));

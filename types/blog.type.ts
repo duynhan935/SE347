@@ -8,7 +8,14 @@ export interface BlogAuthor {
 }
 
 export interface BlogFeaturedImage {
+        url?: string;
+        publicId?: string;
+        alt?: string;
+}
+
+export interface BlogImage {
         url: string;
+        publicId?: string;
         alt?: string;
 }
 
@@ -26,6 +33,7 @@ export interface Blog {
         excerpt?: string;
         author: BlogAuthor;
         featuredImage?: BlogFeaturedImage;
+        images?: BlogImage[];
         category: BlogCategory;
         tags?: string[];
         status: BlogStatus;
@@ -46,6 +54,7 @@ export interface BlogCreateRequest {
         excerpt?: string;
         author: BlogAuthor;
         featuredImage?: File;
+        images?: File[];
         category?: BlogCategory;
         tags?: string[];
         status?: BlogStatus;
@@ -57,6 +66,7 @@ export interface BlogUpdateRequest {
         content?: string;
         excerpt?: string;
         featuredImage?: File;
+        images?: File[];
         category?: BlogCategory;
         tags?: string[];
         status?: BlogStatus;
