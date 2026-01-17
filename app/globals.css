@@ -16,6 +16,21 @@
     --color-brand-yellowlight: #fffae3;
     --color-brand-purplelight: #e8e6ed;
 
+    /* TailAdmin Colors for Dashboard - Mapped to Client Brand Colors */
+    --color-primary: #572af8; /* Brand Purple */
+    --color-stroke: #e2e8f0;
+    --color-strokedark: #2e3a47;
+    --color-boxdark: #ffffff; /* Unified to White for cleaner look, or lighter dark */
+    --color-bodydark: #575363; /* Brand Grey */
+    --color-gray: #eff4fb; /* Keep generic light gray or use #fffae3 (Brand YellowLight)? Let's stick to clean gray for dashboard to avoid too much yellow */
+    --color-meta-1: #f05e36; /* Brand Orange (Danger/Action) */
+    --color-meta-3: #29b067; /* Brand Green (Success) */
+    --color-meta-5: #572af8; /* Brand Purple */
+    --color-meta-6: #380cd3; /* Brand Purple Dark */
+    --color-warning: #ffcf54; /* Brand Yellow */
+    --color-success: #29b067; /* Brand Green */
+    --color-danger: #f05e36; /* Brand Orange */
+
     /* Font-Size */
     --text-h1: 74px;
     --text-h2: 44px;
@@ -181,12 +196,12 @@
 
     /* Hide scrollbar but allow scrolling */
     .scrollbar-hide {
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
     }
 
     .scrollbar-hide::-webkit-scrollbar {
-        display: none;  /* Chrome, Safari and Opera */
+        display: none; /* Chrome, Safari and Opera */
     }
 }
 

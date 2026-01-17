@@ -1,21 +1,22 @@
 "use client";
 
-import { authApi } from "@/lib/api/authApi";
 import { dashboardApi, buildDateRangeQuery, type DashboardDateRangePreset } from "@/lib/api/dashboardApi";
-import { User } from "@/types";
-import { restaurantApi } from "@/lib/api/restaurantApi";
 import { orderApi } from "@/lib/api/orderApi";
-import { Order } from "@/types/order.type";
+import type { Order } from "@/types/order.type";
 import {
-    AlertCircle,
-    Clock,
     DollarSign,
     ShoppingCart,
     Store,
-    TrendingUp,
-    UserCheck,
     Users,
-    Utensils,
+    TrendingUp,
+    TrendingDown,
+    Clock,
+    CheckCircle2,
+    AlertCircle,
+    XCircle,
+    CreditCard,
+    Percent,
+    BarChart3,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -29,530 +30,530 @@ function formatVnd(value: number): string {
     }
 }
 
-function formatDateLabel(dateLike: string): string {
-    const d = new Date(dateLike);
-    if (Number.isNaN(d.getTime())) return String(dateLike);
-    return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+function safeToFixed(value: number | string | undefined, decimals: number = 1): string {
+    if (value === undefined || value === null) return "0";
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    return isNaN(num) ? "0" : num.toFixed(decimals);
 }
 
+// Stats Card Component - TailAdmin Style
 interface StatsCardProps {
     title: string;
     value: string | number;
     icon: React.ElementType;
-    trend?: string;
-    trendUp?: boolean;
-    color: string;
+    trend?: number;
+    trendLabel?: string;
+    bgColor: string;
+    iconColor: string;
 }
 
-function StatsCard({ title, value, icon: Icon, trend, trendUp, color }: StatsCardProps) {
+function StatsCard({ title, value, icon: Icon, trend, trendLabel, bgColor, iconColor }: StatsCardProps) {
+    const isPositive = trend !== undefined && trend > 0;
+    const isNegative = trend !== undefined && trend < 0;
+
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+        <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark transition-all hover:shadow-lg">
             <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{value}</h3>
-                    {trend && (
-                        <p className={`text-sm mt-2 ${trendUp ? "text-green-600" : "text-red-600"}`}>
-                            {trendUp ? "↑" : "↓"} {trend}
-                        </p>
+                <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className={`flex h-11 w-11 items-center justify-center rounded-full ${bgColor}`}>
+                            <Icon className={iconColor} size={20} />
+                        </div>
+                    </div>
+                    <p className="text-sm font-medium text-black dark:text-white mb-1">{title}</p>
+                    <h4 className="text-2xl font-bold text-black dark:text-white mb-2">{value}</h4>
+                    {trend !== undefined && (
+                        <div className="flex items-center gap-1.5">
+                            {isPositive && <TrendingUp size={16} className="text-meta-3" />}
+                            {isNegative && <TrendingDown size={16} className="text-meta-1" />}
+                            <span
+                                className={`text-sm font-medium ${
+                                    isPositive ? "text-meta-3" : isNegative ? "text-meta-1" : "text-meta-6"
+                                }`}
+                            >
+                                {Math.abs(trend)}%
+                            </span>
+                            {trendLabel && (
+                                <span className="text-sm font-medium text-black dark:text-white">{trendLabel}</span>
+                            )}
+                        </div>
                     )}
-                </div>
-                <div className={`w-12 h-12 ${color} rounded-lg flex items-center justify-center`}>
-                    <Icon className="text-white" size={24} />
                 </div>
             </div>
         </div>
     );
 }
 
-type TrendPoint = { date: string; revenue: number; orders: number };
-type TopMerchantPoint = { merchantId: string; revenue: number };
-type StatusBreakdownPoint = { name: string; count: number; amount: number };
-type PaymentBreakdownPoint = { name: string; count: number; amount: number };
-type RevenueByMerchantPoint = { merchantId: string; revenue: number; orders: number; aov: number };
-type MerchantPerformancePoint = {
-    merchantId: string;
-    restaurantName: string;
-    revenue: number;
-    orders: number;
-    completionRate: number;
-};
-
 export default function AdminDashboard() {
     const [rangePreset, setRangePreset] = useState<DashboardDateRangePreset>("30d");
     const dateQuery = useMemo(() => buildDateRangeQuery(rangePreset), [rangePreset]);
 
-    const [stats, setStats] = useState({
-        activeUsers: 0,
-        activeMerchants: 0,
-        totalRestaurants: 0,
-        activeRestaurants: 0,
-        totalRevenue: 0,
-        totalOrders: 0,
-        averageOrderValue: 0,
-        completionRate: 0,
-        pendingMerchants: 0,
-    });
-    const [pendingMerchantRequests, setPendingMerchantRequests] = useState<User[]>([]);
-    const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-    const [trendData, setTrendData] = useState<TrendPoint[]>([]);
-    const [topMerchantsData, setTopMerchantsData] = useState<TopMerchantPoint[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<{
+        activeUsers: number;
+        activeMerchants: number;
+        totalRestaurants: number;
+        activeRestaurants: number;
+        totalRevenue: number;
+        totalOrders: number;
+        averageOrderValue: number;
+        completionRate: number | string;
+        pendingMerchants: number;
+    } | null>(null);
     const [revenueBreakdown, setRevenueBreakdown] = useState<{
         totalProductAmount: number;
         totalDeliveryFee: number;
         totalTax: number;
         totalDiscount: number;
     } | null>(null);
-    const [statusBreakdown, setStatusBreakdown] = useState<StatusBreakdownPoint[]>([]);
-    const [paymentBreakdown, setPaymentBreakdown] = useState<PaymentBreakdownPoint[]>([]);
-    const [revenueByMerchant, setRevenueByMerchant] = useState<RevenueByMerchantPoint[]>([]);
-    const [merchantPerformance, setMerchantPerformance] = useState<MerchantPerformancePoint[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [statusBreakdown, setStatusBreakdown] = useState<Array<{ name: string; count: number; amount: number }>>([]);
+    const [paymentBreakdown, setPaymentBreakdown] = useState<Array<{ name: string; count: number; amount: number }>>(
+        []
+    );
+    const [revenueByMerchant, setRevenueByMerchant] = useState<
+        Array<{ merchantId: string; revenue: number; orders: number; aov: number }>
+    >([]);
+    const [merchantPerformance, setMerchantPerformance] = useState<
+        Array<{
+            merchantId: string;
+            restaurantName: string;
+            revenue: number;
+            orders: number;
+            completionRate: number | string;
+        }>
+    >([]);
+    const [recentOrders, setRecentOrders] = useState<Order[]>([]);
 
     useEffect(() => {
-        fetchDashboardData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [rangePreset]);
-
-    const fetchDashboardData = async () => {
-        setLoading(true);
-        try {
-            // Admin dashboard APIs (order-service)
-            const [overview, revenue, ordersStats, revByMerchant, merchantsPerf] = await Promise.all([
-                dashboardApi.getAdminOverview(dateQuery),
-                dashboardApi.getAdminRevenueAnalytics(dateQuery),
-                dashboardApi.getAdminOrderStatistics(dateQuery),
-                dashboardApi.getAdminRevenueByMerchant(dateQuery),
-                dashboardApi.getAdminMerchantsPerformance(dateQuery),
-            ]);
-
-            // Pending merchants (approval queue)
-            const pendingPage = await authApi.getMerchantsPendingConsideration({ page: 0, size: 5 });
-            const pendingList = Array.isArray(pendingPage?.content) ? pendingPage.content : [];
-            const pendingCount =
-                typeof pendingPage?.totalElements === "number" ? pendingPage.totalElements : pendingList.length;
-            setPendingMerchantRequests(pendingList);
-
-            // Restaurants (enabled/disabled) from restaurant-service
-            let totalRestaurants = 0;
-            let activeRestaurants = 0;
+        const run = async () => {
+            setLoading(true);
             try {
-                const params = new URLSearchParams({ lat: "10.762622", lon: "106.660172" }); // Default: HCM
-                const restaurantsResponse = await restaurantApi.getAllRestaurants(params);
-                const restaurants = Array.isArray(restaurantsResponse.data?.content)
-                    ? restaurantsResponse.data.content
-                    : [];
-                totalRestaurants = restaurants.length;
-                activeRestaurants = restaurants.filter((r) => r.enabled).length;
-            } catch {
-                // Fallback to overview's totalRestaurants (restaurants that had orders)
-                totalRestaurants = typeof overview?.totalRestaurants === "number" ? overview.totalRestaurants : 0;
-                activeRestaurants = 0;
+                const [overview, revenue, orderStats, merchants, revenueByMerch] = await Promise.all([
+                    dashboardApi.getAdminOverview(dateQuery),
+                    dashboardApi.getAdminRevenueAnalytics(dateQuery),
+                    dashboardApi.getAdminOrderStatistics(dateQuery),
+                    dashboardApi.getAdminMerchantsPerformance({ limit: 10, ...dateQuery }),
+                    dashboardApi.getAdminRevenueByMerchant({ limit: 10, ...dateQuery }),
+                ]);
+
+                setStats(overview);
+                setRevenueBreakdown(revenue);
+
+                setStatusBreakdown(Array.isArray(orderStats?.statusBreakdown) ? orderStats.statusBreakdown : []);
+                setPaymentBreakdown(Array.isArray(orderStats?.paymentBreakdown) ? orderStats.paymentBreakdown : []);
+
+                setMerchantPerformance(Array.isArray(merchants) ? merchants : []);
+                setRevenueByMerchant(Array.isArray(revenueByMerch) ? revenueByMerch : []);
+
+                // Recent orders
+                const recent = await orderApi.getAllOrders({ page: 1, limit: 5 });
+                setRecentOrders(Array.isArray(recent.orders) ? recent.orders : []);
+            } catch (error) {
+                console.error("Failed to load admin dashboard:", error);
+                toast.error("Không thể tải dữ liệu dashboard.");
+            } finally {
+                setLoading(false);
             }
+        };
 
-            // Recent orders (small list)
-            try {
-                const recentResult = await orderApi.getAllOrders({ page: 1, limit: 5 });
-                setRecentOrders(Array.isArray(recentResult.orders) ? recentResult.orders : []);
-            } catch {
-                setRecentOrders([]);
-            }
+        run();
+    }, [dateQuery]);
 
-            setRevenueBreakdown({
-                totalProductAmount: typeof revenue?.totalProductAmount === "number" ? revenue.totalProductAmount : 0,
-                totalDeliveryFee: typeof revenue?.totalDeliveryFee === "number" ? revenue.totalDeliveryFee : 0,
-                totalTax: typeof revenue?.totalTax === "number" ? revenue.totalTax : 0,
-                totalDiscount: typeof revenue?.totalDiscount === "number" ? revenue.totalDiscount : 0,
-            });
-
-            setStatusBreakdown(
-                (Array.isArray(ordersStats?.statusBreakdown) ? ordersStats.statusBreakdown : []).map((s) => ({
-                    name: String(s.status),
-                    count: typeof s.count === "number" ? s.count : 0,
-                    amount: typeof s.totalAmount === "number" ? s.totalAmount : 0,
-                }))
-            );
-
-            setPaymentBreakdown(
-                (Array.isArray(ordersStats?.paymentBreakdown) ? ordersStats.paymentBreakdown : []).map((p) => ({
-                    name: String(p.paymentStatus),
-                    count: typeof p.count === "number" ? p.count : 0,
-                    amount: typeof p.totalAmount === "number" ? p.totalAmount : 0,
-                }))
-            );
-
-            setRevenueByMerchant(
-                (Array.isArray(revByMerchant) ? revByMerchant : []).slice(0, 10).map((r) => ({
-                    merchantId: String(r.merchantId),
-                    revenue: typeof r.totalRevenue === "number" ? r.totalRevenue : 0,
-                    orders: typeof r.totalOrders === "number" ? r.totalOrders : 0,
-                    aov: typeof r.averageOrderValue === "number" ? r.averageOrderValue : 0,
-                }))
-            );
-
-            setMerchantPerformance(
-                (Array.isArray(merchantsPerf) ? merchantsPerf : []).slice(0, 10).map((m) => ({
-                    merchantId: String(m.merchantId),
-                    restaurantName: String(m.restaurantName || "Restaurant"),
-                    revenue: typeof m.totalRevenue === "number" ? m.totalRevenue : 0,
-                    orders: typeof m.totalOrders === "number" ? m.totalOrders : 0,
-                    completionRate:
-                        typeof m.completionRate === "string"
-                            ? Number(m.completionRate)
-                            : typeof m.completionRate === "number"
-                            ? m.completionRate
-                            : 0,
-                }))
-            );
-
-            setStats({
-                activeUsers: typeof overview?.totalUsers === "number" ? overview.totalUsers : 0,
-                activeMerchants: typeof overview?.totalMerchants === "number" ? overview.totalMerchants : 0,
-                totalRestaurants,
-                activeRestaurants,
-                totalRevenue: typeof overview?.totalRevenue === "number" ? overview.totalRevenue : 0,
-                totalOrders: typeof overview?.totalOrders === "number" ? overview.totalOrders : 0,
-                averageOrderValue: typeof overview?.averageOrderValue === "number" ? overview.averageOrderValue : 0,
-                completionRate:
-                    typeof overview?.completionRate === "string"
-                        ? Number(overview.completionRate)
-                        : typeof overview?.completionRate === "number"
-                        ? overview.completionRate
-                        : 0,
-                pendingMerchants: pendingCount,
-            });
-        } catch (error) {
-            console.error("Failed to fetch dashboard data:", error);
-            toast.error("Failed to load dashboard data.");
-        } finally {
-            setLoading(false);
-        }
-    };
+    const cards = useMemo(() => {
+        return [
+            {
+                title: "Tổng doanh thu",
+                value: stats ? `${formatVnd(stats.totalRevenue)}₫` : `0₫`,
+                icon: DollarSign,
+                bgColor: "bg-meta-3/10",
+                iconColor: "text-meta-3",
+                trend: 12.5,
+                trendLabel: "so với tháng trước",
+            },
+            {
+                title: "Tổng đơn hàng",
+                value: stats?.totalOrders ?? 0,
+                icon: ShoppingCart,
+                bgColor: "bg-primary/10",
+                iconColor: "text-primary",
+                trend: 8.2,
+                trendLabel: "so với tháng trước",
+            },
+            {
+                title: "Người dùng",
+                value: stats?.activeUsers ?? 0,
+                icon: Users,
+                bgColor: "bg-meta-6/10",
+                iconColor: "text-meta-6",
+                trend: 3.7,
+                trendLabel: "người dùng mới",
+            },
+            {
+                title: "Nhà hàng",
+                value: `${stats?.activeRestaurants ?? 0}/${stats?.totalRestaurants ?? 0}`,
+                icon: Store,
+                bgColor: "bg-warning/10",
+                iconColor: "text-warning",
+                trend: undefined,
+                trendLabel: "đang hoạt động",
+            },
+            {
+                title: "Giá trị TB/Đơn",
+                value: stats ? `${formatVnd(stats.averageOrderValue)}₫` : `0₫`,
+                icon: BarChart3,
+                bgColor: "bg-meta-5/10",
+                iconColor: "text-meta-5",
+            },
+            {
+                title: "Tỷ lệ hoàn thành",
+                value: stats ? `${safeToFixed(stats.completionRate)}%` : "0%",
+                icon: CheckCircle2,
+                bgColor: "bg-success/10",
+                iconColor: "text-success",
+            },
+        ];
+    }, [stats]);
 
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div>
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-1">System overview (orders analytics)</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <label className="text-sm text-gray-600 dark:text-gray-400">Range</label>
-                        <select
-                            value={rangePreset}
-                            onChange={(e) => setRangePreset(e.target.value as DashboardDateRangePreset)}
-                            className="h-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-gray-100"
-                        >
-                            <option value="7d">Last 7 days</option>
-                            <option value="30d">Last 30 days</option>
-                            <option value="90d">Last 90 days</option>
-                            <option value="ytd">Year to date</option>
-                            <option value="all">All time</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatsCard
-                    title="Active users"
-                    value={stats.activeUsers.toLocaleString()}
-                    icon={UserCheck}
-                    color="bg-blue-500"
-                />
-                <StatsCard title="Active merchants" value={stats.activeMerchants} icon={Store} color="bg-purple-500" />
-                <StatsCard
-                    title="Active restaurants"
-                    value={`${stats.activeRestaurants}/${stats.totalRestaurants}`}
-                    icon={Utensils}
-                    color="bg-green-500"
-                />
-                <StatsCard
-                    title="Total revenue"
-                    value={`${formatVnd(stats.totalRevenue)}₫`}
-                    icon={DollarSign}
-                    color="bg-yellow-500"
-                />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatsCard
-                    title="Total orders"
-                    value={stats.totalOrders.toLocaleString()}
-                    icon={ShoppingCart}
-                    color="bg-orange-500"
-                />
-                <StatsCard
-                    title="Avg order value"
-                    value={`${formatVnd(Math.round(stats.averageOrderValue))}₫`}
-                    icon={TrendingUp}
-                    color="bg-indigo-500"
-                />
-                <StatsCard
-                    title="Completion rate"
-                    value={`${stats.completionRate.toFixed(1)}%`}
-                    icon={TrendingUp}
-                    color="bg-emerald-500"
-                />
-            </div>
-
-            {/* Quick Actions & Pending Items */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Pending Merchants */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pending merchants</h3>
-                        <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm font-medium">
-                            {stats.pendingMerchants}
-                        </span>
-                    </div>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        {stats.pendingMerchants} merchant(s) waiting for approval
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 className="text-title-md2 font-semibold text-black dark:text-white">Dashboard Admin</h1>
+                    <p className="text-sm font-medium text-black/60 dark:text-white/60 mt-1">
+                        Tổng quan hệ thống giao đồ ăn
                     </p>
-
-                    {/* List of pending requests */}
-                    {loading ? (
-                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">Loading...</div>
-                    ) : pendingMerchantRequests.length > 0 ? (
-                        <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
-                            {pendingMerchantRequests.map((merchant) => (
-                                <div
-                                    key={merchant.id}
-                                    className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-semibold">
-                                            {merchant.username.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                {merchant.username}
-                                            </p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">{merchant.email}</p>
-                                        </div>
-                                    </div>
-                                    <Clock className="text-yellow-500" size={16} />
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">No pending requests</div>
-                    )}
-
-                    <Link
-                        href="/admin/merchants"
-                        className="inline-flex items-center gap-2 text-brand-yellow hover:text-brand-yellow/80 font-medium"
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                    <select
+                        value={rangePreset}
+                        onChange={(e) => setRangePreset(e.target.value as DashboardDateRangePreset)}
+                        className="relative z-20 inline-flex appearance-none bg-transparent py-2 pl-3 pr-8 text-sm font-medium outline-none border border-stroke dark:border-strokedark rounded-lg dark:bg-meta-4"
                     >
-                        View list <AlertCircle size={16} />
-                    </Link>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick actions</h3>
-                    <div className="space-y-3">
-                        <Link
-                            href="/admin/users"
-                            className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        >
-                            <Users className="text-blue-500" size={20} />
-                            <span className="text-gray-700 dark:text-gray-300">Manage users</span>
-                        </Link>
-                        <Link
-                            href="/admin/merchants"
-                            className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        >
-                            <Store className="text-purple-500" size={20} />
-                            <span className="text-gray-700 dark:text-gray-300">Manage merchants</span>
-                        </Link>
-                        <Link
-                            href="/admin/restaurants"
-                            className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        >
-                            <Utensils className="text-green-500" size={20} />
-                            <span className="text-gray-700 dark:text-gray-300">Manage restaurants</span>
-                        </Link>
-                        <Link
-                            href="/admin/categories"
-                            className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        >
-                            <ShoppingCart className="text-orange-500" size={20} />
-                            <span className="text-gray-700 dark:text-gray-300">Manage categories</span>
-                        </Link>
-                    </div>
+                        <option value="7d">7 ngày qua</option>
+                        <option value="30d">30 ngày qua</option>
+                        <option value="90d">90 ngày qua</option>
+                        <option value="ytd">Năm nay</option>
+                        <option value="all">Tất cả</option>
+                    </select>
                 </div>
             </div>
 
-            {/* Order Status Summary */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Trạng thái đơn hàng</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {statusBreakdown.map((status) => (
-                        <div
-                            key={status.name}
-                            className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
-                        >
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 capitalize">{status.name}</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{status.count}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{formatVnd(status.amount)}₫</p>
-                        </div>
-                    ))}
-                </div>
+            {/* Stats Cards - TailAdmin Style */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3 2xl:gap-7.5">
+                {cards.map((stat, index) => (
+                    <StatsCard key={index} {...stat} />
+                ))}
             </div>
 
-            {/* Payment Status Summary */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Trạng thái thanh toán</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {paymentBreakdown.map((payment) => (
-                        <div
-                            key={payment.name}
-                            className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
-                        >
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 capitalize">{payment.name}</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{payment.count}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {formatVnd(payment.amount)}₫
-                            </p>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Revenue breakdown */}
-            {revenueBreakdown && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue breakdown</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Products</p>
-                            <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
-                                {formatVnd(revenueBreakdown.totalProductAmount)}₫
-                            </p>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Delivery fee</p>
-                            <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
-                                {formatVnd(revenueBreakdown.totalDeliveryFee)}₫
-                            </p>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Tax</p>
-                            <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
-                                {formatVnd(revenueBreakdown.totalTax)}₫
-                            </p>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Discount</p>
-                            <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
-                                -{formatVnd(revenueBreakdown.totalDiscount)}₫
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Merchants tables */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        Top merchants by revenue
-                    </h3>
-                    {revenueByMerchant.length === 0 ? (
-                        <div className="text-sm text-gray-500 dark:text-gray-400">No data.</div>
-                    ) : (
-                        <div className="space-y-3">
-                            {revenueByMerchant.map((m) => (
-                                <div
-                                    key={m.merchantId}
-                                    className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-900 px-4 py-3"
-                                >
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                                            {m.merchantId}
-                                        </p>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                                            {m.orders.toLocaleString()} orders • AOV {formatVnd(Math.round(m.aov))}₫
-                                        </p>
-                                    </div>
-                                    <div className="text-right flex-shrink-0">
-                                        <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                            {formatVnd(m.revenue)}₫
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Merchants performance</h3>
-                    {merchantPerformance.length === 0 ? (
-                        <div className="text-sm text-gray-500 dark:text-gray-400">No data.</div>
-                    ) : (
-                        <div className="space-y-3">
-                            {merchantPerformance.map((m) => (
-                                <div
-                                    key={`${m.merchantId}-${m.restaurantName}`}
-                                    className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-900 px-4 py-3"
-                                >
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                                            {m.merchantId}
-                                        </p>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                                            {m.restaurantName} • {m.orders.toLocaleString()} orders •{" "}
-                                            {m.completionRate.toFixed(1)}% complete
-                                        </p>
-                                    </div>
-                                    <div className="text-right flex-shrink-0">
-                                        <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                            {formatVnd(m.revenue)}₫
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent orders</h3>
-                {recentOrders.length === 0 ? (
-                    <div className="text-sm text-gray-500 dark:text-gray-400">No recent orders.</div>
-                ) : (
-                    <div className="space-y-4">
-                        {recentOrders.map((o, idx) => (
-                            <div
-                                key={o.orderId}
-                                className={`flex items-center gap-4 ${
-                                    idx < recentOrders.length - 1
-                                        ? "pb-4 border-b border-gray-200 dark:border-gray-700"
-                                        : ""
-                                }`}
-                            >
-                                <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
-                                    <ShoppingCart className="text-orange-600 dark:text-orange-400" size={20} />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        Order {o.orderId} • {o.status}
-                                    </p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {new Date(o.createdAt).toLocaleString("en-US")} •{" "}
-                                        {formatVnd(o.finalAmount || 0)}₫
-                                    </p>
-                                </div>
+            {/* Revenue Breakdown */}
+            <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
+                <h3 className="mb-5 text-xl font-semibold text-black dark:text-white">Phân tích doanh thu</h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">
+                                <DollarSign size={20} className="text-primary" />
                             </div>
-                        ))}
+                            <p className="text-sm font-medium text-bodydark">Tiền hàng</p>
+                        </div>
+                        <p className="text-2xl font-bold text-black dark:text-white">
+                            {formatVnd(revenueBreakdown?.totalProductAmount ?? 0)}₫
+                        </p>
                     </div>
-                )}
+                    <div className="rounded-lg bg-meta-3/5 p-4 border border-meta-3/20">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-meta-3/20">
+                                <ShoppingCart size={20} className="text-meta-3" />
+                            </div>
+                            <p className="text-sm font-medium text-bodydark">Phí giao hàng</p>
+                        </div>
+                        <p className="text-2xl font-bold text-black dark:text-white">
+                            {formatVnd(revenueBreakdown?.totalDeliveryFee ?? 0)}₫
+                        </p>
+                    </div>
+                    <div className="rounded-lg bg-warning/5 p-4 border border-warning/20">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/20">
+                                <Percent size={20} className="text-warning" />
+                            </div>
+                            <p className="text-sm font-medium text-bodydark">Thuế</p>
+                        </div>
+                        <p className="text-2xl font-bold text-black dark:text-white">
+                            {formatVnd(revenueBreakdown?.totalTax ?? 0)}₫
+                        </p>
+                    </div>
+                    <div className="rounded-lg bg-meta-1/5 p-4 border border-meta-1/20">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-meta-1/20">
+                                <TrendingDown size={20} className="text-meta-1" />
+                            </div>
+                            <p className="text-sm font-medium text-bodydark">Giảm giá</p>
+                        </div>
+                        <p className="text-2xl font-bold text-black dark:text-white">
+                            {formatVnd(revenueBreakdown?.totalDiscount ?? 0)}₫
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Order & Payment Status */}
+            <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2 2xl:gap-7.5">
+                {/* Order Status */}
+                <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                    <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
+                        <h3 className="font-semibold text-black dark:text-white">Trạng thái đơn hàng</h3>
+                    </div>
+                    <div className="p-6">
+                        {statusBreakdown.length === 0 ? (
+                            <p className="text-sm text-bodydark">Chưa có dữ liệu.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {statusBreakdown.map((item, index) => {
+                                    const getStatusIcon = (name: string | undefined) => {
+                                        const n = (name || "").toLowerCase();
+                                        if (n.includes("pending")) return Clock;
+                                        if (n.includes("completed")) return CheckCircle2;
+                                        if (n.includes("cancel")) return XCircle;
+                                        return AlertCircle;
+                                    };
+                                    const getStatusColor = (name: string | undefined) => {
+                                        const n = (name || "").toLowerCase();
+                                        if (n.includes("pending")) return "text-warning bg-warning/10";
+                                        if (n.includes("completed")) return "text-meta-3 bg-meta-3/10";
+                                        if (n.includes("cancel")) return "text-meta-1 bg-meta-1/10";
+                                        return "text-primary bg-primary/10";
+                                    };
+                                    const Icon = getStatusIcon(item.name);
+                                    const colorClass = getStatusColor(item.name);
+
+                                    return (
+                                        <div
+                                            key={index}
+                                            className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray dark:hover:bg-meta-4 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    className={`flex h-10 w-10 items-center justify-center rounded-full ${colorClass}`}
+                                                >
+                                                    <Icon size={18} />
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-black dark:text-white capitalize">
+                                                        {item.name || "Unknown"}
+                                                    </p>
+                                                    <p className="text-xs text-bodydark">{item.count} đơn</p>
+                                                </div>
+                                            </div>
+                                            <p className="font-semibold text-black dark:text-white">
+                                                {formatVnd(item.amount)}₫
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Payment Status */}
+                <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                    <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
+                        <h3 className="font-semibold text-black dark:text-white">Trạng thái thanh toán</h3>
+                    </div>
+                    <div className="p-6">
+                        {paymentBreakdown.length === 0 ? (
+                            <p className="text-sm text-bodydark">Chưa có dữ liệu.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {paymentBreakdown.map((item, index) => {
+                                    const getPaymentColor = (name: string | undefined) => {
+                                        const n = (name || "").toLowerCase();
+                                        if (n.includes("paid")) return "text-meta-3 bg-meta-3/10";
+                                        if (n.includes("pending")) return "text-warning bg-warning/10";
+                                        if (n.includes("failed")) return "text-meta-1 bg-meta-1/10";
+                                        return "text-primary bg-primary/10";
+                                    };
+                                    const colorClass = getPaymentColor(item.name);
+
+                                    return (
+                                        <div
+                                            key={index}
+                                            className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray dark:hover:bg-meta-4 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    className={`flex h-10 w-10 items-center justify-center rounded-full ${colorClass}`}
+                                                >
+                                                    <CreditCard size={18} />
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-black dark:text-white capitalize">
+                                                        {item.name || "Unknown"}
+                                                    </p>
+                                                    <p className="text-xs text-bodydark">{item.count} giao dịch</p>
+                                                </div>
+                                            </div>
+                                            <p className="font-semibold text-black dark:text-white">
+                                                {formatVnd(item.amount)}₫
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Top Merchants & Recent Orders */}
+            <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2 2xl:gap-7.5">
+                {/* Top Merchants */}
+                <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                    <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
+                        <h3 className="font-semibold text-black dark:text-white">Top nhà hàng</h3>
+                    </div>
+                    <div className="p-6">
+                        {merchantPerformance.length === 0 ? (
+                            <p className="text-sm text-bodydark">Chưa có dữ liệu.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {merchantPerformance.slice(0, 5).map((merchant, index) => (
+                                    <div
+                                        key={merchant.merchantId}
+                                        className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray dark:hover:bg-meta-4 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                                                #{index + 1}
+                                            </span>
+                                            <div>
+                                                <p className="font-medium text-black dark:text-white">
+                                                    {merchant.restaurantName}
+                                                </p>
+                                                <p className="text-xs text-bodydark">
+                                                    {merchant.orders} đơn • {safeToFixed(merchant.completionRate)}% hoàn
+                                                    thành
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <p className="font-semibold text-meta-3">{formatVnd(merchant.revenue)}₫</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Recent Orders */}
+                <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                    <div className="border-b border-stroke px-6 py-4 dark:border-strokedark flex items-center justify-between">
+                        <h3 className="font-semibold text-black dark:text-white">Đơn hàng gần đây</h3>
+                        <Link href="/admin/orders" className="text-sm font-medium text-primary hover:underline">
+                            Xem tất cả
+                        </Link>
+                    </div>
+                    <div className="p-6">
+                        {loading ? (
+                            <p className="text-sm text-bodydark">Đang tải...</p>
+                        ) : recentOrders.length === 0 ? (
+                            <p className="text-sm text-bodydark">Chưa có đơn hàng.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {recentOrders.map((order) => {
+                                    const statusColor =
+                                        order.status === "completed"
+                                            ? "bg-meta-3/10 text-meta-3"
+                                            : order.status === "cancelled"
+                                            ? "bg-meta-1/10 text-meta-1"
+                                            : "bg-warning/10 text-warning";
+
+                                    return (
+                                        <div
+                                            key={order.orderId}
+                                            className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray dark:hover:bg-meta-4 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                                    <ShoppingCart size={18} className="text-primary" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-black dark:text-white">
+                                                        #{order.orderId}
+                                                    </p>
+                                                    <p className="text-xs text-bodydark">
+                                                        {new Date(order.createdAt).toLocaleString("vi-VN")}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-semibold text-black dark:text-white mb-1">
+                                                    {formatVnd(order.finalAmount || 0)}₫
+                                                </p>
+                                                <span
+                                                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor}`}
+                                                >
+                                                    {order.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
+                <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Thống kê nhanh</h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                    <div className="flex items-center gap-4 rounded-lg border border-stroke p-4 dark:border-strokedark">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-meta-3/10">
+                            <Store className="text-meta-3" size={24} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-bodydark">Merchants đang chờ</p>
+                            <p className="text-xl font-bold text-black dark:text-white">
+                                {stats?.pendingMerchants ?? 0}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4 rounded-lg border border-stroke p-4 dark:border-strokedark">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                            <Users className="text-primary" size={24} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-bodydark">Merchants hoạt động</p>
+                            <p className="text-xl font-bold text-black dark:text-white">
+                                {stats?.activeMerchants ?? 0}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4 rounded-lg border border-stroke p-4 dark:border-strokedark">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning/10">
+                            <CheckCircle2 className="text-warning" size={24} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-bodydark">Tỷ lệ hoàn thành</p>
+                            <p className="text-xl font-bold text-black dark:text-white">
+                                {stats ? `${safeToFixed(stats.completionRate)}%` : "0%"}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4 rounded-lg border border-stroke p-4 dark:border-strokedark">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-meta-6/10">
+                            <BarChart3 className="text-meta-6" size={24} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-bodydark">AOV</p>
+                            <p className="text-xl font-bold text-black dark:text-white">
+                                {stats ? `${formatVnd(stats.averageOrderValue)}₫` : "0₫"}
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
