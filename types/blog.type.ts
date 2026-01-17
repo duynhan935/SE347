@@ -29,7 +29,8 @@ export interface Blog {
         _id: string;
         title: string;
         slug: string;
-        content: string;
+        content: string; // Markdown content
+        contentHtml?: string; // Parsed HTML from backend (optional)
         excerpt?: string;
         author: BlogAuthor;
         featuredImage?: BlogFeaturedImage;

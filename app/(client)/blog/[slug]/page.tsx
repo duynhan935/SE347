@@ -11,6 +11,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function BlogPostPage() {
         const params = useParams();
@@ -210,12 +212,22 @@ export default function BlogPostPage() {
                                                                 )}
 
                                                                 {/* Content */}
-                                                                <div
-                                                                        className="prose prose-lg max-w-none mb-8"
-                                                                        dangerouslySetInnerHTML={{
-                                                                                __html: blog.content,
-                                                                        }}
-                                                                />
+                                                                <div className="prose prose-lg max-w-none mb-8">
+                                                                        {blog.contentHtml ? (
+                                                                                <div
+                                                                                        dangerouslySetInnerHTML={{
+                                                                                                __html: blog.contentHtml,
+                                                                                        }}
+                                                                                />
+                                                                        ) : (
+                                                                                <ReactMarkdown
+                                                                                        remarkPlugins={[remarkGfm]}
+                                                                                        className="markdown-content"
+                                                                                >
+                                                                                        {blog.content}
+                                                                                </ReactMarkdown>
+                                                                        )}
+                                                                </div>
 
                                                                 {/* Actions */}
                                                                 <div className="flex items-center gap-4 pt-6 border-t border-gray-200">
