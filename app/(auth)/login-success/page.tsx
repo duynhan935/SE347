@@ -62,6 +62,9 @@ function LoginSuccessContent() {
                         userRole = decodedToken?.role || null;
                     }
                     
+                    // Get callback URL from query params
+                    const callbackUrl = searchParams.get("redirect");
+                    
                     // If role not in token, wait for user profile
                     if (!userRole) {
                         const checkUserAndRedirect = async () => {
@@ -78,7 +81,7 @@ function LoginSuccessContent() {
                                 attempts++;
                             }
                             
-                            const redirectPath = getLoginRedirectPath(userRole || null, null);
+                            const redirectPath = getLoginRedirectPath(userRole || null, callbackUrl);
                             router.replace(redirectPath);
                         };
                         
@@ -87,7 +90,7 @@ function LoginSuccessContent() {
                         }, 500);
                     } else {
                         // Role found, redirect immediately
-                        const redirectPath = getLoginRedirectPath(userRole, null);
+                        const redirectPath = getLoginRedirectPath(userRole, callbackUrl);
                         setTimeout(() => {
                             router.replace(redirectPath);
                         }, 500);

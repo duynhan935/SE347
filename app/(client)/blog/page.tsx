@@ -2,11 +2,12 @@
 
 import Pagination from "@/components/client/Pagination";
 import { blogApi } from "@/lib/api/blogApi";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { Blog, BlogCategory } from "@/types/blog.type";
-import { Calendar, Clock, Eye, Heart, MessageCircle, Search } from "lucide-react";
+import { ArrowRight, Calendar, Clock, Eye, FileText, Heart, Plus, Search } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 const CATEGORIES: { value: BlogCategory | ""; label: string }[] = [
@@ -19,7 +20,11 @@ const CATEGORIES: { value: BlogCategory | ""; label: string }[] = [
         { value: "other", label: "Other" },
 ];
 
+// Brand Orange Color
+const BRAND_ORANGE = "#EE4D2D";
+
 export default function BlogPage() {
+        const { isAuthenticated } = useAuthStore();
         const [blogs, setBlogs] = useState<Blog[]>([]);
         const [loading, setLoading] = useState(true);
         const [page, setPage] = useState(1);
@@ -28,16 +33,36 @@ export default function BlogPage() {
         const [search, setSearch] = useState("");
         const [searchInput, setSearchInput] = useState("");
 
+        // Get featured blog (first blog with featured image or most viewed)
+        const featuredBlog = useMemo(() => {
+                if (blogs.length === 0) return null;
+                const withImage = blogs.find(b => b.featuredImage?.url);
+                return withImage || blogs[0];
+        }, [blogs]);
+
+        // Get regular blogs (excluding featured)
+        const regularBlogs = useMemo(() => {
+                if (!featuredBlog) return blogs;
+                return blogs.filter(b => b._id !== featuredBlog._id);
+        }, [blogs, featuredBlog]);
+
         const fetchBlogs = async () => {
                 setLoading(true);
                 try {
+                        // Add timestamp to prevent caching issues
                         const response = await blogApi.getBlogs({
                                 page,
                                 limit: 12,
                                 category: category || undefined,
                                 search: search || undefined,
                         });
-                        setBlogs(response.data);
+                        // Sort blogs by publishedAt or createdAt (newest first) to ensure latest blogs appear first
+                        const sortedBlogs = [...(response.data || [])].sort((a, b) => {
+                                const dateA = new Date(a.publishedAt || a.createdAt || 0).getTime();
+                                const dateB = new Date(b.publishedAt || b.createdAt || 0).getTime();
+                                return dateB - dateA; // Newest first
+                        });
+                        setBlogs(sortedBlogs);
                         setTotalPages(response.pagination.pages);
                 } catch (error) {
                         console.error("Failed to fetch blogs:", error);
@@ -50,7 +75,7 @@ export default function BlogPage() {
         useEffect(() => {
                 fetchBlogs();
                 // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [page, category]);
+        }, [page, category, search]);
 
         const handleSearch = () => {
                 setSearch(searchInput);
@@ -72,14 +97,35 @@ export default function BlogPage() {
         };
 
         return (
-                <div className="min-h-screen bg-gray-50 py-8">
-                        <div className="custom-container">
+                <div className="min-h-screen bg-gray-50">
+                        <div className="custom-container py-8">
                                 {/* Header */}
-                                <div className="mb-8">
-                                        <h1 className="text-4xl font-bold text-gray-900 mb-4">Food Blog</h1>
-                                        <p className="text-gray-600">
-                                                Discover great articles about food and life
-                                        </p>
+                                <div className="mb-8 flex items-center justify-between">
+                                        <div>
+                                                <h1 className="text-4xl font-bold text-gray-900 mb-2">Food Blog</h1>
+                                                <p className="text-gray-600">
+                                                        Discover great articles about food and life
+                                                </p>
+                                        </div>
+                                        {isAuthenticated && (
+                                                <div className="flex gap-3">
+                                                        <Link
+                                                                href="/blog/my-blogs"
+                                                                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                                                        >
+                                                                <FileText className="w-4 h-4" />
+                                                                My Blogs
+                                                        </Link>
+                                                        <Link
+                                                                href="/blog/create"
+                                                                className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+                                                                style={{ backgroundColor: BRAND_ORANGE }}
+                                                        >
+                                                                <Plus className="w-4 h-4" />
+                                                                Create Article
+                                                        </Link>
+                                                </div>
+                                        )}
                                 </div>
 
                                 {/* Search and Filter */}
@@ -94,12 +140,14 @@ export default function BlogPage() {
                                                                 value={searchInput}
                                                                 onChange={(e) => setSearchInput(e.target.value)}
                                                                 onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                                                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple"
+                                                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]"
+                                                                style={{ "--tw-ring-color": BRAND_ORANGE } as React.CSSProperties}
                                                         />
                                                 </div>
                                                 <button
                                                         onClick={handleSearch}
-                                                        className="px-6 py-3 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition-colors"
+                                                        className="px-6 py-3 text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+                                                        style={{ backgroundColor: BRAND_ORANGE }}
                                                 >
                                                         Search
                                                 </button>
@@ -111,11 +159,12 @@ export default function BlogPage() {
                                                         <button
                                                                 key={cat.value}
                                                                 onClick={() => handleCategoryChange(cat.value)}
-                                                                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                                                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                                                                         category === cat.value
-                                                                                ? "bg-brand-purple text-white"
+                                                                                ? "text-white shadow-md"
                                                                                 : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
                                                                 }`}
+                                                                style={category === cat.value ? { backgroundColor: BRAND_ORANGE } : undefined}
                                                         >
                                                                 {cat.label}
                                                         </button>
@@ -123,10 +172,13 @@ export default function BlogPage() {
                                         </div>
                                 </div>
 
-                                {/* Blog List */}
+                                {/* Loading State */}
                                 {loading ? (
                                         <div className="text-center py-12">
-                                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple"></div>
+                                                <div 
+                                                        className="inline-block animate-spin rounded-full h-8 w-8 border-b-2"
+                                                        style={{ borderBottomColor: BRAND_ORANGE }}
+                                                ></div>
                                                 <p className="mt-4 text-gray-600">Loading...</p>
                                         </div>
                                 ) : blogs.length === 0 ? (
@@ -135,164 +187,212 @@ export default function BlogPage() {
                                         </div>
                                 ) : (
                                         <>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                                                        {blogs.map((blog) => (
-                                                                <Link
-                                                                        key={blog._id}
-                                                                        href={`/blog/${blog.slug}`}
-                                                                        className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow group"
-                                                                >
-                                                                        {/* Featured Image */}
-                                                                        {blog.featuredImage?.url && (
-                                                                                <div className="relative w-full h-48 overflow-hidden">
-                                                                                        <Image
-                                                                                                src={
-                                                                                                        blog
-                                                                                                                .featuredImage
-                                                                                                                .url
-                                                                                                }
-                                                                                                alt={
-                                                                                                        blog
-                                                                                                                .featuredImage
-                                                                                                                .alt ||
-                                                                                                        blog.title
-                                                                                                }
-                                                                                                fill
-                                                                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                                                                        />
-                                                                                </div>
-                                                                        )}
+                                                {/* Hero Section - Featured Post */}
+                                                {featuredBlog && featuredBlog.featuredImage?.url && (
+                                                        <div className="mb-12">
+                                                                <div className="relative w-full h-[500px] md:h-[600px] rounded-2xl overflow-hidden shadow-2xl group">
+                                                                        <Image
+                                                                                src={featuredBlog.featuredImage.url}
+                                                                                alt={featuredBlog.featuredImage.alt || featuredBlog.title}
+                                                                                fill
+                                                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                                                priority
+                                                                        />
+                                                                        {/* Gradient Overlay */}
+                                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                                                                        
+                                                                        {/* Content Overlay */}
+                                                                        <div className="absolute inset-0 flex items-end p-8 md:p-12">
+                                                                                <div className="max-w-3xl">
+                                                                                        {/* Badge */}
+                                                                                        <div className="mb-4">
+                                                                                                <span 
+                                                                                                        className="inline-block px-4 py-2 text-white text-sm font-semibold rounded-full backdrop-blur-sm"
+                                                                                                        style={{ backgroundColor: BRAND_ORANGE }}
+                                                                                                >
+                                                                                                        ✨ Bài viết nổi bật tuần này
+                                                                                                </span>
+                                                                                        </div>
+                                                                                        
+                                                                                        {/* Category */}
+                                                                                        <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-semibold rounded-full mb-4">
+                                                                                                {CATEGORIES.find(c => c.value === featuredBlog.category)?.label || "Other"}
+                                                                                        </span>
 
-                                                                        {/* Content */}
-                                                                        <div className="p-6">
-                                                                                {/* Category */}
-                                                                                <span className="inline-block px-3 py-1 bg-brand-yellowlight text-brand-black text-xs font-semibold rounded-full mb-3">
-                                                                                        {CATEGORIES.find(
-                                                                                                (c) =>
-                                                                                                        c.value ===
-                                                                                                        blog.category
-                                                                                        )?.label || "Other"}
-                                                                                </span>
+                                                                                        {/* Title */}
+                                                                                        <Link href={`/blog/${featuredBlog.slug}`}>
+                                                                                                <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 line-clamp-2 group-hover:opacity-90 transition-opacity">
+                                                                                                        {featuredBlog.title}
+                                                                                                </h2>
+                                                                                        </Link>
 
-                                                                                {/* Title */}
-                                                                                <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-brand-purple transition-colors">
-                                                                                        {blog.title}
-                                                                                </h3>
+                                                                                        {/* Excerpt */}
+                                                                                        {featuredBlog.excerpt && (
+                                                                                                <p className="text-white/90 text-lg mb-6 line-clamp-2">
+                                                                                                        {featuredBlog.excerpt}
+                                                                                                </p>
+                                                                                        )}
 
-                                                                                {/* Excerpt */}
-                                                                                {blog.excerpt && (
-                                                                                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                                                                                                {blog.excerpt}
-                                                                                        </p>
-                                                                                )}
-
-                                                                                {/* Meta Info */}
-                                                                                <div className="flex items-center justify-between text-sm text-gray-500">
-                                                                                        <div className="flex items-center gap-4">
+                                                                                        {/* Meta Info */}
+                                                                                        <div className="flex items-center gap-6 text-white/80 text-sm mb-6">
                                                                                                 <div className="flex items-center gap-1">
                                                                                                         <Eye className="w-4 h-4" />
-                                                                                                        <span>
-                                                                                                                {
-                                                                                                                        blog.views
-                                                                                                                }
-                                                                                                        </span>
+                                                                                                        <span>{featuredBlog.views}</span>
                                                                                                 </div>
                                                                                                 <div className="flex items-center gap-1">
-                                                                                                        <Heart className="w-4 h-4" />
-                                                                                                        <span>
-                                                                                                                {blog.likesCount ||
-                                                                                                                        blog
-                                                                                                                                .likes
-                                                                                                                                ?.length ||
-                                                                                                                        0}
-                                                                                                        </span>
+                                                                                                        <Clock className="w-4 h-4" />
+                                                                                                        <span>{featuredBlog.readTime} min</span>
                                                                                                 </div>
-                                                                                                <div className="flex items-center gap-1">
-                                                                                                        <MessageCircle className="w-4 h-4" />
-                                                                                                        <span>
-                                                                                                                {blog.commentsCount ||
-                                                                                                                        0}
-                                                                                                        </span>
-                                                                                                </div>
-                                                                                        </div>
-                                                                                        <div className="flex items-center gap-1">
-                                                                                                <Clock className="w-4 h-4" />
-                                                                                                <span>
-                                                                                                        {blog.readTime}{" "}
-                                                                                                        min
-                                                                                                </span>
-                                                                                        </div>
-                                                                                </div>
-
-                                                                                {/* Author and Date */}
-                                                                                <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
-                                                                                        <div className="flex items-center gap-2">
-                                                                                                {blog.author.avatar ? (
-                                                                                                        <Image
-                                                                                                                src={
-                                                                                                                        blog
-                                                                                                                                .author
-                                                                                                                                .avatar
-                                                                                                                }
-                                                                                                                alt={
-                                                                                                                        blog
-                                                                                                                                .author
-                                                                                                                                .name
-                                                                                                                }
-                                                                                                                width={
-                                                                                                                        32
-                                                                                                                }
-                                                                                                                height={
-                                                                                                                        32
-                                                                                                                }
-                                                                                                                className="rounded-full"
-                                                                                                        />
-                                                                                                ) : (
-                                                                                                        <div className="w-8 h-8 rounded-full bg-brand-purple flex items-center justify-center text-white text-xs font-semibold">
-                                                                                                                {blog.author.name
-                                                                                                                        .charAt(
-                                                                                                                                0
-                                                                                                                        )
-                                                                                                                        .toUpperCase()}
+                                                                                                {featuredBlog.publishedAt && (
+                                                                                                        <div className="flex items-center gap-1">
+                                                                                                                <Calendar className="w-4 h-4" />
+                                                                                                                <span>{formatDate(featuredBlog.publishedAt)}</span>
                                                                                                         </div>
                                                                                                 )}
-                                                                                                <span className="text-sm font-medium text-gray-700">
-                                                                                                        {
-                                                                                                                blog
-                                                                                                                        .author
-                                                                                                                        .name
-                                                                                                        }
-                                                                                                </span>
                                                                                         </div>
-                                                                                        {blog.publishedAt && (
-                                                                                                <div className="flex items-center gap-1 text-xs text-gray-500">
-                                                                                                        <Calendar className="w-3 h-3" />
-                                                                                                        <span>
-                                                                                                                {formatDate(
-                                                                                                                        blog.publishedAt
-                                                                                                                )}
-                                                                                                        </span>
-                                                                                                </div>
-                                                                                        )}
+
+                                                                                        {/* CTA Button */}
+                                                                                        <Link
+                                                                                                href={`/blog/${featuredBlog.slug}`}
+                                                                                                className="inline-flex items-center gap-2 px-6 py-3 text-white font-semibold rounded-lg hover:opacity-90 transition-all transform hover:translate-x-1"
+                                                                                                style={{ backgroundColor: BRAND_ORANGE }}
+                                                                                        >
+                                                                                                Đọc ngay
+                                                                                                <ArrowRight className="w-5 h-5" />
+                                                                                        </Link>
                                                                                 </div>
                                                                         </div>
-                                                                </Link>
-                                                        ))}
-                                                </div>
+                                                                </div>
+                                                        </div>
+                                                )}
 
-                                                {/* Pagination */}
-                                                {totalPages > 1 && (
-                                                        <Pagination
-                                                                currentPage={page}
-                                                                totalPages={totalPages}
-                                                                onPageChange={(newPage) => {
-                                                                        setPage(newPage);
-                                                                        window.scrollTo({ top: 0, behavior: "smooth" });
-                                                                }}
-                                                                showInfo={true}
-                                                                scrollToTop={true}
-                                                                className="mt-8"
-                                                        />
+                                                {/* Regular Blog Grid */}
+                                                {regularBlogs.length > 0 && (
+                                                        <>
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                                                                        {regularBlogs.map((blog) => (
+                                                                                <Link
+                                                                                        key={blog._id}
+                                                                                        href={`/blog/${blog.slug}`}
+                                                                                        className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 group flex flex-col"
+                                                                                >
+                                                                                        {/* Thumbnail Image - 50% height */}
+                                                                                        <div className="relative w-full aspect-[4/3] overflow-hidden">
+                                                                                                {blog.featuredImage?.url ? (
+                                                                                                        <Image
+                                                                                                                src={blog.featuredImage.url}
+                                                                                                                alt={blog.featuredImage.alt || blog.title}
+                                                                                                                fill
+                                                                                                                className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                                                                                        />
+                                                                                                ) : (
+                                                                                                        <div 
+                                                                                                                className="w-full h-full flex items-center justify-center"
+                                                                                                                style={{ backgroundColor: BRAND_ORANGE + "20" }}
+                                                                                                        >
+                                                                                                                <span className="text-4xl">🍽️</span>
+                                                                                                        </div>
+                                                                                                )}
+                                                                                                {/* Category Badge on Image */}
+                                                                                                <div className="absolute top-3 left-3">
+                                                                                                        <span 
+                                                                                                                className="px-3 py-1 text-white text-xs font-semibold rounded-full backdrop-blur-sm"
+                                                                                                                style={{ backgroundColor: BRAND_ORANGE }}
+                                                                                                        >
+                                                                                                                {CATEGORIES.find(c => c.value === blog.category)?.label || "Other"}
+                                                                                                        </span>
+                                                                                                </div>
+                                                                                        </div>
+
+                                                                                        {/* Content */}
+                                                                                        <div className="p-6 flex-1 flex flex-col">
+                                                                                                {/* Title */}
+                                                                                                <h3 
+                                                                                                        className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:opacity-80 transition-opacity"
+                                                                                                        style={{ 
+                                                                                                                color: "inherit",
+                                                                                                        }}
+                                                                                                >
+                                                                                                        {blog.title}
+                                                                                                </h3>
+
+                                                                                                {/* Excerpt */}
+                                                                                                {blog.excerpt && (
+                                                                                                        <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-1">
+                                                                                                                {blog.excerpt}
+                                                                                                        </p>
+                                                                                                )}
+
+                                                                                                {/* Meta Info */}
+                                                                                                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                                                                                                        <div className="flex items-center gap-3">
+                                                                                                                <div className="flex items-center gap-1">
+                                                                                                                        <Eye className="w-4 h-4" />
+                                                                                                                        <span>{blog.views}</span>
+                                                                                                                </div>
+                                                                                                                <div className="flex items-center gap-1">
+                                                                                                                        <Heart className="w-4 h-4" />
+                                                                                                                        <span>{blog.likesCount || blog.likes?.length || 0}</span>
+                                                                                                                </div>
+                                                                                                                <div className="flex items-center gap-1">
+                                                                                                                        <Clock className="w-4 h-4" />
+                                                                                                                        <span>{blog.readTime} min</span>
+                                                                                                                </div>
+                                                                                                        </div>
+                                                                                                </div>
+
+                                                                                                {/* Author and Date */}
+                                                                                                <div className="pt-4 border-t border-gray-200 flex items-center justify-between">
+                                                                                                        <div className="flex items-center gap-2">
+                                                                                                                {blog.author?.avatar ? (
+                                                                                                                        <Image
+                                                                                                                                src={blog.author.avatar}
+                                                                                                                                alt={blog.author?.name || "Author"}
+                                                                                                                                width={32}
+                                                                                                                                height={32}
+                                                                                                                                className="rounded-full"
+                                                                                                                        />
+                                                                                                                ) : (
+                                                                                                                        <div 
+                                                                                                                                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                                                                                                                                style={{ backgroundColor: BRAND_ORANGE }}
+                                                                                                                        >
+                                                                                                                                {blog.author?.name?.charAt(0).toUpperCase() || "?"}
+                                                                                                                        </div>
+                                                                                                                )}
+                                                                                                                <span className="text-sm font-medium text-gray-700">
+                                                                                                                        {blog.author?.name || "Unknown Author"}
+                                                                                                                </span>
+                                                                                                        </div>
+                                                                                                        {blog.publishedAt && (
+                                                                                                                <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                                                                                        <Calendar className="w-3 h-3" />
+                                                                                                                        <span className="hidden sm:inline">
+                                                                                                                                {formatDate(blog.publishedAt)}
+                                                                                                                        </span>
+                                                                                                                </div>
+                                                                                                        )}
+                                                                                                </div>
+                                                                                        </div>
+                                                                                </Link>
+                                                                        ))}
+                                                                </div>
+
+                                                                {/* Pagination */}
+                                                                {totalPages > 1 && (
+                                                                        <Pagination
+                                                                                currentPage={page}
+                                                                                totalPages={totalPages}
+                                                                                onPageChange={(newPage) => {
+                                                                                        setPage(newPage);
+                                                                                        window.scrollTo({ top: 0, behavior: "smooth" });
+                                                                                }}
+                                                                                showInfo={true}
+                                                                                scrollToTop={true}
+                                                                                className="mt-8"
+                                                                        />
+                                                                )}
+                                                        </>
                                                 )}
                                         </>
                                 )}

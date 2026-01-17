@@ -1,13 +1,12 @@
 "use client";
 
-import { authApi } from "@/lib/api/authApi";
-import { Menu, Moon, Sun, Search } from "lucide-react";
-import { useTheme } from "./ThemeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { AdminNotificationBell } from "./AdminNotificationBell";
-import { MerchantNotificationBell } from "../merchant/MerchantNotificationBell";
+import { Home, Menu, Moon, Search, Sun } from "lucide-react";
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { MerchantNotificationBell } from "../merchant/MerchantNotificationBell";
+import { AdminNotificationBell } from "./AdminNotificationBell";
+import { useTheme } from "./ThemeProvider";
 
 interface HeaderProps {
     sidebarOpen?: boolean;
@@ -103,6 +102,15 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                                     onClick={() => setDropdownOpen(false)}
                                 >
                                     Settings
+                                </Link>
+                                <hr className="my-2 border-gray-200 dark:border-gray-700" />
+                                <Link
+                                    href="/"
+                                    className="flex items-center gap-2 px-4 py-2 text-sm text-[#EE4D2D] hover:bg-[#EE4D2D]/10 dark:hover:bg-[#EE4D2D]/20"
+                                    onClick={() => setDropdownOpen(false)}
+                                >
+                                    <Home size={16} />
+                                    Go to Homepage
                                 </Link>
                                 <hr className="my-2 border-gray-200 dark:border-gray-700" />
                                 <button

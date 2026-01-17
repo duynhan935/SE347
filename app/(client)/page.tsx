@@ -4,25 +4,17 @@
 import FeaturedFoodPanel from "@/components/client/HomePage/FeaturedFoodPanel";
 import HeroSearchSection from "@/components/client/HomePage/HeroSearchSection";
 import GlobalLoader from "@/components/ui/GlobalLoader";
-import { shouldRedirectFromPath } from "@/lib/utils/redirectUtils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePathname, useRouter } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { Suspense } from "react";
 
 export default function HomePage() {
         const router = useRouter();
         const pathname = usePathname();
         const { user, isAuthenticated, loading } = useAuthStore();
 
-        // Redirect Merchant/Admin away from home page
-        useEffect(() => {
-                if (!loading && isAuthenticated && user?.role) {
-                        const { shouldRedirect, redirectTo } = shouldRedirectFromPath(pathname, user.role);
-                        if (shouldRedirect) {
-                                router.replace(redirectTo);
-                        }
-                }
-        }, [loading, isAuthenticated, user?.role, pathname, router]);
+        // REMOVED: Allow Merchant/Admin to access home page
+        // They can freely switch between buying view and dashboard view
 
         return (
                 <main className="h-[calc(100vh-80px)] overflow-hidden">
