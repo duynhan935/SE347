@@ -6,7 +6,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { Comment } from "@/types/blog.type";
 import { Edit2, Heart, Image as ImageIcon, Reply, Send, Trash2, X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 interface BlogCommentsProps {
@@ -29,23 +29,24 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const replyFileInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        fetchComments();
-    }, [blogId, page]);
-
-    const fetchComments = async () => {
+    const fetchComments = useCallback(async () => {
         setLoading(true);
         try {
             const response = await blogApi.getComments(blogId, { page, limit: 15 });
-            setComments(response.data);
-            setTotalPages(response.pagination.pages);
+            setComments(response.data || []);
+            setTotalPages(response.pagination?.pages || 1);
         } catch (error) {
             console.error("Failed to fetch comments:", error);
             toast.error("Unable to load comments");
+            setComments([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, [blogId, page]);
+
+    useEffect(() => {
+        fetchComments();
+    }, [fetchComments]);
 
     const handleSubmitComment = async () => {
         if (!isAuthenticated || !user) {
@@ -196,7 +197,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
 
     return (
         <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Comments ({comments.length})</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Comments ({comments?.length || 0})</h2>
 
             {/* Comment Form */}
             {isAuthenticated ? (
@@ -222,6 +223,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                     <button
                                         onClick={() => setCommentImages(commentImages.filter((_, i) => i !== index))}
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                                        aria-label="Remove image"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
@@ -238,6 +240,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                             max={6}
                             onChange={(e) => handleImageSelect(e, "comment")}
                             className="hidden"
+                            aria-label="Upload comment images"
                         />
                         <button
                             onClick={() => fileInputRef.current?.click()}
@@ -266,7 +269,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                 <div className="text-center py-8">
                     <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-brand-purple"></div>
                 </div>
-            ) : comments.length === 0 ? (
+            ) : !comments || comments.length === 0 ? (
                 <div className="text-center py-8 text-gray-600">No comments yet</div>
             ) : (
                 <div className="space-y-6">
@@ -302,6 +305,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                                 onChange={(e) => setEditContent(e.target.value)}
                                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple mb-2"
                                                 rows={3}
+                                                aria-label="Edit comment"
                                             />
                                             <div className="flex gap-2">
                                                 <button
@@ -413,6 +417,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                                                     )
                                                                 }
                                                                 className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                                                                aria-label="Remove reply image"
                                                             >
                                                                 <X className="w-4 h-4" />
                                                             </button>
@@ -429,6 +434,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                                     max={6}
                                                     onChange={(e) => handleImageSelect(e, "reply")}
                                                     className="hidden"
+                                                    aria-label="Upload reply images"
                                                 />
                                                 <button
                                                     onClick={() => replyFileInputRef.current?.click()}

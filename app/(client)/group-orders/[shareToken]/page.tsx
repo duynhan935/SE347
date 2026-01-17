@@ -6,7 +6,7 @@ import { GroupOrder, GroupOrderStatus } from "@/types/groupOrder.type";
 import { Check, Copy, DollarSign, Edit, Lock, Trash2, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function GroupOrderPage() {
@@ -18,12 +18,17 @@ export default function GroupOrderPage() {
     const [groupOrder, setGroupOrder] = useState<GroupOrder | null>(null);
     const [loading, setLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const groupOrderStatusRef = useRef<string | null>(null);
 
-    const fetchGroupOrder = async () => {
+    const fetchGroupOrder = useCallback(async () => {
+        if (!shareToken) return;
+        
         setLoading(true);
         try {
             const data = await groupOrderApi.getGroupOrderByToken(shareToken);
             setGroupOrder(data);
+            groupOrderStatusRef.current = data.status;
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string }; status?: number }; message?: string };
             console.error("Failed to fetch group order:", err);
@@ -35,28 +40,41 @@ export default function GroupOrderPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [shareToken, router]);
 
     useEffect(() => {
         if (shareToken) {
             fetchGroupOrder();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [shareToken]);
+    }, [shareToken, fetchGroupOrder]);
 
     // Auto-refresh every 5 seconds if group order is open or locked
     useEffect(() => {
-        if (!groupOrder || groupOrder.status === GroupOrderStatus.ORDERED || groupOrder.status === GroupOrderStatus.CANCELLED) {
+        const currentStatus = groupOrder?.status;
+        
+        // Clear existing interval
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+
+        // Only set up interval if group order exists and is not in final states
+        if (!currentStatus || currentStatus === GroupOrderStatus.ORDERED || currentStatus === GroupOrderStatus.CANCELLED) {
             return;
         }
 
-        const interval = setInterval(() => {
+        // Set up new interval
+        intervalRef.current = setInterval(() => {
             fetchGroupOrder();
         }, 5000);
 
-        return () => clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [groupOrder?.status, shareToken]);
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+        };
+    }, [groupOrder?.status, fetchGroupOrder]);
 
 
     const handleCopyLink = () => {
@@ -67,7 +85,8 @@ export default function GroupOrderPage() {
 
     const handleLock = async () => {
         if (!isAuthenticated || !user) {
-            toast.error("Vui lòng đăng nhập");
+            const currentPath = `/group-orders/${shareToken}`;
+            router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
             return;
         }
         setIsProcessing(true);
@@ -86,7 +105,8 @@ export default function GroupOrderPage() {
 
     const handleConfirm = async () => {
         if (!isAuthenticated || !user) {
-            toast.error("Vui lòng đăng nhập");
+            const currentPath = `/group-orders/${shareToken}`;
+            router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
             return;
         }
         setIsProcessing(true);
@@ -95,7 +115,16 @@ export default function GroupOrderPage() {
             setGroupOrder(result.groupOrder);
             toast.success("Đã xác nhận group order!");
             // Redirect to order detail page
-            router.push(`/orders/${result.orderId}`);
+            // Backend returns { groupOrder, order } where order has orderId
+            const orderId = result.order?.orderId;
+            if (orderId) {
+                router.push(`/orders/${orderId}`);
+            } else {
+                // Fallback: redirect to orders list if orderId not found
+                console.error("Order ID not found in response:", result);
+                toast.error("Không tìm thấy order ID");
+                router.push("/account/orders");
+            }
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string } }; message?: string };
             const errorMessage = err.response?.data?.message || err.message || "Không thể xác nhận group order";
@@ -107,7 +136,8 @@ export default function GroupOrderPage() {
 
     const handleCancel = async () => {
         if (!isAuthenticated || !user) {
-            toast.error("Vui lòng đăng nhập");
+            const currentPath = `/group-orders/${shareToken}`;
+            router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
             return;
         }
         if (!confirm("Bạn có chắc chắn muốn hủy group order này?")) {
@@ -129,7 +159,8 @@ export default function GroupOrderPage() {
 
     const handleRemoveParticipant = async (userId: string, userName: string) => {
         if (!isAuthenticated || !user) {
-            toast.error("Vui lòng đăng nhập");
+            const currentPath = `/group-orders/${shareToken}`;
+            router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
             return;
         }
         

@@ -12,7 +12,7 @@ import {
 import { getImageUrl } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatStore } from "@/stores/useChatStore";
-import { BookOpen, LogOut, MessageCircle, Package, Settings, Store, User, UtensilsCrossed } from "lucide-react";
+import { BookOpen, LogOut, MessageCircle, Package, Settings, ShoppingBag, Store, User, UtensilsCrossed } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -271,6 +271,15 @@ export default function NavActions() {
                                         <span className="text-sm">Admin Panel</span>
                                     </Link>
                                 </DropdownMenuItem>
+                                {/* Switch to Buying View - Only show if not already in client view */}
+                                {pathname.startsWith("/admin") && (
+                                    <DropdownMenuItem asChild>
+                                        <Link href="/" className="flex items-center gap-2 py-2.5 px-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                                            <ShoppingBag className="h-4 w-4 text-gray-600" />
+                                            <span className="text-sm">Switch to User View</span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                )}
                             </>
                         )}
                         {user?.role === "MERCHANT" && (
@@ -282,6 +291,15 @@ export default function NavActions() {
                                         <span className="text-sm">Merchant Dashboard</span>
                                     </Link>
                                 </DropdownMenuItem>
+                                {/* Switch to Buying View - Only show if not already in client view */}
+                                {pathname.startsWith("/merchant") && (
+                                    <DropdownMenuItem asChild>
+                                        <Link href="/" className="flex items-center gap-2 py-2.5 px-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                                            <ShoppingBag className="h-4 w-4 text-gray-600" />
+                                            <span className="text-sm">Switch to Buying View</span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                )}
                             </>
                         )}
 

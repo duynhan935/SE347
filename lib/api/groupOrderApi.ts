@@ -72,8 +72,9 @@ export const groupOrderApi = {
     },
 
     // Confirm group order (create actual order)
-    confirmGroupOrder: async (shareToken: string): Promise<{ groupOrder: GroupOrder; orderId: string }> => {
-        const response = await api.post<ApiResponse<{ groupOrder: GroupOrder; orderId: string }>>(
+    // Backend returns { groupOrder, order } where order has orderId
+    confirmGroupOrder: async (shareToken: string): Promise<{ groupOrder: GroupOrder; order: { orderId: string } }> => {
+        const response = await api.post<ApiResponse<{ groupOrder: GroupOrder; order: { orderId: string } }>>(
             `/group-orders/${shareToken}/confirm`
         );
         return response.data.data;

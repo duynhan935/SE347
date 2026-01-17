@@ -2,7 +2,7 @@
 
 import { useChatStore } from "@/stores/useChatStore";
 import { useMerchantOrderStore } from "@/stores/useMerchantOrderStore";
-import { BarChart3, MessageCircle, Package, Settings, Store, Users, Wallet, X } from "lucide-react";
+import { BarChart3, MessageCircle, Package, Settings, ShoppingBag, Store, Users, Wallet, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -103,51 +103,67 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
                 </div>
 
                 {/* Menu Items */}
-                <nav className="flex-1 space-y-1 px-3 py-4">
-                    {menuItems.map((item, index) => {
-                        const Icon = item.icon;
-                        const isActive = pathname === item.href;
-                        const isMessages = item.href === "/merchant/messages";
-                        const isOrders = item.href === "/merchant/orders";
+                <nav className="flex-1 space-y-1 px-3 py-4 flex flex-col">
+                    <div className="space-y-1">
+                        {menuItems.map((item, index) => {
+                            const Icon = item.icon;
+                            const isActive = pathname === item.href;
+                            const isMessages = item.href === "/merchant/messages";
+                            const isOrders = item.href === "/merchant/orders";
 
-                        return (
-                            <Link
-                                key={index}
-                                href={item.href}
-                                onClick={() => setSidebarOpen(false)}
-                                className={`
+                            return (
+                                <Link
+                                    key={index}
+                                    href={item.href}
+                                    onClick={() => setSidebarOpen(false)}
+                                    className={`
 									flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium relative
 									transition-colors duration-200
 									${isActive ? "bg-brand-purple text-white" : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"}
 								`}
-                            >
-                                <Icon className="h-5 w-5" />
-                                <span className="flex-1">{item.label}</span>
-                                {isMessages && unreadCount > 0 && (
-                                    <span
-                                        className={`h-5 min-w-5 px-1.5 text-xs rounded-full flex items-center justify-center font-bold ${
-                                            isActive
-                                                ? "bg-white text-brand-purple"
-                                                : "bg-[#EE4D2D] text-white"
-                                        }`}
-                                    >
-                                        {unreadCount > 99 ? "99+" : unreadCount}
-                                    </span>
-                                )}
-                                {isOrders && pendingOrdersCount > 0 && (
-                                    <span
-                                        className={`h-5 min-w-5 px-1.5 text-xs rounded-full flex items-center justify-center font-bold ${
-                                            isActive
-                                                ? "bg-white text-brand-purple"
-                                                : "bg-[#EE4D2D] text-white"
-                                        }`}
-                                    >
-                                        {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
-                                    </span>
-                                )}
-                            </Link>
-                        );
-                    })}
+                                >
+                                    <Icon className="h-5 w-5" />
+                                    <span className="flex-1">{item.label}</span>
+                                    {isMessages && unreadCount > 0 && (
+                                        <span
+                                            className={`h-5 min-w-5 px-1.5 text-xs rounded-full flex items-center justify-center font-bold ${
+                                                isActive
+                                                    ? "bg-white text-brand-purple"
+                                                    : "bg-[#EE4D2D] text-white"
+                                            }`}
+                                        >
+                                            {unreadCount > 99 ? "99+" : unreadCount}
+                                        </span>
+                                    )}
+                                    {isOrders && pendingOrdersCount > 0 && (
+                                        <span
+                                            className={`h-5 min-w-5 px-1.5 text-xs rounded-full flex items-center justify-center font-bold ${
+                                                isActive
+                                                    ? "bg-white text-brand-purple"
+                                                    : "bg-[#EE4D2D] text-white"
+                                            }`}
+                                        >
+                                            {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
+                                        </span>
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </div>
+
+                    {/* Divider */}
+                    <div className="border-t dark:border-gray-700 my-2"></div>
+
+                    {/* Switch to Buying View */}
+                    <Link
+                        href="/"
+                        onClick={() => setSidebarOpen(false)}
+                        className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors duration-200 text-[#EE4D2D] hover:bg-[#EE4D2D]/10 dark:hover:bg-[#EE4D2D]/20 border border-[#EE4D2D]/30 hover:border-[#EE4D2D]/50"
+                        title="Switch to buying view"
+                    >
+                        <ShoppingBag className="h-5 w-5" />
+                        <span className="flex-1">Switch to Buying</span>
+                    </Link>
                 </nav>
 
                 {/* Footer */}

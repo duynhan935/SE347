@@ -2570,46 +2570,39 @@ wallets ||--o{ wallet_transactions : "has"
                     ┌──────────────┐
                     │   Trang chủ  │
                     └──────┬───────┘
-                           │
         ┌──────────────────┼──────────────────┐
         │                  │                  │
-   ┌────▼────┐       ┌──────▼──────┐      ┌────▼────┐
-   │ Đăng   │       │ Danh sách  │      │  Blog  │
-   │ nhập   │       │  nhà hàng   │      │        │
-   └────┬───┘       └──────┬──────┘      └────────┘
+   ┌────▼────┐      ┌──────▼──────┐      ┌────▼────┐
+   │ Đăng    │      │ Danh sách   │      │  Blog   │
+   │ nhập    │      │  nhà hàng   │      │         │
+   └────┬────┘      └──────┬──────┘      └─────────┘
         │                  │
-        │                  │
-   ┌────▼────┐       ┌──────▼──────┐
+   ┌────▼────┐       ┌─────▼───────┐
    │ Đăng ký │       │ Chi tiết    │
    │         │       │ nhà hàng    │
-   └────┬────┘       └──────┬───────┘
+   └────┬────┘       └─────┬───────┘
         │                  │
-        │                  │
-   ┌────▼────┐       ┌──────▼──────┐
-   │ Dashboard│      │ Chi tiết    │
-   │  User   │      │   món ăn    │
+   ┌────▼────┐      ┌──────▼───────┐
+   │Dashboard│      │ Chi tiết     │
+   │  User   │      │   món ăn     │
    └────┬────┘      └──────┬───────┘
         │                  │
-        │                  │
-   ┌────▼────┐       ┌──────▼──────┐
+   ┌────▼────┐       ┌─────▼───────┐
    │  Giỏ    │       │ Thêm vào    │
    │  hàng   │◄──────│ giỏ hàng    │
    └────┬────┘       └─────────────┘
-        │
         │
    ┌────▼────┐
    │ Thanh   │
    │  toán   │
    └────┬────┘
         │
-        │
    ┌────▼────┐
    │ Đơn     │
    │ hàng    │
-   └────┬────┘
+   └────┬────
         │
-        │
-   ┌────▼────┐
+   ┌────▼───┐
    │ Theo   │
    │ dõi    │
    └────────┘
@@ -2644,6 +2637,347 @@ wallets ||--o{ wallet_transactions : "has"
 │lý   │ │duyệt│ │lý │
 │users│ │merch│ │nhà│
 └─────┘ └────┘ └────┘
+```
+
+**Sơ đồ liên kết màn hình - PlantUML (State Diagram)**:
+
+```plantuml
+@startuml User Flow - Sơ đồ liên kết màn hình
+skinparam state {
+  BackgroundColor LightBlue
+  BorderColor DarkBlue
+  ArrowColor DarkBlue
+}
+
+[*] --> TrangChu : Truy cập website
+
+state "User Flow" as UserFlow {
+  TrangChu : Trang chủ (/)
+  TrangChu --> DangNhap : Click "Đăng nhập"
+  TrangChu --> DangKy : Click "Đăng ký"
+  TrangChu --> DanhSachNhaHang : Click "Xem thêm"
+  TrangChu --> Blog : Click "Blog"
+  
+  DangNhap : Đăng nhập (/login)
+  DangNhap --> DashboardUser : Đăng nhập thành công
+  DangNhap --> XacThucEmail : Sau khi đăng ký
+  
+  DangKy : Đăng ký (/register)
+  DangKy --> XacThucEmail : Đăng ký thành công
+  DangKy --> DangKyMerchant : Click "Đăng ký Merchant"
+  
+  XacThucEmail : Xác thực email (/verify-email)
+  XacThucEmail --> DashboardUser : Xác thực thành công
+  
+  DashboardUser : Dashboard User (/account)
+  DashboardUser --> LichSuDonHang : Xem đơn hàng
+  DashboardUser --> QuanLyDiaChi : Quản lý địa chỉ
+  DashboardUser --> CaiDat : Cài đặt
+  
+  DanhSachNhaHang : Danh sách nhà hàng (/restaurants)
+  DanhSachNhaHang --> ChiTietNhaHang : Click vào nhà hàng
+  DanhSachNhaHang --> TimKiem : Tìm kiếm
+  
+  ChiTietNhaHang : Chi tiết nhà hàng (/restaurants/[slug])
+  ChiTietNhaHang --> ChiTietMonAn : Click vào món ăn
+  ChiTietNhaHang --> Chat : Click "Chat với nhà hàng"
+  ChiTietNhaHang --> TaoGroupOrder : Click "Tạo Group Order"
+  ChiTietNhaHang --> GioHang : Click "Thêm vào giỏ"
+  
+  ChiTietMonAn : Chi tiết món ăn (/food/[slug])
+  ChiTietMonAn --> GioHang : Click "Thêm vào giỏ"
+  ChiTietMonAn --> ChiTietNhaHang : Quay lại
+  
+  GioHang : Giỏ hàng (/cart)
+  GioHang --> ThanhToan : Click "Thanh toán"
+  GioHang --> DanhSachNhaHang : "Tiếp tục mua sắm"
+  GioHang --> QuanLyDiaChi : "Thêm địa chỉ mới"
+  
+  ThanhToan : Thanh toán (/payment)
+  ThanhToan --> TheoDoiDonHang : Thanh toán thành công
+  ThanhToan --> GioHang : "Quay lại"
+  
+  TheoDoiDonHang : Theo dõi đơn hàng (/delivery/[id])
+  TheoDoiDonHang --> ChiTietDonHang : Xem chi tiết
+  
+  LichSuDonHang : Lịch sử đơn hàng (/orders)
+  LichSuDonHang --> ChiTietDonHang : Click vào đơn hàng
+  LichSuDonHang --> DatLai : Click "Đặt lại"
+  
+  ChiTietDonHang : Chi tiết đơn hàng (/orders/[id])
+  ChiTietDonHang --> DatLai : Click "Đặt lại"
+  ChiTietDonHang --> HuyDon : Click "Hủy đơn" (nếu pending)
+  
+  Chat : Chat (/chat)
+  Chat --> ChiTietNhaHang : Quay lại
+  
+  Blog : Blog (/blog)
+  Blog --> ChiTietBlog : Click vào bài viết
+  
+  ChiTietBlog : Chi tiết blog (/blog/[slug])
+  ChiTietBlog --> Blog : Quay lại
+  
+  TaoGroupOrder : Tạo Group Order
+  TaoGroupOrder --> ThamGiaGroupOrder : Chia sẻ link
+  
+  ThamGiaGroupOrder : Tham gia Group Order (/group-orders/[token])
+  ThamGiaGroupOrder --> ThanhToan : Confirm và thanh toán
+}
+
+state "Merchant Flow" as MerchantFlow {
+  MerchantDashboard : Merchant Dashboard (/merchant)
+  MerchantDashboard --> QuanLyNhaHang : Quản lý nhà hàng
+  MerchantDashboard --> QuanLyDonHang : Quản lý đơn hàng
+  MerchantDashboard --> BaoCao : Báo cáo
+  MerchantDashboard --> ViDienTu : Ví điện tử
+  
+  QuanLyNhaHang : Quản lý nhà hàng
+  QuanLyNhaHang --> QuanLyMonAn : Quản lý món ăn
+  QuanLyNhaHang --> CaiDatNhaHang : Cài đặt nhà hàng
+  
+  QuanLyMonAn : Quản lý món ăn (/merchant/food)
+  QuanLyMonAn --> ThemMonAn : Thêm món mới
+  QuanLyMonAn --> SuaMonAn : Sửa món ăn
+  
+  QuanLyDonHang : Quản lý đơn hàng (/merchant/orders)
+  QuanLyDonHang --> ChiTietDonHangMerchant : Xem chi tiết đơn hàng
+  
+  BaoCao : Báo cáo (/merchant/reports)
+  ViDienTu : Ví điện tử (/merchant/wallet)
+  ViDienTu --> YeuCauRutTien : Yêu cầu rút tiền
+}
+
+state "Admin Flow" as AdminFlow {
+  AdminDashboard : Admin Dashboard (/admin/dashboard)
+  AdminDashboard --> QuanLyUsers : Quản lý Users
+  AdminDashboard --> PheDuyetMerchant : Phê duyệt Merchant
+  AdminDashboard --> QuanLyNhaHangAdmin : Quản lý Nhà hàng
+  AdminDashboard --> QuanLyCategories : Quản lý Categories
+  AdminDashboard --> QuanLySizes : Quản lý Sizes
+  AdminDashboard --> QuanLyPromotions : Quản lý Promotions
+  AdminDashboard --> QuanLyDonHangAdmin : Quản lý Đơn hàng
+  AdminDashboard --> QuanLyPayout : Quản lý Payout Requests
+}
+
+DangNhap --> MerchantDashboard : Đăng nhập với role MERCHANT
+DangNhap --> AdminDashboard : Đăng nhập với role ADMIN
+
+@enduml
+```
+
+**Sơ đồ liên kết màn hình - PlantUML (Activity Diagram - User Flow)**:
+
+```plantuml
+@startuml User Flow - Activity Diagram
+start
+
+:User truy cập Trang chủ;
+
+if (Đã đăng nhập?) then (Chưa)
+  :Đăng nhập / Đăng ký;
+  if (Đăng ký?) then (Yes)
+    :Xác thực email;
+  endif
+  :Đăng nhập thành công;
+else (Rồi)
+endif
+
+:Chọn hành động;
+
+if (Hành động?) then (Tìm nhà hàng)
+  :Xem Danh sách nhà hàng;
+  :Filter/Search;
+  :Click vào nhà hàng;
+  :Xem Chi tiết nhà hàng;
+  
+  if (Hành động?) then (Xem món ăn)
+    :Click vào món ăn;
+    :Xem Chi tiết món ăn;
+    :Chọn size, số lượng;
+    :Thêm vào giỏ hàng;
+  else (Tạo Group Order)
+    :Tạo Group Order;
+    :Chia sẻ link;
+    :Tham gia Group Order;
+    :Confirm và thanh toán;
+    stop
+  else (Chat)
+    :Mở Chat với merchant;
+    stop
+  else (Thêm vào giỏ)
+    :Thêm món vào giỏ hàng;
+  endif
+  
+  :Xem Giỏ hàng;
+  :Chọn địa chỉ giao hàng;
+  :Click "Thanh toán";
+  :Chọn phương thức thanh toán;
+  :Xác nhận đặt hàng;
+  :Thanh toán thành công;
+  :Theo dõi đơn hàng;
+  :Xem Lịch sử đơn hàng;
+  
+elseif (Xem Blog) then
+  :Xem Danh sách Blog;
+  :Click vào bài viết;
+  :Đọc Chi tiết Blog;
+  :Like/Comment;
+  
+elseif (Quản lý tài khoản) then
+  :Vào Dashboard User;
+  :Xem Lịch sử đơn hàng;
+  :Quản lý Địa chỉ;
+  :Cài đặt;
+  
+elseif (Merchant) then
+  :Vào Merchant Dashboard;
+  :Quản lý Nhà hàng;
+  :Quản lý Menu;
+  :Quản lý Đơn hàng;
+  :Xem Báo cáo;
+  :Quản lý Ví điện tử;
+  
+elseif (Admin) then
+  :Vào Admin Dashboard;
+  :Quản lý Users;
+  :Phê duyệt Merchant;
+  :Quản lý Nhà hàng;
+  :Quản lý Categories/Sizes;
+  :Xem Analytics;
+endif
+
+stop
+
+@enduml
+```
+
+**Sơ đồ liên kết màn hình - PlantUML (Component Diagram - Navigation)**:
+
+```plantuml
+@startuml Navigation Flow - Component Diagram
+package "Public Pages" {
+  [Trang chủ] as Home
+  [Danh sách nhà hàng] as Restaurants
+  [Chi tiết nhà hàng] as RestaurantDetail
+  [Chi tiết món ăn] as FoodDetail
+  [Blog] as Blog
+  [Chi tiết Blog] as BlogDetail
+}
+
+package "Authentication" {
+  [Đăng nhập] as Login
+  [Đăng ký] as Register
+  [Xác thực email] as VerifyEmail
+  [Đăng ký Merchant] as MerchantRegister
+}
+
+package "User Pages" {
+  [Dashboard User] as UserDashboard
+  [Giỏ hàng] as Cart
+  [Thanh toán] as Payment
+  [Theo dõi đơn hàng] as Delivery
+  [Lịch sử đơn hàng] as Orders
+  [Chi tiết đơn hàng] as OrderDetail
+  [Chat] as Chat
+  [Quản lý địa chỉ] as Addresses
+  [Cài đặt] as Settings
+  [Group Order] as GroupOrder
+  [Tham gia Group Order] as JoinGroupOrder
+}
+
+package "Merchant Pages" {
+  [Merchant Dashboard] as MerchantDashboard
+  [Quản lý món ăn] as ManageFood
+  [Quản lý đơn hàng] as MerchantOrders
+  [Báo cáo] as Reports
+  [Ví điện tử] as Wallet
+  [Cài đặt nhà hàng] as RestaurantSettings
+}
+
+package "Admin Pages" {
+  [Admin Dashboard] as AdminDashboard
+  [Quản lý Users] as ManageUsers
+  [Phê duyệt Merchant] as ApproveMerchant
+  [Quản lý Nhà hàng] as ManageRestaurants
+  [Quản lý Categories] as ManageCategories
+  [Quản lý Sizes] as ManageSizes
+  [Quản lý Promotions] as ManagePromotions
+  [Quản lý Đơn hàng] as AdminOrders
+  [Quản lý Payout] as ManagePayout
+}
+
+' Public navigation
+Home --> Restaurants
+Home --> Blog
+Home --> Login
+Home --> Register
+
+Restaurants --> RestaurantDetail
+RestaurantDetail --> FoodDetail
+RestaurantDetail --> Chat
+RestaurantDetail --> GroupOrder
+FoodDetail --> Cart
+
+Blog --> BlogDetail
+
+' Authentication flow
+Register --> VerifyEmail
+Register --> MerchantRegister
+Login --> UserDashboard
+Login --> MerchantDashboard
+Login --> AdminDashboard
+
+' User flow
+UserDashboard --> Orders
+UserDashboard --> Addresses
+UserDashboard --> Settings
+RestaurantDetail --> Cart
+FoodDetail --> Cart
+Cart --> Payment
+Payment --> Delivery
+Orders --> OrderDetail
+OrderDetail --> Cart : Đặt lại
+GroupOrder --> JoinGroupOrder
+JoinGroupOrder --> Payment
+
+' Merchant flow
+MerchantDashboard --> ManageFood
+MerchantDashboard --> MerchantOrders
+MerchantDashboard --> Reports
+MerchantDashboard --> Wallet
+MerchantDashboard --> RestaurantSettings
+
+' Admin flow
+AdminDashboard --> ManageUsers
+AdminDashboard --> ApproveMerchant
+AdminDashboard --> ManageRestaurants
+AdminDashboard --> ManageCategories
+AdminDashboard --> ManageSizes
+AdminDashboard --> ManagePromotions
+AdminDashboard --> AdminOrders
+AdminDashboard --> ManagePayout
+
+note right of Cart
+  Có thể thêm món từ:
+  - Chi tiết món ăn
+  - Chi tiết nhà hàng
+  - Đặt lại đơn hàng
+end note
+
+note right of Payment
+  Sau thanh toán thành công:
+  → Theo dõi đơn hàng
+  → Lịch sử đơn hàng
+end note
+
+note right of GroupOrder
+  Tạo group order từ:
+  - Chi tiết nhà hàng
+  Chia sẻ link để
+  người khác tham gia
+end note
+
+@enduml
 ```
 
 ### 4.2 Danh sách các màn hình

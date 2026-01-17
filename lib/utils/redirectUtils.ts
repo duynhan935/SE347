@@ -87,13 +87,8 @@ export function shouldRedirectFromPath(
 
     const role = userRole.toUpperCase();
 
-    // If user is on home page ("/") and is MERCHANT or ADMIN, redirect to their dashboard
-    if (pathname === "/" && (role === "MERCHANT" || role === "ADMIN")) {
-        return {
-            shouldRedirect: true,
-            redirectTo: getRoleBasedRedirectPath(role as UserRole),
-        };
-    }
+    // REMOVED: Allow Merchant and Admin to access public routes (home, search, restaurants, etc.)
+    // They can freely switch between buying view and dashboard view
 
     // If MERCHANT tries to access admin routes
     if (pathname.startsWith("/admin") && role === "MERCHANT") {

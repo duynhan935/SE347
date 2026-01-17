@@ -5,6 +5,7 @@ import {
     ChevronDown,
     Clock,
     Grid3x3,
+    Home,
     LayoutDashboard,
     MessageCircle,
     Percent,
@@ -126,9 +127,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                 </div>
 
                 {/* Menu */}
-                <div className="no-scrollbar flex flex-col overflow-y-auto duration-300 ease-linear">
-                    <nav className="mt-5 px-4 py-4 lg:mt-9 lg:px-6">
-                        <div>
+                <div className="no-scrollbar flex flex-col overflow-y-auto duration-300 ease-linear flex-1">
+                    <nav className="mt-5 px-4 py-4 lg:mt-9 lg:px-6 flex flex-col h-full">
+                        <div className="flex-1">
                             <h3 className="mb-4 ml-4 text-sm font-semibold text-gray-500 dark:text-gray-400">MENU</h3>
                             <ul className="mb-6 flex flex-col gap-1.5">
                                 {menuItems.map((item) => {
@@ -205,6 +206,19 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                                 })}
                             </ul>
                         </div>
+
+                        {/* Divider */}
+                        <div className="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+
+                        {/* Back to Home Page */}
+                        <Link
+                            href="/"
+                            className="flex items-center gap-2.5 rounded-lg px-4 py-2.5 font-medium duration-300 ease-in-out text-[#EE4D2D] hover:bg-[#EE4D2D]/10 dark:hover:bg-[#EE4D2D]/20 border border-[#EE4D2D]/30 hover:border-[#EE4D2D]/50"
+                            title="Back to homepage"
+                        >
+                            <Home size={20} />
+                            <span>Back to Home Page</span>
+                        </Link>
                     </nav>
                 </div>
             </aside>
