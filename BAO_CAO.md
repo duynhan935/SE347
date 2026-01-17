@@ -2985,10 +2985,10 @@ end note
 #### 4.2.1 Màn hình Client (User)
 
 1. **Trang chủ** (`/`)
-   - Split layout: Hero Search Section (bên trái) + Featured Food Panel (bên phải)
-   - Hero Search Section: Search bar, category tags (All, Rice, Bubble Tea, Vegetarian, và các category khác)
-   - Featured Food Panel: Danh sách món ăn nổi bật với grid layout
-   - Responsive: Mobile hiển thị Featured Food Panel bên dưới Hero Search Section
+   - Stacked layout: Hero Banner Section (full-width) + Featured Foods Section (container)
+   - Hero Banner Section: Full-width banner với background image, gradient overlay, title "Order food now, super fast delivery", Search bar rộng (max-w-2xl), Popular Categories tags (All, Rice, Bubble Tea, Vegetarian, và các category khác) căn giữa
+   - Featured Foods Section: Container với grid responsive (1 column mobile, 2 columns tablet, 3 columns laptop, 4 columns desktop)
+   - Layout hiện đại, tận dụng chiều rộng màn hình, banner không bị cắt
 
 2. **Trang tìm kiếm** (`/search`)
    - Filter sidebar (theo danh mục, khoảng giá, rating, special filters)
@@ -2999,8 +2999,8 @@ end note
    - Mobile: Filter drawer
 
 3. **Chi tiết nhà hàng** (`/restaurants/[slug]`)
-   - Hero section với ảnh nhà hàng
-   - Thông tin nhà hàng (địa chỉ, giờ mở cửa, rating)
+   - Hero section với style "Atmospheric Blur": Ảnh nền được làm mờ (blur-2xl) và phóng to (scale-110) để tạo màu nền, gradient overlay tối (from-gray-900/95), thông tin nhà hàng hiển thị trực tiếp trên banner (tên, category, rating, duration, distance) với typography trắng nổi bật
+   - Restaurant Nav Tabs: Sticky tabs (Menu, About, Reviews) với smooth scroll
    - Menu với các danh mục
    - Reviews section
    - Chat button
@@ -3237,25 +3237,36 @@ end note
 #### 4.3.1 Trang chủ (`/`)
 
 **Các thành phần chính**:
-- **Header**: Logo, Address Selector, Search Bar, Navigation Icons (Browse Foods, Orders, Chat, Cart), User Menu
-- **Split Layout**:
-  - **Left Column (40% width) - Hero Search Section**:
-    - Background image với gradient overlay
-    - Title: "Order food now, super fast delivery"
-    - Search bar với placeholder và submit button
-    - Popular Categories tags (All, Rice, Bubble Tea, Vegetarian, và các category từ API)
-    - Category tags có emoji icons và active state
-  - **Right Column (60% width) - Featured Food Panel**:
-    - Header: "Featured Foods" với số lượng items
-    - Grid layout (2 columns mobile, 3 columns tablet, 4 columns desktop)
-    - Compact Food Cards hiển thị: ảnh, tên, restaurant, rating, giá
-    - Scrollable area với custom scrollbar
-- **Mobile Layout**: Featured Food Panel hiển thị bên dưới Hero Search Section
+- **Header**: 
+  - Logo, Address Selector (với location store, hiển thị địa chỉ hiện tại, dropdown chứa "Use Current Location" với reverse geocoding, danh sách địa chỉ của user, và 5 địa chỉ mặc định), Search Bar, Notification Bell (với nút "Mark all as read" và mark as read cho từng item), Navigation Icons (Browse Foods, Orders, Chat, Cart), User Menu
+- **Stacked Layout (Full-Width Standard)**:
+  - **Hero Banner Section (Full Width)**:
+    - Chiều cao: `h-[500px]` mobile, `h-[600px]` desktop
+    - Background image với gradient overlay (`bg-black/60`)
+    - Content căn giữa (`flex flex-col items-center justify-center text-center`)
+    - Title: "Order food now, super fast delivery" (text-4xl → text-6xl)
+    - Search bar rộng hơn (`max-w-2xl mx-auto`) với submit button
+    - Popular Categories tags căn giữa với `justify-center`, có emoji icons và active state
+  - **Featured Foods Section (Container)**:
+    - Container: `container mx-auto px-4 py-12 max-w-7xl`
+    - Header: "Featured Foods" (text-3xl font-bold)
+    - Grid layout responsive: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4` với gap-6 hoặc gap-8
+    - Compact Food Cards hiển thị: ảnh (aspect-square), tên (capitalized), restaurant, rating, giá
 
 **Chức năng**:
+- Address Selector: 
+  - Hiển thị địa chỉ hiện tại từ location store
+  - "Use Current Location": Yêu cầu quyền geolocation từ trình duyệt, reverse geocoding để lấy địa chỉ text, tự động lưu vào danh sách địa chỉ của user nếu đã đăng nhập
+  - Dropdown chứa: My Addresses (từ user), Popular Areas (5 địa chỉ mặc định HCM), "+ Add new address"
+  - Khi chọn địa chỉ mới → Cập nhật location store → Tự động reload danh sách món ăn với lat/lng mới
+- Notification Bell:
+  - Hiển thị số lượng thông báo chưa đọc
+  - Nút "Mark all as read" ở header khi có thông báo chưa đọc
+  - Nút mark as read (X) cho từng notification item (hiện khi hover)
 - Search bar: Submit → Navigate đến `/search?q={query}`
 - Category tags: Click → Filter foods trên cùng trang (update URL params)
 - Food cards: Click → Navigate đến `/food/[slug]`
+- Featured Foods tự động fetch với lat/lng từ location store
 - Responsive design với breakpoints
 
 #### 4.3.2 Trang tìm kiếm (`/search`)
@@ -3275,16 +3286,28 @@ end note
 - **Pagination**: (nếu có)
 
 **Chức năng**:
+- Tự động lấy location từ location store (geolocation → user address → default) khi load trang
 - Filter sidebar: Update URL params và filter results
 - Sort bar: Sort results theo tiêu chí
 - Food cards: Click → Navigate đến `/food/[slug]`
 - Search từ URL query params
+- API calls tự động kèm theo lat/lng từ location store để filter theo vị trí
 
 #### 4.3.3 Chi tiết nhà hàng (`/restaurants/[slug]`)
 
 **Các thành phần chính**:
-- **Restaurant Hero**: Ảnh cover nhà hàng, tên, rating, địa chỉ
-- **Restaurant Nav Tabs**: Sticky tabs (Menu, About, Reviews) với smooth scroll
+- **Restaurant Hero (Atmospheric Blur Style)**:
+  - Container: Chiều cao `h-[300px]` mobile, `h-[400px]` desktop với `overflow-hidden bg-gray-900`
+  - Background Image: Next.js Image với `fill`, `object-cover`, `filter blur-2xl scale-110 opacity-70` để tạo hiệu ứng làm mờ và tạo màu nền thay vì hiển thị chi tiết
+  - Gradient Overlay: `bg-gradient-to-t from-gray-900/95 via-gray-900/60 to-gray-900/20` để tạo lớp phủ tối mạnh
+  - Content trên Banner:
+    - Position: `absolute bottom-0` với padding đầy đủ
+    - Logo/Avatar: 80x80px rounded-full với ring và shadow (desktop only)
+    - Restaurant Name: `text-3xl md:text-5xl lg:text-6xl font-bold text-white` với drop-shadow-lg
+    - Category: `text-gray-200`
+    - Rating badge: Glassmorphism style (`bg-white/10 backdrop-blur-sm`) với border
+    - Meta info: Duration và Distance với icons, màu `text-gray-200`
+- **Restaurant Nav Tabs**: Sticky tabs (Menu, About, Reviews) với smooth scroll, tính toán heroHeight phù hợp với layout mới
 - **Breadcrumb**: Home > Restaurant name
 - **Main Layout (3 columns)**:
   - **Left Column (2/3 width)**:
