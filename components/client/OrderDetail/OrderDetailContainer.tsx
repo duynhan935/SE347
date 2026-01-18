@@ -1,7 +1,7 @@
 import { orderApi } from "@/lib/api/orderApi";
 import { Order } from "@/types/order.type";
 import { notFound } from "next/navigation";
-import OrderDetailClient from "./OrderDetailClient";
+import OrderDetailClientWrapper from "./OrderDetailClientWrapper";
 
 export default async function OrderDetailPageContainer({ params }: { params: { id: string } }) {
     let order: Order | null = null;
@@ -15,5 +15,5 @@ export default async function OrderDetailPageContainer({ params }: { params: { i
         notFound();
     }
 
-    return <OrderDetailClient order={order} />;
+    return <OrderDetailClientWrapper initialOrder={order} />;
 }

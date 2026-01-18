@@ -224,9 +224,10 @@ export default function LoginPage() {
                             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                                 Password
                             </label>
-                            <a href="#" className="text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline">
+                            {/* Forgot password link - hidden until feature is implemented */}
+                            {/* <a href="#" className="text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline">
                                 Forgot password?
-                            </a>
+                            </a> */}
                         </div>
 
                         <div className="relative">

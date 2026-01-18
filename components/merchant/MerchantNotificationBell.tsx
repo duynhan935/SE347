@@ -11,7 +11,9 @@ import { orderApi } from "@/lib/api/orderApi";
 import { useMerchantRestaurant } from "@/lib/hooks/useMerchantRestaurant";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useMerchantOrderStore } from "@/stores/useMerchantOrderStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
+import { OrderStatus } from "@/types/order.type";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -19,9 +21,11 @@ import { useEffect, useRef, useState } from "react";
 export function MerchantNotificationBell() {
     const { user, isAuthenticated } = useAuthStore();
     const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
+    const { incrementPendingOrdersCount, setPendingOrdersCount } = useMerchantOrderStore();
     const { currentRestaurant } = useMerchantRestaurant();
     const [isOpen, setIsOpen] = useState(false);
     const initializedRef = useRef(false);
+    const pendingCountInitializedRef = useRef(false);
 
     // Get restaurant ID from current restaurant
     const restaurantId = currentRestaurant?.id || null;
@@ -35,6 +39,7 @@ export function MerchantNotificationBell() {
             const totalAmount = notification.data.totalAmount;
             const itemCount = notification.data.itemCount;
 
+            // Add notification
             useNotificationStore.getState().addNotification({
                 type: "MERCHANT_NEW_ORDER",
                 title: "New Order",
@@ -45,16 +50,26 @@ export function MerchantNotificationBell() {
                 orderId,
                 restaurantName: notification.data.restaurantName,
             });
+
+            // Increment pending orders count for sidebar badge
+            incrementPendingOrdersCount();
         },
     });
 
-    // Initialize notifications from order history
+    // Initialize notifications and pending orders count from order history
     useEffect(() => {
         if (!isAuthenticated || !user?.id || !restaurantId || initializedRef.current) return;
 
         orderApi
             .getOrdersByRestaurant(restaurantId, user.id)
             .then(({ orders }) => {
+                // Update pending orders count for sidebar badge
+                if (!pendingCountInitializedRef.current) {
+                    const pendingCount = orders.filter((o) => o.status === OrderStatus.PENDING).length;
+                    setPendingOrdersCount(pendingCount);
+                    pendingCountInitializedRef.current = true;
+                }
+
                 // Create notifications for pending/new orders
                 const pendingOrders = orders.filter((o) => o.status === "pending");
                 pendingOrders.forEach((order) => {
@@ -71,7 +86,7 @@ export function MerchantNotificationBell() {
             .catch((error) => {
                 console.error("Failed to initialize merchant notifications:", error);
             });
-    }, [isAuthenticated, user?.id, restaurantId]);
+    }, [isAuthenticated, user?.id, restaurantId, setPendingOrdersCount]);
 
     if (!isAuthenticated || !restaurantId) return null;
 
