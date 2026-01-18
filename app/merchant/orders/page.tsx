@@ -117,11 +117,11 @@ export default function MerchantOrdersPage() {
                 // Keep a snapshot of order ids for background change detection.
                 knownOrderIdsRef.current = new Set(restaurantOrders.map((o) => o.orderId));
                 setOrders(restaurantOrders);
-                
+
                 // Update pending orders count
                 const pendingCount = restaurantOrders.filter((o) => o.status === OrderStatus.PENDING).length;
                 setPendingOrdersCount(pendingCount);
-                
+
                 return restaurantOrders;
             } catch (error) {
                 console.error("Failed to fetch orders:", error);
@@ -136,7 +136,7 @@ export default function MerchantOrdersPage() {
                 }
             }
         },
-        [restaurantId, user?.id, setPendingOrdersCount]
+        [restaurantId, user?.id],
     );
 
     const normalizeSocketOrder = useCallback(
@@ -165,8 +165,8 @@ export default function MerchantOrdersPage() {
                               typeof item.productName === "string"
                                   ? item.productName
                                   : typeof item.name === "string"
-                                  ? item.name
-                                  : "";
+                                    ? item.name
+                                    : "";
                           const quantity = typeof item.quantity === "number" ? item.quantity : 0;
                           const price = typeof item.price === "number" ? item.price : 0;
                           if (!productName || quantity <= 0) return null;
@@ -192,8 +192,8 @@ export default function MerchantOrdersPage() {
                 typeof record.finalAmount === "number"
                     ? record.finalAmount
                     : typeof record.totalAmount === "number"
-                    ? record.totalAmount
-                    : 0;
+                      ? record.totalAmount
+                      : 0;
             const paymentMethod =
                 typeof record.paymentMethod === "string" ? (record.paymentMethod as Order["paymentMethod"]) : "cash";
 
@@ -238,7 +238,7 @@ export default function MerchantOrdersPage() {
                 updatedAt,
             };
         },
-        [restaurantId]
+        [restaurantId],
     );
 
     // Connect to socket (single restaurant room)
@@ -266,15 +266,15 @@ export default function MerchantOrdersPage() {
                 }
                 const next = [incoming, ...prev];
                 next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                
+
                 // Update pending orders count
                 const pendingCount = next.filter((o) => o.status === OrderStatus.PENDING).length;
                 setPendingOrdersCount(pendingCount);
-                
+
                 return next;
             });
             knownOrderIdsRef.current.add(incoming.orderId);
-            
+
             // Refresh orders after a short delay to get updated payment status from webhook
             // This ensures payment status is updated even if socket doesn't emit payment status update
             setTimeout(() => {
@@ -285,70 +285,43 @@ export default function MerchantOrdersPage() {
         },
         onOrderStatusUpdate: (notification) => {
             // Handle order status updates (including payment status updates)
-            // Backend emits orderId, status at root level
-            const orderId = notification.orderId || notification.data?.orderId;
-            const newStatus = notification.status || notification.data?.status;
-            
-            if (!orderId || !newStatus) {
-                // If no orderId/status, refresh all orders as fallback
+            const updated = normalizeSocketOrder(notification?.data);
+
+            if (!updated) {
+                // If we can't normalize, refresh all orders
                 fetchOrders({ background: true }).catch(() => {
                     // Ignore background refresh failures
                 });
                 return;
             }
 
-            console.log("[Merchant Orders] Order status updated via websocket:", orderId, newStatus);
+            // Update the specific order in the list
+            setOrders((prev) => {
+                const existingIndex = prev.findIndex((o) => o.orderId === updated.orderId);
 
-            // Check if this order belongs to our restaurant
-            // We need to check by refetching or checking local state
-            const currentOrder = orders.find((o) => o.orderId === orderId);
-            
-            if (currentOrder) {
-                // Order exists in our list, update it directly
-                setOrders((prev) => {
-                    const existingIndex = prev.findIndex((o) => o.orderId === orderId);
-                    if (existingIndex === -1) {
-                        // Not found, refresh
-                        fetchOrders({ background: true }).catch(() => {});
-                        return prev;
-                    }
-                    
-                    // Update existing order
-                    const next = [...prev];
-                    next[existingIndex] = {
-                        ...next[existingIndex],
-                        status: newStatus as OrderStatus,
-                    };
+                if (existingIndex === -1) {
+                    // Order not found, add it
+                    const next = [updated, ...prev];
                     next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                    
+
                     // Update pending orders count
                     const pendingCount = next.filter((o) => o.status === OrderStatus.PENDING).length;
                     setPendingOrdersCount(pendingCount);
-                    
-                    return next;
-                });
-            } else {
-                // Order not in our list, but might be new or status changed
-                // Refresh to get updated order list
-                fetchOrders({ background: true }).catch(() => {
-                    // Ignore background refresh failures
-                });
-            }
 
-            // Show toast notification for important status changes
-            const statusMessages: Record<string, string> = {
-                confirmed: "Order confirmed",
-                preparing: "Order is being prepared",
-                ready: "Order is ready",
-                completed: "Order completed",
-                cancelled: "Order cancelled",
-            };
-            
-            if (statusMessages[newStatus.toLowerCase()]) {
-                toast.success(`${statusMessages[newStatus.toLowerCase()]}: ${orderId}`, {
-                    duration: 3000,
-                });
-            }
+                    return next;
+                }
+
+                // Update existing order
+                const next = [...prev];
+                next[existingIndex] = updated;
+                next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+                // Update pending orders count
+                const pendingCount = next.filter((o) => o.status === OrderStatus.PENDING).length;
+                setPendingOrdersCount(pendingCount);
+
+                return next;
+            });
         },
     });
 
@@ -370,11 +343,11 @@ export default function MerchantOrdersPage() {
                         const existing = new Set(prev.map((o) => o.orderId));
                         const merged = [...newOnes.filter((o) => !existing.has(o.orderId)), ...prev];
                         merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                        
+
                         // Update pending orders count
                         const pendingCount = merged.filter((o) => o.status === OrderStatus.PENDING).length;
                         setPendingOrdersCount(pendingCount);
-                        
+
                         return merged;
                     });
                 }
@@ -530,7 +503,7 @@ export default function MerchantOrdersPage() {
                         });
                     }}
                     disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-brand-yellow hover:bg-brand-yellow/90 text-white rounded-lg transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg transition-colors disabled:opacity-50"
                 >
                     <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
                     Refresh
@@ -585,7 +558,7 @@ export default function MerchantOrdersPage() {
                             onClick={() => setFilterStatus(status)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                                 filterStatus === status
-                                    ? "bg-brand-yellow text-white"
+                                    ? "bg-brand-orange text-white"
                                     : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                             }`}
                         >
@@ -674,7 +647,7 @@ export default function MerchantOrdersPage() {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span
                                                     className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                                                        normalizedStatus
+                                                        normalizedStatus,
                                                     )}`}
                                                 >
                                                     {getStatusLabel(normalizedStatus)}
@@ -687,16 +660,16 @@ export default function MerchantOrdersPage() {
                                                         order.paymentStatus === "completed"
                                                             ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                                                             : order.paymentStatus === "failed"
-                                                            ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                                                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                                                     }`}
                                                 >
                                                     {order.paymentStatus === "paid" ||
                                                     order.paymentStatus === "completed"
                                                         ? "Paid"
                                                         : order.paymentStatus === "failed"
-                                                        ? "Failed"
-                                                        : "Pending"}
+                                                          ? "Failed"
+                                                          : "Pending"}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -731,7 +704,7 @@ export default function MerchantOrdersPage() {
                                                 ) : nextStatus ? (
                                                     <button
                                                         onClick={() => handleUpdateStatus(order.orderId, nextStatus)}
-                                                        className="text-brand-yellow hover:text-brand-yellow/80"
+                                                        className="text-brand-orange hover:text-brand-orange/80"
                                                     >
                                                         Update
                                                     </button>
@@ -765,7 +738,7 @@ export default function MerchantOrdersPage() {
                                 }))
                             }
                             placeholder="Example: out of stock, restaurant closed..."
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow mb-4"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange mb-4"
                             rows={4}
                         />
                         <div className="flex gap-3 justify-end">

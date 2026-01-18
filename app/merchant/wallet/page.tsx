@@ -99,7 +99,7 @@ export default function MerchantWalletPage() {
     if (loading && !wallet) {
         return (
             <div className="flex items-center justify-center p-12">
-                <Loader2 className="animate-spin text-brand-yellow" size={40} />
+                <Loader2 className="animate-spin text-brand-orange" size={40} />
             </div>
         );
     }
@@ -148,7 +148,7 @@ export default function MerchantWalletPage() {
                                 step={1}
                                 value={amount}
                                 onChange={(e) => setAmount(Number(e.target.value))}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
                             />
                         </div>
 
@@ -160,7 +160,7 @@ export default function MerchantWalletPage() {
                                 type="text"
                                 value={bankInfo.bankName}
                                 onChange={(e) => setBankInfo((prev) => ({ ...prev, bankName: e.target.value }))}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
                             />
                         </div>
 
@@ -172,7 +172,7 @@ export default function MerchantWalletPage() {
                                 type="text"
                                 value={bankInfo.accountNumber}
                                 onChange={(e) => setBankInfo((prev) => ({ ...prev, accountNumber: e.target.value }))}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
                             />
                         </div>
 
@@ -186,7 +186,7 @@ export default function MerchantWalletPage() {
                                 onChange={(e) =>
                                     setBankInfo((prev) => ({ ...prev, accountHolderName: e.target.value }))
                                 }
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
                             />
                         </div>
 
@@ -198,7 +198,7 @@ export default function MerchantWalletPage() {
                                 type="text"
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
                             />
                         </div>
 
@@ -207,7 +207,7 @@ export default function MerchantWalletPage() {
                             disabled={!canSubmitWithdraw}
                             className={`w-full px-4 py-2 rounded-lg font-semibold transition-colors ${
                                 canSubmitWithdraw
-                                    ? "bg-brand-yellow text-white hover:bg-brand-yellow/90"
+                                    ? "bg-brand-orange text-white hover:bg-brand-orange/90"
                                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
                             }`}
                         >

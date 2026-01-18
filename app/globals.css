@@ -8,7 +8,7 @@
     --color-brand-purple: #572af8;
     --color-brand-purpledark: #380cd3;
     --color-brand-green: #29b067;
-    --color-brand-orange: #f05e36;
+    --color-brand-orange: #ee4d2d;
     --color-brand-yellow: #ffcf54;
     --color-brand-black: #191720;
     --color-brand-grey: #575363;
@@ -23,13 +23,13 @@
     --color-boxdark: #ffffff; /* Unified to White for cleaner look, or lighter dark */
     --color-bodydark: #575363; /* Brand Grey */
     --color-gray: #eff4fb; /* Keep generic light gray or use #fffae3 (Brand YellowLight)? Let's stick to clean gray for dashboard to avoid too much yellow */
-    --color-meta-1: #f05e36; /* Brand Orange (Danger/Action) */
+    --color-meta-1: #ee4d2d; /* Brand Orange (Danger/Action) */
     --color-meta-3: #29b067; /* Brand Green (Success) */
     --color-meta-5: #572af8; /* Brand Purple */
     --color-meta-6: #380cd3; /* Brand Purple Dark */
     --color-warning: #ffcf54; /* Brand Yellow */
     --color-success: #29b067; /* Brand Green */
-    --color-danger: #f05e36; /* Brand Orange */
+    --color-danger: #ee4d2d; /* Brand Orange */
 
     /* Font-Size */
     --text-h1: 74px;

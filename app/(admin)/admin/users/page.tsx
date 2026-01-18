@@ -73,7 +73,7 @@ export default function UsersPage() {
                             placeholder="Search by username or email..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
                         />
                     </div>
 
@@ -81,7 +81,7 @@ export default function UsersPage() {
                     <select
                         value={filterRole}
                         onChange={(e) => setFilterRole(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
                     >
                         <option value="ALL">All roles</option>
                         <option value="USER">User</option>
@@ -94,7 +94,7 @@ export default function UsersPage() {
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
                     >
                         <option value="ALL">All statuses</option>
                         <option value="ACTIVE">Active</option>
@@ -107,7 +107,7 @@ export default function UsersPage() {
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 {loading ? (
                     <div className="flex items-center justify-center p-12">
-                        <Loader2 className="animate-spin text-brand-yellow" size={40} />
+                        <Loader2 className="animate-spin text-brand-orange" size={40} />
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -142,7 +142,7 @@ export default function UsersPage() {
                                     >
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
-                                                <div className="w-10 h-10 rounded-full bg-brand-yellow flex items-center justify-center text-white font-semibold">
+                                                <div className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center text-white font-semibold">
                                                     {user.username.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div className="ml-4">
@@ -161,10 +161,10 @@ export default function UsersPage() {
                                                     user.role === "ADMIN"
                                                         ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                                                         : user.role === "MERCHANT"
-                                                        ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
-                                                        : user.role === "MANAGER"
-                                                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                                                        : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                                          ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                                                          : user.role === "MANAGER"
+                                                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                                            : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                                                 }`}
                                             >
                                                 {user.role}

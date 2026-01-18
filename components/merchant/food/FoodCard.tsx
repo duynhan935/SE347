@@ -44,8 +44,9 @@ export default function FoodCard({ food, onDelete }: FoodCardProps) {
 
                 <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-400">Category: {food.categoryName}</span>
-                    <span className="text-lg font-bold text-brand-purple">
-                        ${food.productSizes[0]?.price.toLocaleString("en-US", {
+                    <span className="text-lg font-bold text-brand-orange">
+                        $
+                        {food.productSizes[0]?.price.toLocaleString("en-US", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                         }) || "N/A"}

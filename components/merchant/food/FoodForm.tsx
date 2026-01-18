@@ -69,7 +69,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
     const handleSizeToggle = (sizeId: string) => {
         const exists = selectedSizes.find((s) => s.sizeId === sizeId);
         setSelectedSizes(
-            exists ? selectedSizes.filter((s) => s.sizeId !== sizeId) : [...selectedSizes, { sizeId, price: 0 }]
+            exists ? selectedSizes.filter((s) => s.sizeId !== sizeId) : [...selectedSizes, { sizeId, price: 0 }],
         );
     };
 
@@ -111,7 +111,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
     return (
         <form onSubmit={handleSubmit} className="space-y-5">
             {restaurant && (
-                <div className="rounded-xl border border-brand-purple/10 bg-brand-purple/5 p-4">
+                <div className="rounded-xl border border-brand-orange/10 bg-brand-orange/5 p-4">
                     <p className="text-xs font-medium text-gray-600 dark:text-gray-300">Restaurant</p>
                     <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{restaurant.resName}</p>
                 </div>
@@ -126,7 +126,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     required
                     value={formData.productName}
                     onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none transition focus:border-brand-purple focus:ring-4 focus:ring-brand-purple/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none transition focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
                     placeholder="Enter food name"
                 />
             </div>
@@ -140,7 +140,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={4}
-                    className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none transition focus:border-brand-purple focus:ring-4 focus:ring-brand-purple/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
+                    className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none transition focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
                     placeholder="Describe the food item"
                 />
             </div>
@@ -157,7 +157,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     required
                     value={formData.categoryId}
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none transition focus:border-brand-purple focus:ring-4 focus:ring-brand-purple/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none transition focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
                 >
                     <option value="">Select category</option>
                     {categories.map((cat) => (
@@ -184,7 +184,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                                 className={
                                     "flex flex-wrap items-center gap-3 rounded-lg border px-3 py-3 shadow-sm transition " +
                                     (isSelected
-                                        ? "border-brand-purple/30 bg-brand-purple/5"
+                                        ? "border-brand-orange/30 bg-brand-orange/5"
                                         : "border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900")
                                 }
                             >
@@ -193,7 +193,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                                         type="checkbox"
                                         checked={isSelected}
                                         onChange={() => handleSizeToggle(size.id)}
-                                        className="h-4 w-4 accent-brand-purple"
+                                        className="h-4 w-4 accent-brand-orange"
                                         aria-label={`Select size ${size.name}`}
                                     />
                                     <span className="font-medium text-gray-900 dark:text-white">{size.name}</span>
@@ -210,7 +210,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                                             value={selectedSize?.price ?? 0}
                                             onChange={(e) => handleSizePrice(size.id, Number(e.target.value))}
                                             placeholder="Price"
-                                            className="w-32 rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-900 outline-none focus:border-brand-purple focus:ring-4 focus:ring-brand-purple/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
+                                            className="w-32 rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-900 outline-none focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
                                         />
                                     </div>
                                 )}
@@ -226,7 +226,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                         type="checkbox"
                         checked={formData.available}
                         onChange={(e) => setFormData({ ...formData, available: e.target.checked })}
-                        className="h-4 w-4 accent-brand-purple"
+                        className="h-4 w-4 accent-brand-orange"
                     />
                     <span className="text-sm font-semibold text-gray-900 dark:text-white">Available</span>
                 </label>
@@ -267,7 +267,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                 <button
                     type="submit"
                     disabled={saving || selectedSizes.length === 0}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-purple px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-brand-purple/90 disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-orange px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-brand-orange/90 disabled:opacity-60"
                 >
                     {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                     {food ? "Update" : "Create"}

@@ -2,7 +2,9 @@
 
 import { useChatStore } from "@/stores/useChatStore";
 import { useMerchantOrderStore } from "@/stores/useMerchantOrderStore";
+import { Logo } from "@/constants";
 import { BarChart3, MessageCircle, Package, Settings, ShoppingBag, Store, Users, Wallet, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -21,7 +23,7 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
     const pathname = usePathname();
     const unreadCountMap = useChatStore((state) => state.unreadCountMap);
     const pendingOrdersCount = useMerchantOrderStore((state) => state.pendingOrdersCount);
-    
+
     // Calculate total unread count from all rooms
     const unreadCount = Object.values(unreadCountMap).reduce((sum, count) => sum + count, 0);
 
@@ -86,11 +88,9 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
             >
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b dark:border-gray-700">
-                    <Link href="/merchant" className="flex items-center gap-2">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-purple">
-                            <Store className="h-6 w-6 text-white" />
-                        </div>
-                        <span className="text-xl font-bold text-gray-900 dark:text-white">Merchant</span>
+                    <Link href="/merchant" className="flex items-center" aria-label="FoodEats">
+                        <Image src={Logo} alt="FoodEats Logo" width={120} height={40} className="h-8 w-auto" priority />
+                        <span className="sr-only">Merchant Dashboard</span>
                     </Link>
                     <button
                         onClick={() => setSidebarOpen(false)}
@@ -119,7 +119,7 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
                                     className={`
 									flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium relative
 									transition-colors duration-200
-									${isActive ? "bg-brand-purple text-white" : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"}
+								${isActive ? "bg-brand-orange text-white" : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"}
 								`}
                                 >
                                     <Icon className="h-5 w-5" />
@@ -127,9 +127,7 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
                                     {isMessages && unreadCount > 0 && (
                                         <span
                                             className={`h-5 min-w-5 px-1.5 text-xs rounded-full flex items-center justify-center font-bold ${
-                                                isActive
-                                                    ? "bg-white text-brand-purple"
-                                                    : "bg-[#EE4D2D] text-white"
+                                                isActive ? "bg-white text-brand-orange" : "bg-brand-orange text-white"
                                             }`}
                                         >
                                             {unreadCount > 99 ? "99+" : unreadCount}
@@ -138,9 +136,7 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
                                     {isOrders && pendingOrdersCount > 0 && (
                                         <span
                                             className={`h-5 min-w-5 px-1.5 text-xs rounded-full flex items-center justify-center font-bold ${
-                                                isActive
-                                                    ? "bg-white text-brand-purple"
-                                                    : "bg-[#EE4D2D] text-white"
+                                                isActive ? "bg-white text-brand-orange" : "bg-brand-orange text-white"
                                             }`}
                                         >
                                             {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
@@ -158,7 +154,7 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
                     <Link
                         href="/"
                         onClick={() => setSidebarOpen(false)}
-                        className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors duration-200 text-[#EE4D2D] hover:bg-[#EE4D2D]/10 dark:hover:bg-[#EE4D2D]/20 border border-[#EE4D2D]/30 hover:border-[#EE4D2D]/50"
+                        className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors duration-200 text-brand-orange hover:bg-brand-orange/10 dark:hover:bg-brand-orange/20 border border-brand-orange/30 hover:border-brand-orange/50"
                         title="Switch to buying view"
                     >
                         <ShoppingBag className="h-5 w-5" />

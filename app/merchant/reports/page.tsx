@@ -118,7 +118,7 @@ export default function MerchantReportsPage() {
                         name: formatDateLabel(p.date),
                         revenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
                         orders: typeof p.totalOrders === "number" ? p.totalOrders : 0,
-                    }))
+                    })),
                 );
 
                 setHourlyStats(
@@ -126,7 +126,7 @@ export default function MerchantReportsPage() {
                         hour: `${String(h.hour).padStart(2, "0")}:00`,
                         orders: typeof h.totalOrders === "number" ? h.totalOrders : 0,
                         revenue: typeof h.totalRevenue === "number" ? h.totalRevenue : 0,
-                    }))
+                    })),
                 );
 
                 setWeekdayStats(
@@ -135,8 +135,8 @@ export default function MerchantReportsPage() {
                             name: d.dayName,
                             orders: typeof d.totalOrders === "number" ? d.totalOrders : 0,
                             revenue: typeof d.totalRevenue === "number" ? d.totalRevenue : 0,
-                        })
-                    )
+                        }),
+                    ),
                 );
 
                 setTimeSummary({
@@ -151,7 +151,7 @@ export default function MerchantReportsPage() {
                         totalQuantity: typeof p.totalQuantity === "number" ? p.totalQuantity : 0,
                         orderCount: typeof p.orderCount === "number" ? p.orderCount : 0,
                         totalRevenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
-                    }))
+                    })),
                 );
 
                 setRatingStats({
@@ -231,7 +231,7 @@ export default function MerchantReportsPage() {
                     <button
                         onClick={handleExport}
                         disabled={loading || !dateQuery.startDate || !dateQuery.endDate}
-                        className="flex items-center gap-2 px-4 py-2 bg-brand-yellow hover:bg-brand-yellow/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                     >
                         <Download className="h-5 w-5" />
                         Export Report
@@ -465,7 +465,7 @@ export default function MerchantReportsPage() {
                                 className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg"
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-brand-yellow/10 text-brand-yellow font-bold text-lg">
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-brand-orange/10 text-brand-orange font-bold text-lg">
                                         {index + 1}
                                     </div>
                                     <div>

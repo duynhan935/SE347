@@ -1,6 +1,7 @@
 "use client";
 
 import { useNotificationStore } from "@/stores/useNotificationStore";
+import { Logo } from "@/constants";
 import {
     ChevronDown,
     Clock,
@@ -16,6 +17,7 @@ import {
     Utensils,
     X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -89,11 +91,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     const pathname = usePathname();
     const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
     const notifications = useNotificationStore((state) => state.notifications);
-    
+
     // Calculate pending merchant requests count from notifications
-    const pendingMerchantCount = notifications.filter(
-        (n) => n.type === "ADMIN_MERCHANT_REQUEST" && !n.read
-    ).length;
+    const pendingMerchantCount = notifications.filter((n) => n.type === "ADMIN_MERCHANT_REQUEST" && !n.read).length;
 
     return (
         <>
@@ -110,11 +110,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
             >
                 {/* Logo */}
                 <div className="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
-                    <Link href="/admin/dashboard" className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-brand-yellow rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-xl">A</span>
-                        </div>
-                        <span className="text-xl font-bold text-gray-900 dark:text-white">Admin Panel</span>
+                    <Link href="/admin/dashboard" className="flex items-center" aria-label="FoodEats">
+                        <Image src={Logo} alt="FoodEats Logo" width={120} height={40} className="h-8 w-auto" priority />
+                        <span className="sr-only">Admin Panel</span>
                     </Link>
                     <button
                         onClick={() => setSidebarOpen(false)}
@@ -161,7 +159,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                                                                     href={child.href}
                                                                     className={`block rounded-md px-4 py-2 text-sm ${
                                                                         pathname === child.href
-                                                                            ? "bg-brand-yellow text-white"
+                                                                            ? "bg-brand-orange text-white"
                                                                             : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                                                                     }`}
                                                                 >
@@ -183,7 +181,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                                                 href={item.href!}
                                                 className={`group relative flex items-center gap-2.5 rounded-lg px-4 py-2 font-medium duration-300 ease-in-out ${
                                                     isActive
-                                                        ? "bg-brand-yellow text-white"
+                                                        ? "bg-brand-orange text-white"
                                                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                                                 }`}
                                             >
@@ -193,8 +191,8 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                                                     <span
                                                         className={`h-5 min-w-5 px-1.5 text-xs rounded-full flex items-center justify-center font-bold ${
                                                             isActive
-                                                                ? "bg-white text-brand-yellow"
-                                                                : "bg-[#EE4D2D] text-white"
+                                                                ? "bg-white text-brand-orange"
+                                                                : "bg-brand-orange text-white"
                                                         }`}
                                                     >
                                                         {pendingMerchantCount > 99 ? "99+" : pendingMerchantCount}
@@ -213,7 +211,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                         {/* Back to Home Page */}
                         <Link
                             href="/"
-                            className="flex items-center gap-2.5 rounded-lg px-4 py-2.5 font-medium duration-300 ease-in-out text-[#EE4D2D] hover:bg-[#EE4D2D]/10 dark:hover:bg-[#EE4D2D]/20 border border-[#EE4D2D]/30 hover:border-[#EE4D2D]/50"
+                            className="flex items-center gap-2.5 rounded-lg px-4 py-2.5 font-medium duration-300 ease-in-out text-brand-orange hover:bg-brand-orange/10 dark:hover:bg-brand-orange/20 border border-brand-orange/30 hover:border-brand-orange/50"
                             title="Back to homepage"
                         >
                             <Home size={20} />
