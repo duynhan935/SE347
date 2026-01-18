@@ -2,16 +2,13 @@
 
 import ConfirmDeleteFoodModal from "@/components/merchant/food/ConfirmDeleteFoodModal";
 import FoodCard from "@/components/merchant/food/FoodCard";
-import FoodFormModal from "@/components/merchant/food/FoodFormModal";
 import FoodSearch from "@/components/merchant/food/FoodSearch";
 import FoodStats from "@/components/merchant/food/FoodStats";
-import { categoryApi } from "@/lib/api/categoryApi";
 import { restaurantApi } from "@/lib/api/restaurantApi";
-import { sizeApi } from "@/lib/api/sizeApi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useProductStore } from "@/stores/useProductsStores";
 import { useRestaurantStore } from "@/stores/useRestaurantStore";
-import { Category, Product, ProductCreateData, RestaurantData, Size } from "@/types";
+import { RestaurantData } from "@/types";
 import { Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -20,17 +17,12 @@ import toast from "react-hot-toast";
 export default function FoodPage() {
     const { user } = useAuthStore();
     const { restaurants, getRestaurantByMerchantId } = useRestaurantStore();
-    const { products, loading, fetchProductsByRestaurantId, createNewProduct, updateProduct, deleteProduct } =
-        useProductStore();
+    const { products, loading, fetchProductsByRestaurantId, deleteProduct } = useProductStore();
 
     const [searchTerm, setSearchTerm] = useState("");
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentFood, setCurrentFood] = useState<Product | null>(null);
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
     const [deleteTargetName, setDeleteTargetName] = useState<string | null>(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [sizes, setSizes] = useState<Size[]>([]);
     const [isLoadingRestaurant, setIsLoadingRestaurant] = useState(false);
     const [isCreatingRestaurant, setIsCreatingRestaurant] = useState(false);
 
@@ -95,23 +87,6 @@ export default function FoodPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentRestaurant?.id, isLoadingRestaurant, isCreatingRestaurant]);
 
-    // Load categories and sizes
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                const [categoriesRes, sizesRes] = await Promise.all([
-                    categoryApi.getAllCategories(),
-                    sizeApi.getAllSizes(),
-                ]);
-                setCategories(categoriesRes.data);
-                setSizes(sizesRes.data);
-            } catch (error) {
-                console.error("Failed to load categories/sizes:", error);
-                toast.error("Unable to load categories and sizes");
-            }
-        };
-        loadData();
-    }, []);
 
     // Filter foods by search term
     const filteredFoods = useMemo(() => {
@@ -154,32 +129,6 @@ export default function FoodPage() {
         }
     };
 
-    const handleOpenModal = (food: Product | null) => {
-        setCurrentFood(food);
-        setIsModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
-        setCurrentFood(null);
-        setIsModalOpen(false);
-    };
-
-    const handleSaveFood = async (productData: ProductCreateData, imageFile?: File) => {
-        try {
-            if (currentFood) {
-                await updateProduct(currentFood.id, productData, imageFile);
-            } else {
-                await createNewProduct(productData, imageFile);
-            }
-            if (currentRestaurant) {
-                fetchProductsByRestaurantId(currentRestaurant.id);
-            }
-            handleCloseModal();
-        } catch (error) {
-            console.error("Save food error:", error);
-            throw error;
-        }
-    };
 
     // Show loading while creating restaurant
     if (isLoadingRestaurant || isCreatingRestaurant || !currentRestaurant) {
@@ -261,23 +210,10 @@ export default function FoodPage() {
                         <FoodCard
                             key={food.id}
                             food={food}
-                            onEdit={handleOpenModal}
                             onDelete={(id) => openDeleteModal(id, food.productName)}
                         />
                     ))}
                 </div>
-            )}
-
-            {/* Modals */}
-            {isModalOpen && (
-                <FoodFormModal
-                    food={currentFood}
-                    categories={categories}
-                    sizes={sizes}
-                    restaurant={currentRestaurant}
-                    onSave={handleSaveFood}
-                    onClose={handleCloseModal}
-                />
             )}
 
             <ConfirmDeleteFoodModal

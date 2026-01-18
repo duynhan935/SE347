@@ -19,24 +19,28 @@ export default function Footer() {
                         <div className="flex space-x-3">
                             <a
                                 href="#"
+                                aria-label="Facebook"
                                 className="bg-brand-black hover:bg-brand-purple p-3 rounded-lg flex items-center justify-center transition"
                             >
                                 <SocialIcons.Facebook size={20} color="#fff" />
                             </a>
                             <a
                                 href="#"
+                                aria-label="LinkedIn"
                                 className="bg-brand-black hover:bg-brand-purple p-3 rounded-lg flex items-center justify-center transition"
                             >
                                 <SocialIcons.Linkedin size={20} color="#fff" />
                             </a>
                             <a
                                 href="#"
+                                aria-label="Twitter"
                                 className="bg-brand-black hover:bg-brand-purple p-3 rounded-lg flex items-center justify-center transition"
                             >
                                 <SocialIcons.Twitter size={20} color="#fff" />
                             </a>
                             <a
                                 href="#"
+                                aria-label="Instagram"
                                 className="bg-brand-black hover:bg-brand-purple p-3 rounded-lg flex items-center justify-center transition"
                             >
                                 <SocialIcons.Instagram size={20} color="#fff" />
@@ -90,28 +94,36 @@ export default function Footer() {
                                 <h5 className="font-semibold text-brand-black mb-4">Get Help</h5>
                                 <ul className="space-y-3 text-sm text-gray-600">
                                     <li>
-                                        <a
-                                            href="#"
+                                        <Link
+                                            href="/under-development"
                                             className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
                                         >
                                             Resources
-                                        </a>
+                                        </Link>
                                     </li>
                                     <li>
-                                        <a
-                                            href="#"
+                                        <Link
+                                            href="/under-development"
                                             className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
                                         >
                                             Support
-                                        </a>
+                                        </Link>
                                     </li>
                                     <li>
-                                        <a
-                                            href="#"
+                                        <Link
+                                            href="/contact"
                                             className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
                                         >
                                             Contact Us
-                                        </a>
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link
+                                            href="/FAQ"
+                                            className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
+                                        >
+                                            FAQ
+                                        </Link>
                                     </li>
                                 </ul>
                             </div>
@@ -120,44 +132,44 @@ export default function Footer() {
                                 <h5 className="font-semibold text-brand-black mb-4">Company</h5>
                                 <ul className="space-y-3 text-sm text-gray-600">
                                     <li>
-                                        <a
-                                            href="#"
+                                        <Link
+                                            href="/about"
                                             className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
                                         >
                                             About Us
-                                        </a>
+                                        </Link>
                                     </li>
                                     <li>
-                                        <a
-                                            href="#"
+                                        <Link
+                                            href="/under-development"
                                             className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
                                         >
                                             Customer Rights
-                                        </a>
+                                        </Link>
                                     </li>
                                     <li>
-                                        <a
-                                            href="#"
+                                        <Link
+                                            href="/under-development"
                                             className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
                                         >
                                             Career
-                                        </a>
+                                        </Link>
                                     </li>
                                     <li>
-                                        <a
-                                            href="#"
+                                        <Link
+                                            href="/under-development"
                                             className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
                                         >
                                             Press
-                                        </a>
+                                        </Link>
                                     </li>
                                     <li>
-                                        <a
-                                            href="#"
+                                        <Link
+                                            href="/blog"
                                             className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
                                         >
                                             Blog
-                                        </a>
+                                        </Link>
                                     </li>
                                 </ul>
                             </div>
@@ -209,18 +221,18 @@ export default function Footer() {
                         Copyright © 2022 UBILUT All rights reserved.
                     </p>
                     <div className="flex flex-col md:flex-row md:space-x-6 space-y-2 md:space-y-0 md:text-right text-center w-full md:w-auto md:justify-end">
-                        <a
-                            href="#"
+                        <Link
+                            href="/under-development"
                             className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
                         >
                             Privacy Policy
-                        </a>
-                        <a
-                            href="#"
+                        </Link>
+                        <Link
+                            href="/under-development"
                             className="text-p2 text-brand-grey font-manrope hover:text-brand-orange transition-colors"
                         >
                             Terms & Conditions
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>

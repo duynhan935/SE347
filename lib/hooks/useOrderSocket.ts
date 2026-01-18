@@ -63,6 +63,12 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
                 socket.emit("join-restaurant", restaurantId);
                 console.log(`[Order Socket] Joined restaurant room: ${restaurantId}`);
             }
+
+            // Join user room if user (for receiving order status updates)
+            if (userId) {
+                socket.emit("join-user", userId);
+                console.log(`[Order Socket] Joined user room: ${userId}`);
+            }
         });
 
         socket.on("disconnect", () => {

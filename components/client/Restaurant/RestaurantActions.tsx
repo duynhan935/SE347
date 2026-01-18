@@ -67,7 +67,7 @@ export default function RestaurantActions({ restaurant }: RestaurantActionsProps
                                                         className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors font-medium"
                                                 >
                                                         <Users className="w-5 h-5" />
-                                                        Tạo Group Order
+                                                        Create Group Order
                                                 </button>
                                         )}
                                         
