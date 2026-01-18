@@ -87,7 +87,6 @@ export default function FoodPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentRestaurant?.id, isLoadingRestaurant, isCreatingRestaurant]);
 
-
     // Filter foods by search term
     const filteredFoods = useMemo(() => {
         const term = searchTerm.trim().toLowerCase();
@@ -96,7 +95,7 @@ export default function FoodPage() {
             (food) =>
                 food.productName.toLowerCase().includes(term) ||
                 food.description.toLowerCase().includes(term) ||
-                food.categoryName.toLowerCase().includes(term)
+                food.categoryName.toLowerCase().includes(term),
         );
     }, [products, searchTerm]);
 
@@ -128,7 +127,6 @@ export default function FoodPage() {
             setDeleteLoading(false);
         }
     };
-
 
     // Show loading while creating restaurant
     if (isLoadingRestaurant || isCreatingRestaurant || !currentRestaurant) {
@@ -185,9 +183,7 @@ export default function FoodPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 p-12 text-center">
                             <Plus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                                {products.length === 0
-                                    ? "No food items yet"
-                                    : "No food items match your search"}
+                                {products.length === 0 ? "No food items yet" : "No food items match your search"}
                             </h3>
                             <p className="text-gray-600 dark:text-gray-400 mb-4">
                                 {products.length === 0
@@ -207,11 +203,7 @@ export default function FoodPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredFoods.map((food) => (
-                        <FoodCard
-                            key={food.id}
-                            food={food}
-                            onDelete={(id) => openDeleteModal(id, food.productName)}
-                        />
+                        <FoodCard key={food.id} food={food} onDelete={(id) => openDeleteModal(id, food.productName)} />
                     ))}
                 </div>
             )}

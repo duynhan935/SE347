@@ -23,7 +23,7 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
     const pathname = usePathname();
     const unreadCountMap = useChatStore((state) => state.unreadCountMap);
     const pendingOrdersCount = useMerchantOrderStore((state) => state.pendingOrdersCount);
-    
+
     // Calculate total unread count from all rooms
     const unreadCount = Object.values(unreadCountMap).reduce((sum, count) => sum + count, 0);
 
@@ -127,9 +127,7 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
                                     {isMessages && unreadCount > 0 && (
                                         <span
                                             className={`h-5 min-w-5 px-1.5 text-xs rounded-full flex items-center justify-center font-bold ${
-                                                isActive
-                                                    ? "bg-white text-brand-orange"
-                                                    : "bg-brand-orange text-white"
+                                                isActive ? "bg-white text-brand-orange" : "bg-brand-orange text-white"
                                             }`}
                                         >
                                             {unreadCount > 99 ? "99+" : unreadCount}
@@ -138,9 +136,7 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
                                     {isOrders && pendingOrdersCount > 0 && (
                                         <span
                                             className={`h-5 min-w-5 px-1.5 text-xs rounded-full flex items-center justify-center font-bold ${
-                                                isActive
-                                                    ? "bg-white text-brand-orange"
-                                                    : "bg-brand-orange text-white"
+                                                isActive ? "bg-white text-brand-orange" : "bg-brand-orange text-white"
                                             }`}
                                         >
                                             {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}

@@ -91,11 +91,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     const pathname = usePathname();
     const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
     const notifications = useNotificationStore((state) => state.notifications);
-    
+
     // Calculate pending merchant requests count from notifications
-    const pendingMerchantCount = notifications.filter(
-        (n) => n.type === "ADMIN_MERCHANT_REQUEST" && !n.read
-    ).length;
+    const pendingMerchantCount = notifications.filter((n) => n.type === "ADMIN_MERCHANT_REQUEST" && !n.read).length;
 
     return (
         <>

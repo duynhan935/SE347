@@ -118,7 +118,7 @@ export default function MerchantReportsPage() {
                         name: formatDateLabel(p.date),
                         revenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
                         orders: typeof p.totalOrders === "number" ? p.totalOrders : 0,
-                    }))
+                    })),
                 );
 
                 setHourlyStats(
@@ -126,7 +126,7 @@ export default function MerchantReportsPage() {
                         hour: `${String(h.hour).padStart(2, "0")}:00`,
                         orders: typeof h.totalOrders === "number" ? h.totalOrders : 0,
                         revenue: typeof h.totalRevenue === "number" ? h.totalRevenue : 0,
-                    }))
+                    })),
                 );
 
                 setWeekdayStats(
@@ -135,8 +135,8 @@ export default function MerchantReportsPage() {
                             name: d.dayName,
                             orders: typeof d.totalOrders === "number" ? d.totalOrders : 0,
                             revenue: typeof d.totalRevenue === "number" ? d.totalRevenue : 0,
-                        })
-                    )
+                        }),
+                    ),
                 );
 
                 setTimeSummary({
@@ -151,7 +151,7 @@ export default function MerchantReportsPage() {
                         totalQuantity: typeof p.totalQuantity === "number" ? p.totalQuantity : 0,
                         orderCount: typeof p.orderCount === "number" ? p.orderCount : 0,
                         totalRevenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
-                    }))
+                    })),
                 );
 
                 setRatingStats({

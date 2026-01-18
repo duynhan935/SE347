@@ -117,11 +117,11 @@ export default function MerchantOrdersPage() {
                 // Keep a snapshot of order ids for background change detection.
                 knownOrderIdsRef.current = new Set(restaurantOrders.map((o) => o.orderId));
                 setOrders(restaurantOrders);
-                
+
                 // Update pending orders count
                 const pendingCount = restaurantOrders.filter((o) => o.status === OrderStatus.PENDING).length;
                 setPendingOrdersCount(pendingCount);
-                
+
                 return restaurantOrders;
             } catch (error) {
                 console.error("Failed to fetch orders:", error);
@@ -136,7 +136,7 @@ export default function MerchantOrdersPage() {
                 }
             }
         },
-        [restaurantId, user?.id]
+        [restaurantId, user?.id],
     );
 
     const normalizeSocketOrder = useCallback(
@@ -165,8 +165,8 @@ export default function MerchantOrdersPage() {
                               typeof item.productName === "string"
                                   ? item.productName
                                   : typeof item.name === "string"
-                                  ? item.name
-                                  : "";
+                                    ? item.name
+                                    : "";
                           const quantity = typeof item.quantity === "number" ? item.quantity : 0;
                           const price = typeof item.price === "number" ? item.price : 0;
                           if (!productName || quantity <= 0) return null;
@@ -192,8 +192,8 @@ export default function MerchantOrdersPage() {
                 typeof record.finalAmount === "number"
                     ? record.finalAmount
                     : typeof record.totalAmount === "number"
-                    ? record.totalAmount
-                    : 0;
+                      ? record.totalAmount
+                      : 0;
             const paymentMethod =
                 typeof record.paymentMethod === "string" ? (record.paymentMethod as Order["paymentMethod"]) : "cash";
 
@@ -238,7 +238,7 @@ export default function MerchantOrdersPage() {
                 updatedAt,
             };
         },
-        [restaurantId]
+        [restaurantId],
     );
 
     // Connect to socket (single restaurant room)
@@ -266,15 +266,15 @@ export default function MerchantOrdersPage() {
                 }
                 const next = [incoming, ...prev];
                 next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                
+
                 // Update pending orders count
                 const pendingCount = next.filter((o) => o.status === OrderStatus.PENDING).length;
                 setPendingOrdersCount(pendingCount);
-                
+
                 return next;
             });
             knownOrderIdsRef.current.add(incoming.orderId);
-            
+
             // Refresh orders after a short delay to get updated payment status from webhook
             // This ensures payment status is updated even if socket doesn't emit payment status update
             setTimeout(() => {
@@ -286,7 +286,7 @@ export default function MerchantOrdersPage() {
         onOrderStatusUpdate: (notification) => {
             // Handle order status updates (including payment status updates)
             const updated = normalizeSocketOrder(notification?.data);
-            
+
             if (!updated) {
                 // If we can't normalize, refresh all orders
                 fetchOrders({ background: true }).catch(() => {
@@ -298,28 +298,28 @@ export default function MerchantOrdersPage() {
             // Update the specific order in the list
             setOrders((prev) => {
                 const existingIndex = prev.findIndex((o) => o.orderId === updated.orderId);
-                
+
                 if (existingIndex === -1) {
                     // Order not found, add it
                     const next = [updated, ...prev];
                     next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                    
+
                     // Update pending orders count
                     const pendingCount = next.filter((o) => o.status === OrderStatus.PENDING).length;
                     setPendingOrdersCount(pendingCount);
-                    
+
                     return next;
                 }
-                
+
                 // Update existing order
                 const next = [...prev];
                 next[existingIndex] = updated;
                 next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                
+
                 // Update pending orders count
                 const pendingCount = next.filter((o) => o.status === OrderStatus.PENDING).length;
                 setPendingOrdersCount(pendingCount);
-                
+
                 return next;
             });
         },
@@ -343,11 +343,11 @@ export default function MerchantOrdersPage() {
                         const existing = new Set(prev.map((o) => o.orderId));
                         const merged = [...newOnes.filter((o) => !existing.has(o.orderId)), ...prev];
                         merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                        
+
                         // Update pending orders count
                         const pendingCount = merged.filter((o) => o.status === OrderStatus.PENDING).length;
                         setPendingOrdersCount(pendingCount);
-                        
+
                         return merged;
                     });
                 }
@@ -647,7 +647,7 @@ export default function MerchantOrdersPage() {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span
                                                     className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                                                        normalizedStatus
+                                                        normalizedStatus,
                                                     )}`}
                                                 >
                                                     {getStatusLabel(normalizedStatus)}
@@ -660,16 +660,16 @@ export default function MerchantOrdersPage() {
                                                         order.paymentStatus === "completed"
                                                             ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                                                             : order.paymentStatus === "failed"
-                                                            ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                                                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                                                     }`}
                                                 >
                                                     {order.paymentStatus === "paid" ||
                                                     order.paymentStatus === "completed"
                                                         ? "Paid"
                                                         : order.paymentStatus === "failed"
-                                                        ? "Failed"
-                                                        : "Pending"}
+                                                          ? "Failed"
+                                                          : "Pending"}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">

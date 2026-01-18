@@ -69,7 +69,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
     const handleSizeToggle = (sizeId: string) => {
         const exists = selectedSizes.find((s) => s.sizeId === sizeId);
         setSelectedSizes(
-            exists ? selectedSizes.filter((s) => s.sizeId !== sizeId) : [...selectedSizes, { sizeId, price: 0 }]
+            exists ? selectedSizes.filter((s) => s.sizeId !== sizeId) : [...selectedSizes, { sizeId, price: 0 }],
         );
     };
 

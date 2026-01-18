@@ -114,14 +114,11 @@ export default function MerchantDashboard() {
     const [topProducts, setTopProducts] = useState<
         Array<{ productId: string; productName: string; totalQuantity: number; totalRevenue: number }>
     >([]);
-    const [ratingStats, setRatingStats] = useState<
-        | {
-              averageRating: number;
-              totalRatings: number;
-              ratingDistribution: Record<"1" | "2" | "3" | "4" | "5", number> | Record<number, number>;
-          }
-        | null
-    >(null);
+    const [ratingStats, setRatingStats] = useState<{
+        averageRating: number;
+        totalRatings: number;
+        ratingDistribution: Record<"1" | "2" | "3" | "4" | "5", number> | Record<number, number>;
+    } | null>(null);
     const [recentOrders, setRecentOrders] = useState<Order[]>([]);
 
     const fetchOrders = useCallback(async () => {
@@ -137,11 +134,14 @@ export default function MerchantDashboard() {
         }
     }, [user?.id, restaurantOverview?.restaurantId]);
 
-    const handleOrderStatusUpdate = useCallback((update: { orderId: string; status: string }) => {
-        console.log("📦 Order status updated:", update);
-        toast.success(`Đơn hàng ${update.orderId} đã cập nhật: ${update.status}`);
-        fetchOrders();
-    }, [fetchOrders]);
+    const handleOrderStatusUpdate = useCallback(
+        (update: { orderId: string; status: string }) => {
+            console.log("📦 Order status updated:", update);
+            toast.success(`Đơn hàng ${update.orderId} đã cập nhật: ${update.status}`);
+            fetchOrders();
+        },
+        [fetchOrders],
+    );
 
     const { isConnected: wsConnected } = useOrderWebSocket({
         restaurantId: restaurantOverview?.restaurantId,

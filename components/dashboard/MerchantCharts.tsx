@@ -62,7 +62,9 @@ function buildRevenueTrend(orders: MerchantChartOrder[]): Array<{ date: string; 
         .sort((a, b) => parseKey(a.date) - parseKey(b.date));
 }
 
-function buildTopProducts(topProducts: MerchantTopProduct[]): Array<{ name: string; revenue: number; fullName: string }> {
+function buildTopProducts(
+    topProducts: MerchantTopProduct[],
+): Array<{ name: string; revenue: number; fullName: string }> {
     return [...topProducts]
         .map((p) => ({
             name: truncate(String(p.productName ?? ""), 18),
@@ -124,10 +126,7 @@ export default function MerchantCharts(props: {
                                     tick={{ fill: "#6b7280", fontSize: 12 }}
                                     tickFormatter={(v) => formatNumber(v)}
                                 />
-                                <Tooltip
-                                    formatter={(v) => formatVnd(v)}
-                                    labelFormatter={(label) => `Ngày: ${label}`}
-                                />
+                                <Tooltip formatter={(v) => formatVnd(v)} labelFormatter={(label) => `Ngày: ${label}`} />
                                 <Area
                                     type="monotone"
                                     dataKey="revenue"
@@ -177,7 +176,8 @@ export default function MerchantCharts(props: {
                                     labelFormatter={(label, payload) => {
                                         const row = (payload?.[0] as unknown as { payload?: Record<string, unknown> })
                                             ?.payload;
-                                        const fullName = typeof row?.fullName === "string" ? row.fullName : String(label);
+                                        const fullName =
+                                            typeof row?.fullName === "string" ? row.fullName : String(label);
                                         return `Sản phẩm: ${fullName}`;
                                     }}
                                 />
@@ -205,16 +205,10 @@ export default function MerchantCharts(props: {
                                 tickFormatter={(v) => `${v}★`}
                             />
                             <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} allowDecimals={false} />
-                            <Tooltip
-                                formatter={(v) => formatNumber(v)}
-                                labelFormatter={(label) => `Mức: ${label}★`}
-                            />
+                            <Tooltip formatter={(v) => formatNumber(v)} labelFormatter={(label) => `Mức: ${label}★`} />
                             <Bar dataKey="count" radius={[8, 8, 0, 0]}>
                                 {ratings.map((r) => (
-                                    <Cell
-                                        key={r.stars}
-                                        fill={r.stars <= 2 ? COLOR_DANGER : COLOR_WARNING}
-                                    />
+                                    <Cell key={r.stars} fill={r.stars <= 2 ? COLOR_DANGER : COLOR_WARNING} />
                                 ))}
                             </Bar>
                         </BarChart>
