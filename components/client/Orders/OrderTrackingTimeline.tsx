@@ -16,7 +16,10 @@ const steps = [
 
 export default function OrderTrackingTimeline({ status }: OrderTrackingTimelineProps) {
     const getStepIndex = (currentStatus: OrderStatus): number => {
-        switch (currentStatus) {
+        // Normalize status to handle case-insensitive comparisons
+        const normalizedStatus = (currentStatus || "").toLowerCase() as OrderStatus;
+        
+        switch (normalizedStatus) {
             case OrderStatus.PENDING:
                 return 0;
             case OrderStatus.CONFIRMED:

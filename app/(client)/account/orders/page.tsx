@@ -133,9 +133,20 @@ export default function OrderHistoryPage() {
         onOrderStatusUpdate: (notification) => {
             // Backend emits orderId and status at root level, useOrderSocket transforms to data
             const orderId = notification.data?.orderId || notification.orderId;
-            const newStatus = notification.data?.status || notification.status;
+            const newStatus = (notification.data?.status || notification.status || "").toLowerCase();
 
             if (!orderId || !newStatus) return;
+
+            // Show toast notification for status updates
+            const statusMessages: Record<string, string> = {
+                confirmed: "Order confirmed! Restaurant is preparing your order.",
+                preparing: "Restaurant is preparing your order.",
+                ready: "Your order is ready! Delivery is on the way.",
+                completed: "Order completed! Thank you for your order.",
+                cancelled: "Order has been cancelled.",
+            };
+            const message = statusMessages[newStatus] || `Order ${orderId} status updated to ${newStatus}`;
+            toast.success(message, { duration: 3000 });
 
             // Update the order in the local state
             setOrders((prevOrders) => {
@@ -163,6 +174,82 @@ export default function OrderHistoryPage() {
             });
         },
     });
+
+    // Poll for order status updates as fallback (every 10 seconds)
+    // This ensures orders are updated even if websocket fails
+    useEffect(() => {
+        if (!user?.id || isLoading || !mounted) return;
+
+        const intervalId = setInterval(() => {
+            // Silently fetch orders to check for status updates
+            orderApi
+                .getOrdersByUser(user.id)
+                .then(({ orders: apiOrders }) => {
+                    // Sort orders by createdAt (newest first)
+                    const sortedOrders = [...apiOrders].sort((a, b) => {
+                        const dateA = new Date(a.createdAt || 0).getTime();
+                        const dateB = new Date(b.createdAt || 0).getTime();
+                        return dateB - dateA;
+                    });
+
+                    // Map to display format
+                    const mappedOrders: OrderDisplay[] = sortedOrders.map((order: Order, index: number) => {
+                        const orderDate = order.createdAt
+                            ? new Date(order.createdAt).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "2-digit",
+                                  year: "numeric",
+                              })
+                            : "N/A";
+
+                        const status = formatStatus(order.status || OrderStatus.PENDING);
+                        const orderId = order.orderId || `order-${index}`;
+                        const uniqueKey = order.createdAt
+                            ? `${orderId}-${new Date(order.createdAt).getTime()}`
+                            : `${orderId}-${index}`;
+
+                        // Format price to USD
+                        const formatPrice = (priceUSD: number): string => {
+                            return priceUSD.toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                            });
+                        };
+
+                        return {
+                            id: order.orderId,
+                            uniqueKey,
+                            displayId: order.orderId || `#${index + 1}`,
+                            date: orderDate,
+                            total: `$${formatPrice(Number(order.finalAmount || 0))}`,
+                            status,
+                            statusClass: getStatusBadgeClass(status),
+                            orderCode: order.orderId,
+                        };
+                    });
+
+                    // Check if any order status has changed
+                    setOrders((prevOrders) => {
+                        const hasChanges = prevOrders.some((prevOrder, index) => {
+                            const newOrder = mappedOrders[index];
+                            return newOrder && prevOrder.status !== newOrder.status;
+                        });
+
+                        // Only update if there are changes to avoid unnecessary re-renders
+                        if (hasChanges || prevOrders.length !== mappedOrders.length) {
+                            return mappedOrders;
+                        }
+                        return prevOrders;
+                    });
+                })
+                .catch((error) => {
+                    // Silently fail - websocket will handle updates if available
+                    console.debug("[Order History Page] Polling update failed:", error);
+                });
+        }, 10000); // Poll every 10 seconds
+
+        return () => clearInterval(intervalId);
+    }, [user?.id, isLoading, mounted, fetchOrders]);
 
     if (!mounted || authLoading || isLoading) {
         return (

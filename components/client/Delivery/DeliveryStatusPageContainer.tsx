@@ -25,7 +25,8 @@ type DisplayOrderItem = {
 export default async function OrderStatusPage({ params }: { params: { slug: string } }) {
     let order: Order | null = null;
     try {
-        order = await orderApi.getOrderBySlug(params.slug);
+        // Use cacheBust: true to force fetch fresh data from server
+        order = await orderApi.getOrderBySlug(params.slug, { cacheBust: true });
     } catch {
         order = null;
     }

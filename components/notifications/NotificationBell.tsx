@@ -29,33 +29,68 @@ export function NotificationBell() {
             const data = notification.data;
             if (!data) return;
 
-            const orderId = data.orderId;
-            const status = data.status;
+            const orderId = data.orderId || notification.orderId;
+            const status = (data.status || notification.status || "").toLowerCase();
 
-            if (status === "confirmed") {
-                useNotificationStore.getState().addNotification({
-                    type: "ORDER_ACCEPTED",
-                    title: "Order accepted",
-                    message: `Order ${orderId} was accepted and is being prepared.`,
-                    orderId,
-                    restaurantName: data.restaurantName,
-                });
-            } else if (status === "cancelled") {
-                useNotificationStore.getState().addNotification({
-                    type: "ORDER_REJECTED",
-                    title: "Order Cancelled",
-                    message: `Order ${orderId} has been cancelled. ${data.reason ? `Reason: ${data.reason}` : ""}`,
-                    orderId,
-                    restaurantName: data.restaurantName,
-                });
-            } else if (status === "completed") {
-                useNotificationStore.getState().addNotification({
-                    type: "ORDER_COMPLETED",
-                    title: "Order Completed",
-                    message: `Order ${orderId} has been delivered successfully.`,
-                    orderId,
-                    restaurantName: data.restaurantName,
-                });
+            if (!orderId || !status) return;
+
+            // Handle all order status updates
+            switch (status) {
+                case "confirmed":
+                    useNotificationStore.getState().addNotification({
+                        type: "ORDER_ACCEPTED",
+                        title: "Order Confirmed",
+                        message: `Order ${orderId} was confirmed and is being prepared.`,
+                        orderId,
+                        restaurantName: data.restaurantName,
+                    });
+                    break;
+                case "preparing":
+                    useNotificationStore.getState().addNotification({
+                        type: "ORDER_CONFIRMED",
+                        title: "Order Being Prepared",
+                        message: `Order ${orderId} is being prepared by the restaurant.`,
+                        orderId,
+                        restaurantName: data.restaurantName,
+                    });
+                    break;
+                case "ready":
+                    useNotificationStore.getState().addNotification({
+                        type: "ORDER_CONFIRMED",
+                        title: "Order Ready",
+                        message: `Order ${orderId} is ready! Delivery is on the way.`,
+                        orderId,
+                        restaurantName: data.restaurantName,
+                    });
+                    break;
+                case "completed":
+                    useNotificationStore.getState().addNotification({
+                        type: "ORDER_COMPLETED",
+                        title: "Order Completed",
+                        message: `Order ${orderId} has been delivered successfully.`,
+                        orderId,
+                        restaurantName: data.restaurantName,
+                    });
+                    break;
+                case "cancelled":
+                    useNotificationStore.getState().addNotification({
+                        type: "ORDER_REJECTED",
+                        title: "Order Cancelled",
+                        message: `Order ${orderId} has been cancelled. ${notification.cancellationReason || data.reason ? `Reason: ${notification.cancellationReason || data.reason}` : ""}`,
+                        orderId,
+                        restaurantName: data.restaurantName,
+                    });
+                    break;
+                default:
+                    // For any other status updates, still show notification
+                    useNotificationStore.getState().addNotification({
+                        type: "ORDER_CONFIRMED",
+                        title: "Order Status Updated",
+                        message: `Order ${orderId} status has been updated to ${status}.`,
+                        orderId,
+                        restaurantName: data.restaurantName,
+                    });
+                    break;
             }
         },
     });
