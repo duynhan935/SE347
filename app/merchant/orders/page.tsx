@@ -503,7 +503,7 @@ export default function MerchantOrdersPage() {
                         });
                     }}
                     disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-brand-yellow hover:bg-brand-yellow/90 text-white rounded-lg transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg transition-colors disabled:opacity-50"
                 >
                     <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
                     Refresh
@@ -558,7 +558,7 @@ export default function MerchantOrdersPage() {
                             onClick={() => setFilterStatus(status)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                                 filterStatus === status
-                                    ? "bg-brand-yellow text-white"
+                                    ? "bg-brand-orange text-white"
                                     : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                             }`}
                         >
@@ -704,7 +704,7 @@ export default function MerchantOrdersPage() {
                                                 ) : nextStatus ? (
                                                     <button
                                                         onClick={() => handleUpdateStatus(order.orderId, nextStatus)}
-                                                        className="text-brand-yellow hover:text-brand-yellow/80"
+                                                        className="text-brand-orange hover:text-brand-orange/80"
                                                     >
                                                         Update
                                                     </button>
@@ -738,7 +738,7 @@ export default function MerchantOrdersPage() {
                                 }))
                             }
                             placeholder="Example: out of stock, restaurant closed..."
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow mb-4"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange mb-4"
                             rows={4}
                         />
                         <div className="flex gap-3 justify-end">

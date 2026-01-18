@@ -134,7 +134,7 @@ export default function FoodPage() {
     if (isLoadingRestaurant || isCreatingRestaurant || !currentRestaurant) {
         return (
             <div className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="h-12 w-12 text-brand-purple animate-spin mb-4" />
+                <Loader2 className="h-12 w-12 text-brand-orange animate-spin mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                     {isCreatingRestaurant ? "Creating restaurant..." : "Loading information..."}
                 </h3>
@@ -160,7 +160,7 @@ export default function FoodPage() {
                 <div className="flex items-center gap-2">
                     <Link
                         href="/merchant/food/new"
-                        className="flex items-center gap-2 px-4 py-2 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-lg transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg transition-colors"
                     >
                         <Plus className="h-5 w-5" />
                         Add Food Item
@@ -177,7 +177,7 @@ export default function FoodPage() {
             {/* Foods Grid */}
             {loading ? (
                 <div className="flex items-center justify-center py-12">
-                    <Loader2 size={40} className="animate-spin text-brand-purple" />
+                    <Loader2 size={40} className="animate-spin text-brand-orange" />
                 </div>
             ) : filteredFoods.length === 0 ? (
                 <div className="grid grid-cols-1 gap-6">
@@ -196,7 +196,7 @@ export default function FoodPage() {
                             </p>
                             <Link
                                 href="/merchant/food/new"
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-lg transition-colors"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg transition-colors"
                             >
                                 <Plus className="h-5 w-5" />
                                 Add Food Item

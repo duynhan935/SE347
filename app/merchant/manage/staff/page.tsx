@@ -20,7 +20,7 @@ export default function StaffManagementPage() {
 				</div>
 				<button
 					onClick={() => setShowAddModal(true)}
-					className="flex items-center gap-2 px-4 py-2 bg-brand-yellow hover:bg-brand-yellow/90 text-white rounded-lg transition-colors"
+					className="flex items-center gap-2 px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg transition-colors"
 				>
 					<Plus className="h-5 w-5" />
 					Add Staff
@@ -53,10 +53,10 @@ export default function StaffManagementPage() {
 							placeholder="Search staff..."
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
-							className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+							className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
 						/>
 					</div>
-					<select className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow">
+					<select className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange">
 						<option value="ALL">All Roles</option>
 						<option value="MANAGER">Manager</option>
 						<option value="STAFF">Staff</option>
@@ -68,7 +68,7 @@ export default function StaffManagementPage() {
 			<div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
 				{loading ? (
 					<div className="flex items-center justify-center py-12">
-						<Loader2 size={40} className="animate-spin text-brand-yellow" />
+						<Loader2 size={40} className="animate-spin text-brand-orange" />
 					</div>
 				) : (
 					<div className="overflow-x-auto">
@@ -121,7 +121,7 @@ export default function StaffManagementPage() {
 								</label>
 								<input
 									type="text"
-									className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+									className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
 									placeholder="Enter full name"
 								/>
 							</div>
@@ -131,7 +131,7 @@ export default function StaffManagementPage() {
 								</label>
 								<input
 									type="email"
-									className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+									className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
 									placeholder="Enter email"
 								/>
 							</div>
@@ -139,7 +139,7 @@ export default function StaffManagementPage() {
 								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 									Role
 								</label>
-								<select className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow">
+								<select className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange">
 									<option value="MANAGER">Manager</option>
 									<option value="STAFF">Staff</option>
 								</select>
@@ -154,7 +154,7 @@ export default function StaffManagementPage() {
 								</button>
 								<button
 									type="submit"
-									className="flex-1 px-4 py-2 bg-brand-yellow hover:bg-brand-yellow/90 text-white rounded-lg transition-colors"
+									className="flex-1 px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg transition-colors"
 								>
 									Add
 								</button>

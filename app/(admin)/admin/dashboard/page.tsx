@@ -21,8 +21,16 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import DashboardVisualization, { type DashboardApiBundle } from "@/components/dashboard/DashboardVisualization";
+import {
+    adaptAdminMerchantsPerformanceToViewModel,
+    adaptAdminOrderStatisticsToViewModel,
+    adaptAdminRevenueByMerchantToViewModel,
+    adaptAdminSystemOverviewToViewModel,
+} from "@/lib/adapters/dashboardAdapters";
 
 function formatVnd(value: number): string {
+    if (!Number.isFinite(value)) return "0";
     try {
         return new Intl.NumberFormat("vi-VN").format(value);
     } catch {
@@ -108,9 +116,9 @@ export default function AdminDashboard() {
     } | null>(null);
     const [statusBreakdown, setStatusBreakdown] = useState<Array<{ name: string; count: number; amount: number }>>([]);
     const [paymentBreakdown, setPaymentBreakdown] = useState<Array<{ name: string; count: number; amount: number }>>(
-        []
+        [],
     );
-    const [revenueByMerchant, setRevenueByMerchant] = useState<
+    const [, setRevenueByMerchant] = useState<
         Array<{ merchantId: string; revenue: number; orders: number; aov: number }>
     >([]);
     const [merchantPerformance, setMerchantPerformance] = useState<
@@ -123,6 +131,7 @@ export default function AdminDashboard() {
         }>
     >([]);
     const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+    const [vizData, setVizData] = useState<DashboardApiBundle | null>(null);
 
     useEffect(() => {
         const run = async () => {
@@ -132,18 +141,39 @@ export default function AdminDashboard() {
                     dashboardApi.getAdminOverview(dateQuery),
                     dashboardApi.getAdminRevenueAnalytics(dateQuery),
                     dashboardApi.getAdminOrderStatistics(dateQuery),
-                    dashboardApi.getAdminMerchantsPerformance({ limit: 10, ...dateQuery }),
-                    dashboardApi.getAdminRevenueByMerchant({ limit: 10, ...dateQuery }),
+                    dashboardApi.getAdminMerchantsPerformance(dateQuery),
+                    dashboardApi.getAdminRevenueByMerchant(dateQuery),
                 ]);
 
-                setStats(overview);
+                setVizData({
+                    overview: { success: true, data: overview },
+                    revenue: { success: true, data: revenue },
+                    orders: {
+                        success: true,
+                        data: {
+                            statusBreakdown: Array.isArray(orderStats?.statusBreakdown)
+                                ? orderStats.statusBreakdown
+                                : [],
+                        },
+                    },
+                    merchants: {
+                        success: true,
+                        data: Array.isArray(merchants) ? merchants : [],
+                    },
+                });
+
+                setStats({
+                    ...adaptAdminSystemOverviewToViewModel(overview),
+                    pendingMerchants: 0,
+                });
                 setRevenueBreakdown(revenue);
 
-                setStatusBreakdown(Array.isArray(orderStats?.statusBreakdown) ? orderStats.statusBreakdown : []);
-                setPaymentBreakdown(Array.isArray(orderStats?.paymentBreakdown) ? orderStats.paymentBreakdown : []);
+                const { statusBreakdown, paymentBreakdown } = adaptAdminOrderStatisticsToViewModel(orderStats);
+                setStatusBreakdown(statusBreakdown);
+                setPaymentBreakdown(paymentBreakdown);
 
-                setMerchantPerformance(Array.isArray(merchants) ? merchants : []);
-                setRevenueByMerchant(Array.isArray(revenueByMerch) ? revenueByMerch : []);
+                setMerchantPerformance(adaptAdminMerchantsPerformanceToViewModel(merchants));
+                setRevenueByMerchant(adaptAdminRevenueByMerchantToViewModel(revenueByMerch));
 
                 // Recent orders
                 const recent = await orderApi.getAllOrders({ page: 1, limit: 5 });
@@ -219,8 +249,8 @@ export default function AdminDashboard() {
             {/* Header */}
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-title-md2 font-semibold text-black dark:text-white">Dashboard Admin</h1>
-                    <p className="text-sm font-medium text-black/60 dark:text-white/60 mt-1">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Dashboard Admin</h1>
+                    <p className="text-sm font-medium text-gray-600 dark:text-white/60 mt-1">
                         Tổng quan hệ thống giao đồ ăn
                     </p>
                 </div>
@@ -245,6 +275,9 @@ export default function AdminDashboard() {
                     <StatsCard key={index} {...stat} />
                 ))}
             </div>
+
+            {/* Charts (Recharts) */}
+            {vizData && <DashboardVisualization data={vizData} />}
 
             {/* Revenue Breakdown */}
             <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
@@ -465,8 +498,8 @@ export default function AdminDashboard() {
                                         order.status === "completed"
                                             ? "bg-meta-3/10 text-meta-3"
                                             : order.status === "cancelled"
-                                            ? "bg-meta-1/10 text-meta-1"
-                                            : "bg-warning/10 text-warning";
+                                              ? "bg-meta-1/10 text-meta-1"
+                                              : "bg-warning/10 text-warning";
 
                                     return (
                                         <div

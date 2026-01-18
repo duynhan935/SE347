@@ -20,9 +20,11 @@ import {
     Users,
     Package,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
+import MerchantCharts from "@/components/dashboard/MerchantCharts";
 
 function formatVnd(value: number): string {
     try {
@@ -57,20 +59,18 @@ function StatsCard({ title, value, icon: Icon, trend, trendLabel, bgColor, iconC
                         </div>
                     </div>
                     <p className="text-sm font-medium text-black dark:text-white mb-1">{title}</p>
-                    <h4 className="text-2xl font-bold text-black dark:text-white mb-2">
-                        {value}
-                    </h4>
+                    <h4 className="text-2xl font-bold text-black dark:text-white mb-2">{value}</h4>
                     {trend !== undefined && (
                         <div className="flex items-center gap-1.5">
                             {isPositive && <TrendingUp size={16} className="text-meta-3" />}
                             {isNegative && <TrendingDown size={16} className="text-meta-1" />}
-                            <span className={`text-sm font-medium ${isPositive ? "text-meta-3" : isNegative ? "text-meta-1" : "text-meta-6"}`}>
+                            <span
+                                className={`text-sm font-medium ${isPositive ? "text-meta-3" : isNegative ? "text-meta-1" : "text-meta-6"}`}
+                            >
                                 {Math.abs(trend)}%
                             </span>
                             {trendLabel && (
-                                <span className="text-sm font-medium text-black dark:text-white">
-                                    {trendLabel}
-                                </span>
+                                <span className="text-sm font-medium text-black dark:text-white">{trendLabel}</span>
                             )}
                         </div>
                     )}
@@ -114,21 +114,15 @@ export default function MerchantDashboard() {
     const [topProducts, setTopProducts] = useState<
         Array<{ productId: string; productName: string; totalQuantity: number; totalRevenue: number }>
     >([]);
-    const [ratingStats, setRatingStats] = useState<{ averageRating: number; totalRatings: number } | null>(null);
+    const [ratingStats, setRatingStats] = useState<
+        | {
+              averageRating: number;
+              totalRatings: number;
+              ratingDistribution: Record<"1" | "2" | "3" | "4" | "5", number> | Record<number, number>;
+          }
+        | null
+    >(null);
     const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-
-    // WebSocket for real-time order updates
-    const handleOrderStatusUpdate = useCallback((update: { orderId: string; status: string }) => {
-        console.log("📦 Order status updated:", update);
-        toast.success(`Đơn hàng ${update.orderId} đã cập nhật: ${update.status}`);
-        // Refresh orders list
-        fetchOrders();
-    }, []);
-
-    const { isConnected: wsConnected } = useOrderWebSocket({
-        restaurantId: restaurantOverview?.restaurantId,
-        onOrderStatusUpdate: handleOrderStatusUpdate,
-    });
 
     const fetchOrders = useCallback(async () => {
         if (!user?.id || !restaurantOverview?.restaurantId) return;
@@ -142,6 +136,17 @@ export default function MerchantDashboard() {
             console.error("Failed to fetch orders:", error);
         }
     }, [user?.id, restaurantOverview?.restaurantId]);
+
+    const handleOrderStatusUpdate = useCallback((update: { orderId: string; status: string }) => {
+        console.log("📦 Order status updated:", update);
+        toast.success(`Đơn hàng ${update.orderId} đã cập nhật: ${update.status}`);
+        fetchOrders();
+    }, [fetchOrders]);
+
+    const { isConnected: wsConnected } = useOrderWebSocket({
+        restaurantId: restaurantOverview?.restaurantId,
+        onOrderStatusUpdate: handleOrderStatusUpdate,
+    });
 
     useEffect(() => {
         if (!user?.id) return;
@@ -167,12 +172,16 @@ export default function MerchantDashboard() {
                         productName: String(p.productName),
                         totalQuantity: typeof p.totalQuantity === "number" ? p.totalQuantity : 0,
                         totalRevenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
-                    }))
+                    })),
                 );
 
                 setRatingStats({
                     averageRating: typeof ratings?.averageRating === "number" ? ratings.averageRating : 0,
                     totalRatings: typeof ratings?.totalRatings === "number" ? ratings.totalRatings : 0,
+                    ratingDistribution:
+                        typeof ratings?.ratingDistribution === "object" && ratings?.ratingDistribution
+                            ? ratings.ratingDistribution
+                            : { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
                 });
 
                 // Recent orders
@@ -198,9 +207,6 @@ export default function MerchantDashboard() {
         const ov = overview;
         const restaurant = restaurantOverview;
         const totalOrders = ov?.totalOrders ?? 0;
-        const cancelledOrders = ov?.cancelledOrders ?? 0;
-        const completionRate =
-            totalOrders > 0 ? ((ov?.completedOrders ?? 0) / totalOrders) * 100 : 0;
 
         return [
             {
@@ -245,10 +251,8 @@ export default function MerchantDashboard() {
             {/* Header */}
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-title-md2 font-semibold text-black dark:text-white">
-                        Dashboard Merchant
-                    </h1>
-                    <p className="text-sm font-medium text-black/60 dark:text-white/60 mt-1">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Dashboard Merchant</h1>
+                    <p className="text-sm font-medium text-gray-600 dark:text-white/60 mt-1">
                         {wsConnected && <span className="text-meta-3">● </span>}
                         Xin chào, {user?.username || "Merchant"}!
                     </p>
@@ -282,13 +286,26 @@ export default function MerchantDashboard() {
                 ))}
             </div>
 
+            <MerchantCharts
+                orders={recentOrders.map((o) => ({
+                    orderId: String(o.orderId ?? ""),
+                    finalAmount: typeof o.finalAmount === "number" ? o.finalAmount : 0,
+                    createdAt: String(o.createdAt ?? ""),
+                    status: String(o.status ?? ""),
+                }))}
+                topProducts={topProducts.map((p) => ({
+                    productName: String(p.productName ?? ""),
+                    totalRevenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
+                    totalQuantity: typeof p.totalQuantity === "number" ? p.totalQuantity : 0,
+                }))}
+                ratingDistribution={ratingStats?.ratingDistribution ?? { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }}
+            />
+
             {/* Restaurant Info & Order Status */}
             <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2 2xl:gap-7.5">
                 {/* Restaurant Overview */}
                 <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                    <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">
-                        Thông tin nhà hàng
-                    </h3>
+                    <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Thông tin nhà hàng</h3>
                     {loading && !restaurantOverview ? (
                         <div className="text-sm text-bodydark">Đang tải...</div>
                     ) : restaurantOverview ? (
@@ -296,9 +313,11 @@ export default function MerchantDashboard() {
                             <div className="flex items-center gap-4">
                                 <div className="h-16 w-16 rounded-xl bg-gray/30 dark:bg-meta-4 flex items-center justify-center overflow-hidden">
                                     {restaurantOverview.imageURL ? (
-                                        <img
+                                        <Image
                                             src={restaurantOverview.imageURL}
                                             alt={restaurantOverview.restaurantName}
+                                            width={64}
+                                            height={64}
                                             className="h-full w-full object-cover"
                                         />
                                     ) : (
@@ -329,9 +348,7 @@ export default function MerchantDashboard() {
                                     <span className="font-medium text-black dark:text-white">
                                         {restaurantOverview.rating.toFixed(1)}
                                     </span>
-                                    <span className="text-bodydark">
-                                        ({restaurantOverview.totalReviews} đánh giá)
-                                    </span>
+                                    <span className="text-bodydark">({restaurantOverview.totalReviews} đánh giá)</span>
                                 </div>
                                 {restaurantOverview.openingTime && restaurantOverview.closingTime && (
                                     <div className="flex items-center gap-1.5">
@@ -366,14 +383,14 @@ export default function MerchantDashboard() {
 
                 {/* Order Status */}
                 <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                    <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">
-                        Trạng thái đơn hàng
-                    </h3>
+                    <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Trạng thái đơn hàng</h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="rounded-lg bg-warning/10 p-4 text-center">
                             <Clock size={24} className="mx-auto mb-2 text-warning" />
                             <p className="text-sm font-medium text-bodydark mb-1">Chờ xác nhận</p>
-                            <p className="text-2xl font-bold text-black dark:text-white">{overview?.pendingOrders ?? 0}</p>
+                            <p className="text-2xl font-bold text-black dark:text-white">
+                                {overview?.pendingOrders ?? 0}
+                            </p>
                         </div>
                         <div className="rounded-lg bg-primary/10 p-4 text-center">
                             <Truck size={24} className="mx-auto mb-2 text-primary" />
@@ -385,12 +402,16 @@ export default function MerchantDashboard() {
                         <div className="rounded-lg bg-meta-3/10 p-4 text-center">
                             <CheckCircle2 size={24} className="mx-auto mb-2 text-meta-3" />
                             <p className="text-sm font-medium text-bodydark mb-1">Hoàn thành</p>
-                            <p className="text-2xl font-bold text-black dark:text-white">{overview?.completedOrders ?? 0}</p>
+                            <p className="text-2xl font-bold text-black dark:text-white">
+                                {overview?.completedOrders ?? 0}
+                            </p>
                         </div>
                         <div className="rounded-lg bg-meta-1/10 p-4 text-center">
                             <AlertCircle size={24} className="mx-auto mb-2 text-meta-1" />
                             <p className="text-sm font-medium text-bodydark mb-1">Đã hủy</p>
-                            <p className="text-2xl font-bold text-black dark:text-white">{overview?.cancelledOrders ?? 0}</p>
+                            <p className="text-2xl font-bold text-black dark:text-white">
+                                {overview?.cancelledOrders ?? 0}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -401,9 +422,7 @@ export default function MerchantDashboard() {
                 {/* Top Products */}
                 <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
-                        <h3 className="font-semibold text-black dark:text-white">
-                            Top sản phẩm bán chạy
-                        </h3>
+                        <h3 className="font-semibold text-black dark:text-white">Top sản phẩm bán chạy</h3>
                     </div>
                     <div className="p-6">
                         {topProducts.length === 0 ? (
@@ -437,9 +456,7 @@ export default function MerchantDashboard() {
                 {/* Recent Orders */}
                 <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="border-b border-stroke px-6 py-4 dark:border-strokedark flex items-center justify-between">
-                        <h3 className="font-semibold text-black dark:text-white">
-                            Đơn hàng gần đây
-                        </h3>
+                        <h3 className="font-semibold text-black dark:text-white">Đơn hàng gần đây</h3>
                         <Link href="/merchant/orders" className="text-sm font-medium text-primary hover:underline">
                             Xem tất cả
                         </Link>
@@ -456,8 +473,8 @@ export default function MerchantDashboard() {
                                         order.status === "completed"
                                             ? "bg-meta-3/10 text-meta-3"
                                             : order.status === "cancelled"
-                                            ? "bg-meta-1/10 text-meta-1"
-                                            : "bg-warning/10 text-warning";
+                                              ? "bg-meta-1/10 text-meta-1"
+                                              : "bg-warning/10 text-warning";
 
                                     return (
                                         <div
@@ -481,7 +498,9 @@ export default function MerchantDashboard() {
                                                 <p className="font-semibold text-black dark:text-white mb-1">
                                                     {formatVnd(order.finalAmount || 0)}₫
                                                 </p>
-                                                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor}`}>
+                                                <span
+                                                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor}`}
+                                                >
                                                     {order.status}
                                                 </span>
                                             </div>
@@ -496,9 +515,7 @@ export default function MerchantDashboard() {
 
             {/* Quick Actions */}
             <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">
-                    Thao tác nhanh
-                </h3>
+                <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Thao tác nhanh</h3>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <Link
                         href="/merchant/food"

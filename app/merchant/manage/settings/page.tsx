@@ -111,9 +111,15 @@ export default function MerchantSettingsPage() {
 
 			// Refresh restaurant data
 			await getRestaurantByMerchantId(user.id);
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Failed to update restaurant:", error);
-			const errorMessage = error?.response?.data?.message || "Failed to update restaurant information";
+			const errorMessage =
+				error &&
+				typeof error === "object" &&
+				"response" in error &&
+				(error as { response?: { data?: { message?: string } } }).response?.data?.message
+					? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+					: "Failed to update restaurant information";
 			toast.error(errorMessage);
 		} finally {
 			setSaving(false);
@@ -159,7 +165,7 @@ export default function MerchantSettingsPage() {
 							required
 							value={formData.resName}
 							onChange={(e) => setFormData({ ...formData, resName: e.target.value })}
-							className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+							className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
 							placeholder="Enter restaurant name"
 						/>
 					</div>
@@ -175,7 +181,7 @@ export default function MerchantSettingsPage() {
 							value={formData.address}
 							onChange={(e) => setFormData({ ...formData, address: e.target.value })}
 							rows={3}
-							className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow resize-none"
+							className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange resize-none"
 							placeholder="Enter restaurant address"
 						/>
 					</div>
@@ -191,7 +197,7 @@ export default function MerchantSettingsPage() {
 							required
 							value={formData.phone}
 							onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-							className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+							className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
 							placeholder="Enter phone number"
 						/>
 					</div>
@@ -212,7 +218,7 @@ export default function MerchantSettingsPage() {
 									required
 									value={formData.openingTime}
 									onChange={(e) => setFormData({ ...formData, openingTime: e.target.value })}
-									className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+									className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
 								/>
 							</div>
 							<div>
@@ -224,7 +230,7 @@ export default function MerchantSettingsPage() {
 									required
 									value={formData.closingTime}
 									onChange={(e) => setFormData({ ...formData, closingTime: e.target.value })}
-									className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+									className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
 								/>
 							</div>
 						</div>
@@ -273,7 +279,7 @@ export default function MerchantSettingsPage() {
 						<button
 							type="submit"
 							disabled={saving}
-							className="flex items-center gap-2 px-6 py-2 bg-brand-yellow hover:bg-brand-yellow/90 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+							className="flex items-center gap-2 px-6 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							<Save className="h-5 w-5" />
 							{saving ? "Saving..." : "Save Changes"}

@@ -20,6 +20,8 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    const settingsHref = user?.role === "MERCHANT" ? "/merchant/manage/settings" : "/admin/settings";
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -51,7 +53,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                         <input
                             type="text"
                             placeholder="Search..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
                         />
                     </div>
                 </div>
@@ -79,7 +81,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                             onClick={() => setDropdownOpen(!dropdownOpen)}
                             className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                         >
-                            <div className="w-9 h-9 rounded-full bg-brand-yellow flex items-center justify-center text-white font-semibold">
+                            <div className="w-9 h-9 rounded-full bg-brand-orange flex items-center justify-center text-white font-semibold">
                                 {user?.username?.charAt(0).toUpperCase() || "A"}
                             </div>
                             <span className="hidden md:block text-sm font-medium text-gray-900 dark:text-white">
@@ -90,14 +92,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                         {dropdownOpen && (
                             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2">
                                 <Link
-                                    href="/admin/profile"
-                                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    onClick={() => setDropdownOpen(false)}
-                                >
-                                    Profile
-                                </Link>
-                                <Link
-                                    href="/admin/settings"
+                                    href={settingsHref}
                                     className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                                     onClick={() => setDropdownOpen(false)}
                                 >
@@ -106,7 +101,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                                 <hr className="my-2 border-gray-200 dark:border-gray-700" />
                                 <Link
                                     href="/"
-                                    className="flex items-center gap-2 px-4 py-2 text-sm text-[#EE4D2D] hover:bg-[#EE4D2D]/10 dark:hover:bg-[#EE4D2D]/20"
+                                    className="flex items-center gap-2 px-4 py-2 text-sm text-brand-orange hover:bg-brand-orange/10 dark:hover:bg-brand-orange/20"
                                     onClick={() => setDropdownOpen(false)}
                                 >
                                     <Home size={16} />
