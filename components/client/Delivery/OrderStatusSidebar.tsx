@@ -17,12 +17,15 @@ export const OrderStatusSidebar = ({
     status,
     orderId,
     canCancel,
+    orderStatus,
 }: {
     status: OrderStatus;
     orderId: string;
     canCancel: boolean;
+    orderStatus?: string; // Order status from order object (e.g., "completed", "cancelled")
 }) => {
     const isCancelled = status.restaurantStatus === "Cancel";
+    const isCompleted = orderStatus?.toLowerCase() === "completed";
     const router = useRouter();
     const handleCancel = async () => {
         if (!canCancel || isCancelled) return;
@@ -64,7 +67,7 @@ export const OrderStatusSidebar = ({
                 </div>
             </div>
 
-            {!isCancelled ? (
+            {!isCancelled && !isCompleted ? (
                 <>
                     <div className="border rounded-lg p-6 mt-6 text-center">
                         <p className="text-gray-600 mb-2">Your Order Will Come In</p>
@@ -86,6 +89,19 @@ export const OrderStatusSidebar = ({
                         }`}
                     >
                         {isCancelled ? "Cancelled Order" : "Cancel Order"}
+                    </button>
+                </>
+            ) : isCompleted ? (
+                <>
+                    <div className="border rounded-lg p-6 mt-6 text-center">
+                        <p className="text-green-600 text-2xl font-bold">Order Completed!</p>
+                        <p className="text-gray-600 mt-2">Thank you for your order</p>
+                    </div>
+                    <button
+                        onClick={() => router.push("/orders", { scroll: false })}
+                        className="w-full mt-6 font-bold py-3 rounded-md transition-colors bg-yellow-400 text-black hover:bg-yellow-500"
+                    >
+                        Back to Order List
                     </button>
                 </>
             ) : (

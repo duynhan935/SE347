@@ -526,7 +526,8 @@ export default function PaymentPageClient() {
         return <GlobalLoader label="Loading" sublabel="Setting up checkout" />;
     }
 
-    if (orderItems.length === 0) {
+    // Don't show cart empty message if payment was successful (redirect should happen)
+    if (orderItems.length === 0 && !isPaymentSuccess) {
         return (
             <div className="custom-container p-4 sm:p-6 md:p-12">
                 <div className="text-center py-12">
@@ -540,6 +541,11 @@ export default function PaymentPageClient() {
                 </div>
             </div>
         );
+    }
+
+    // Show loader if payment success but redirect hasn't happened yet
+    if (isPaymentSuccess) {
+        return <GlobalLoader label="Redirecting" sublabel="Taking you to order tracking..." />;
     }
 
     return (

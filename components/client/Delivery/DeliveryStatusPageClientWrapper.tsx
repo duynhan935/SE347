@@ -5,7 +5,7 @@ import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Order, OrderStatus } from "@/types/order.type";
 import { notFound } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import OrderTrackingTimeline from "../Orders/OrderTrackingTimeline";
 import { OrderStatusSidebar } from "./OrderStatusSidebar";
@@ -35,23 +35,81 @@ interface DeliveryStatusPageClientWrapperProps {
 
 export default function DeliveryStatusPageClientWrapper({ initialOrder }: DeliveryStatusPageClientWrapperProps) {
     const { user } = useAuthStore();
-    const [order, setOrder] = useState<Order>(initialOrder);
+    // Normalize initialOrder status right away to ensure consistency
+    const normalizedInitialOrder: Order = {
+        ...initialOrder,
+        status: (initialOrder.status || "").toLowerCase() as OrderStatus,
+    };
+    const [order, setOrder] = useState<Order>(normalizedInitialOrder);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    
+    // Use ref to store current orderId to avoid stale closure in websocket callback
+    const orderIdRef = useRef<string>(initialOrder.orderId);
+    const orderSlugRef = useRef<string>(initialOrder.slug);
+
+    // Update refs when order changes
+    useEffect(() => {
+        orderIdRef.current = order.orderId;
+        orderSlugRef.current = order.slug;
+    }, [order.orderId, order.slug]);
+
+    // Fetch latest order data on mount to ensure we have the most up-to-date status
+    // This fixes the issue where completed orders don't show correct status when clicking "Track Order"
+    useEffect(() => {
+        if (!initialOrder.slug || !isInitialLoad) return;
+
+        setIsInitialLoad(false);
+        
+        // Always fetch latest order data immediately to ensure we have the most up-to-date status
+        // This is critical for completed orders that may have been updated after page cache
+        // Use cacheBust: true to force fetch fresh data from server
+        orderApi
+            .getOrderBySlug(initialOrder.slug, { cacheBust: true })
+            .then((latestOrder) => {
+                console.log("[DeliveryStatusPage] Fetched latest order on mount:", latestOrder);
+                console.log("[DeliveryStatusPage] Latest order status:", latestOrder.status);
+                // Normalize status to ensure consistency
+                const normalizedOrder = {
+                    ...latestOrder,
+                    status: (latestOrder.status || "").toLowerCase() as OrderStatus,
+                };
+                console.log("[DeliveryStatusPage] Normalized order status:", normalizedOrder.status);
+                setOrder(normalizedOrder);
+            })
+            .catch((error) => {
+                console.error("[DeliveryStatusPage] Failed to fetch latest order on mount:", error);
+                // Status already normalized in normalizedInitialOrder
+            });
+    }, [initialOrder.slug, isInitialLoad]);
 
     // Listen for order status updates via WebSocket
     useOrderSocket({
         userId: user?.id || null,
         onOrderStatusUpdate: (notification) => {
+            console.log("[DeliveryStatusPage] Received order status update:", notification);
+            
             // Backend emits orderId and status at root level, not in data
-            const orderId = notification.orderId || notification.data?.orderId;
+            const notificationOrderId = notification.orderId || notification.data?.orderId;
             const newStatus = notification.status || notification.data?.status;
 
+            const currentOrderId = orderIdRef.current;
+            const currentSlug = orderSlugRef.current;
+
+            console.log("[DeliveryStatusPage] Notification orderId:", notificationOrderId, "Current orderId:", currentOrderId);
+
             // Only update if this is the order we're viewing
-            if (!orderId || orderId !== order.orderId) {
+            if (!notificationOrderId || notificationOrderId !== currentOrderId) {
+                console.log("[DeliveryStatusPage] Order ID mismatch, ignoring update");
                 return;
             }
 
-            if (!newStatus) return;
+            if (!newStatus) {
+                console.log("[DeliveryStatusPage] No status in notification");
+                return;
+            }
+
+            console.log("[DeliveryStatusPage] Updating order status to:", newStatus);
 
             // Show toast notification
             const statusMessages: Record<string, string> = {
@@ -65,20 +123,32 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
             const message = statusMessages[newStatus.toLowerCase()] || `Order status updated: ${newStatus}`;
             toast.success(message, { duration: 5000 });
 
-            // Fetch updated order data
+            // Normalize status to lowercase to match OrderStatus enum
+            const normalizedNewStatus = (newStatus || "").toLowerCase() as OrderStatus;
+            
+            // Update order status immediately from socket data (optimistic update)
+            setOrder((prev) => ({
+                ...prev,
+                status: normalizedNewStatus,
+            }));
+
+            // Fetch updated order data to get all latest information (estimatedDeliveryTime, etc.)
+            // Use cacheBust: true to force fetch fresh data
             setIsUpdating(true);
             orderApi
-                .getOrderBySlug(order.slug)
+                .getOrderBySlug(currentSlug, { cacheBust: true })
                 .then((updatedOrder) => {
-                    setOrder(updatedOrder);
+                    console.log("[DeliveryStatusPage] Fetched updated order:", updatedOrder);
+                    // Normalize status to ensure consistency
+                    const normalizedOrder = {
+                        ...updatedOrder,
+                        status: (updatedOrder.status || "").toLowerCase() as OrderStatus,
+                    };
+                    setOrder(normalizedOrder);
                 })
                 .catch((error) => {
-                    console.error("Failed to fetch updated order:", error);
-                    // Still update status from socket data
-                    setOrder((prev) => ({
-                        ...prev,
-                        status: newStatus as OrderStatus,
-                    }));
+                    console.error("[DeliveryStatusPage] Failed to fetch updated order:", error);
+                    // Status already updated from socket data above
                 })
                 .finally(() => {
                     setIsUpdating(false);
@@ -92,14 +162,22 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
 
         const intervalId = setInterval(() => {
             orderApi
-                .getOrderBySlug(order.slug)
+                .getOrderBySlug(order.slug, { cacheBust: true })
                 .then((updatedOrder) => {
+                    // Normalize status for comparison
+                    const normalizedUpdatedStatus = (updatedOrder.status || "").toLowerCase();
+                    const normalizedCurrentStatus = (order.status || "").toLowerCase();
+                    
                     // Update if status changed or estimated time might have changed
                     if (
-                        updatedOrder.status !== order.status ||
+                        normalizedUpdatedStatus !== normalizedCurrentStatus ||
                         updatedOrder.estimatedDeliveryTime !== order.estimatedDeliveryTime
                     ) {
-                        setOrder(updatedOrder);
+                        const normalizedOrder = {
+                            ...updatedOrder,
+                            status: normalizedUpdatedStatus as OrderStatus,
+                        };
+                        setOrder(normalizedOrder);
                     }
                 })
                 .catch((error) => {
@@ -142,21 +220,31 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
     const totalItems = displayItems.reduce((sum, item) => sum + item.quantity, 0);
 
     const status: DisplayOrderStatus = (() => {
-        const isCancelled = order.status === OrderStatus.CANCELLED;
+        // Normalize status to handle case-insensitive comparisons
+        const normalizedStatus = (order.status || "").toLowerCase() as OrderStatus;
+        
+        console.log("[DeliveryStatusPage] Current order status:", order.status, "Normalized:", normalizedStatus);
+        
+        const isCancelled = normalizedStatus === OrderStatus.CANCELLED;
         // Order Received: Success if status is not pending
-        const isReceived = order.status !== OrderStatus.PENDING;
+        const isReceived = normalizedStatus !== OrderStatus.PENDING;
         // Restaurant Status: Success if status is confirmed, preparing, ready, or completed
         // This matches timeline step 1 (Preparing) which includes CONFIRMED and PREPARING
         const isRestaurantDone =
-            order.status === OrderStatus.CONFIRMED ||
-            order.status === OrderStatus.PREPARING ||
-            order.status === OrderStatus.READY ||
-            order.status === OrderStatus.COMPLETED;
+            normalizedStatus === OrderStatus.CONFIRMED ||
+            normalizedStatus === OrderStatus.PREPARING ||
+            normalizedStatus === OrderStatus.READY ||
+            normalizedStatus === OrderStatus.COMPLETED;
         // Delivery Status: Success only if order is completed
         // This matches timeline step 3 (Completed)
-        const isDelivering = order.status === OrderStatus.COMPLETED;
+        const isDelivering = normalizedStatus === OrderStatus.COMPLETED;
 
         const estimatedTime = (() => {
+            // Don't calculate estimated time if order is completed or cancelled
+            if (normalizedStatus === OrderStatus.COMPLETED || normalizedStatus === OrderStatus.CANCELLED) {
+                return 0;
+            }
+            
             if (!order.estimatedDeliveryTime) return 60; // Default to 1 hour if no estimated time
             try {
                 // Handle different date formats from backend
@@ -190,7 +278,7 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
         };
     })();
 
-    const canCancel = order.status === OrderStatus.PENDING;
+    const canCancel = (order.status || "").toLowerCase() === OrderStatus.PENDING;
 
     const groupedItems = displayItems.reduce(
         (acc, item) => {
@@ -224,7 +312,7 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                     </h1>
 
                     {/* Order Status Timeline */}
-                    <OrderTrackingTimeline status={order.status} />
+                    <OrderTrackingTimeline status={(order.status || "").toLowerCase() as OrderStatus} />
 
                     <div className="space-y-8">
                         {Object.entries(groupedItems).map(([shopName, items]) => (
@@ -257,7 +345,12 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
 
                 {/* Right column: Order status information */}
                 <div className="lg:col-span-1">
-                    <OrderStatusSidebar status={status} orderId={order.orderId} canCancel={canCancel} />
+                    <OrderStatusSidebar 
+                        status={status} 
+                        orderId={order.orderId} 
+                        canCancel={canCancel}
+                        orderStatus={order.status}
+                    />
                 </div>
             </div>
         </div>

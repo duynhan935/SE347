@@ -42,8 +42,19 @@ export const orderApi = {
     },
 
     // Public: Get an order by slug
-    getOrderBySlug: async (slug: string): Promise<Order> => {
-        const response = await api.get<{ success: boolean; data: Order }>(`/orders/slug/${slug}`);
+    getOrderBySlug: async (slug: string, options?: { cacheBust?: boolean }): Promise<Order> => {
+        // Add cache-busting query param to force fetch fresh data
+        const cacheBust = options?.cacheBust !== false; // Default to true
+        const url = cacheBust 
+            ? `/orders/slug/${slug}?t=${Date.now()}` 
+            : `/orders/slug/${slug}`;
+        const response = await api.get<{ success: boolean; data: Order }>(url, {
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
         return response.data.data;
     },
 

@@ -75,10 +75,23 @@ export default function HeroSearchSection() {
         { name: "Vegetarian", displayName: "Vegetarian" },
     ];
 
-    const allCategories = [
-        ...customCategories,
-        ...(categories?.slice(0, 6).map((cat) => ({ name: cat.cateName, displayName: cat.cateName })) || []),
-    ];
+    // Merge categories and remove duplicates based on name
+    const categoryMap = new Map<string, { name: string; displayName: string }>();
+    
+    // Add custom categories first
+    customCategories.forEach((cat) => {
+        categoryMap.set(cat.name.toLowerCase(), cat);
+    });
+    
+    // Add categories from store, skipping duplicates
+    categories?.slice(0, 6).forEach((cat) => {
+        const key = cat.cateName.toLowerCase();
+        if (!categoryMap.has(key)) {
+            categoryMap.set(key, { name: cat.cateName, displayName: cat.cateName });
+        }
+    });
+    
+    const allCategories = Array.from(categoryMap.values());
 
     return (
         <div className="relative w-full h-full flex flex-col items-center justify-center text-center px-4 md:px-8 lg:px-12">

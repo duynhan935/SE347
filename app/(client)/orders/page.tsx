@@ -203,41 +203,95 @@ const OrdersPage = () => {
         hasMarkedAsReadRef.current = false;
     }, [userId]);
 
-    // Listen for order status updates via websocket and update orders list
-    useOrderSocket({
-        userId: userId || null,
-        onOrderStatusUpdate: (notification) => {
-            // Backend emits orderId and status at root level, useOrderSocket transforms to data
-            const orderId = notification.data?.orderId || notification.orderId;
-            const newStatus = (notification.data?.status || notification.status) as OrdersPageOrder["status"];
+        // Listen for order status updates via websocket and update orders list
+        useOrderSocket({
+                userId: userId || null,
+                onOrderStatusUpdate: (notification) => {
+                        console.log("[Orders Page] Received order status update:", notification);
+                        
+                        // Backend emits orderId and status at root level, useOrderSocket transforms to data
+                        const orderId = notification.data?.orderId || notification.orderId;
+                        const newStatus = (notification.data?.status || notification.status || "").toLowerCase() as OrdersPageOrder["status"];
 
-            if (!orderId || !newStatus) return;
+                        if (!orderId || !newStatus) {
+                                console.log("[Orders Page] Missing orderId or status in notification");
+                                return;
+                        }
 
-            // Update the order in the local state
-            setOrders((prevOrders) => {
-                const orderIndex = prevOrders.findIndex((o) => o.id === orderId);
-                if (orderIndex === -1) {
-                    // Order not found in current list, might be a new order or need to refresh
-                    // Optionally refresh to get the updated order
-                    setTimeout(() => {
-                        fetchOrders().catch(() => {
-                            // Ignore errors
+                        console.log("[Orders Page] Updating order:", orderId, "to status:", newStatus);
+
+                        // Show toast notification for status updates
+                        const statusMessages: Record<string, string> = {
+                                confirmed: "Order confirmed! Restaurant is preparing your order.",
+                                preparing: "Restaurant is preparing your order.",
+                                ready: "Your order is ready! Delivery is on the way.",
+                                completed: "Order completed! Thank you for your order.",
+                                cancelled: "Order has been cancelled.",
+                        };
+                        const message = statusMessages[newStatus] || `Order ${orderId} status updated to ${newStatus}`;
+                        toast.success(message, { duration: 3000 });
+
+                        // Update the order in the local state
+                        setOrders((prevOrders) => {
+                                const orderIndex = prevOrders.findIndex((o) => o.id === orderId);
+                                if (orderIndex === -1) {
+                                        // Order not found in current list, might be a new order or need to refresh
+                                        // Optionally refresh to get the updated order
+                                        setTimeout(() => {
+                                                fetchOrders().catch(() => {
+                                                        // Ignore errors
+                                                });
+                                        }, 500);
+                                        return prevOrders;
+                                }
+
+                                // Update the order's status
+                                const updatedOrders = [...prevOrders];
+                                updatedOrders[orderIndex] = {
+                                        ...updatedOrders[orderIndex],
+                                        status: newStatus,
+                                };
+
+                                console.log("[Orders Page] Updated order in list:", updatedOrders[orderIndex]);
+                                return updatedOrders;
                         });
-                    }, 500);
-                    return prevOrders;
-                }
+                },
+        });
 
-                // Update the order's status
-                const updatedOrders = [...prevOrders];
-                updatedOrders[orderIndex] = {
-                    ...updatedOrders[orderIndex],
-                    status: newStatus,
-                };
+        // Poll for order status updates as fallback (every 10 seconds)
+        // This ensures orders are updated even if websocket fails
+        useEffect(() => {
+                if (!userId || isLoading) return;
 
-                return updatedOrders;
-            });
-        },
-    });
+                const intervalId = setInterval(() => {
+                        // Silently fetch orders to check for status updates
+                        orderApi
+                                .getOrdersByUser(userId)
+                                .then(({ orders: apiOrders }) => {
+                                        const normalized = mapOrders(apiOrders ?? []);
+                                        
+                                        // Check if any order status has changed
+                                        setOrders((prevOrders) => {
+                                                const hasChanges = prevOrders.some((prevOrder, index) => {
+                                                        const newOrder = normalized[index];
+                                                        return newOrder && prevOrder.status !== newOrder.status;
+                                                });
+
+                                                // Only update if there are changes to avoid unnecessary re-renders
+                                                if (hasChanges || prevOrders.length !== normalized.length) {
+                                                        return normalized;
+                                                }
+                                                return prevOrders;
+                                        });
+                                })
+                                .catch((error) => {
+                                        // Silently fail - websocket will handle updates if available
+                                        console.debug("[Orders Page] Polling update failed:", error);
+                                });
+                }, 10000); // Poll every 10 seconds
+
+                return () => clearInterval(intervalId);
+        }, [userId, isLoading, mapOrders]);
 
     const handleRetry = useCallback(() => {
         if (!userId) {
