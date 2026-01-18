@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { productApi } from "@/lib/api/productApi";
+import { productApi, type PageResponse } from "@/lib/api/productApi";
 import type { Product, ProductCreateData, Review } from "@/types";
 import { create } from "zustand";
 interface ProductState {
@@ -8,6 +8,11 @@ interface ProductState {
     reviews: Review[];
     loading: boolean;
     error: string | null;
+    // Pagination info
+    totalPages: number;
+    totalElements: number;
+    currentPage: number;
+    pageSize: number;
     fetchProductsByRestaurantId: (restaurantId: string) => Promise<void>;
     fetchProductByProductId: (productId: string) => Promise<void>;
     fetchAllProducts: (params: URLSearchParams) => Promise<void>;
@@ -26,21 +31,59 @@ export const useProductStore = create<ProductState>((set) => ({
     reviews: [],
     loading: false,
     error: null,
+    totalPages: 0,
+    totalElements: 0,
+    currentPage: 0,
+    pageSize: 12,
 
     fetchAllProducts: async (params: URLSearchParams) => {
         set({ loading: true, error: null });
         try {
             const res = await productApi.getAllProducts(params);
-            // Handle Page response structure: { content: Product[], ... } or direct array
+            // Handle Page response structure: { content: Product[], totalPages, totalElements, ... }
             const data = res.data;
-            const productsArray = Array.isArray(data) 
-                ? data 
-                : (data && typeof data === 'object' && 'content' in data && Array.isArray(data.content))
-                    ? data.content
-                    : [];
-            set({ products: productsArray, loading: false });
+            
+            if (data && typeof data === 'object' && 'content' in data) {
+                // It's a Page response
+                const pageData = data as PageResponse<Product>;
+                set({ 
+                    products: pageData.content || [],
+                    totalPages: pageData.totalPages || 0,
+                    totalElements: pageData.totalElements || 0,
+                    currentPage: pageData.number !== undefined ? pageData.number + 1 : 0, // Convert 0-indexed to 1-indexed
+                    pageSize: pageData.size || 12,
+                    loading: false 
+                });
+            } else if (Array.isArray(data)) {
+                // Fallback: direct array response
+                const productsArray = data as Product[];
+                set({ 
+                    products: productsArray,
+                    totalPages: 1,
+                    totalElements: productsArray.length,
+                    currentPage: 1,
+                    pageSize: productsArray.length,
+                    loading: false 
+                });
+            } else {
+                set({ 
+                    products: [],
+                    totalPages: 0,
+                    totalElements: 0,
+                    currentPage: 0,
+                    pageSize: 12,
+                    loading: false 
+                });
+            }
         } catch (err: any) {
-            set({ error: err.message || "Failed to load products.", loading: false });
+            set({ 
+                error: err.message || "Failed to load products.", 
+                loading: false,
+                products: [],
+                totalPages: 0,
+                totalElements: 0,
+                currentPage: 0,
+            });
         }
     },
 

@@ -30,6 +30,8 @@ export interface OrderItem {
     quantity: number;
     price: number;
     customizations?: string;
+    imageURL?: string; // Product image URL from order
+    cartItemImage?: string; // Alternative image field name
 }
 
 export interface Order {

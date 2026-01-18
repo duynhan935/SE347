@@ -99,6 +99,7 @@ const OrdersPage = () => {
 
                         return {
                                 id: orderId,
+                                slug: typedOrder.slug || undefined, // Include slug if available
                                 createdAt: typedOrder.createdAt || typedOrder.updatedAt || new Date().toISOString(),
                                 totalAmount,
                                 items,
@@ -207,8 +208,9 @@ const OrdersPage = () => {
         useOrderSocket({
                 userId: userId || null,
                 onOrderStatusUpdate: (notification) => {
-                        const orderId = notification.data.orderId;
-                        const newStatus = notification.data.status as OrdersPageOrder["status"];
+                        // Backend emits orderId and status at root level, useOrderSocket transforms to data
+                        const orderId = notification.data?.orderId || notification.orderId;
+                        const newStatus = (notification.data?.status || notification.status) as OrdersPageOrder["status"];
 
                         if (!orderId || !newStatus) return;
 

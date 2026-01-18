@@ -1,9 +1,11 @@
 "use client";
 
+import { productApi } from "@/lib/api/productApi";
+import { getImageUrl } from "@/lib/utils";
 import { Order, OrderStatus } from "@/types/order.type";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import OrderTrackingTimeline from "../Orders/OrderTrackingTimeline";
+import { useEffect, useMemo, useState } from "react";
 import { OrderSummary } from "./OrderSummary";
 import ReviewForm from "./ReviewForm";
 
@@ -14,6 +16,8 @@ type DisplayOrderItem = {
     price: number;
     quantity: number;
     note?: string;
+    productId: string;
+    imageURL?: string;
 };
 
 interface OrderDetailClientProps {
@@ -25,14 +29,71 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [hasReviewed, setHasReviewed] = useState(false);
 
-    const displayItems: DisplayOrderItem[] = order.items.map((item, index) => ({
-        id: `${order?.orderId}-${item.productId}-${index}`,
-        name: item.productName,
-        shopName: order?.restaurant?.name || "Restaurant",
-        price: item.price,
-        quantity: item.quantity,
-        note: item.customizations,
-    }));
+    const [productImages, setProductImages] = useState<Record<string, string>>({});
+
+    // Fetch product images for items that don't have imageURL
+    useEffect(() => {
+        const fetchImages = async () => {
+            const itemsNeedingImages = order.items.filter(
+                (item) => !item.imageURL && !item.cartItemImage
+            );
+
+            if (itemsNeedingImages.length === 0) return;
+
+            try {
+                const imagePromises = itemsNeedingImages.map(async (item) => {
+                    try {
+                        const product = await productApi.getProductById(item.productId);
+                        // Get image URL as string (handle StaticImageData)
+                        const imageURL = product.data.imageURL
+                            ? getImageUrl(product.data.imageURL, "")
+                            : "";
+                        return {
+                            productId: item.productId,
+                            imageURL,
+                        };
+                    } catch (error) {
+                        console.error(`Failed to fetch image for product ${item.productId}:`, error);
+                        return { productId: item.productId, imageURL: "" };
+                    }
+                });
+
+                const results = await Promise.all(imagePromises);
+                const imagesMap = results.reduce((acc, { productId, imageURL }) => {
+                    if (imageURL) acc[productId] = imageURL;
+                    return acc;
+                }, {} as Record<string, string>);
+
+                setProductImages(imagesMap);
+            } catch (error) {
+                console.error("Failed to fetch product images:", error);
+            }
+        };
+
+        fetchImages();
+    }, [order.items]);
+
+    const displayItems: DisplayOrderItem[] = useMemo(() => {
+        return order.items.map((item, index) => {
+            // Get image from order item, fetched product, or placeholder
+            const imageURL =
+                item.imageURL ||
+                item.cartItemImage ||
+                productImages[item.productId] ||
+                null;
+
+            return {
+                id: `${order?.orderId}-${item.productId}-${index}`,
+                name: item.productName,
+                shopName: order?.restaurant?.name || "Restaurant",
+                price: item.price,
+                quantity: item.quantity,
+                note: item.customizations,
+                productId: item.productId,
+                imageURL: imageURL || undefined,
+            };
+        });
+    }, [order.items, order?.orderId, order?.restaurant?.name, productImages]);
 
     const totalItems = displayItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -71,9 +132,6 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                     <h1 className="text-xl md:text-3xl font-bold text-gray-900">
                         Order Details ({totalItems} {totalItems > 1 ? "items" : "item"})
                     </h1>
-
-                    {/* Tracking Timeline */}
-                    <OrderTrackingTimeline status={order.status} />
 
                     {/* Review Section - Show if order is completed */}
                     {isOrderCompleted && (
@@ -124,22 +182,35 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                                             key={item.id}
                                             className="flex items-start gap-4 py-5 border-b border-gray-100 last:border-b-0"
                                         >
-                                            {/* Image - Improved placeholder */}
-                                            <div className="h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-md bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center shadow-sm">
-                                                <svg
-                                                    className="w-8 h-8 text-[#EE4D2D]"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                                            {/* Product Image */}
+                                            {item.imageURL ? (
+                                                <div className="relative h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 shadow-sm">
+                                                    <Image
+                                                        src={getImageUrl(item.imageURL, "/placeholder.png")}
+                                                        alt={item.name}
+                                                        fill
+                                                        className="object-cover"
+                                                        sizes="(max-width: 768px) 80px, 96px"
+                                                        unoptimized={typeof item.imageURL === "string" && item.imageURL.startsWith("http")}
                                                     />
-                                                </svg>
-                                            </div>
+                                                </div>
+                                            ) : (
+                                                <div className="h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-md bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center shadow-sm">
+                                                    <svg
+                                                        className="w-8 h-8 text-[#EE4D2D]"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                                                        />
+                                                    </svg>
+                                                </div>
+                                            )}
 
                                             {/* Product Details */}
                                             <div className="flex-grow min-w-0 space-y-1.5">

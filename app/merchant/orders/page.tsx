@@ -136,7 +136,7 @@ export default function MerchantOrdersPage() {
                 }
             }
         },
-        [restaurantId, user?.id]
+        [restaurantId, user?.id, setPendingOrdersCount]
     );
 
     const normalizeSocketOrder = useCallback(
@@ -285,23 +285,40 @@ export default function MerchantOrdersPage() {
         },
         onOrderStatusUpdate: (notification) => {
             // Handle order status updates (including payment status updates)
-            const updated = normalizeSocketOrder(notification?.data);
+            // Backend emits orderId, status at root level
+            const orderId = notification.orderId || notification.data?.orderId;
+            const newStatus = notification.status || notification.data?.status;
             
-            if (!updated) {
-                // If we can't normalize, refresh all orders
+            if (!orderId || !newStatus) {
+                // If no orderId/status, refresh all orders as fallback
                 fetchOrders({ background: true }).catch(() => {
                     // Ignore background refresh failures
                 });
                 return;
             }
 
-            // Update the specific order in the list
-            setOrders((prev) => {
-                const existingIndex = prev.findIndex((o) => o.orderId === updated.orderId);
-                
-                if (existingIndex === -1) {
-                    // Order not found, add it
-                    const next = [updated, ...prev];
+            console.log("[Merchant Orders] Order status updated via websocket:", orderId, newStatus);
+
+            // Check if this order belongs to our restaurant
+            // We need to check by refetching or checking local state
+            const currentOrder = orders.find((o) => o.orderId === orderId);
+            
+            if (currentOrder) {
+                // Order exists in our list, update it directly
+                setOrders((prev) => {
+                    const existingIndex = prev.findIndex((o) => o.orderId === orderId);
+                    if (existingIndex === -1) {
+                        // Not found, refresh
+                        fetchOrders({ background: true }).catch(() => {});
+                        return prev;
+                    }
+                    
+                    // Update existing order
+                    const next = [...prev];
+                    next[existingIndex] = {
+                        ...next[existingIndex],
+                        status: newStatus as OrderStatus,
+                    };
                     next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                     
                     // Update pending orders count
@@ -309,19 +326,29 @@ export default function MerchantOrdersPage() {
                     setPendingOrdersCount(pendingCount);
                     
                     return next;
-                }
-                
-                // Update existing order
-                const next = [...prev];
-                next[existingIndex] = updated;
-                next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                
-                // Update pending orders count
-                const pendingCount = next.filter((o) => o.status === OrderStatus.PENDING).length;
-                setPendingOrdersCount(pendingCount);
-                
-                return next;
-            });
+                });
+            } else {
+                // Order not in our list, but might be new or status changed
+                // Refresh to get updated order list
+                fetchOrders({ background: true }).catch(() => {
+                    // Ignore background refresh failures
+                });
+            }
+
+            // Show toast notification for important status changes
+            const statusMessages: Record<string, string> = {
+                confirmed: "Order confirmed",
+                preparing: "Order is being prepared",
+                ready: "Order is ready",
+                completed: "Order completed",
+                cancelled: "Order cancelled",
+            };
+            
+            if (statusMessages[newStatus.toLowerCase()]) {
+                toast.success(`${statusMessages[newStatus.toLowerCase()]}: ${orderId}`, {
+                    duration: 3000,
+                });
+            }
         },
     });
 

@@ -95,15 +95,15 @@ export default function NavActions() {
         <div className="flex items-center gap-3 lg:gap-4">
             {/* Browse foods (main action) */}
             <Link
-                href="/?type=foods"
+                href="/search"
                 className={`relative p-2 rounded-lg hover:bg-gray-50 transition-colors ${
-                    pathname === "/" ? "text-[#EE4D2D]" : "text-gray-600"
+                    pathname === "/search" ? "text-[#EE4D2D]" : "text-gray-600"
                 }`}
                 aria-label="Explore foods"
                 title="Explore foods"
             >
                 <UtensilsCrossed className="w-5 h-5" />
-                {pathname === "/" && (
+                {pathname === "/search" && (
                     <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#EE4D2D] rounded-full" />
                 )}
             </Link>

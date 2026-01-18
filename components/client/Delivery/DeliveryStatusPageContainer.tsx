@@ -22,10 +22,10 @@ type DisplayOrderItem = {
     note?: string;
 };
 
-export default async function OrderStatusPage({ params }: { params: { id: string } }) {
+export default async function OrderStatusPage({ params }: { params: { slug: string } }) {
     let order: Order | null = null;
     try {
-        order = await orderApi.getOrderById(params.id);
+        order = await orderApi.getOrderBySlug(params.slug);
     } catch {
         order = null;
     }

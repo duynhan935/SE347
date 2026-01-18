@@ -4,13 +4,14 @@ import { orderApi } from "@/lib/api/orderApi";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Order, OrderStatus } from "@/types/order.type";
-import { Loader2 } from "lucide-react";
+import { Loader2, Truck } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 interface OrderDisplay {
     id: string;
+    slug?: string; // Order slug for URL routing
     uniqueKey: string; // For React key
     displayId: string; // For display
     date: string;
@@ -95,6 +96,7 @@ export default function OrderHistoryPage() {
 
                 return {
                     id: order.orderId,
+                    slug: order.slug || undefined, // Include slug if available
                     uniqueKey,
                     displayId: order.orderId || `#${index + 1}`,
                     date: orderDate,
@@ -129,8 +131,9 @@ export default function OrderHistoryPage() {
     useOrderSocket({
         userId: user?.id || null,
         onOrderStatusUpdate: (notification) => {
-            const orderId = notification.data.orderId;
-            const newStatus = notification.data.status;
+            // Backend emits orderId and status at root level, useOrderSocket transforms to data
+            const orderId = notification.data?.orderId || notification.orderId;
+            const newStatus = notification.data?.status || notification.status;
 
             if (!orderId || !newStatus) return;
 
@@ -200,14 +203,25 @@ export default function OrderHistoryPage() {
                                                                 <p className="text-sm text-gray-500">{order.date}</p>
                                                                 <p className="font-semibold text-brand-purple mt-1">{order.total}</p>
                                                         </div>
-                                                        <div className="flex items-center gap-4">
+                                                        <div className="flex flex-col items-end gap-2">
                                                                 <span
                                                                         className={`text-sm font-semibold ${order.statusClass}`}
                                                                 >
                                                                         {order.status}
                                                                 </span>
+                                                                {/* Track Order Button - Below Status */}
+                                                                {order.status &&
+                                                                        !order.status.toLowerCase().includes("cancelled") && (
+                                                                                <Link
+                                                                                        href={`/delivery/${order.slug || order.orderCode || order.id}`}
+                                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-colors border border-blue-200"
+                                                                                >
+                                                                                        <Truck className="w-3 h-3" />
+                                                                                        Track Order
+                                                                                </Link>
+                                                                        )}
                                                                 <Link
-                                                                        href={`/orders/${order.id}`}
+                                                                        href={`/orders/${order.slug || order.orderCode || order.id}`}
                                                                         className="text-sm font-semibold text-[#EE4D2D] hover:underline"
                                                                 >
                                                                         View Details

@@ -4,9 +4,10 @@ import { orderApi } from "@/lib/api/orderApi";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Order, OrderStatus } from "@/types/order.type";
-import { notFound, useRouter } from "next/navigation";
+import { notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import OrderTrackingTimeline from "../Orders/OrderTrackingTimeline";
 import { OrderStatusSidebar } from "./OrderStatusSidebar";
 
 type StatusType = "Pending" | "Success" | "Cancel";
@@ -34,7 +35,6 @@ interface DeliveryStatusPageClientWrapperProps {
 
 export default function DeliveryStatusPageClientWrapper({ initialOrder }: DeliveryStatusPageClientWrapperProps) {
     const { user } = useAuthStore();
-    const router = useRouter();
     const [order, setOrder] = useState<Order>(initialOrder);
     const [isUpdating, setIsUpdating] = useState(false);
 
@@ -42,8 +42,9 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
     useOrderSocket({
         userId: user?.id || null,
         onOrderStatusUpdate: (notification) => {
-            const orderId = notification.data.orderId;
-            const newStatus = notification.data.status;
+            // Backend emits orderId and status at root level, not in data
+            const orderId = notification.orderId || notification.data?.orderId;
+            const newStatus = notification.status || notification.data?.status;
 
             // Only update if this is the order we're viewing
             if (!orderId || orderId !== order.orderId) {
@@ -69,7 +70,7 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
             // Fetch updated order data
             setIsUpdating(true);
             orderApi
-                .getOrderById(order.orderId)
+                .getOrderBySlug(order.slug)
                 .then((updatedOrder) => {
                     setOrder(updatedOrder);
                 })
@@ -89,14 +90,15 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
 
     // Poll for order updates as fallback (every 10 seconds)
     useEffect(() => {
-        if (!order.orderId) return;
+        if (!order.slug) return;
 
         const intervalId = setInterval(() => {
             orderApi
-                .getOrderById(order.orderId)
+                .getOrderBySlug(order.slug)
                 .then((updatedOrder) => {
-                    // Only update if status changed
-                    if (updatedOrder.status !== order.status) {
+                    // Update if status changed or estimated time might have changed
+                    if (updatedOrder.status !== order.status || 
+                        updatedOrder.estimatedDeliveryTime !== order.estimatedDeliveryTime) {
                         setOrder(updatedOrder);
                     }
                 })
@@ -107,7 +109,21 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
         }, 10000); // Poll every 10 seconds
 
         return () => clearInterval(intervalId);
-    }, [order.orderId, order.status]);
+    }, [order.slug, order.status, order.estimatedDeliveryTime]);
+
+    // Update estimated time every minute for real-time countdown
+    useEffect(() => {
+        if (!order.orderId || !order.estimatedDeliveryTime || order.status === OrderStatus.COMPLETED || order.status === OrderStatus.CANCELLED) {
+            return;
+        }
+
+        const intervalId = setInterval(() => {
+            // Force re-render to update estimated time countdown
+            setOrder((prevOrder) => ({ ...prevOrder }));
+        }, 60000); // Update every minute
+
+        return () => clearInterval(intervalId);
+    }, [order.orderId, order.estimatedDeliveryTime, order.status]);
 
     const displayItems: DisplayOrderItem[] = order.items.map((item, index) => ({
         id: `${order.orderId}-${item.productId}-${index}`,
@@ -121,17 +137,43 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
     const totalItems = displayItems.reduce((sum, item) => sum + item.quantity, 0);
 
     const status: DisplayOrderStatus = (() => {
-        const isCancelled = order.status === "cancelled";
-        const isReceived = order.status !== "pending";
+        const isCancelled = order.status === OrderStatus.CANCELLED;
+        // Order Received: Success if status is not pending
+        const isReceived = order.status !== OrderStatus.PENDING;
+        // Restaurant Status: Success if status is confirmed, preparing, ready, or completed
+        // This matches timeline step 1 (Preparing) which includes CONFIRMED and PREPARING
         const isRestaurantDone =
-            order.status === "preparing" || order.status === "ready" || order.status === "completed";
-        const isDelivering = order.status === "completed";
+            order.status === OrderStatus.CONFIRMED ||
+            order.status === OrderStatus.PREPARING ||
+            order.status === OrderStatus.READY ||
+            order.status === OrderStatus.COMPLETED;
+        // Delivery Status: Success only if order is completed
+        // This matches timeline step 3 (Completed)
+        const isDelivering = order.status === OrderStatus.COMPLETED;
 
         const estimatedTime = (() => {
-            if (!order.estimatedDeliveryTime) return 0;
-            const eta = new Date(order.estimatedDeliveryTime).getTime();
-            if (Number.isNaN(eta)) return 0;
-            return Math.max(0, Math.round((eta - Date.now()) / 60000));
+            if (!order.estimatedDeliveryTime) return 60; // Default to 1 hour if no estimated time
+            try {
+                // Handle different date formats from backend
+                const eta = new Date(order.estimatedDeliveryTime).getTime();
+                if (Number.isNaN(eta)) return 60; // Default to 1 hour if invalid date
+                
+                const now = Date.now();
+                const diffMs = eta - now;
+                const diffMinutes = Math.round(diffMs / 60000);
+                
+                // Cap at maximum 60 minutes (1 hour)
+                // If estimated time is in the past, negative, or exceeds 60 minutes, default to 60 minutes
+                if (diffMinutes < 0 || diffMinutes > 60) {
+                    return 60; // Default to 1 hour
+                }
+                
+                // Return calculated time (0-60 minutes)
+                return diffMinutes;
+            } catch (error) {
+                console.error("Error calculating estimated time:", error, order.estimatedDeliveryTime);
+                return 60; // Default to 1 hour on error
+            }
         })();
 
         return {
@@ -143,7 +185,7 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
         };
     })();
 
-    const canCancel = order.status === "pending";
+    const canCancel = order.status === OrderStatus.PENDING;
 
     const groupedItems = displayItems.reduce((acc, item) => {
         const { shopName } = item;
@@ -170,8 +212,11 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                 {/* Left column: Order details */}
                 <div className="lg:col-span-2 space-y-6 p-3 sm:p-1 md:p-12">
                     <h1 className="text-3xl font-bold">
-                        Order Details ({totalItems} {totalItems > 1 ? "items" : "item"})
+                        Order Tracking ({totalItems} {totalItems > 1 ? "items" : "item"})
                     </h1>
+
+                    {/* Order Status Timeline */}
+                    <OrderTrackingTimeline status={order.status} />
 
                     <div className="space-y-8">
                         {Object.entries(groupedItems).map(([shopName, items]) => (
