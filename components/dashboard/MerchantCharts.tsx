@@ -12,7 +12,7 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
-import { formatNumber, formatVnd, toNumber } from "@/lib/utils/dashboardFormat";
+import { formatCurrency, formatNumber, toNumber } from "@/lib/utils/dashboardFormat";
 
 export type MerchantChartOrder = {
     orderId: string;
@@ -104,13 +104,13 @@ export default function MerchantCharts(props: {
             {/* Revenue Trend */}
             <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark lg:col-span-2">
                 <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-black dark:text-white">Xu hướng doanh thu</h3>
-                    <p className="text-sm text-bodydark">Doanh thu theo ngày</p>
+                    <h3 className="text-lg font-semibold text-black dark:text-white">Revenue Trend</h3>
+                    <p className="text-sm text-bodydark">Daily revenue</p>
                 </div>
 
                 <div className="h-[320px]">
                     {trend.length === 0 ? (
-                        <p className="text-sm text-bodydark">Chưa có dữ liệu.</p>
+                        <p className="text-sm text-bodydark">No data yet.</p>
                     ) : (
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={trend} margin={{ left: 8, right: 16, top: 8, bottom: 0 }}>
@@ -126,7 +126,10 @@ export default function MerchantCharts(props: {
                                     tick={{ fill: "#6b7280", fontSize: 12 }}
                                     tickFormatter={(v) => formatNumber(v)}
                                 />
-                                <Tooltip formatter={(v) => formatVnd(v)} labelFormatter={(label) => `Ngày: ${label}`} />
+                                <Tooltip
+                                    formatter={(v) => formatCurrency(v)}
+                                    labelFormatter={(label) => `Date: ${label}`}
+                                />
                                 <Area
                                     type="monotone"
                                     dataKey="revenue"
@@ -145,13 +148,13 @@ export default function MerchantCharts(props: {
             {/* Top Products */}
             <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
                 <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-black dark:text-white">Sản phẩm bán chạy</h3>
-                    <p className="text-sm text-bodydark">Top 5 theo doanh thu</p>
+                    <h3 className="text-lg font-semibold text-black dark:text-white">Top Products</h3>
+                    <p className="text-sm text-bodydark">Top 5 by revenue</p>
                 </div>
 
                 <div className="h-[320px]">
                     {products.length === 0 ? (
-                        <p className="text-sm text-bodydark">Chưa có dữ liệu.</p>
+                        <p className="text-sm text-bodydark">No data yet.</p>
                     ) : (
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
@@ -172,13 +175,13 @@ export default function MerchantCharts(props: {
                                     tick={{ fill: "#6b7280", fontSize: 12 }}
                                 />
                                 <Tooltip
-                                    formatter={(v) => formatVnd(v)}
+                                    formatter={(v) => formatCurrency(v)}
                                     labelFormatter={(label, payload) => {
                                         const row = (payload?.[0] as unknown as { payload?: Record<string, unknown> })
                                             ?.payload;
                                         const fullName =
                                             typeof row?.fullName === "string" ? row.fullName : String(label);
-                                        return `Sản phẩm: ${fullName}`;
+                                        return `Product: ${fullName}`;
                                     }}
                                 />
                                 <Bar dataKey="revenue" fill={COLOR_PRIMARY} radius={[0, 8, 8, 0]} />
@@ -191,8 +194,8 @@ export default function MerchantCharts(props: {
             {/* Rating Distribution */}
             <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark lg:col-span-3">
                 <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-black dark:text-white">Phân bố đánh giá</h3>
-                    <p className="text-sm text-bodydark">Số lượt theo mức sao</p>
+                    <h3 className="text-lg font-semibold text-black dark:text-white">Rating Distribution</h3>
+                    <p className="text-sm text-bodydark">Count by star rating</p>
                 </div>
 
                 <div className="h-[260px]">
@@ -205,7 +208,10 @@ export default function MerchantCharts(props: {
                                 tickFormatter={(v) => `${v}★`}
                             />
                             <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} allowDecimals={false} />
-                            <Tooltip formatter={(v) => formatNumber(v)} labelFormatter={(label) => `Mức: ${label}★`} />
+                            <Tooltip
+                                formatter={(v) => formatNumber(v)}
+                                labelFormatter={(label) => `Rating: ${label}★`}
+                            />
                             <Bar dataKey="count" radius={[8, 8, 0, 0]}>
                                 {ratings.map((r) => (
                                     <Cell key={r.stars} fill={r.stars <= 2 ? COLOR_DANGER : COLOR_WARNING} />

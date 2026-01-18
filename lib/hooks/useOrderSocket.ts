@@ -2,9 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Socket, io } from "socket.io-client";
-
-const DEFAULT_ORDER_SOCKET_URL = "http://localhost:8080";
-const ORDER_SOCKET_URL = (process.env.NEXT_PUBLIC_ORDER_SOCKET_URL || DEFAULT_ORDER_SOCKET_URL).replace(/\/$/, "");
+import { ORDER_SOCKET_URL } from "../config/publicRuntime";
 
 interface OrderNotification {
     type: string;
@@ -62,25 +60,21 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
         socketRef.current = socket;
 
         socket.on("connect", () => {
-            console.log("[Order Socket] Connected");
             setIsConnected(true);
 
             // Join restaurant room if merchant
             if (restaurantId) {
                 socket.emit("join-restaurant", restaurantId);
-                console.log(`[Order Socket] Joined restaurant room: ${restaurantId}`);
             }
 
             // Join user room if user (for receiving order status updates)
             // Backend uses 'join-user-orders' event, not 'join-user'
             if (userId) {
                 socket.emit("join-user-orders", userId);
-                console.log(`[Order Socket] Joined user orders room: ${userId}`);
             }
         });
 
         socket.on("disconnect", () => {
-            console.log("[Order Socket] Disconnected");
             setIsConnected(false);
         });
 
@@ -91,14 +85,12 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
 
         // Listen for new orders (merchant)
         socket.on("new-order", (notification: OrderNotification) => {
-            console.log("[Order Socket] New order received:", notification);
             onNewOrderRef.current?.(notification);
         });
 
         // Listen for order status updates (user)
         // Backend emits order-status-updated with orderId, status at root level
         socket.on("order-status-updated", (notification: OrderNotification) => {
-            console.log("[Order Socket] Order status updated:", notification);
             // Transform notification to match expected format
             const transformedNotification: OrderNotification = {
                 ...notification,

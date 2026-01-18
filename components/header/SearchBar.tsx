@@ -51,20 +51,22 @@ export default function SearchBar() {
                 // Fetch both restaurants and products in parallel
                 const [restaurantsRes, productsRes] = await Promise.all([
                     restaurantApi.getAllRestaurants(
-                        new URLSearchParams({ search: trimmedQuery, limit: "5", lat: "10.762622", lon: "106.660172" })
+                        new URLSearchParams({ search: trimmedQuery, limit: "5", lat: "10.762622", lon: "106.660172" }),
                     ),
                     productApi.getAllProducts(new URLSearchParams({ search: trimmedQuery, limit: "5" })),
                 ]);
 
-                const restaurantSuggestions: SearchSuggestion[] = (restaurantsRes.data || []).map((r: Restaurant) => ({
-                    type: "restaurant" as const,
-                    id: r.id,
-                    name: r.resName,
-                    slug: r.slug,
-                    image: typeof r.imageURL === "string" ? r.imageURL : null,
-                }));
+                const restaurantSuggestions: SearchSuggestion[] = (restaurantsRes.data?.content || []).map(
+                    (r: Restaurant) => ({
+                        type: "restaurant" as const,
+                        id: r.id,
+                        name: r.resName,
+                        slug: r.slug,
+                        image: typeof r.imageURL === "string" ? r.imageURL : null,
+                    }),
+                );
 
-                const productSuggestions: SearchSuggestion[] = (productsRes.data || []).map((p: Product) => ({
+                const productSuggestions: SearchSuggestion[] = (productsRes.data?.content || []).map((p: Product) => ({
                     type: "product" as const,
                     id: p.id,
                     name: p.productName,

@@ -9,6 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { formatCurrency } from "@/lib/utils/dashboardFormat";
 
 interface RecentOrder {
     id: string; // Unique key for React
@@ -78,18 +79,18 @@ export default function ProfilePage() {
                 }
             });
 
-                        // Format status for display
-                        const formatStatus = (status: string): string => {
-                                const statusMap: Record<string, string> = {
-                                        pending: "Pending",
-                                        confirmed: "Confirmed",
-                                        preparing: "Preparing",
-                                        ready: "Ready",
-                                        completed: "Completed",
-                                        cancelled: "Cancelled",
-                                };
-                                return statusMap[status.toLowerCase()] || status;
-                        };
+            // Format status for display
+            const formatStatus = (status: string): string => {
+                const statusMap: Record<string, string> = {
+                    pending: "Pending",
+                    confirmed: "Confirmed",
+                    preparing: "Preparing",
+                    ready: "Ready",
+                    completed: "Completed",
+                    cancelled: "Cancelled",
+                };
+                return statusMap[status.toLowerCase()] || status;
+            };
 
             // Get status badge color classes
             const getStatusBadgeClass = (status: string): string => {
@@ -132,7 +133,7 @@ export default function ProfilePage() {
                       })
                     : "N/A";
 
-                                        const status = formatStatus(order.status || "pending");
+                const status = formatStatus(order.status || "pending");
 
                 // Ensure unique ID by combining orderCode/id with index and createdAt timestamp
                 const orderId = order.orderId || `order-${index}`;
@@ -140,19 +141,11 @@ export default function ProfilePage() {
                     ? `${orderId}-${new Date(order.createdAt).getTime()}`
                     : `${orderId}-${index}`;
 
-                // Format price to USD
-                const formatPriceLocal = (priceUSD: number): string => {
-                    return priceUSD.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                    });
-                };
-
                 return {
                     id: uniqueId,
                     displayId: order.orderId || `#${index + 1}`,
                     date: orderDate,
-                    total: "$" + formatPriceLocal(Number(order.finalAmount || 0)),
+                    total: formatCurrency(Number(order.finalAmount || 0)),
                     status,
                     statusClass: getStatusBadgeClass(status),
                 };
@@ -178,14 +171,8 @@ export default function ProfilePage() {
             fetchOrdersAndStats();
         }
     }, [mounted, user?.id, loading, fetchOrdersAndStats]);
-    // Format price to VND
-    const formatPrice = (priceUSD: number): string => {
-        const vndPrice = priceUSD * 25000; // Convert USD to VND
-        return vndPrice.toLocaleString("en-US", {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        });
-    };
+    // Format currency in USD
+    const formatPrice = (amount: number): string => formatCurrency(amount);
 
     if (!mounted || loading || ordersLoading) {
         return (
@@ -214,9 +201,9 @@ export default function ProfilePage() {
                 <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 flex flex-col sm:flex-row items-center gap-6">
                     <div className="relative w-24 h-24 md:w-28 md:h-28 flex-shrink-0">
                         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#EE4D2D] to-orange-600 p-0.5">
-                                <div className="w-full h-full rounded-full bg-white p-1">
-                                        <Image src={avatarUrl} alt="User Avatar" fill className="rounded-full object-cover" />
-                                </div>
+                            <div className="w-full h-full rounded-full bg-white p-1">
+                                <Image src={avatarUrl} alt="User Avatar" fill className="rounded-full object-cover" />
+                            </div>
                         </div>
                     </div>
                     <div className="text-center sm:text-left flex-grow">

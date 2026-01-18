@@ -115,14 +115,11 @@ export default function MerchantSettingsPage() {
             await getRestaurantByMerchantId(user.id);
         } catch (error: unknown) {
             console.error("Failed to update restaurant:", error);
-            const errorMessage =
-                error &&
-                typeof error === "object" &&
-                "response" in error &&
-                (error as { response?: { data?: { message?: string } } }).response?.data?.message
+            const message =
+                error && typeof error === "object" && "response" in error
                     ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-                    : "Failed to update restaurant information";
-            toast.error(errorMessage);
+                    : undefined;
+            toast.error(message ?? "Failed to update restaurant information");
         } finally {
             setSaving(false);
         }

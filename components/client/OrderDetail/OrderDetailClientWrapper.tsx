@@ -31,8 +31,6 @@ export default function OrderDetailClientWrapper({ initialOrder }: OrderDetailCl
 
             if (!newStatus) return;
 
-            console.log("[Order Detail] Order status updated via websocket:", orderId, newStatus);
-
             // Show toast notification
             const statusMessages: Record<string, string> = {
                 confirmed: "Order confirmed! Restaurant is preparing your order.",
@@ -86,4 +84,3 @@ export default function OrderDetailClientWrapper({ initialOrder }: OrderDetailCl
 
     return <OrderDetailClient order={order} />;
 }
-

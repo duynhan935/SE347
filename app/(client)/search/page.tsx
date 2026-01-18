@@ -14,13 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 export default function SearchPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { 
-        fetchAllProducts, 
-        products, 
-        loading: productsLoading,
-        totalPages,
-        totalElements,
-    } = useProductStore();
+    const { fetchAllProducts, products, loading: productsLoading, totalPages, totalElements } = useProductStore();
     const { currentAddress, isLocationSet } = useLocationStore();
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -44,7 +38,7 @@ export default function SearchPage() {
         }
 
         const params = new URLSearchParams();
-        
+
         // Set location for distance calculation from current address (REQUIRED)
         params.set("lat", currentAddress.lat.toString());
         params.set("lon", currentAddress.lng.toString());
@@ -59,7 +53,7 @@ export default function SearchPage() {
         const categoryParams = searchParams.getAll("category");
         if (categoryParams.length > 0) {
             // Convert to lowercase and join with comma
-            const categoryString = categoryParams.map(cat => cat.toLowerCase()).join(",");
+            const categoryString = categoryParams.map((cat) => cat.toLowerCase()).join(",");
             params.set("category", categoryString);
         }
 
@@ -88,14 +82,14 @@ export default function SearchPage() {
         if (priceRange) {
             const [min, max] = priceRange.split("-");
             if (min) {
-                // Price is in VND (from SearchFilters), convert to number
+                // Price is in USD (from SearchFilters), convert to number
                 const minPrice = parseFloat(min);
                 if (!isNaN(minPrice)) {
                     params.set("minPrice", minPrice.toString());
                 }
             }
             if (max && max !== "+") {
-                // Price is in VND, convert to number
+                // Price is in USD, convert to number
                 const maxPrice = parseFloat(max);
                 if (!isNaN(maxPrice)) {
                     params.set("maxPrice", maxPrice.toString());
@@ -152,9 +146,7 @@ export default function SearchPage() {
                 </div>
 
                 {/* Mobile Filter Drawer */}
-                {isFilterOpen && (
-                    <SearchFilters isMobile={true} onClose={() => setIsFilterOpen(false)} />
-                )}
+                {isFilterOpen && <SearchFilters isMobile={true} onClose={() => setIsFilterOpen(false)} />}
 
                 {/* Main Content - 2 Column Layout */}
                 <div className="flex flex-col lg:flex-row gap-6">
@@ -172,16 +164,14 @@ export default function SearchPage() {
                                     Search results for &quot;{query}&quot;
                                 </h1>
                             ) : (
-                                <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                                    All Food Items
-                                </h1>
+                                <h1 className="text-2xl font-bold text-gray-900 mb-2">All Food Items</h1>
                             )}
                             <p className="text-sm text-gray-500">
                                 {productsLoading
                                     ? "Loading..."
                                     : totalElements > 0
-                                    ? `Showing ${((currentPageNumber - 1) * PAGE_SIZE) + 1}-${Math.min(currentPageNumber * PAGE_SIZE, totalElements)} of ${totalElements} ${totalElements === 1 ? 'result' : 'results'}`
-                                    : "No results found"}
+                                      ? `Showing ${(currentPageNumber - 1) * PAGE_SIZE + 1}-${Math.min(currentPageNumber * PAGE_SIZE, totalElements)} of ${totalElements} ${totalElements === 1 ? "result" : "results"}`
+                                      : "No results found"}
                             </p>
                         </div>
 
@@ -199,10 +189,7 @@ export default function SearchPage() {
                             <>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                     {filteredProducts.map((product) => (
-                                        <CompactFoodCard
-                                            key={product.id}
-                                            product={product}
-                                        />
+                                        <CompactFoodCard key={product.id} product={product} />
                                     ))}
                                 </div>
 
@@ -213,7 +200,9 @@ export default function SearchPage() {
                                             currentPage={currentPageNumber}
                                             totalPages={totalPages}
                                             onPageChange={(newPage: number) => {
-                                                const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+                                                const currentParams = new URLSearchParams(
+                                                    Array.from(searchParams.entries()),
+                                                );
                                                 if (newPage === 1) {
                                                     currentParams.delete("page");
                                                 } else {
@@ -233,9 +222,7 @@ export default function SearchPage() {
                             <div className="text-center py-20 bg-white rounded-lg">
                                 <div className="flex flex-col items-center justify-center">
                                     <div className="text-6xl mb-4">🔍</div>
-                                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                                        No results found
-                                    </h3>
+                                    <h3 className="text-xl font-semibold text-gray-800 mb-2">No results found</h3>
                                     <p className="text-gray-500 text-sm max-w-md mb-6">
                                         {query
                                             ? `No food items found for &quot;${query}&quot;. Try searching with different keywords.`
@@ -260,4 +247,3 @@ export default function SearchPage() {
         </div>
     );
 }
-

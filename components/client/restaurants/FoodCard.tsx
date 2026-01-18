@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { formatCurrency } from "@/lib/utils/dashboardFormat";
 
 type FoodCardProps = {
     product: Product;
@@ -41,14 +42,9 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
     const defaultSize = useMemo(() => product.productSizes?.[0], [product.productSizes]);
     const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
 
-    // Format price to USD
     const formattedPrice = useMemo(() => {
         if (displayPrice === undefined) return null;
-        // Format with comma separator, 2 decimals for USD
-        return displayPrice.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
+        return formatCurrency(displayPrice);
     }, [displayPrice]);
 
     const reviewCountText = useMemo(() => {
@@ -135,7 +131,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         sizeId: defaultSize.id,
                         sizeName: defaultSize.sizeName,
                     },
-                    1
+                    1,
                 );
                 // Toast is handled by cartStore.addItem
             } catch (error) {
@@ -147,7 +143,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                 }, 300);
             }
         },
-        [isAdding, isMounted, user, product, defaultSize, cardImageUrl, addItem, router]
+        [isAdding, isMounted, user, product, defaultSize, cardImageUrl, addItem, router],
     );
 
     // Option 1: Grid Layout (ShopeeFood style) - RECOMMENDED
@@ -264,7 +260,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         {/* Price - Orange-Red color, Prominent */}
                         <div className="mt-auto pt-2 relative pr-14">
                             {formattedPrice ? (
-                                <p className="text-base md:text-lg font-bold text-[#EE4D2D]">{formattedPrice} ₫</p>
+                                <p className="text-base md:text-lg font-bold text-[#EE4D2D]">{formattedPrice}</p>
                             ) : (
                                 <p className="text-sm text-gray-400">No price</p>
                             )}
@@ -414,7 +410,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                     <div className="mt-auto mb-4 relative">
                         {formattedPrice ? (
                             <p className="text-2xl md:text-3xl font-bold text-[#EE4D2D] leading-none">
-                                {formattedPrice} ₫
+                                {formattedPrice}
                             </p>
                         ) : (
                             <p className="text-sm text-gray-400">No price</p>

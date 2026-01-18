@@ -25,14 +25,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import MerchantCharts from "@/components/dashboard/MerchantCharts";
-
-function formatVnd(value: number): string {
-    try {
-        return new Intl.NumberFormat("vi-VN").format(value);
-    } catch {
-        return value.toLocaleString();
-    }
-}
+import { formatCurrency, formatNumber } from "@/lib/utils/dashboardFormat";
 
 // Stats Card Component - TailAdmin Style
 interface StatsCardProps {
@@ -136,8 +129,7 @@ export default function MerchantDashboard() {
 
     const handleOrderStatusUpdate = useCallback(
         (update: { orderId: string; status: string }) => {
-            console.log("📦 Order status updated:", update);
-            toast.success(`Đơn hàng ${update.orderId} đã cập nhật: ${update.status}`);
+            toast.success(`Order ${update.orderId} updated: ${update.status}`);
             fetchOrders();
         },
         [fetchOrders],
@@ -194,7 +186,7 @@ export default function MerchantDashboard() {
                 }
             } catch (error) {
                 console.error("Failed to load merchant dashboard:", error);
-                toast.error("Không thể tải dữ liệu dashboard.");
+                toast.error("Unable to load dashboard data.");
             } finally {
                 setLoading(false);
             }
@@ -210,38 +202,38 @@ export default function MerchantDashboard() {
 
         return [
             {
-                title: "Tổng doanh thu",
-                value: ov ? `${formatVnd(ov.totalRevenue)}₫` : `0₫`,
+                title: "Total Revenue",
+                value: formatCurrency(ov?.totalRevenue ?? 0),
                 icon: DollarSign,
                 bgColor: "bg-meta-3/10",
                 iconColor: "text-meta-3",
                 trend: 11.01,
-                trendLabel: "so với tháng trước",
+                trendLabel: "vs last month",
             },
             {
-                title: "Tổng đơn hàng",
+                title: "Total Orders",
                 value: totalOrders,
                 icon: ShoppingCart,
                 bgColor: "bg-primary/10",
                 iconColor: "text-primary",
                 trend: 2.59,
-                trendLabel: "so với tháng trước",
+                trendLabel: "vs last month",
             },
             {
-                title: "Sản phẩm",
+                title: "Products",
                 value: restaurant?.totalProducts ?? 0,
                 icon: Package,
                 bgColor: "bg-meta-6/10",
                 iconColor: "text-meta-6",
             },
             {
-                title: "Đánh giá TB",
+                title: "Avg Rating",
                 value: ratingStats ? ratingStats.averageRating.toFixed(1) : "0.0",
                 icon: Star,
                 bgColor: "bg-warning/10",
                 iconColor: "text-warning",
                 trend: undefined,
-                trendLabel: `${ratingStats?.totalRatings ?? 0} đánh giá`,
+                trendLabel: `${formatNumber(ratingStats?.totalRatings ?? 0)} reviews`,
             },
         ];
     }, [overview, restaurantOverview, ratingStats]);
@@ -251,10 +243,10 @@ export default function MerchantDashboard() {
             {/* Header */}
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Dashboard Merchant</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Merchant Dashboard</h1>
                     <p className="text-sm font-medium text-gray-600 dark:text-white/60 mt-1">
                         {wsConnected && <span className="text-meta-3">● </span>}
-                        Xin chào, {user?.username || "Merchant"}!
+                        Hello, {user?.username || "Merchant"}!
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -263,18 +255,18 @@ export default function MerchantDashboard() {
                         onChange={(e) => setRangePreset(e.target.value as DashboardDateRangePreset)}
                         className="relative z-20 inline-flex appearance-none bg-transparent py-2 pl-3 pr-8 text-sm font-medium outline-none border border-stroke dark:border-strokedark rounded-lg dark:bg-meta-4"
                     >
-                        <option value="7d">7 ngày qua</option>
-                        <option value="30d">30 ngày qua</option>
-                        <option value="90d">90 ngày qua</option>
-                        <option value="ytd">Năm nay</option>
-                        <option value="all">Tất cả</option>
+                        <option value="7d">Last 7 days</option>
+                        <option value="30d">Last 30 days</option>
+                        <option value="90d">Last 90 days</option>
+                        <option value="ytd">Year to date</option>
+                        <option value="all">All time</option>
                     </select>
                     <Link
                         href="/merchant/food/new"
                         className="inline-flex items-center gap-2 rounded-lg bg-primary py-2 px-4 text-sm font-medium text-white transition hover:bg-opacity-90"
                     >
                         <Store size={18} />
-                        Thêm món
+                        Add Menu Item
                     </Link>
                 </div>
             </div>
@@ -305,9 +297,9 @@ export default function MerchantDashboard() {
             <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2 2xl:gap-7.5">
                 {/* Restaurant Overview */}
                 <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                    <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Thông tin nhà hàng</h3>
+                    <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Restaurant Info</h3>
                     {loading && !restaurantOverview ? (
-                        <div className="text-sm text-bodydark">Đang tải...</div>
+                        <div className="text-sm text-bodydark">Loading...</div>
                     ) : restaurantOverview ? (
                         <div className="flex flex-col gap-4">
                             <div className="flex items-center gap-4">
@@ -336,7 +328,7 @@ export default function MerchantDashboard() {
                                                     : "bg-danger/10 text-danger"
                                             }`}
                                         >
-                                            {restaurantOverview.restaurantEnabled ? "Hoạt động" : "Tạm đóng"}
+                                            {restaurantOverview.restaurantEnabled ? "Active" : "Temporarily Closed"}
                                         </span>
                                     </div>
                                     <p className="text-sm text-bodydark">{restaurantOverview.address}</p>
@@ -348,7 +340,9 @@ export default function MerchantDashboard() {
                                     <span className="font-medium text-black dark:text-white">
                                         {restaurantOverview.rating.toFixed(1)}
                                     </span>
-                                    <span className="text-bodydark">({restaurantOverview.totalReviews} đánh giá)</span>
+                                    <span className="text-bodydark">
+                                        ({formatNumber(restaurantOverview.totalReviews)} reviews)
+                                    </span>
                                 </div>
                                 {restaurantOverview.openingTime && restaurantOverview.closingTime && (
                                     <div className="flex items-center gap-1.5">
@@ -364,51 +358,51 @@ export default function MerchantDashboard() {
                                     href="/merchant/food"
                                     className="flex-1 text-center rounded-lg border border-stroke py-2 px-3 text-sm font-medium transition hover:bg-gray dark:border-strokedark dark:hover:bg-meta-4"
                                 >
-                                    Quản lý menu
+                                    Manage Menu
                                 </Link>
                                 {restaurantOverview.restaurantSlug && (
                                     <Link
                                         href={`/restaurants/${encodeURIComponent(restaurantOverview.restaurantSlug)}`}
                                         className="flex-1 text-center rounded-lg bg-primary py-2 px-3 text-sm font-medium text-white transition hover:bg-opacity-90"
                                     >
-                                        Xem gian hàng
+                                        View Storefront
                                     </Link>
                                 )}
                             </div>
                         </div>
                     ) : (
-                        <div className="text-sm text-bodydark">Chưa có nhà hàng.</div>
+                        <div className="text-sm text-bodydark">No restaurant yet.</div>
                     )}
                 </div>
 
                 {/* Order Status */}
                 <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                    <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Trạng thái đơn hàng</h3>
+                    <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Order Status</h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="rounded-lg bg-warning/10 p-4 text-center">
                             <Clock size={24} className="mx-auto mb-2 text-warning" />
-                            <p className="text-sm font-medium text-bodydark mb-1">Chờ xác nhận</p>
+                            <p className="text-sm font-medium text-bodydark mb-1">Pending Confirmation</p>
                             <p className="text-2xl font-bold text-black dark:text-white">
                                 {overview?.pendingOrders ?? 0}
                             </p>
                         </div>
                         <div className="rounded-lg bg-primary/10 p-4 text-center">
                             <Truck size={24} className="mx-auto mb-2 text-primary" />
-                            <p className="text-sm font-medium text-bodydark mb-1">Đang xử lý</p>
+                            <p className="text-sm font-medium text-bodydark mb-1">In Progress</p>
                             <p className="text-2xl font-bold text-black dark:text-white">
                                 {(overview?.confirmedOrders ?? 0) + (overview?.preparingOrders ?? 0)}
                             </p>
                         </div>
                         <div className="rounded-lg bg-meta-3/10 p-4 text-center">
                             <CheckCircle2 size={24} className="mx-auto mb-2 text-meta-3" />
-                            <p className="text-sm font-medium text-bodydark mb-1">Hoàn thành</p>
+                            <p className="text-sm font-medium text-bodydark mb-1">Completed</p>
                             <p className="text-2xl font-bold text-black dark:text-white">
                                 {overview?.completedOrders ?? 0}
                             </p>
                         </div>
                         <div className="rounded-lg bg-meta-1/10 p-4 text-center">
                             <AlertCircle size={24} className="mx-auto mb-2 text-meta-1" />
-                            <p className="text-sm font-medium text-bodydark mb-1">Đã hủy</p>
+                            <p className="text-sm font-medium text-bodydark mb-1">Canceled</p>
                             <p className="text-2xl font-bold text-black dark:text-white">
                                 {overview?.cancelledOrders ?? 0}
                             </p>
@@ -422,11 +416,11 @@ export default function MerchantDashboard() {
                 {/* Top Products */}
                 <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
-                        <h3 className="font-semibold text-black dark:text-white">Top sản phẩm bán chạy</h3>
+                        <h3 className="font-semibold text-black dark:text-white">Top Products</h3>
                     </div>
                     <div className="p-6">
                         {topProducts.length === 0 ? (
-                            <p className="text-sm text-bodydark">Chưa có dữ liệu.</p>
+                            <p className="text-sm text-bodydark">No data yet.</p>
                         ) : (
                             <div className="space-y-3">
                                 {topProducts.slice(0, 5).map((product, index) => (
@@ -442,10 +436,14 @@ export default function MerchantDashboard() {
                                                 <p className="font-medium text-black dark:text-white">
                                                     {product.productName}
                                                 </p>
-                                                <p className="text-xs text-bodydark">{product.totalQuantity} đã bán</p>
+                                                <p className="text-xs text-bodydark">
+                                                    {formatNumber(product.totalQuantity)} sold
+                                                </p>
                                             </div>
                                         </div>
-                                        <p className="font-semibold text-meta-3">{formatVnd(product.totalRevenue)}₫</p>
+                                        <p className="font-semibold text-meta-3">
+                                            {formatCurrency(product.totalRevenue)}
+                                        </p>
                                     </div>
                                 ))}
                             </div>
@@ -456,16 +454,16 @@ export default function MerchantDashboard() {
                 {/* Recent Orders */}
                 <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="border-b border-stroke px-6 py-4 dark:border-strokedark flex items-center justify-between">
-                        <h3 className="font-semibold text-black dark:text-white">Đơn hàng gần đây</h3>
+                        <h3 className="font-semibold text-black dark:text-white">Recent Orders</h3>
                         <Link href="/merchant/orders" className="text-sm font-medium text-primary hover:underline">
-                            Xem tất cả
+                            View All
                         </Link>
                     </div>
                     <div className="p-6">
                         {loading ? (
-                            <p className="text-sm text-bodydark">Đang tải...</p>
+                            <p className="text-sm text-bodydark">Loading...</p>
                         ) : recentOrders.length === 0 ? (
-                            <p className="text-sm text-bodydark">Chưa có đơn hàng.</p>
+                            <p className="text-sm text-bodydark">No orders yet.</p>
                         ) : (
                             <div className="space-y-3">
                                 {recentOrders.map((order) => {
@@ -490,13 +488,13 @@ export default function MerchantDashboard() {
                                                         #{order.orderId}
                                                     </p>
                                                     <p className="text-xs text-bodydark">
-                                                        {new Date(order.createdAt).toLocaleString("vi-VN")}
+                                                        {new Date(order.createdAt).toLocaleString("en-US")}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
                                                 <p className="font-semibold text-black dark:text-white mb-1">
-                                                    {formatVnd(order.finalAmount || 0)}₫
+                                                    {formatCurrency(order.finalAmount || 0)}
                                                 </p>
                                                 <span
                                                     className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor}`}
@@ -515,7 +513,7 @@ export default function MerchantDashboard() {
 
             {/* Quick Actions */}
             <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Thao tác nhanh</h3>
+                <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Quick Actions</h3>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <Link
                         href="/merchant/food"
@@ -525,8 +523,8 @@ export default function MerchantDashboard() {
                             <Store className="text-primary" size={24} />
                         </div>
                         <div>
-                            <p className="font-semibold text-black dark:text-white">Quản lý món ăn</p>
-                            <p className="text-sm text-bodydark">Thêm & chỉnh sửa menu</p>
+                            <p className="font-semibold text-black dark:text-white">Manage Menu Items</p>
+                            <p className="text-sm text-bodydark">Add and edit your menu</p>
                         </div>
                     </Link>
                     <Link
@@ -537,8 +535,8 @@ export default function MerchantDashboard() {
                             <Users className="text-meta-6" size={24} />
                         </div>
                         <div>
-                            <p className="font-semibold text-black dark:text-white">Quản lý nhân viên</p>
-                            <p className="text-sm text-bodydark">Thêm & quản lý staff</p>
+                            <p className="font-semibold text-black dark:text-white">Manage Staff</p>
+                            <p className="text-sm text-bodydark">Add and manage staff</p>
                         </div>
                     </Link>
                     <Link
@@ -549,8 +547,8 @@ export default function MerchantDashboard() {
                             <BarChart3 className="text-meta-3" size={24} />
                         </div>
                         <div>
-                            <p className="font-semibold text-black dark:text-white">Báo cáo</p>
-                            <p className="text-sm text-bodydark">Xem thống kê chi tiết</p>
+                            <p className="font-semibold text-black dark:text-white">Reports</p>
+                            <p className="text-sm text-bodydark">View detailed analytics</p>
                         </div>
                     </Link>
                 </div>

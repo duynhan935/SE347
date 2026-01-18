@@ -12,9 +12,7 @@ import { getLoginRedirectPath } from "@/lib/utils/redirectUtils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
-
-const DEFAULT_BACKEND_ORIGIN = "http://localhost:8080";
-const BACKEND_ORIGIN = (process.env.NEXT_PUBLIC_BACKEND_ORIGIN || DEFAULT_BACKEND_ORIGIN).replace(/\/$/, "");
+import { BACKEND_ORIGIN } from "@/lib/config/publicRuntime";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -36,22 +34,22 @@ export default function LoginPage() {
 
             if (success) {
                 toast.success("Login successful! Welcome back! 🎉", { duration: 3000 });
-                
+
                 // Get role from token immediately (faster than waiting for fetchProfile)
                 const accessToken = useAuthStore.getState().accessToken;
                 let userRole: string | null = null;
-                
+
                 if (accessToken) {
                     const decodedToken = decodeJWT(accessToken);
                     userRole = decodedToken?.role || null;
                 }
-                
+
                 // If role not in token, wait for user profile to be fetched
                 if (!userRole) {
                     const checkUserAndRedirect = async () => {
                         let attempts = 0;
                         const maxAttempts = 10; // 10 attempts = 1 second max wait
-                        
+
                         while (attempts < maxAttempts) {
                             const currentUser = useAuthStore.getState().user;
                             if (currentUser?.role) {
@@ -62,12 +60,12 @@ export default function LoginPage() {
                             await new Promise((resolve) => setTimeout(resolve, 100));
                             attempts++;
                         }
-                        
+
                         const callbackUrl = searchParams.get("redirect");
                         const redirectPath = getLoginRedirectPath(userRole || null, callbackUrl);
                         router.replace(redirectPath);
                     };
-                    
+
                     setTimeout(() => {
                         checkUserAndRedirect();
                     }, 300);
@@ -92,7 +90,7 @@ export default function LoginPage() {
                             "Your merchant account has not been approved by admin yet. Please wait for admin approval to login.",
                             {
                                 duration: 5000,
-                            }
+                            },
                         );
                     } else {
                         toast.error("Your account has not been activated. Please verify your email to continue.", {
@@ -135,7 +133,7 @@ export default function LoginPage() {
                         "Your merchant account has not been approved by admin yet. Please wait for admin approval to login.",
                         {
                             duration: 5000,
-                        }
+                        },
                     );
                 } else {
                     toast.error("Your account has not been activated. Please verify your email to continue.", {
@@ -155,9 +153,9 @@ export default function LoginPage() {
                     errorMessage.toLowerCase().includes("wrong password")
                         ? "Email or password is incorrect. Please try again."
                         : errorMessage.toLowerCase().includes("account") ||
-                          errorMessage.toLowerCase().includes("enabled")
-                        ? "Your account has not been activated. Please check your email to verify or wait for admin approval."
-                        : "Email or password is incorrect. Please try again.";
+                            errorMessage.toLowerCase().includes("enabled")
+                          ? "Your account has not been activated. Please check your email to verify or wait for admin approval."
+                          : "Email or password is incorrect. Please try again.";
 
                 toast.error(displayMessage, { duration: 4000 });
                 return;
@@ -178,7 +176,14 @@ export default function LoginPage() {
                 {/* Logo */}
                 <div className="flex justify-center mb-6">
                     <Link href="/" className="flex items-center">
-                        <Image src={Logo} alt="FoodEats Logo" width={140} height={46} className="h-10 w-auto" priority />
+                        <Image
+                            src={Logo}
+                            alt="FoodEats Logo"
+                            width={140}
+                            height={46}
+                            className="h-10 w-auto"
+                            priority
+                        />
                     </Link>
                 </div>
 
@@ -262,7 +267,10 @@ export default function LoginPage() {
                 {/* Sign Up Link */}
                 <p className="mt-6 text-center text-sm text-gray-600">
                     Don&apos;t have an account?{" "}
-                    <Link href="/register" className="font-semibold text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline">
+                    <Link
+                        href="/register"
+                        className="font-semibold text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline"
+                    >
                         Sign Up
                     </Link>
                 </p>

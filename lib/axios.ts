@@ -1,13 +1,11 @@
 import { useAuthStore } from "@/stores/useAuthStore";
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { authApi } from "./api/authApi";
-
-const DEFAULT_API_BASE_URL = "http://localhost:8080/api";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL;
+import { API_URL } from "./config/publicRuntime";
 
 // Create Axios instance
 const api = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: API_URL,
     timeout: 30000,
     // Do not auto-follow redirects (prevents redirects to Docker hostnames)
     maxRedirects: 0,
@@ -47,20 +45,8 @@ api.interceptors.request.use(
     },
     (error) => {
         return Promise.reject(error);
-    }
+    },
 );
-
-// // Optional: global 401 handler
-// api.interceptors.response.use(
-//     (response) => response,
-//     (error) => {
-//         if (error.response?.status === 401) {
-//             console.log("Token is expired or invalid");
-//             // You can logout the user or redirect to login
-//         }
-//         return Promise.reject(error);
-//     }
-// );
 
 // Global response interceptor with automatic token refresh
 api.interceptors.response.use(
@@ -98,7 +84,7 @@ api.interceptors.response.use(
                             originalRequest.headers["Authorization"] = `Bearer ${accessToken}`;
                         }
                         // Ensure baseURL is correct (prevent redirects to Docker hostnames)
-                        originalRequest.baseURL = API_BASE_URL;
+                        originalRequest.baseURL = API_URL;
                         return api(originalRequest);
                     })
                     .catch((err) => {
@@ -124,7 +110,7 @@ api.interceptors.response.use(
                     originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
                 }
                 // Ensure baseURL is correct (prevent redirects to Docker hostnames)
-                originalRequest.baseURL = API_BASE_URL;
+                originalRequest.baseURL = API_URL;
                 return api(originalRequest);
             } catch (refreshError) {
                 // If refresh fails (401 or other error), logout and reject
@@ -167,20 +153,17 @@ api.interceptors.response.use(
             }
         }
 
-        console.group("%c⚠️ API Error", "color:red; font-weight:bold;");
-        console.log("➡️ URL:", error.config?.url);
-        console.log("➡️ Method:", error.config?.method?.toUpperCase());
-        console.log("➡️ Status:", status ?? "Unknown");
-
-        // If the backend returns an errorCode/message
-        if (data && typeof data === "object" && ("errorCode" in data || "message" in data)) {
-            console.log("➡️ Error Code:", "errorCode" in data ? data.errorCode : "N/A");
-            console.log("➡️ Message:", "message" in data ? data.message : "N/A");
-        } else {
-            console.log("➡️ Raw Error:", error.message);
-        }
-
-        console.groupEnd();
+        // Keep error logging concise and production-safe.
+        console.error("API request failed", {
+            url: error.config?.url,
+            method: error.config?.method?.toUpperCase(),
+            status: status ?? "Unknown",
+            errorCode: errorCode ?? undefined,
+            message:
+                data && typeof data === "object" && "message" in data
+                    ? (data as { message?: unknown }).message
+                    : error.message,
+        });
 
         // Optional: status-specific logging
         switch (status) {
@@ -201,7 +184,7 @@ api.interceptors.response.use(
         }
 
         return Promise.reject(error);
-    }
+    },
 );
 
 export default api;

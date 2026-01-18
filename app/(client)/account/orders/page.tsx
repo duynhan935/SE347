@@ -27,18 +27,18 @@ export default function OrderHistoryPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
 
-        // Format status for display
-        const formatStatus = (status: string): string => {
-                const statusMap: Record<string, string> = {
-                        pending: "Pending",
-                        confirmed: "Confirmed",
-                        preparing: "Preparing",
-                        ready: "Ready",
-                        completed: "Completed",
-                        cancelled: "Cancelled",
-                };
-                return statusMap[status.toLowerCase()] || status;
+    // Format status for display
+    const formatStatus = (status: string): string => {
+        const statusMap: Record<string, string> = {
+            pending: "Pending",
+            confirmed: "Confirmed",
+            preparing: "Preparing",
+            ready: "Ready",
+            completed: "Completed",
+            cancelled: "Cancelled",
         };
+        return statusMap[status.toLowerCase()] || status;
+    };
 
     // Get status badge color classes - Orange for processing, Green for completed, Red for cancelled
     const getStatusBadgeClass = (status: string): string => {
@@ -137,8 +137,6 @@ export default function OrderHistoryPage() {
 
             if (!orderId || !newStatus) return;
 
-            console.log("[Order History Page] Order status updated via websocket:", orderId, newStatus);
-
             // Update the order in the local state
             setOrders((prevOrders) => {
                 const orderIndex = prevOrders.findIndex((o) => o.id === orderId);
@@ -181,56 +179,48 @@ export default function OrderHistoryPage() {
                 <p className="text-gray-500">View all your past orders</p>
             </div>
 
-                        {orders.length === 0 ? (
-                                <div className="text-center py-12">
-                                        <p className="text-gray-500 text-lg mb-4">No orders found</p>
-                                        <Link
-                                                href="/restaurants"
-                                                className="text-sm font-semibold text-[#EE4D2D] hover:underline"
-                                        >
-                                                Browse Restaurants →
-                                        </Link>
-                                </div>
-                        ) : (
-                                <div className="space-y-4">
-                                        {orders.map((order) => (
-                                                <div
-                                                        key={order.uniqueKey}
-                                                        className="border p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow"
-                                                >
-                                                        <div className="flex-1">
-                                                                <p className="font-bold text-lg text-brand-black">{order.displayId}</p>
-                                                                <p className="text-sm text-gray-500">{order.date}</p>
-                                                                <p className="font-semibold text-brand-purple mt-1">{order.total}</p>
-                                                        </div>
-                                                        <div className="flex flex-col items-end gap-2">
-                                                                <span
-                                                                        className={`text-sm font-semibold ${order.statusClass}`}
-                                                                >
-                                                                        {order.status}
-                                                                </span>
-                                                                {/* Track Order Button - Below Status */}
-                                                                {order.status &&
-                                                                        !order.status.toLowerCase().includes("cancelled") && (
-                                                                                <Link
-                                                                                        href={`/delivery/${order.slug || order.orderCode || order.id}`}
-                                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-colors border border-blue-200"
-                                                                                >
-                                                                                        <Truck className="w-3 h-3" />
-                                                                                        Track Order
-                                                                                </Link>
-                                                                        )}
-                                                                <Link
-                                                                        href={`/orders/${order.slug || order.orderCode || order.id}`}
-                                                                        className="text-sm font-semibold text-[#EE4D2D] hover:underline"
-                                                                >
-                                                                        View Details
-                                                                </Link>
-                                                        </div>
-                                                </div>
-                                        ))}
-                                </div>
-                        )}
+            {orders.length === 0 ? (
+                <div className="text-center py-12">
+                    <p className="text-gray-500 text-lg mb-4">No orders found</p>
+                    <Link href="/restaurants" className="text-sm font-semibold text-[#EE4D2D] hover:underline">
+                        Browse Restaurants →
+                    </Link>
                 </div>
-        );
+            ) : (
+                <div className="space-y-4">
+                    {orders.map((order) => (
+                        <div
+                            key={order.uniqueKey}
+                            className="border p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow"
+                        >
+                            <div className="flex-1">
+                                <p className="font-bold text-lg text-brand-black">{order.displayId}</p>
+                                <p className="text-sm text-gray-500">{order.date}</p>
+                                <p className="font-semibold text-brand-purple mt-1">{order.total}</p>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                                <span className={`text-sm font-semibold ${order.statusClass}`}>{order.status}</span>
+                                {/* Track Order Button - Below Status */}
+                                {order.status && !order.status.toLowerCase().includes("cancelled") && (
+                                    <Link
+                                        href={`/delivery/${order.slug || order.orderCode || order.id}`}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-colors border border-blue-200"
+                                    >
+                                        <Truck className="w-3 h-3" />
+                                        Track Order
+                                    </Link>
+                                )}
+                                <Link
+                                    href={`/orders/${order.slug || order.orderCode || order.id}`}
+                                    className="text-sm font-semibold text-[#EE4D2D] hover:underline"
+                                >
+                                    View Details
+                                </Link>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 }

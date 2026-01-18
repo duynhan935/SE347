@@ -13,6 +13,7 @@ import toast from "react-hot-toast";
 import OrderHistorySidebar from "./OrderHistorySidebar";
 import { type OrderListItem } from "./OrderItemRow";
 import { OrderSkeleton } from "./OrderSkeleton";
+import { formatCurrency } from "@/lib/utils/dashboardFormat";
 
 export interface OrdersPageOrder {
     id: string;
@@ -46,77 +47,72 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
         }
     };
 
-    // Format price to USD
-    const formatPrice = (priceUSD: number): string => {
-        return priceUSD.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
-    };
-
     // Handle reorder - add all items from order to cart
-    const handleReorder = useCallback(async (order: OrdersPageOrder) => {
-        if (reorderingOrderId === order.id) return; // Prevent double clicks
+    const handleReorder = useCallback(
+        async (order: OrdersPageOrder) => {
+            if (reorderingOrderId === order.id) return; // Prevent double clicks
 
-        // Check authentication
-        const hasToken =
-            typeof window !== "undefined" &&
-            (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
+            // Check authentication
+            const hasToken =
+                typeof window !== "undefined" &&
+                (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
 
-        if (!user && !isAuthenticated && !hasToken) {
-            toast.error("Please sign in to reorder.");
-            router.push("/login");
-            return;
-        }
-
-        if (!order.items || order.items.length === 0) {
-            toast.error("No items to reorder.");
-            return;
-        }
-
-        const firstItem = order.items[0];
-        if (!firstItem.restaurantId) {
-            toast.error("Restaurant information not found.");
-            return;
-        }
-
-        setReorderingOrderId(order.id);
-        try {
-            // Add all items from order to cart
-            for (const item of order.items) {
-                try {
-                    await addItem(
-                        {
-                            id: item.productId,
-                            name: item.productName,
-                            price: item.price,
-                            image: item.imageURL ? getImageUrl(item.imageURL) : "/placeholder.png",
-                            restaurantId: item.restaurantId || firstItem.restaurantId,
-                            restaurantName: item.restaurantName,
-                            customizations: item.customizations,
-                        },
-                        item.quantity
-                    );
-                } catch (itemError) {
-                    console.error(`Failed to add item ${item.productName}:`, itemError);
-                    // Continue with other items even if one fails
-                }
+            if (!user && !isAuthenticated && !hasToken) {
+                toast.error("Please sign in to reorder.");
+                router.push("/login");
+                return;
             }
 
-            // Wait a bit for cart to sync with backend
-            await new Promise((resolve) => setTimeout(resolve, 500));
+            if (!order.items || order.items.length === 0) {
+                toast.error("No items to reorder.");
+                return;
+            }
 
-            toast.success(`Added ${order.items.length} item(s) to your cart.`);
+            const firstItem = order.items[0];
+            if (!firstItem.restaurantId) {
+                toast.error("Restaurant information not found.");
+                return;
+            }
 
-            // Navigate to checkout page
-            router.push(`/payment?restaurantId=${firstItem.restaurantId}`);
-        } catch (error) {
-            console.error("Failed to add items to cart:", error);
-            toast.error("Failed to add to cart.");
-        } finally {
-            setReorderingOrderId(null);
-        }
-    }, [reorderingOrderId, user, isAuthenticated, addItem, router]);
+            setReorderingOrderId(order.id);
+            try {
+                // Add all items from order to cart
+                for (const item of order.items) {
+                    try {
+                        await addItem(
+                            {
+                                id: item.productId,
+                                name: item.productName,
+                                price: item.price,
+                                image: item.imageURL ? getImageUrl(item.imageURL) : "/placeholder.png",
+                                restaurantId: item.restaurantId || firstItem.restaurantId,
+                                restaurantName: item.restaurantName,
+                                customizations: item.customizations,
+                            },
+                            item.quantity,
+                        );
+                    } catch (itemError) {
+                        console.error(`Failed to add item ${item.productName}:`, itemError);
+                        // Continue with other items even if one fails
+                    }
+                }
+
+                // Wait a bit for cart to sync with backend
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                toast.success(`Added ${order.items.length} item(s) to your cart.`);
+
+                // Navigate to checkout page
+                router.push(`/payment?restaurantId=${firstItem.restaurantId}`);
+            } catch (error) {
+                console.error("Failed to add items to cart:", error);
+                toast.error("Failed to add to cart.");
+            } finally {
+                setReorderingOrderId(null);
+            }
+        },
+        [reorderingOrderId, user, isAuthenticated, addItem, router],
+    );
 
     return (
         <div className="custom-container p-3 sm:p-1 md:p-12">
@@ -210,7 +206,14 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                         case OrderStatus.PREPARING:
                                         case OrderStatus.READY:
                                             return {
-                                                text: status === OrderStatus.PENDING ? "Processing" : status === OrderStatus.CONFIRMED ? "Processing" : status === OrderStatus.PREPARING ? "Processing" : "Processing",
+                                                text:
+                                                    status === OrderStatus.PENDING
+                                                        ? "Processing"
+                                                        : status === OrderStatus.CONFIRMED
+                                                          ? "Processing"
+                                                          : status === OrderStatus.PREPARING
+                                                            ? "Processing"
+                                                            : "Processing",
                                                 className: "text-[#EE4D2D]",
                                             };
                                         case OrderStatus.COMPLETED:
@@ -289,9 +292,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                                     <p className="font-semibold text-gray-900 truncate">
                                                         {firstItem?.productName || "Item"}
                                                     </p>
-                                                    <p className="text-sm text-gray-500">
-                                                        Items: {totalItems}
-                                                    </p>
+                                                    <p className="text-sm text-gray-500">Items: {totalItems}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -299,7 +300,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                         {/* Footer Card */}
                                         <div className="px-5 py-4 bg-white flex items-center justify-between gap-4">
                                             <p className="text-xl font-bold text-[#EE4D2D]">
-                                                {formatPrice(order.totalAmount)} ₫
+                                                {formatCurrency(order.totalAmount)}
                                             </p>
                                             <div className="flex items-center gap-3">
                                                 <Link

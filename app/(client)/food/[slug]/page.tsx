@@ -5,21 +5,20 @@ import { Product } from "@/types"; // Assume types are exported from @/types
 import { notFound } from "next/navigation";
 
 export default async function FoodDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-        const { slug } = await params;
-        const foodResponse = await productApi.getProductBySlug(slug);
-        const foodItem: Product | null = foodResponse.data;
-        console.log(foodItem);
-        if (!foodItem || !foodItem.restaurant) {
-                notFound();
-        }
+    const { slug } = await params;
+    const foodResponse = await productApi.getProductBySlug(slug);
+    const foodItem: Product | null = foodResponse.data;
+    if (!foodItem || !foodItem.restaurant) {
+        notFound();
+    }
 
-        const restaurant = foodItem.restaurant;
+    const restaurant = foodItem.restaurant;
 
-        return (
-                <main className="bg-white">
-                        <div className="custom-container py-12 md:py-20">
-                                <FoodDetail foodItem={foodItem} restaurant={restaurant} />
-                        </div>
-                </main>
-        );
+    return (
+        <main className="bg-white">
+            <div className="custom-container py-12 md:py-20">
+                <FoodDetail foodItem={foodItem} restaurant={restaurant} />
+            </div>
+        </main>
+    );
 }

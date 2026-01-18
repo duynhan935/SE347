@@ -26,8 +26,11 @@ export function NotificationBell() {
     useOrderSocket({
         userId: user?.id || null,
         onOrderStatusUpdate: (notification) => {
-            const orderId = notification.data.orderId;
-            const status = notification.data.status;
+            const data = notification.data;
+            if (!data) return;
+
+            const orderId = data.orderId;
+            const status = data.status;
 
             if (status === "confirmed") {
                 useNotificationStore.getState().addNotification({
@@ -35,17 +38,15 @@ export function NotificationBell() {
                     title: "Order accepted",
                     message: `Order ${orderId} was accepted and is being prepared.`,
                     orderId,
-                    restaurantName: notification.data.restaurantName,
+                    restaurantName: data.restaurantName,
                 });
             } else if (status === "cancelled") {
                 useNotificationStore.getState().addNotification({
                     type: "ORDER_REJECTED",
                     title: "Order Cancelled",
-                    message: `Order ${orderId} has been cancelled. ${
-                        notification.data.reason ? `Reason: ${notification.data.reason}` : ""
-                    }`,
+                    message: `Order ${orderId} has been cancelled. ${data.reason ? `Reason: ${data.reason}` : ""}`,
                     orderId,
-                    restaurantName: notification.data.restaurantName,
+                    restaurantName: data.restaurantName,
                 });
             } else if (status === "completed") {
                 useNotificationStore.getState().addNotification({
@@ -53,7 +54,7 @@ export function NotificationBell() {
                     title: "Order Completed",
                     message: `Order ${orderId} has been delivered successfully.`,
                     orderId,
-                    restaurantName: notification.data.restaurantName,
+                    restaurantName: data.restaurantName,
                 });
             }
         },
@@ -148,10 +149,7 @@ export function NotificationBell() {
 
     // Only count order-related notifications (exclude messages, merchant orders, admin requests)
     const orderNotifications = notifications.filter(
-        (n) =>
-            n.type !== "MERCHANT_NEW_ORDER" &&
-            n.type !== "ADMIN_MERCHANT_REQUEST" &&
-            n.type !== "MESSAGE_RECEIVED"
+        (n) => n.type !== "MERCHANT_NEW_ORDER" && n.type !== "ADMIN_MERCHANT_REQUEST" && n.type !== "MESSAGE_RECEIVED",
     );
     const unread = orderNotifications.filter((n) => !n.read).length;
 
@@ -179,9 +177,7 @@ export function NotificationBell() {
                 </div>
 
                 {notifications.length === 0 ? (
-                    <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                        No notifications
-                    </div>
+                    <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">No notifications</div>
                 ) : (
                     <>
                         {orderNotifications.map((notif) => (

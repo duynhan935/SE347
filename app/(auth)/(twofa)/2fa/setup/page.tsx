@@ -11,7 +11,6 @@ export default function Setup2FAPage() {
         e.preventDefault();
         // Send verificationCode and secretKey to server for verification
         // If server confirms code is correct, activate 2FA for user in database
-        console.log("Verifying code:", verificationCode);
         alert(`Submitting code: ${verificationCode}. If correct, 2FA will be enabled.`);
     };
 

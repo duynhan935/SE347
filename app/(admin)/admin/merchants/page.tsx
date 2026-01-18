@@ -8,6 +8,7 @@ import { Merchant } from "@/types";
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { orderApi } from "@/lib/api/orderApi";
 import { OrderStatus } from "@/types/order.type";
+import { formatCurrency } from "@/lib/utils/dashboardFormat";
 
 export default function MerchantsPage() {
     const [merchants, setMerchants] = useState<Merchant[]>([]);
@@ -25,7 +26,7 @@ export default function MerchantsPage() {
             const data = await merchantApi.getAllMerchants();
             const baseMerchants = Array.isArray(data) ? data : [];
 
-            const params = new URLSearchParams({ lat: "10.762622", lon: "106.660172" }); // Default: HCM
+            const params = new URLSearchParams({ lat: "10.762622", lon: "106.660172" }); // Default: Ho Chi Minh City
             const restaurantsResponse = await restaurantApi.getAllRestaurants(params);
             const restaurants = Array.isArray(restaurantsResponse.data) ? restaurantsResponse.data : [];
 
@@ -53,7 +54,7 @@ export default function MerchantsPage() {
                     if (!merchantId) continue;
                     revenueByMerchantId.set(
                         merchantId,
-                        (revenueByMerchantId.get(merchantId) || 0) + (o.finalAmount || 0)
+                        (revenueByMerchantId.get(merchantId) || 0) + (o.finalAmount || 0),
                     );
                 }
 
@@ -66,7 +67,7 @@ export default function MerchantsPage() {
                     ...m,
                     totalRestaurants: restaurantCountByMerchantId.get(m.id) || 0,
                     totalRevenue: revenueByMerchantId.get(m.id) || 0,
-                }))
+                })),
             );
         } catch (error) {
             console.error("Failed to fetch merchants:", error);
@@ -240,7 +241,7 @@ export default function MerchantsPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-900 dark:text-white">
-                                                {merchant.totalRevenue.toLocaleString()}₫
+                                                {formatCurrency(merchant.totalRevenue)}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -249,15 +250,15 @@ export default function MerchantsPage() {
                                                     merchant.status === "PENDING"
                                                         ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                                                         : merchant.status === "APPROVED"
-                                                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                                        : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                                          : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                                                 }`}
                                             >
                                                 {merchant.status === "PENDING"
                                                     ? "Pending"
                                                     : merchant.status === "APPROVED"
-                                                    ? "Approved"
-                                                    : "Rejected"}
+                                                      ? "Approved"
+                                                      : "Rejected"}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

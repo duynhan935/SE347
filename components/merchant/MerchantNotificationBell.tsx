@@ -35,20 +35,26 @@ export function MerchantNotificationBell() {
         restaurantId,
         userId: user?.id || null,
         onNewOrder: (notification) => {
-            const orderId = notification.data.orderId;
-            const totalAmount = notification.data.totalAmount;
-            const itemCount = notification.data.itemCount;
+            const data = notification.data;
+            if (!data) return;
+
+            const orderId = data.orderId;
+            const totalAmount = data.totalAmount;
+            const itemCount = data.itemCount;
 
             // Add notification
             useNotificationStore.getState().addNotification({
                 type: "MERCHANT_NEW_ORDER",
                 title: "New Order",
-                message: `You have a new order #${orderId} with ${itemCount} item(s), total: $${totalAmount?.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                })}`,
+                message: `You have a new order #${orderId} with ${itemCount} item(s), total: $${totalAmount?.toLocaleString(
+                    "en-US",
+                    {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    },
+                )}`,
                 orderId,
-                restaurantName: notification.data.restaurantName,
+                restaurantName: data.restaurantName,
             });
 
             // Increment pending orders count for sidebar badge
@@ -117,9 +123,7 @@ export function MerchantNotificationBell() {
                 </div>
 
                 {merchantNotifications.length === 0 ? (
-                    <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                        No notifications
-                    </div>
+                    <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">No notifications</div>
                 ) : (
                     <>
                         {merchantNotifications.map((notif) => (
@@ -179,4 +183,3 @@ export function MerchantNotificationBell() {
         </DropdownMenu>
     );
 }
-

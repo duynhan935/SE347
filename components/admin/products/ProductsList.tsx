@@ -42,10 +42,10 @@ export default function ProductsList() {
                 sizeApi.getAllSizes(),
                 restaurantApi.getAllRestaurants(new URLSearchParams({ lat: "10.762622", lon: "106.660172" })),
             ]);
-            setProducts(productsRes.data);
+            setProducts(productsRes.data.content);
             setCategories(categoriesRes.data);
             setSizes(sizesRes.data);
-            setRestaurants(restaurantsRes.data);
+            setRestaurants(restaurantsRes.data.content);
         } catch (error) {
             console.error("Failed to fetch data:", error);
             toast.error("Failed to load data");
@@ -66,7 +66,7 @@ export default function ProductsList() {
         return products.filter(
             (product) =>
                 product.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.categoryName.toLowerCase().includes(searchTerm.toLowerCase())
+                product.categoryName.toLowerCase().includes(searchTerm.toLowerCase()),
         );
     }, [products, searchTerm, pathname, router, searchParams]);
 

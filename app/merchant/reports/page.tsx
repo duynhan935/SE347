@@ -5,6 +5,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { DollarSign, Download, ShoppingBag, Star, Store } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { formatCurrency, formatNumber } from "@/lib/utils/dashboardFormat";
 import {
     Area,
     AreaChart,
@@ -20,18 +21,10 @@ import {
     YAxis,
 } from "recharts";
 
-function formatVnd(value: number): string {
-    try {
-        return new Intl.NumberFormat("vi-VN").format(value);
-    } catch {
-        return value.toLocaleString();
-    }
-}
-
 function formatDateLabel(dateLike: string): string {
     const d = new Date(dateLike);
     if (Number.isNaN(d.getTime())) return String(dateLike);
-    return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+    return d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
 }
 
 export default function MerchantReportsPage() {
@@ -246,10 +239,10 @@ export default function MerchantReportsPage() {
                         <div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {formatVnd(revenueAnalytics?.totalRevenue || 0)}₫
+                                {formatCurrency(revenueAnalytics?.totalRevenue || 0)}
                             </p>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                Avg order: {formatVnd(Math.round(revenueAnalytics?.averageOrderValue || 0))}₫
+                                Avg order: {formatCurrency(Math.round(revenueAnalytics?.averageOrderValue || 0))}
                             </p>
                         </div>
                         <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-lg">
@@ -263,7 +256,7 @@ export default function MerchantReportsPage() {
                         <div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {(revenueAnalytics?.totalOrders || 0).toLocaleString()}
+                                {formatNumber(revenueAnalytics?.totalOrders || 0)}
                             </p>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">From selected range</p>
                         </div>
@@ -294,7 +287,7 @@ export default function MerchantReportsPage() {
                                 {(ratingStats?.averageRating || 0).toFixed(1)}
                             </p>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                {(ratingStats?.totalRatings || 0).toLocaleString()} ratings
+                                {formatNumber(ratingStats?.totalRatings || 0)} ratings
                             </p>
                         </div>
                         <div className="bg-orange-100 dark:bg-orange-900/20 p-3 rounded-lg">
@@ -322,8 +315,8 @@ export default function MerchantReportsPage() {
                             <YAxis stroke="#9CA3AF" />
                             <Tooltip
                                 formatter={(value: unknown, name: string) => {
-                                    if (name === "revenue") return [`${formatVnd(Number(value || 0))}₫`, "Revenue"];
-                                    if (name === "orders") return [Number(value || 0), "Orders"];
+                                    if (name === "revenue") return [formatCurrency(Number(value || 0)), "Revenue"];
+                                    if (name === "orders") return [formatNumber(Number(value || 0)), "Orders"];
                                     return [String(value), name];
                                 }}
                                 contentStyle={{
@@ -339,7 +332,7 @@ export default function MerchantReportsPage() {
                                 stroke="#F59E0B"
                                 fillOpacity={1}
                                 fill="url(#colorRevenue)"
-                                name="Revenue (₫)"
+                                name="Revenue ($)"
                             />
                         </AreaChart>
                     </ResponsiveContainer>
@@ -355,8 +348,8 @@ export default function MerchantReportsPage() {
                             <YAxis stroke="#9CA3AF" />
                             <Tooltip
                                 formatter={(value: unknown, name: string) => {
-                                    if (name === "revenue") return [`${formatVnd(Number(value || 0))}₫`, "Revenue"];
-                                    if (name === "orders") return [Number(value || 0), "Orders"];
+                                    if (name === "revenue") return [formatCurrency(Number(value || 0)), "Revenue"];
+                                    if (name === "orders") return [formatNumber(Number(value || 0)), "Orders"];
                                     return [String(value), name];
                                 }}
                                 contentStyle={{
@@ -384,9 +377,8 @@ export default function MerchantReportsPage() {
                             <YAxis dataKey="restaurantName" type="category" stroke="#9CA3AF" width={120} />
                             <Tooltip
                                 formatter={(value: unknown, name: string) => {
-                                    if (name === "totalRevenue")
-                                        return [`${formatVnd(Number(value || 0))}₫`, "Revenue"];
-                                    if (name === "totalOrders") return [Number(value || 0), "Orders"];
+                                    if (name === "totalRevenue") return [formatCurrency(Number(value || 0)), "Revenue"];
+                                    if (name === "totalOrders") return [formatNumber(Number(value || 0)), "Orders"];
                                     return [String(value), name];
                                 }}
                                 contentStyle={{
@@ -396,7 +388,7 @@ export default function MerchantReportsPage() {
                                 }}
                             />
                             <Legend />
-                            <Bar dataKey="totalRevenue" fill="#F59E0B" name="Revenue (₫)" />
+                            <Bar dataKey="totalRevenue" fill="#F59E0B" name="Revenue ($)" />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
@@ -411,8 +403,8 @@ export default function MerchantReportsPage() {
                             <YAxis stroke="#9CA3AF" />
                             <Tooltip
                                 formatter={(value: unknown, name: string) => {
-                                    if (name === "revenue") return [`${formatVnd(Number(value || 0))}₫`, "Revenue"];
-                                    if (name === "orders") return [Number(value || 0), "Orders"];
+                                    if (name === "revenue") return [formatCurrency(Number(value || 0)), "Revenue"];
+                                    if (name === "orders") return [formatNumber(Number(value || 0)), "Orders"];
                                     return [String(value), name];
                                 }}
                                 contentStyle={{
@@ -428,7 +420,7 @@ export default function MerchantReportsPage() {
                                 dataKey="revenue"
                                 stroke="#F59E0B"
                                 strokeWidth={2}
-                                name="Revenue (₫)"
+                                name="Revenue ($)"
                             />
                         </LineChart>
                     </ResponsiveContainer>
@@ -477,11 +469,13 @@ export default function MerchantReportsPage() {
                                 </div>
                                 <div className="text-right">
                                     <p className="font-bold text-gray-900 dark:text-white text-lg">
-                                        {formatVnd(p.totalRevenue)}₫
+                                        {formatCurrency(p.totalRevenue)}
                                     </p>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        {formatVnd(p.orderCount > 0 ? Math.round(p.totalRevenue / p.orderCount) : 0)}
-                                        ₫/order
+                                        {formatCurrency(
+                                            p.orderCount > 0 ? Math.round(p.totalRevenue / p.orderCount) : 0,
+                                        )}
+                                        {" / order"}
                                     </p>
                                 </div>
                             </div>

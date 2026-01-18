@@ -89,12 +89,11 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
 
             // Submit product reviews (only for products with rating > 0)
             const productReviewsToSubmit = Object.values(productReviews).filter(
-                (review) => review.rating > 0 && review.title.trim() && review.content.trim()
+                (review) => review.rating > 0 && review.title.trim() && review.content.trim(),
             );
 
             const productReviewResults = await Promise.allSettled(
                 productReviewsToSubmit.map((review) => {
-                    console.log(`Submitting review for productId: ${review.productId}`);
                     return reviewApi.createReview({
                         userId: user.id,
                         reviewId: review.productId,
@@ -103,13 +102,11 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                         content: review.content.trim(),
                         rating: review.rating,
                     });
-                })
+                }),
             );
 
             // Check if there were any failures
-            const failedReviews = productReviewResults.filter(
-                (result) => result.status === "rejected"
-            );
+            const failedReviews = productReviewResults.filter((result) => result.status === "rejected");
 
             if (failedReviews.length > 0) {
                 console.error("Some product reviews failed:", failedReviews);
@@ -117,18 +114,16 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                 const totalProductReviews = productReviewResults.length - failedReviews.length;
                 if (totalProductReviews > 0) {
                     toast.success(
-                        `Restaurant review and ${totalProductReviews} product review(s) submitted successfully!`
+                        `Restaurant review and ${totalProductReviews} product review(s) submitted successfully!`,
                     );
                 } else {
                     toast.success("Restaurant review submitted successfully!");
-                    toast.error(
-                        "Unable to review some products (products may have been deleted or no longer exist)."
-                    );
+                    toast.error("Unable to review some products (products may have been deleted or no longer exist).");
                 }
             } else {
                 toast.success("Your review has been submitted successfully!");
             }
-            
+
             // Reset form
             setRestaurantRating(0);
             setRestaurantTitle("");
@@ -164,7 +159,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
     const renderStarRating = (
         rating: number,
         onRatingChange: (rating: number) => void,
-        size: "sm" | "md" | "lg" = "md"
+        size: "sm" | "md" | "lg" = "md",
     ) => {
         const starSize = size === "sm" ? "w-4 h-4" : size === "lg" ? "w-8 h-8" : "w-6 h-6";
         return (
@@ -178,8 +173,8 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                             star <= rating ? "text-yellow-400" : "text-gray-300"
                         } hover:text-yellow-400`}
                         disabled={isSubmitting}
-                        title={`${star} star${star > 1 ? 's' : ''}`}
-                        aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                        title={`${star} star${star > 1 ? "s" : ""}`}
+                        aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
                     >
                         <Star className="w-full h-full fill-current" />
                     </button>
@@ -195,7 +190,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                 <h3 className="text-lg font-bold text-gray-900 mb-4">
                     Restaurant Review: {order.restaurant?.name || "Restaurant"}
                 </h3>
-                
+
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -257,23 +252,26 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                         };
 
                         return (
-                            <div key={item.productId} className="border-b border-gray-100 last:border-b-0 pb-6 last:pb-0">
+                            <div
+                                key={item.productId}
+                                className="border-b border-gray-100 last:border-b-0 pb-6 last:pb-0"
+                            >
                                 <h4 className="font-semibold text-gray-900 mb-3">{item.productName}</h4>
-                                
+
                                 <div className="space-y-3">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Star Rating
                                         </label>
-                                        {renderStarRating(review.rating, (rating) => 
-                                            updateProductReview(item.productId, "rating", rating)
+                                        {renderStarRating(review.rating, (rating) =>
+                                            updateProductReview(item.productId, "rating", rating),
                                         )}
                                     </div>
 
                                     {review.rating > 0 && (
                                         <>
                                             <div>
-                                                <label 
+                                                <label
                                                     htmlFor={`product-title-${item.productId}`}
                                                     className="block text-sm font-medium text-gray-700 mb-2"
                                                 >
@@ -283,7 +281,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                                                     id={`product-title-${item.productId}`}
                                                     type="text"
                                                     value={review.title}
-                                                    onChange={(e) => 
+                                                    onChange={(e) =>
                                                         updateProductReview(item.productId, "title", e.target.value)
                                                     }
                                                     placeholder="Enter review title"
@@ -294,7 +292,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                                             </div>
 
                                             <div>
-                                                <label 
+                                                <label
                                                     htmlFor={`product-content-${item.productId}`}
                                                     className="block text-sm font-medium text-gray-700 mb-2"
                                                 >
@@ -303,7 +301,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                                                 <textarea
                                                     id={`product-content-${item.productId}`}
                                                     value={review.content}
-                                                    onChange={(e) => 
+                                                    onChange={(e) =>
                                                         updateProductReview(item.productId, "content", e.target.value)
                                                     }
                                                     placeholder="Share your experience about this product..."
@@ -334,4 +332,3 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
         </form>
     );
 }
-

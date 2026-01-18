@@ -58,7 +58,7 @@ export function useLocationWithFallback(): UseLocationResult {
                                 enableHighAccuracy: true,
                                 timeout: 10000,
                                 maximumAge: 300000, // Cache for 5 minutes
-                            }
+                            },
                         );
                     });
 
@@ -70,7 +70,6 @@ export function useLocationWithFallback(): UseLocationResult {
                     }
                 } catch (geoError) {
                     // Geolocation failed, continue to next strategy
-                    console.log("Geolocation not available or denied, trying user address...");
                 }
             }
 
@@ -91,9 +90,7 @@ export function useLocationWithFallback(): UseLocationResult {
                             }
                         }
                     }
-                } catch (addressError) {
-                    console.log("Failed to fetch user addresses, using default location...");
-                }
+                } catch (addressError) {}
             }
 
             // Strategy 3: Use default location (Ho Chi Minh City)
@@ -112,4 +109,3 @@ export function useLocationWithFallback(): UseLocationResult {
 
     return { coordinates, loading, error };
 }
-

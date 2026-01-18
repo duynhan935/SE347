@@ -28,15 +28,7 @@ import {
     adaptAdminRevenueByMerchantToViewModel,
     adaptAdminSystemOverviewToViewModel,
 } from "@/lib/adapters/dashboardAdapters";
-
-function formatVnd(value: number): string {
-    if (!Number.isFinite(value)) return "0";
-    try {
-        return new Intl.NumberFormat("vi-VN").format(value);
-    } catch {
-        return value.toLocaleString();
-    }
-}
+import { formatCurrency, formatNumber } from "@/lib/utils/dashboardFormat";
 
 function safeToFixed(value: number | string | undefined, decimals: number = 1): string {
     if (value === undefined || value === null) return "0";
@@ -180,7 +172,7 @@ export default function AdminDashboard() {
                 setRecentOrders(Array.isArray(recent.orders) ? recent.orders : []);
             } catch (error) {
                 console.error("Failed to load admin dashboard:", error);
-                toast.error("Không thể tải dữ liệu dashboard.");
+                toast.error("Unable to load dashboard data.");
             } finally {
                 setLoading(false);
             }
@@ -192,50 +184,50 @@ export default function AdminDashboard() {
     const cards = useMemo(() => {
         return [
             {
-                title: "Tổng doanh thu",
-                value: stats ? `${formatVnd(stats.totalRevenue)}₫` : `0₫`,
+                title: "Total Revenue",
+                value: formatCurrency(stats?.totalRevenue ?? 0),
                 icon: DollarSign,
                 bgColor: "bg-meta-3/10",
                 iconColor: "text-meta-3",
                 trend: 12.5,
-                trendLabel: "so với tháng trước",
+                trendLabel: "vs last month",
             },
             {
-                title: "Tổng đơn hàng",
+                title: "Total Orders",
                 value: stats?.totalOrders ?? 0,
                 icon: ShoppingCart,
                 bgColor: "bg-primary/10",
                 iconColor: "text-primary",
                 trend: 8.2,
-                trendLabel: "so với tháng trước",
+                trendLabel: "vs last month",
             },
             {
-                title: "Người dùng",
+                title: "Users",
                 value: stats?.activeUsers ?? 0,
                 icon: Users,
                 bgColor: "bg-meta-6/10",
                 iconColor: "text-meta-6",
                 trend: 3.7,
-                trendLabel: "người dùng mới",
+                trendLabel: "new users",
             },
             {
-                title: "Nhà hàng",
+                title: "Restaurants",
                 value: `${stats?.activeRestaurants ?? 0}/${stats?.totalRestaurants ?? 0}`,
                 icon: Store,
                 bgColor: "bg-warning/10",
                 iconColor: "text-warning",
                 trend: undefined,
-                trendLabel: "đang hoạt động",
+                trendLabel: "active",
             },
             {
-                title: "Giá trị TB/Đơn",
-                value: stats ? `${formatVnd(stats.averageOrderValue)}₫` : `0₫`,
+                title: "Avg Order Value",
+                value: formatCurrency(stats?.averageOrderValue ?? 0),
                 icon: BarChart3,
                 bgColor: "bg-meta-5/10",
                 iconColor: "text-meta-5",
             },
             {
-                title: "Tỷ lệ hoàn thành",
+                title: "Completion Rate",
                 value: stats ? `${safeToFixed(stats.completionRate)}%` : "0%",
                 icon: CheckCircle2,
                 bgColor: "bg-success/10",
@@ -249,10 +241,8 @@ export default function AdminDashboard() {
             {/* Header */}
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Dashboard Admin</h1>
-                    <p className="text-sm font-medium text-gray-600 dark:text-white/60 mt-1">
-                        Tổng quan hệ thống giao đồ ăn
-                    </p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+                    <p className="text-sm font-medium text-gray-600 dark:text-white/60 mt-1">System overview</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                     <select
@@ -260,11 +250,11 @@ export default function AdminDashboard() {
                         onChange={(e) => setRangePreset(e.target.value as DashboardDateRangePreset)}
                         className="relative z-20 inline-flex appearance-none bg-transparent py-2 pl-3 pr-8 text-sm font-medium outline-none border border-stroke dark:border-strokedark rounded-lg dark:bg-meta-4"
                     >
-                        <option value="7d">7 ngày qua</option>
-                        <option value="30d">30 ngày qua</option>
-                        <option value="90d">90 ngày qua</option>
-                        <option value="ytd">Năm nay</option>
-                        <option value="all">Tất cả</option>
+                        <option value="7d">Last 7 days</option>
+                        <option value="30d">Last 30 days</option>
+                        <option value="90d">Last 90 days</option>
+                        <option value="ytd">Year to date</option>
+                        <option value="all">All time</option>
                     </select>
                 </div>
             </div>
@@ -281,17 +271,17 @@ export default function AdminDashboard() {
 
             {/* Revenue Breakdown */}
             <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                <h3 className="mb-5 text-xl font-semibold text-black dark:text-white">Phân tích doanh thu</h3>
+                <h3 className="mb-5 text-xl font-semibold text-black dark:text-white">Revenue Breakdown</h3>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">
                                 <DollarSign size={20} className="text-primary" />
                             </div>
-                            <p className="text-sm font-medium text-bodydark">Tiền hàng</p>
+                            <p className="text-sm font-medium text-bodydark">Product Total</p>
                         </div>
                         <p className="text-2xl font-bold text-black dark:text-white">
-                            {formatVnd(revenueBreakdown?.totalProductAmount ?? 0)}₫
+                            {formatCurrency(revenueBreakdown?.totalProductAmount ?? 0)}
                         </p>
                     </div>
                     <div className="rounded-lg bg-meta-3/5 p-4 border border-meta-3/20">
@@ -299,10 +289,10 @@ export default function AdminDashboard() {
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-meta-3/20">
                                 <ShoppingCart size={20} className="text-meta-3" />
                             </div>
-                            <p className="text-sm font-medium text-bodydark">Phí giao hàng</p>
+                            <p className="text-sm font-medium text-bodydark">Delivery Fees</p>
                         </div>
                         <p className="text-2xl font-bold text-black dark:text-white">
-                            {formatVnd(revenueBreakdown?.totalDeliveryFee ?? 0)}₫
+                            {formatCurrency(revenueBreakdown?.totalDeliveryFee ?? 0)}
                         </p>
                     </div>
                     <div className="rounded-lg bg-warning/5 p-4 border border-warning/20">
@@ -310,10 +300,10 @@ export default function AdminDashboard() {
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/20">
                                 <Percent size={20} className="text-warning" />
                             </div>
-                            <p className="text-sm font-medium text-bodydark">Thuế</p>
+                            <p className="text-sm font-medium text-bodydark">Tax</p>
                         </div>
                         <p className="text-2xl font-bold text-black dark:text-white">
-                            {formatVnd(revenueBreakdown?.totalTax ?? 0)}₫
+                            {formatCurrency(revenueBreakdown?.totalTax ?? 0)}
                         </p>
                     </div>
                     <div className="rounded-lg bg-meta-1/5 p-4 border border-meta-1/20">
@@ -321,10 +311,10 @@ export default function AdminDashboard() {
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-meta-1/20">
                                 <TrendingDown size={20} className="text-meta-1" />
                             </div>
-                            <p className="text-sm font-medium text-bodydark">Giảm giá</p>
+                            <p className="text-sm font-medium text-bodydark">Discounts</p>
                         </div>
                         <p className="text-2xl font-bold text-black dark:text-white">
-                            {formatVnd(revenueBreakdown?.totalDiscount ?? 0)}₫
+                            {formatCurrency(revenueBreakdown?.totalDiscount ?? 0)}
                         </p>
                     </div>
                 </div>
@@ -335,11 +325,11 @@ export default function AdminDashboard() {
                 {/* Order Status */}
                 <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
-                        <h3 className="font-semibold text-black dark:text-white">Trạng thái đơn hàng</h3>
+                        <h3 className="font-semibold text-black dark:text-white">Order Status</h3>
                     </div>
                     <div className="p-6">
                         {statusBreakdown.length === 0 ? (
-                            <p className="text-sm text-bodydark">Chưa có dữ liệu.</p>
+                            <p className="text-sm text-bodydark">No data yet.</p>
                         ) : (
                             <div className="space-y-3">
                                 {statusBreakdown.map((item, index) => {
@@ -375,11 +365,13 @@ export default function AdminDashboard() {
                                                     <p className="font-medium text-black dark:text-white capitalize">
                                                         {item.name || "Unknown"}
                                                     </p>
-                                                    <p className="text-xs text-bodydark">{item.count} đơn</p>
+                                                    <p className="text-xs text-bodydark">
+                                                        {formatNumber(item.count)} orders
+                                                    </p>
                                                 </div>
                                             </div>
                                             <p className="font-semibold text-black dark:text-white">
-                                                {formatVnd(item.amount)}₫
+                                                {formatCurrency(item.amount)}
                                             </p>
                                         </div>
                                     );
@@ -392,11 +384,11 @@ export default function AdminDashboard() {
                 {/* Payment Status */}
                 <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
-                        <h3 className="font-semibold text-black dark:text-white">Trạng thái thanh toán</h3>
+                        <h3 className="font-semibold text-black dark:text-white">Payment Status</h3>
                     </div>
                     <div className="p-6">
                         {paymentBreakdown.length === 0 ? (
-                            <p className="text-sm text-bodydark">Chưa có dữ liệu.</p>
+                            <p className="text-sm text-bodydark">No data yet.</p>
                         ) : (
                             <div className="space-y-3">
                                 {paymentBreakdown.map((item, index) => {
@@ -424,11 +416,13 @@ export default function AdminDashboard() {
                                                     <p className="font-medium text-black dark:text-white capitalize">
                                                         {item.name || "Unknown"}
                                                     </p>
-                                                    <p className="text-xs text-bodydark">{item.count} giao dịch</p>
+                                                    <p className="text-xs text-bodydark">
+                                                        {formatNumber(item.count)} transactions
+                                                    </p>
                                                 </div>
                                             </div>
                                             <p className="font-semibold text-black dark:text-white">
-                                                {formatVnd(item.amount)}₫
+                                                {formatCurrency(item.amount)}
                                             </p>
                                         </div>
                                     );
@@ -444,11 +438,11 @@ export default function AdminDashboard() {
                 {/* Top Merchants */}
                 <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
-                        <h3 className="font-semibold text-black dark:text-white">Top nhà hàng</h3>
+                        <h3 className="font-semibold text-black dark:text-white">Top Restaurants</h3>
                     </div>
                     <div className="p-6">
                         {merchantPerformance.length === 0 ? (
-                            <p className="text-sm text-bodydark">Chưa có dữ liệu.</p>
+                            <p className="text-sm text-bodydark">No data yet.</p>
                         ) : (
                             <div className="space-y-3">
                                 {merchantPerformance.slice(0, 5).map((merchant, index) => (
@@ -465,12 +459,12 @@ export default function AdminDashboard() {
                                                     {merchant.restaurantName}
                                                 </p>
                                                 <p className="text-xs text-bodydark">
-                                                    {merchant.orders} đơn • {safeToFixed(merchant.completionRate)}% hoàn
-                                                    thành
+                                                    {formatNumber(merchant.orders)} orders •{" "}
+                                                    {safeToFixed(merchant.completionRate)}% completion
                                                 </p>
                                             </div>
                                         </div>
-                                        <p className="font-semibold text-meta-3">{formatVnd(merchant.revenue)}₫</p>
+                                        <p className="font-semibold text-meta-3">{formatCurrency(merchant.revenue)}</p>
                                     </div>
                                 ))}
                             </div>
@@ -481,16 +475,16 @@ export default function AdminDashboard() {
                 {/* Recent Orders */}
                 <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="border-b border-stroke px-6 py-4 dark:border-strokedark flex items-center justify-between">
-                        <h3 className="font-semibold text-black dark:text-white">Đơn hàng gần đây</h3>
+                        <h3 className="font-semibold text-black dark:text-white">Recent Orders</h3>
                         <Link href="/admin/orders" className="text-sm font-medium text-primary hover:underline">
-                            Xem tất cả
+                            View All
                         </Link>
                     </div>
                     <div className="p-6">
                         {loading ? (
-                            <p className="text-sm text-bodydark">Đang tải...</p>
+                            <p className="text-sm text-bodydark">Loading...</p>
                         ) : recentOrders.length === 0 ? (
-                            <p className="text-sm text-bodydark">Chưa có đơn hàng.</p>
+                            <p className="text-sm text-bodydark">No orders yet.</p>
                         ) : (
                             <div className="space-y-3">
                                 {recentOrders.map((order) => {
@@ -515,13 +509,13 @@ export default function AdminDashboard() {
                                                         #{order.orderId}
                                                     </p>
                                                     <p className="text-xs text-bodydark">
-                                                        {new Date(order.createdAt).toLocaleString("vi-VN")}
+                                                        {new Date(order.createdAt).toLocaleString("en-US")}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
                                                 <p className="font-semibold text-black dark:text-white mb-1">
-                                                    {formatVnd(order.finalAmount || 0)}₫
+                                                    {formatCurrency(order.finalAmount || 0)}
                                                 </p>
                                                 <span
                                                     className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor}`}
@@ -540,14 +534,14 @@ export default function AdminDashboard() {
 
             {/* Quick Stats */}
             <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Thống kê nhanh</h3>
+                <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Quick Stats</h3>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                     <div className="flex items-center gap-4 rounded-lg border border-stroke p-4 dark:border-strokedark">
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-meta-3/10">
                             <Store className="text-meta-3" size={24} />
                         </div>
                         <div>
-                            <p className="text-sm text-bodydark">Merchants đang chờ</p>
+                            <p className="text-sm text-bodydark">Pending merchants</p>
                             <p className="text-xl font-bold text-black dark:text-white">
                                 {stats?.pendingMerchants ?? 0}
                             </p>
@@ -558,7 +552,7 @@ export default function AdminDashboard() {
                             <Users className="text-primary" size={24} />
                         </div>
                         <div>
-                            <p className="text-sm text-bodydark">Merchants hoạt động</p>
+                            <p className="text-sm text-bodydark">Active merchants</p>
                             <p className="text-xl font-bold text-black dark:text-white">
                                 {stats?.activeMerchants ?? 0}
                             </p>
@@ -569,7 +563,7 @@ export default function AdminDashboard() {
                             <CheckCircle2 className="text-warning" size={24} />
                         </div>
                         <div>
-                            <p className="text-sm text-bodydark">Tỷ lệ hoàn thành</p>
+                            <p className="text-sm text-bodydark">Completion rate</p>
                             <p className="text-xl font-bold text-black dark:text-white">
                                 {stats ? `${safeToFixed(stats.completionRate)}%` : "0%"}
                             </p>
@@ -582,7 +576,7 @@ export default function AdminDashboard() {
                         <div>
                             <p className="text-sm text-bodydark">AOV</p>
                             <p className="text-xl font-bold text-black dark:text-white">
-                                {stats ? `${formatVnd(stats.averageOrderValue)}₫` : "0₫"}
+                                {formatCurrency(stats?.averageOrderValue ?? 0)}
                             </p>
                         </div>
                     </div>

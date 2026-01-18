@@ -28,7 +28,6 @@ const categoryIcons: { [key: string]: string } = {
     Vietnamese: "🍜",
     Com: "🍚",
     "Bubble Tea": "🧋",
-    "Vegetarian": "🥗",
 };
 
 export default function HeroSearchSection() {
@@ -75,10 +74,10 @@ export default function HeroSearchSection() {
         { name: "Bubble Tea", displayName: "Bubble Tea" },
         { name: "Vegetarian", displayName: "Vegetarian" },
     ];
-    
+
     const allCategories = [
         ...customCategories,
-        ...(categories?.slice(0, 6).map(cat => ({ name: cat.cateName, displayName: cat.cateName })) || []),
+        ...(categories?.slice(0, 6).map((cat) => ({ name: cat.cateName, displayName: cat.cateName })) || []),
     ];
 
     return (
@@ -88,7 +87,8 @@ export default function HeroSearchSection() {
                 <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat w-full h-full"
                     style={{
-                        backgroundImage: "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&q=80')",
+                        backgroundImage:
+                            "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&q=80')",
                     }}
                 />
                 <div className="absolute inset-0 bg-black/60 w-full h-full" />
@@ -178,4 +178,3 @@ export default function HeroSearchSection() {
         </div>
     );
 }
-

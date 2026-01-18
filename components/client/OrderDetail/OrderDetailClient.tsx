@@ -6,6 +6,7 @@ import { Order, OrderStatus } from "@/types/order.type";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { formatCurrency } from "@/lib/utils/dashboardFormat";
 import { OrderSummary } from "./OrderSummary";
 import ReviewForm from "./ReviewForm";
 
@@ -34,9 +35,7 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
     // Fetch product images for items that don't have imageURL
     useEffect(() => {
         const fetchImages = async () => {
-            const itemsNeedingImages = order.items.filter(
-                (item) => !item.imageURL && !item.cartItemImage
-            );
+            const itemsNeedingImages = order.items.filter((item) => !item.imageURL && !item.cartItemImage);
 
             if (itemsNeedingImages.length === 0) return;
 
@@ -45,9 +44,7 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                     try {
                         const product = await productApi.getProductById(item.productId);
                         // Get image URL as string (handle StaticImageData)
-                        const imageURL = product.data.imageURL
-                            ? getImageUrl(product.data.imageURL, "")
-                            : "";
+                        const imageURL = product.data.imageURL ? getImageUrl(product.data.imageURL, "") : "";
                         return {
                             productId: item.productId,
                             imageURL,
@@ -59,10 +56,13 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                 });
 
                 const results = await Promise.all(imagePromises);
-                const imagesMap = results.reduce((acc, { productId, imageURL }) => {
-                    if (imageURL) acc[productId] = imageURL;
-                    return acc;
-                }, {} as Record<string, string>);
+                const imagesMap = results.reduce(
+                    (acc, { productId, imageURL }) => {
+                        if (imageURL) acc[productId] = imageURL;
+                        return acc;
+                    },
+                    {} as Record<string, string>,
+                );
 
                 setProductImages(imagesMap);
             } catch (error) {
@@ -76,11 +76,7 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
     const displayItems: DisplayOrderItem[] = useMemo(() => {
         return order.items.map((item, index) => {
             // Get image from order item, fetched product, or placeholder
-            const imageURL =
-                item.imageURL ||
-                item.cartItemImage ||
-                productImages[item.productId] ||
-                null;
+            const imageURL = item.imageURL || item.cartItemImage || productImages[item.productId] || null;
 
             return {
                 id: `${order?.orderId}-${item.productId}-${index}`,
@@ -97,22 +93,17 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
 
     const totalItems = displayItems.reduce((sum, item) => sum + item.quantity, 0);
 
-    const groupedItems = displayItems.reduce((acc, item) => {
-        const { shopName } = item;
-        if (!acc[shopName]) {
-            acc[shopName] = [];
-        }
-        acc[shopName].push(item);
-        return acc;
-    }, {} as Record<string, DisplayOrderItem[]>);
-
-    // Format price to USD
-    const formatPrice = (priceUSD: number): string => {
-        return priceUSD.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
-    };
+    const groupedItems = displayItems.reduce(
+        (acc, item) => {
+            const { shopName } = item;
+            if (!acc[shopName]) {
+                acc[shopName] = [];
+            }
+            acc[shopName].push(item);
+            return acc;
+        },
+        {} as Record<string, DisplayOrderItem[]>,
+    );
 
     const isOrderCompleted = order.status === OrderStatus.COMPLETED;
     const canReview = isOrderCompleted && !hasReviewed;
@@ -156,9 +147,7 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
 
                             {hasReviewed && (
                                 <div className="text-center py-4">
-                                    <p className="text-green-600 font-medium">
-                                        ✓ Thank you for reviewing this order!
-                                    </p>
+                                    <p className="text-green-600 font-medium">✓ Thank you for reviewing this order!</p>
                                 </div>
                             )}
                         </div>
@@ -191,7 +180,10 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                                                         fill
                                                         className="object-cover"
                                                         sizes="(max-width: 768px) 80px, 96px"
-                                                        unoptimized={typeof item.imageURL === "string" && item.imageURL.startsWith("http")}
+                                                        unoptimized={
+                                                            typeof item.imageURL === "string" &&
+                                                            item.imageURL.startsWith("http")
+                                                        }
                                                     />
                                                 </div>
                                             ) : (
@@ -226,7 +218,7 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                                             {/* Price */}
                                             <div className="text-right flex-shrink-0">
                                                 <p className="font-bold text-lg text-gray-900">
-                                                    {formatPrice(item.price * item.quantity)} ₫
+                                                    {formatCurrency(item.price * item.quantity)}
                                                 </p>
                                             </div>
                                         </div>
@@ -245,4 +237,3 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
         </div>
     );
 }
-

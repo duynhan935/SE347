@@ -4,9 +4,7 @@ import { MessageDTO } from "@/types";
 import { Client, IMessage } from "@stomp/stompjs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import SockJS from "sockjs-client";
-
-const DEFAULT_WS_BASE_URL = "http://localhost:8080";
-const WS_BASE_URL = (process.env.NEXT_PUBLIC_WS_BASE_URL || DEFAULT_WS_BASE_URL).replace(/\/$/, "");
+import { WS_BASE_URL } from "../config/publicRuntime";
 
 interface UseWebSocketOptions {
     roomId: string | null;
@@ -38,7 +36,6 @@ export function useWebSocket({ roomId, userId, onMessageReceived, onError }: Use
             heartbeatIncoming: 20000,
             heartbeatOutgoing: 25000,
             onConnect: () => {
-                console.log("WebSocket connected");
                 setIsConnected(true);
 
                 // Subscribe to room messages
@@ -61,11 +58,9 @@ export function useWebSocket({ roomId, userId, onMessageReceived, onError }: Use
                 onError?.(new Event("STOMP_ERROR"));
             },
             onWebSocketClose: () => {
-                console.log("WebSocket closed");
                 setIsConnected(false);
             },
             onDisconnect: () => {
-                console.log("WebSocket disconnected");
                 setIsConnected(false);
             },
         });
@@ -105,7 +100,7 @@ export function useWebSocket({ roomId, userId, onMessageReceived, onError }: Use
                 body: JSON.stringify(message),
             });
         },
-        [roomId, userId]
+        [roomId, userId],
     );
 
     useEffect(() => {

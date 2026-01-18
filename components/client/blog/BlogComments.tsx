@@ -39,13 +39,11 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
         setLoading(true);
         try {
             const response = await blogApi.getComments(blogId, { page, limit: 15 });
-            console.log("Comments response:", response); // Debug log
             // Handle response structure: response.data or response.comments (API might return either)
             const responseWithComments = response as CommentListResponse & { comments?: Comment[] };
             const commentsData = response.data || responseWithComments.comments || [];
             setComments(Array.isArray(commentsData) ? commentsData : []);
             setTotalPages(response.pagination?.pages || 1);
-            console.log("Comments count:", commentsData.length); // Debug log
         } catch (error) {
             console.error("Failed to fetch comments:", error);
             toast.error("Failed to load comments");
@@ -135,7 +133,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
 
     const fetchReplies = async (commentId: string) => {
         if (loadingReplies[commentId]) return;
-        
+
         setLoadingReplies((prev) => ({ ...prev, [commentId]: true }));
         try {
             const response = await blogApi.getReplies(blogId, commentId);
@@ -252,352 +250,382 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                     aria-label={isCommentsExpanded ? "Hide comments" : "Show comments"}
                 >
                     <span className="font-medium">{isCommentsExpanded ? "Hide" : "Show"}</span>
-                    {isCommentsExpanded ? (
-                        <ChevronUp className="w-4 h-4" />
-                    ) : (
-                        <ChevronDown className="w-4 h-4" />
-                    )}
+                    {isCommentsExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
             </div>
 
             {/* Comments List - Render First (Facebook Style) - Conditionally Rendered */}
             {isCommentsExpanded && (
                 <>
-            {loading ? (
-                <div className="text-center py-8">
-                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#EE4D2D]"></div>
-                    <p className="mt-4 text-sm text-gray-500">Loading comments...</p>
-                </div>
-            ) : !Array.isArray(comments) || comments.length === 0 ? (
-                <div className="text-center py-8 border-t border-gray-200 mt-8 pt-8">
-                    <p className="text-gray-500 text-sm italic">No comments yet. Be the first to comment!</p>
-                </div>
-            ) : (
-                <div className="space-y-4 mb-8">
-                    {comments.map((comment) => (
-                        <div key={comment._id} className="flex gap-3 animate-fadeIn">
-                            {/* Avatar - Left */}
-                            <div className="flex-shrink-0">
-                                {comment.author.avatar ? (
-                                    <Image
-                                        src={comment.author.avatar}
-                                        alt={comment.author.name}
-                                        width={40}
-                                        height={40}
-                                        className="rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-10 h-10 rounded-full bg-[#EE4D2D] flex items-center justify-center text-white font-bold text-sm">
-                                        {comment.author.name?.charAt(0).toUpperCase() || "?"}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Content Bubble - Facebook Style */}
-                            <div className="flex-1 min-w-0">
-                                {/* Comment Bubble - Gray Background */}
-                                <div className="bg-gray-100 px-4 py-2.5 rounded-2xl rounded-tl-none">
-                                    {/* Name inside bubble */}
-                                    <span className="font-semibold text-sm text-gray-900 mr-2">{comment.author.name || "User"}</span>
-                                    
-                                    {/* Content */}
-                                    {editingComment === comment._id ? (
-                                        <div className="mt-2">
-                                            <textarea
-                                                value={editContent}
-                                                onChange={(e) => setEditContent(e.target.value)}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] mb-2"
-                                                rows={3}
-                                                aria-label="Edit comment"
+                    {loading ? (
+                        <div className="text-center py-8">
+                            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#EE4D2D]"></div>
+                            <p className="mt-4 text-sm text-gray-500">Loading comments...</p>
+                        </div>
+                    ) : !Array.isArray(comments) || comments.length === 0 ? (
+                        <div className="text-center py-8 border-t border-gray-200 mt-8 pt-8">
+                            <p className="text-gray-500 text-sm italic">No comments yet. Be the first to comment!</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 mb-8">
+                            {comments.map((comment) => (
+                                <div key={comment._id} className="flex gap-3 animate-fadeIn">
+                                    {/* Avatar - Left */}
+                                    <div className="flex-shrink-0">
+                                        {comment.author.avatar ? (
+                                            <Image
+                                                src={comment.author.avatar}
+                                                alt={comment.author.name}
+                                                width={40}
+                                                height={40}
+                                                className="rounded-full object-cover"
                                             />
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleEditComment(comment._id)}
-                                                    className="px-4 py-2 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#c43e24] text-sm"
-                                                >
-                                                    Save
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingComment(null);
-                                                        setEditContent("");
-                                                    }}
-                                                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
-                                                >
-                                                    Cancel
-                                                </button>
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-[#EE4D2D] flex items-center justify-center text-white font-bold text-sm">
+                                                {comment.author.name?.charAt(0).toUpperCase() || "?"}
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-line mt-1">{comment.content}</p>
-                                            {comment.images && comment.images.length > 0 && (
-                                                <div className="flex flex-wrap gap-2 mt-2">
-                                                    {comment.images.map((img, index) => (
-                                                        <Image
-                                                            key={index}
-                                                            src={img.url}
-                                                            alt={`Comment image ${index}`}
-                                                            width={120}
-                                                            height={120}
-                                                            className="rounded-lg object-cover border border-gray-200"
-                                                        />
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
+                                        )}
+                                    </div>
 
-                                {/* Actions - Outside Bubble (Below) */}
-                                <div className="flex items-center gap-3 mt-1 ml-1">
-                                    <button
-                                        onClick={() => handleLikeComment(comment._id)}
-                                        className={`flex items-center gap-1 text-xs font-medium ${
-                                            isLiked(comment) ? "text-red-600 hover:text-red-700" : "text-gray-500 hover:text-[#EE4D2D]"
-                                        } transition-colors`}
-                                    >
-                                        <Heart className={`w-3.5 h-3.5 ${isLiked(comment) ? "fill-current" : ""}`} />
-                                        <span>{comment.likesCount || comment.likes?.length || 0}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setReplyingTo(comment._id);
-                                            setReplyContent("");
-                                            // Auto-expand replies when replying
-                                            if (!expandedReplies[comment._id] && !replies[comment._id]) {
-                                                fetchReplies(comment._id);
-                                            }
-                                        }}
-                                        className="text-xs text-gray-500 hover:text-[#EE4D2D] font-medium transition-colors"
-                                    >
-                                        Reply
-                                    </button>
-                                    <span className="text-xs text-gray-400">{formatDate(comment.createdAt)}</span>
-                                    {(replies[comment._id] && replies[comment._id].length > 0) && !expandedReplies[comment._id] && (
-                                        <button
-                                            onClick={() => toggleReplies(comment._id)}
-                                            className="text-xs text-gray-500 hover:text-[#EE4D2D] font-medium transition-colors"
-                                        >
-                                            View {replies[comment._id].length} replies
-                                        </button>
-                                    )}
-                                    {canEditDelete(comment) && (
-                                        <>
+                                    {/* Content Bubble - Facebook Style */}
+                                    <div className="flex-1 min-w-0">
+                                        {/* Comment Bubble - Gray Background */}
+                                        <div className="bg-gray-100 px-4 py-2.5 rounded-2xl rounded-tl-none">
+                                            {/* Name inside bubble */}
+                                            <span className="font-semibold text-sm text-gray-900 mr-2">
+                                                {comment.author.name || "User"}
+                                            </span>
+
+                                            {/* Content */}
+                                            {editingComment === comment._id ? (
+                                                <div className="mt-2">
+                                                    <textarea
+                                                        value={editContent}
+                                                        onChange={(e) => setEditContent(e.target.value)}
+                                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] mb-2"
+                                                        rows={3}
+                                                        aria-label="Edit comment"
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleEditComment(comment._id)}
+                                                            className="px-4 py-2 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#c43e24] text-sm"
+                                                        >
+                                                            Save
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingComment(null);
+                                                                setEditContent("");
+                                                            }}
+                                                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-line mt-1">
+                                                        {comment.content}
+                                                    </p>
+                                                    {comment.images && comment.images.length > 0 && (
+                                                        <div className="flex flex-wrap gap-2 mt-2">
+                                                            {comment.images.map((img, index) => (
+                                                                <Image
+                                                                    key={index}
+                                                                    src={img.url}
+                                                                    alt={`Comment image ${index}`}
+                                                                    width={120}
+                                                                    height={120}
+                                                                    className="rounded-lg object-cover border border-gray-200"
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {/* Actions - Outside Bubble (Below) */}
+                                        <div className="flex items-center gap-3 mt-1 ml-1">
+                                            <button
+                                                onClick={() => handleLikeComment(comment._id)}
+                                                className={`flex items-center gap-1 text-xs font-medium ${
+                                                    isLiked(comment)
+                                                        ? "text-red-600 hover:text-red-700"
+                                                        : "text-gray-500 hover:text-[#EE4D2D]"
+                                                } transition-colors`}
+                                            >
+                                                <Heart
+                                                    className={`w-3.5 h-3.5 ${isLiked(comment) ? "fill-current" : ""}`}
+                                                />
+                                                <span>{comment.likesCount || comment.likes?.length || 0}</span>
+                                            </button>
                                             <button
                                                 onClick={() => {
-                                                    setEditingComment(comment._id);
-                                                    setEditContent(comment.content);
+                                                    setReplyingTo(comment._id);
+                                                    setReplyContent("");
+                                                    // Auto-expand replies when replying
+                                                    if (!expandedReplies[comment._id] && !replies[comment._id]) {
+                                                        fetchReplies(comment._id);
+                                                    }
                                                 }}
                                                 className="text-xs text-gray-500 hover:text-[#EE4D2D] font-medium transition-colors"
                                             >
-                                                Edit
+                                                Reply
                                             </button>
-                                            <button
-                                                onClick={() => handleDeleteComment(comment._id)}
-                                                className="text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
-                                            >
-                                                Delete
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Replies Section - Facebook Style */}
-                                {replies[comment._id] && replies[comment._id].length > 0 && expandedReplies[comment._id] && (
-                                    <div className="mt-3 ml-12 space-y-3">
-                                        {replies[comment._id].map((reply) => (
-                                            <div key={reply._id} className="flex gap-3">
-                                                {reply.author.avatar ? (
-                                                    <Image
-                                                        src={reply.author.avatar}
-                                                        alt={reply.author.name}
-                                                        width={32}
-                                                        height={32}
-                                                        className="rounded-full flex-shrink-0"
-                                                    />
-                                                ) : (
-                                                    <div className="w-8 h-8 rounded-full bg-[#EE4D2D] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                                                        {reply.author.name.charAt(0).toUpperCase()}
-                                                    </div>
+                                            <span className="text-xs text-gray-400">
+                                                {formatDate(comment.createdAt)}
+                                            </span>
+                                            {replies[comment._id] &&
+                                                replies[comment._id].length > 0 &&
+                                                !expandedReplies[comment._id] && (
+                                                    <button
+                                                        onClick={() => toggleReplies(comment._id)}
+                                                        className="text-xs text-gray-500 hover:text-[#EE4D2D] font-medium transition-colors"
+                                                    >
+                                                        View {replies[comment._id].length} replies
+                                                    </button>
                                                 )}
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="bg-gray-100 px-3 py-2 rounded-2xl rounded-tl-none">
-                                                        <span className="font-semibold text-sm text-gray-900 mr-2">{reply.author.name}</span>
-                                                        <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-line mt-1">{reply.content}</p>
-                                                        {reply.images && reply.images.length > 0 && (
-                                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                                {reply.images.map((img, index) => (
-                                                                    <Image
-                                                                        key={index}
-                                                                        src={img.url}
-                                                                        alt={`Reply image ${index}`}
-                                                                        width={100}
-                                                                        height={100}
-                                                                        className="rounded-lg object-cover border border-gray-200"
-                                                                    />
-                                                                ))}
+                                            {canEditDelete(comment) && (
+                                                <>
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingComment(comment._id);
+                                                            setEditContent(comment.content);
+                                                        }}
+                                                        className="text-xs text-gray-500 hover:text-[#EE4D2D] font-medium transition-colors"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteComment(comment._id)}
+                                                        className="text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {/* Replies Section - Facebook Style */}
+                                        {replies[comment._id] &&
+                                            replies[comment._id].length > 0 &&
+                                            expandedReplies[comment._id] && (
+                                                <div className="mt-3 ml-12 space-y-3">
+                                                    {replies[comment._id].map((reply) => (
+                                                        <div key={reply._id} className="flex gap-3">
+                                                            {reply.author.avatar ? (
+                                                                <Image
+                                                                    src={reply.author.avatar}
+                                                                    alt={reply.author.name}
+                                                                    width={32}
+                                                                    height={32}
+                                                                    className="rounded-full flex-shrink-0"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-8 h-8 rounded-full bg-[#EE4D2D] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                                                    {reply.author.name.charAt(0).toUpperCase()}
+                                                                </div>
+                                                            )}
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="bg-gray-100 px-3 py-2 rounded-2xl rounded-tl-none">
+                                                                    <span className="font-semibold text-sm text-gray-900 mr-2">
+                                                                        {reply.author.name}
+                                                                    </span>
+                                                                    <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-line mt-1">
+                                                                        {reply.content}
+                                                                    </p>
+                                                                    {reply.images && reply.images.length > 0 && (
+                                                                        <div className="flex flex-wrap gap-2 mt-2">
+                                                                            {reply.images.map((img, index) => (
+                                                                                <Image
+                                                                                    key={index}
+                                                                                    src={img.url}
+                                                                                    alt={`Reply image ${index}`}
+                                                                                    width={100}
+                                                                                    height={100}
+                                                                                    className="rounded-lg object-cover border border-gray-200"
+                                                                                />
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center gap-3 mt-1 ml-1">
+                                                                    <button
+                                                                        onClick={() => handleLikeComment(reply._id)}
+                                                                        className={`flex items-center gap-1 text-xs font-medium ${
+                                                                            isLiked(reply)
+                                                                                ? "text-red-600 hover:text-red-700"
+                                                                                : "text-gray-500 hover:text-[#EE4D2D]"
+                                                                        } transition-colors`}
+                                                                    >
+                                                                        <Heart
+                                                                            className={`w-3.5 h-3.5 ${isLiked(reply) ? "fill-current" : ""}`}
+                                                                        />
+                                                                        <span>
+                                                                            {reply.likesCount ||
+                                                                                reply.likes?.length ||
+                                                                                0}
+                                                                        </span>
+                                                                    </button>
+                                                                    <span className="text-xs text-gray-400">
+                                                                        {formatDate(reply.createdAt)}
+                                                                    </span>
+                                                                    {canEditDelete(reply) && (
+                                                                        <>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setEditingComment(reply._id);
+                                                                                    setEditContent(reply.content);
+                                                                                }}
+                                                                                className="text-xs text-gray-500 hover:text-[#EE4D2D] font-medium transition-colors"
+                                                                            >
+                                                                                Edit
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() =>
+                                                                                    handleDeleteComment(reply._id)
+                                                                                }
+                                                                                className="text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
+                                                                            >
+                                                                                Delete
+                                                                            </button>
+                                                                        </>
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center gap-3 mt-1 ml-1">
-                                                        <button
-                                                            onClick={() => handleLikeComment(reply._id)}
-                                                            className={`flex items-center gap-1 text-xs font-medium ${
-                                                                isLiked(reply) ? "text-red-600 hover:text-red-700" : "text-gray-500 hover:text-[#EE4D2D]"
-                                                            } transition-colors`}
-                                                        >
-                                                            <Heart className={`w-3.5 h-3.5 ${isLiked(reply) ? "fill-current" : ""}`} />
-                                                            <span>{reply.likesCount || reply.likes?.length || 0}</span>
-                                                        </button>
-                                                        <span className="text-xs text-gray-400">{formatDate(reply.createdAt)}</span>
-                                                        {canEditDelete(reply) && (
-                                                            <>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setEditingComment(reply._id);
-                                                                        setEditContent(reply.content);
-                                                                    }}
-                                                                    className="text-xs text-gray-500 hover:text-[#EE4D2D] font-medium transition-colors"
-                                                                >
-                                                                    Edit
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleDeleteComment(reply._id)}
-                                                                    className="text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
-                                                                >
-                                                                    Delete
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Show/Hide Replies Button */}
-                                {replies[comment._id] && replies[comment._id].length > 0 && (
-                                    <button
-                                        onClick={() => toggleReplies(comment._id)}
-                                        className="mt-2 ml-12 text-xs text-gray-500 hover:text-[#EE4D2D] transition-colors font-medium"
-                                    >
-                                        {expandedReplies[comment._id] ? "Hide replies" : `View ${replies[comment._id].length} replies`}
-                                    </button>
-                                )}
-
-                                {/* Reply Form - Facebook Style */}
-                                {replyingTo === comment._id && (
-                                    <div className="mt-3 ml-12 flex gap-3">
-                                        {/* Avatar */}
-                                        {user?.avatar ? (
-                                            <Image
-                                                src={typeof user.avatar === 'string' ? user.avatar : ''}
-                                                alt={user.username || "User"}
-                                                width={32}
-                                                height={32}
-                                                className="rounded-full object-cover flex-shrink-0"
-                                            />
-                                        ) : (
-                                            <div className="w-8 h-8 rounded-full bg-[#EE4D2D] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                                                {user?.username?.charAt(0).toUpperCase() || "?"}
-                                            </div>
-                                        )}
-                                        {/* Input */}
-                                        <div className="flex-1 space-y-2">
-                                            <textarea
-                                                value={replyContent}
-                                                onChange={(e) => setReplyContent(e.target.value)}
-                                                placeholder="Write a reply..."
-                                                className="w-full p-3 bg-gray-100 rounded-2xl border-none focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:bg-white transition-all resize-none"
-                                                rows={2}
-                                            />
-                                            {replyImages.length > 0 && (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {replyImages.map((file, index) => (
-                                                        <div key={index} className="relative">
-                                                            <Image
-                                                                src={URL.createObjectURL(file)}
-                                                                alt={`Reply preview ${index}`}
-                                                                width={80}
-                                                                height={80}
-                                                                className="rounded-lg object-cover border border-gray-300"
-                                                            />
-                                                            <button
-                                                                onClick={() =>
-                                                                    setReplyImages(
-                                                                        replyImages.filter((_, i) => i !== index)
-                                                                    )
-                                                                }
-                                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                                                                aria-label="Remove reply image"
-                                                            >
-                                                                <X className="w-3 h-3" />
-                                                            </button>
                                                         </div>
                                                     ))}
                                                 </div>
                                             )}
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    ref={replyFileInputRef}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    multiple
-                                                    max={6}
-                                                    onChange={(e) => handleImageSelect(e, "reply")}
-                                                    className="hidden"
-                                                    aria-label="Upload reply images"
-                                                />
-                                                <button
-                                                    onClick={() => replyFileInputRef.current?.click()}
-                                                    className="flex items-center gap-1 px-3 py-1.5 text-xs border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-[#EE4D2D] transition-all"
-                                                >
-                                                    <ImageIcon className="w-3.5 h-3.5" />
-                                                    <span>Image</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => handleReply(comment._id)}
-                                                    disabled={!replyContent.trim() && replyImages.length === 0}
-                                                    className="px-4 py-1.5 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#c43e24] transition-all text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    Send
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setReplyingTo(null);
-                                                        setReplyContent("");
-                                                        setReplyImages([]);
-                                                    }}
-                                                    className="px-4 py-1.5 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-xs"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <Pagination
-                            currentPage={page}
-                            totalPages={totalPages}
-                            onPageChange={(newPage) => {
-                                setPage(newPage);
-                                window.scrollTo({ top: 0, behavior: "smooth" });
-                            }}
-                            showInfo={false}
-                            scrollToTop={true}
-                            className="mt-6"
-                        />
+                                        {/* Show/Hide Replies Button */}
+                                        {replies[comment._id] && replies[comment._id].length > 0 && (
+                                            <button
+                                                onClick={() => toggleReplies(comment._id)}
+                                                className="mt-2 ml-12 text-xs text-gray-500 hover:text-[#EE4D2D] transition-colors font-medium"
+                                            >
+                                                {expandedReplies[comment._id]
+                                                    ? "Hide replies"
+                                                    : `View ${replies[comment._id].length} replies`}
+                                            </button>
+                                        )}
+
+                                        {/* Reply Form - Facebook Style */}
+                                        {replyingTo === comment._id && (
+                                            <div className="mt-3 ml-12 flex gap-3">
+                                                {/* Avatar */}
+                                                {user?.avatar ? (
+                                                    <Image
+                                                        src={typeof user.avatar === "string" ? user.avatar : ""}
+                                                        alt={user.username || "User"}
+                                                        width={32}
+                                                        height={32}
+                                                        className="rounded-full object-cover flex-shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded-full bg-[#EE4D2D] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                                                        {user?.username?.charAt(0).toUpperCase() || "?"}
+                                                    </div>
+                                                )}
+                                                {/* Input */}
+                                                <div className="flex-1 space-y-2">
+                                                    <textarea
+                                                        value={replyContent}
+                                                        onChange={(e) => setReplyContent(e.target.value)}
+                                                        placeholder="Write a reply..."
+                                                        className="w-full p-3 bg-gray-100 rounded-2xl border-none focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:bg-white transition-all resize-none"
+                                                        rows={2}
+                                                    />
+                                                    {replyImages.length > 0 && (
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {replyImages.map((file, index) => (
+                                                                <div key={index} className="relative">
+                                                                    <Image
+                                                                        src={URL.createObjectURL(file)}
+                                                                        alt={`Reply preview ${index}`}
+                                                                        width={80}
+                                                                        height={80}
+                                                                        className="rounded-lg object-cover border border-gray-300"
+                                                                    />
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            setReplyImages(
+                                                                                replyImages.filter(
+                                                                                    (_, i) => i !== index,
+                                                                                ),
+                                                                            )
+                                                                        }
+                                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                                                        aria-label="Remove reply image"
+                                                                    >
+                                                                        <X className="w-3 h-3" />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            ref={replyFileInputRef}
+                                                            type="file"
+                                                            accept="image/*"
+                                                            multiple
+                                                            max={6}
+                                                            onChange={(e) => handleImageSelect(e, "reply")}
+                                                            className="hidden"
+                                                            aria-label="Upload reply images"
+                                                        />
+                                                        <button
+                                                            onClick={() => replyFileInputRef.current?.click()}
+                                                            className="flex items-center gap-1 px-3 py-1.5 text-xs border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-[#EE4D2D] transition-all"
+                                                        >
+                                                            <ImageIcon className="w-3.5 h-3.5" />
+                                                            <span>Image</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleReply(comment._id)}
+                                                            disabled={!replyContent.trim() && replyImages.length === 0}
+                                                            className="px-4 py-1.5 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#c43e24] transition-all text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            Send
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setReplyingTo(null);
+                                                                setReplyContent("");
+                                                                setReplyImages([]);
+                                                            }}
+                                                            className="px-4 py-1.5 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-xs"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <Pagination
+                                    currentPage={page}
+                                    totalPages={totalPages}
+                                    onPageChange={(newPage) => {
+                                        setPage(newPage);
+                                        window.scrollTo({ top: 0, behavior: "smooth" });
+                                    }}
+                                    showInfo={false}
+                                    scrollToTop={true}
+                                    className="mt-6"
+                                />
+                            )}
+                        </div>
                     )}
-                </div>
-            )}
 
                     {/* Comment Form - Render Last (Facebook Style) */}
                     {isAuthenticated ? (
@@ -606,7 +634,7 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                 {/* Avatar - Left */}
                                 {user?.avatar ? (
                                     <Image
-                                        src={typeof user.avatar === 'string' ? user.avatar : ''}
+                                        src={typeof user.avatar === "string" ? user.avatar : ""}
                                         alt={user.username || "User"}
                                         width={40}
                                         height={40}
@@ -648,7 +676,11 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
                                                         className="rounded-lg object-cover border border-gray-300"
                                                     />
                                                     <button
-                                                        onClick={() => setCommentImages(commentImages.filter((_, i) => i !== index))}
+                                                        onClick={() =>
+                                                            setCommentImages(
+                                                                commentImages.filter((_, i) => i !== index),
+                                                            )
+                                                        }
                                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                                                         aria-label="Remove image"
                                                     >

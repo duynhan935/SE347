@@ -3,9 +3,7 @@
 import { Client, IMessage } from "@stomp/stompjs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import SockJS from "sockjs-client";
-
-// Port 8082 for Order WebSocket
-const ORDER_WS_URL = "http://localhost:8082";
+import { ORDER_WS_BASE_URL } from "../config/publicRuntime";
 
 interface OrderStatusUpdate {
     orderId: string;
@@ -42,32 +40,23 @@ export function useOrderWebSocket({ userId, restaurantId, onOrderStatusUpdate, o
         if (clientRef.current) {
             clientRef.current.deactivate();
         }
-
-        console.log("🔄 [OrderWebSocket] Connecting to port 8082...");
-
         // Create SockJS connection to Order WebSocket (port 8082)
-        const socket = new SockJS(`${ORDER_WS_URL}/ws-order`);
+        const socket = new SockJS(`${ORDER_WS_BASE_URL}/ws-order`);
         const client = new Client({
             webSocketFactory: () => socket,
             reconnectDelay: 5000,
             heartbeatIncoming: 20000,
             heartbeatOutgoing: 25000,
-            debug: (str) => {
-                console.log("🔵 [OrderWebSocket Debug]", str);
-            },
             onConnect: () => {
-                console.log("✅ [OrderWebSocket] Connected to port 8082");
                 setIsConnected(true);
 
                 if (clientRef.current && clientRef.current.connected) {
                     // Subscribe to user-specific order updates
                     if (userId) {
                         const userDestination = `/topic/orders/user/${userId}`;
-                        console.log(`📡 [OrderWebSocket] Subscribing to ${userDestination}`);
                         clientRef.current.subscribe(userDestination, (message: IMessage) => {
                             try {
                                 const update: OrderStatusUpdate = JSON.parse(message.body);
-                                console.log("📥 [OrderWebSocket] User order update:", update);
                                 onOrderStatusUpdate(update);
                             } catch (error) {
                                 console.error("❌ [OrderWebSocket] Error parsing user message:", error);
@@ -78,11 +67,9 @@ export function useOrderWebSocket({ userId, restaurantId, onOrderStatusUpdate, o
                     // Subscribe to restaurant-specific order updates
                     if (restaurantId) {
                         const restaurantDestination = `/topic/orders/restaurant/${restaurantId}`;
-                        console.log(`📡 [OrderWebSocket] Subscribing to ${restaurantDestination}`);
                         clientRef.current.subscribe(restaurantDestination, (message: IMessage) => {
                             try {
                                 const update: OrderStatusUpdate = JSON.parse(message.body);
-                                console.log("📥 [OrderWebSocket] Restaurant order update:", update);
                                 onOrderStatusUpdate(update);
                             } catch (error) {
                                 console.error("❌ [OrderWebSocket] Error parsing restaurant message:", error);
@@ -97,11 +84,9 @@ export function useOrderWebSocket({ userId, restaurantId, onOrderStatusUpdate, o
                 onError?.(new Event("STOMP_ERROR"));
             },
             onWebSocketClose: () => {
-                console.log("🔴 [OrderWebSocket] Connection closed");
                 setIsConnected(false);
             },
             onDisconnect: () => {
-                console.log("🔌 [OrderWebSocket] Disconnected");
                 setIsConnected(false);
             },
         });
@@ -112,7 +97,6 @@ export function useOrderWebSocket({ userId, restaurantId, onOrderStatusUpdate, o
 
     const disconnect = useCallback(() => {
         if (clientRef.current) {
-            console.log("🔌 [OrderWebSocket] Manually disconnecting...");
             clientRef.current.deactivate();
             clientRef.current = null;
         }

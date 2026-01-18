@@ -19,13 +19,11 @@ export default function UnderDevelopmentPage() {
                     </div>
 
                     {/* Title */}
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                        Under Development
-                    </h1>
+                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Under Development</h1>
 
                     {/* Description */}
                     <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">
-                        We're working hard to bring you this feature. Please check back soon!
+                        We&apos;re working hard to bring you this feature. Please check back soon!
                     </p>
 
                     {/* Info Box */}
@@ -33,9 +31,10 @@ export default function UnderDevelopmentPage() {
                         <div className="flex items-start gap-4">
                             <Rocket className="w-6 h-6 text-orange-600 flex-shrink-0 mt-1" />
                             <div className="text-left">
-                                <h3 className="font-semibold text-gray-900 mb-2">What's Coming?</h3>
+                                <h3 className="font-semibold text-gray-900 mb-2">What&apos;s Coming?</h3>
                                 <p className="text-sm text-gray-700">
-                                    This page is currently under development. Our team is working on creating an amazing experience for you.
+                                    This page is currently under development. Our team is working on creating an amazing
+                                    experience for you.
                                 </p>
                             </div>
                         </div>
@@ -70,4 +69,3 @@ export default function UnderDevelopmentPage() {
         </main>
     );
 }
-

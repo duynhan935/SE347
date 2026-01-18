@@ -81,31 +81,32 @@ export default function AddressSelector() {
                     headers: {
                         "User-Agent": "FoodEats/1.0", // Required by Nominatim
                     },
-                }
+                },
             );
             const data = await response.json();
-            
+
             if (data.address) {
                 // Build readable address from components
                 const address = data.address;
                 const parts: string[] = [];
-                
+
                 if (address.road) parts.push(address.road);
                 if (address.house_number) parts.unshift(address.house_number);
                 if (address.suburb || address.neighbourhood) parts.push(address.suburb || address.neighbourhood);
-                if (address.city || address.town || address.village) parts.push(address.city || address.town || address.village);
+                if (address.city || address.town || address.village)
+                    parts.push(address.city || address.town || address.village);
                 if (address.state) parts.push(address.state);
-                
+
                 if (parts.length > 0) {
                     return parts.join(", ");
                 }
-                
+
                 // Fallback to display name
                 if (data.display_name) {
                     return data.display_name.split(",").slice(0, 3).join(", "); // Take first 3 parts
                 }
             }
-            
+
             return `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
         } catch (error) {
             console.warn("Reverse geocoding failed:", error);
@@ -132,10 +133,10 @@ export default function AddressSelector() {
             async (position) => {
                 try {
                     const { latitude, longitude } = position.coords;
-                    
+
                     // Reverse geocode to get address string
                     const addressText = await reverseGeocode(latitude, longitude);
-                    
+
                     // Save address to user's address list
                     try {
                         const savedAddress = await authApi.addAddress(user.id, {
@@ -143,11 +144,11 @@ export default function AddressSelector() {
                             latitude,
                             longitude,
                         });
-                        
+
                         // Update user addresses list
                         const updatedAddresses = await authApi.getUserAddresses(user.id);
                         setUserAddresses(updatedAddresses);
-                        
+
                         // Set as current location in store
                         const locationAddress: LocationAddress = {
                             id: savedAddress.id,
@@ -156,12 +157,12 @@ export default function AddressSelector() {
                             lng: longitude,
                         };
                         setCurrentAddress(locationAddress);
-                        
+
                         setIsOpen(false);
                         setIsGettingLocation(false);
                         setLoading(false);
                         toast.success(`Location saved: ${addressText}`);
-                    } catch (saveError: any) {
+                    } catch (saveError: unknown) {
                         console.error("Failed to save address:", saveError);
                         // Still set location even if save fails
                         setCurrentLocation(latitude, longitude, addressText);
@@ -182,7 +183,8 @@ export default function AddressSelector() {
                 let errorMessage = "Failed to get your location";
                 switch (error.code) {
                     case error.PERMISSION_DENIED:
-                        errorMessage = "Location permission denied. Please enable location access in your browser settings.";
+                        errorMessage =
+                            "Location permission denied. Please enable location access in your browser settings.";
                         break;
                     case error.POSITION_UNAVAILABLE:
                         errorMessage = "Location information unavailable. Please check your GPS/network.";
@@ -197,7 +199,7 @@ export default function AddressSelector() {
                 enableHighAccuracy: true,
                 timeout: 10000,
                 maximumAge: 300000, // Cache for 5 minutes
-            }
+            },
         );
     };
 

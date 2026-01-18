@@ -28,15 +28,8 @@ export default function MerchantRequestsPage() {
             const pendingMerchants = users.filter((u) => {
                 const isMerchant = u.role === "MERCHANT";
                 const isPending = u.enabled === false;
-                if (isMerchant) {
-                    console.log(
-                        `Merchant found: ${u.username}, email: ${u.email}, enabled: ${u.enabled}, pending: ${isPending}`
-                    );
-                }
                 return isMerchant && isPending;
             });
-
-            console.log("Pending merchants:", pendingMerchants);
             setRequests(pendingMerchants);
         } catch (error) {
             console.error("Failed to fetch merchant requests:", error);
@@ -56,13 +49,13 @@ export default function MerchantRequestsPage() {
         try {
             await authApi.approveMerchant(userId);
             toast.success("Merchant approved successfully!");
-            
+
             // Mark related notifications as read
             const { notifications } = useNotificationStore.getState();
             notifications
                 .filter((n) => n.type === "ADMIN_MERCHANT_REQUEST" && n.merchantId === userId)
                 .forEach((n) => markAsRead(n.id));
-            
+
             fetchMerchantRequests();
         } catch (error: unknown) {
             const errorMessage =
@@ -85,13 +78,13 @@ export default function MerchantRequestsPage() {
         try {
             await authApi.rejectMerchant(userId, { reason: reason.trim() });
             toast.success("Merchant rejected successfully!");
-            
+
             // Mark related notifications as read
             const { notifications } = useNotificationStore.getState();
             notifications
                 .filter((n) => n.type === "ADMIN_MERCHANT_REQUEST" && n.merchantId === userId)
                 .forEach((n) => markAsRead(n.id));
-            
+
             fetchMerchantRequests();
         } catch (error: unknown) {
             const errorMessage =

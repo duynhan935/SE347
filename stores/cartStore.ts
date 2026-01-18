@@ -57,7 +57,7 @@ const getItemKey = (itemId: string, restaurantId: string): string => `${restaura
 const mergeWithPendingAdds = (
     backendItems: CartItem[],
     currentItems: CartItem[],
-    pendingAdds: Record<string, number>
+    pendingAdds: Record<string, number>,
 ) => {
     const now = Date.now();
     const ttlMs = 30000;
@@ -201,7 +201,6 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
     }
 
     if (restaurants.length === 0) {
-        console.log("[mapCartToItems] restaurants array is empty");
         return []; // Return empty array, not null, to distinguish from parse failure
     }
 
@@ -242,8 +241,10 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
             // Priority: cartItemImage > imageURL from record > imageURL from options > placeholder
             const rawCartItemImage = itemRecord["cartItemImage"];
             const cartItemImageFromRecord =
-                typeof rawCartItemImage === "string" && rawCartItemImage.trim() !== "" ? rawCartItemImage.trim() : undefined;
-            
+                typeof rawCartItemImage === "string" && rawCartItemImage.trim() !== ""
+                    ? rawCartItemImage.trim()
+                    : undefined;
+
             const rawImageURL = itemRecord["imageURL"];
             const imageFromRecord =
                 typeof rawImageURL === "string" && rawImageURL.trim() !== "" ? rawImageURL.trim() : undefined;
@@ -261,7 +262,8 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
             const sizeNameFromRecord =
                 typeof rawSizeName === "string" && rawSizeName.trim() !== "" ? rawSizeName.trim() : undefined;
             const sizeId = sizeIdFromRecord || (typeof options.sizeId === "string" ? options.sizeId : undefined);
-            const sizeName = sizeNameFromRecord || (typeof options.sizeName === "string" ? options.sizeName : undefined);
+            const sizeName =
+                sizeNameFromRecord || (typeof options.sizeName === "string" ? options.sizeName : undefined);
 
             const rawCustomizations = itemRecord["customizations"];
             const customizationsFromRecord =
@@ -295,7 +297,6 @@ const mapCartToItems = (cart: unknown): CartItem[] | null => {
         });
     });
 
-    console.log(`[mapCartToItems] Parsed ${items.length} items from ${restaurants.length} restaurants`);
     return items;
 };
 
@@ -366,7 +367,6 @@ export const useCartStore = create<CartState>()(
                             }
 
                             set({ items: merged, pendingAdds: nextPendingAdds });
-                            console.log(`[CartStore] Fetched ${parsedItems.length} items from backend`);
                         } else {
                             // Backend returned empty cart
                             const currentItems = get().items;
@@ -376,12 +376,11 @@ export const useCartStore = create<CartState>()(
                             if (options?.forceUpdate || currentItems.length === 0) {
                                 // Force update or local is also empty, set empty
                                 set({ items: [] });
-                                console.log("[CartStore] Cart is empty (force update or both empty)");
                             } else {
                                 // Local has items but backend doesn't - keep local items
                                 // This handles race condition where item was just added and backend hasn't synced yet
                                 console.warn(
-                                    "[CartStore] Backend cart is empty but local store has items. Keeping local items (may be syncing)."
+                                    "[CartStore] Backend cart is empty but local store has items. Keeping local items (may be syncing).",
                                 );
                                 // Don't overwrite local items - they may be syncing with backend
                             }
@@ -455,7 +454,7 @@ export const useCartStore = create<CartState>()(
                                     // If fetch fails, continue anyway - backend will create cart if needed
                                     console.warn(
                                         "Failed to fetch cart before adding item, continuing anyway:",
-                                        fetchError
+                                        fetchError,
                                     );
                                 }
                             } else {
@@ -502,7 +501,7 @@ export const useCartStore = create<CartState>()(
                         // Optimistic update (fixes "first item invisible" + keeps UI responsive)
                         set((state) => {
                             const existingItemIndex = state.items.findIndex(
-                                (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId
+                                (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId,
                             );
 
                             if (existingItemIndex >= 0) {
@@ -554,9 +553,6 @@ export const useCartStore = create<CartState>()(
 
                         const cart = await cartApi.addItemToCart(userId, requestPayload);
 
-                        // Log response for debugging
-                        console.log("[CartStore] Backend response:", JSON.stringify(cart, null, 2));
-
                         // Check if response indicates error even though status is success
                         const responseData = (cart as { data?: unknown; status?: string; message?: string }).data;
                         const responseStatus = (cart as { status?: string }).status;
@@ -575,15 +571,7 @@ export const useCartStore = create<CartState>()(
                         // Extract cart data from response - API returns CartResponse with data field
                         const cartResponse = cart as { status?: string; message?: string; data?: unknown };
                         const cartData = cartResponse.data ?? cart;
-                        
-                        // Log raw cart data structure for debugging
-                        console.log("[CartStore] Cart response structure:", {
-                            status: cartResponse.status,
-                            hasData: !!cartResponse.data,
-                            dataType: typeof cartResponse.data,
-                        });
-                        console.log("[CartStore] Cart data structure:", JSON.stringify(cartData, null, 2));
-                        
+
                         // Verify restaurants array exists and has items
                         if (cartData && typeof cartData === "object") {
                             const cartRecord = cartData as Record<string, unknown>;
@@ -594,12 +582,14 @@ export const useCartStore = create<CartState>()(
                                     const items = rRecord["items"];
                                     return sum + (Array.isArray(items) ? items.length : 0);
                                 }, 0);
-                                console.log(`[CartStore] Backend returned ${restaurants.length} restaurant(s) with ${totalItems} total items`);
-                                
+
                                 // If backend returned empty items, log warning
                                 if (totalItems === 0) {
                                     console.warn("[CartStore] WARNING: Backend returned empty items array!");
-                                    console.warn("[CartStore] Full restaurants data:", JSON.stringify(restaurants, null, 2));
+                                    console.warn(
+                                        "[CartStore] Full restaurants data:",
+                                        JSON.stringify(restaurants, null, 2),
+                                    );
                                 }
                             } else {
                                 console.warn("[CartStore] WARNING: restaurants is not an array:", restaurants);
@@ -624,18 +614,15 @@ export const useCartStore = create<CartState>()(
                             }
 
                             set({ items: merged, pendingAdds: nextPendingAdds });
-                            console.log(
-                                `[CartStore] Cart updated from backend response, items count: ${parsedItems.length}`
-                            );
-                            
+
                             // Verify the added item is in the merged items
                             const addedItem = merged.find(
-                                (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId
+                                (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId,
                             );
                             if (!addedItem) {
-                                console.warn(`[CartStore] WARNING: Added item (${cartItemId}) not found in merged items!`);
-                            } else {
-                                console.log(`[CartStore] Verified: Added item found with quantity ${addedItem.quantity}`);
+                                console.warn(
+                                    `[CartStore] WARNING: Added item (${cartItemId}) not found in merged items!`,
+                                );
                             }
                         } else if (parsedItems !== null && parsedItems.length === 0) {
                             // Backend returned empty cart (shouldn't happen after adding item, but handle it)
@@ -654,9 +641,6 @@ export const useCartStore = create<CartState>()(
                                     }
 
                                     set({ items: merged, pendingAdds: nextPendingAdds });
-                                    console.log(
-                                        `[CartStore] Cart fetched and updated, items count: ${fetchedItems.length}`
-                                    );
                                 } else {
                                     // Still empty, use optimistic update
                                     throw new Error("Cart is empty after fetch");
@@ -666,7 +650,7 @@ export const useCartStore = create<CartState>()(
                                 // Fallback to optimistic update
                                 const currentItems = get().items;
                                 const existingItemIndex = currentItems.findIndex(
-                                    (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId
+                                    (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId,
                                 );
 
                                 let optimisticItems: CartItem[];
@@ -696,12 +680,10 @@ export const useCartStore = create<CartState>()(
                                     optimisticItems = [...currentItems, newItem];
                                 }
                                 set({ items: optimisticItems });
-                                console.log("[CartStore] Used optimistic update as fallback");
                             }
                         } else {
                             // Parsing failed completely - log and fetch cart
                             console.error("[CartStore] Failed to parse cart response:", cart);
-                            console.log("[CartStore] Response structure:", JSON.stringify(cart, null, 2));
 
                             // Try to fetch cart from backend as fallback
                             try {
@@ -717,9 +699,6 @@ export const useCartStore = create<CartState>()(
                                     }
 
                                     set({ items: merged, pendingAdds: nextPendingAdds });
-                                    console.log(
-                                        `[CartStore] Cart fetched after parse failure, items count: ${fetchedItems.length}`
-                                    );
                                 } else {
                                     // Still can't parse, use optimistic update
                                     throw new Error("Failed to parse fetched cart");
@@ -729,7 +708,7 @@ export const useCartStore = create<CartState>()(
                                 // Last resort: optimistic update
                                 const currentItems = get().items;
                                 const existingItemIndex = currentItems.findIndex(
-                                    (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId
+                                    (item) => item.id === cartItemId && item.restaurantId === itemToAdd.restaurantId,
                                 );
 
                                 let optimisticItems: CartItem[];
@@ -759,7 +738,6 @@ export const useCartStore = create<CartState>()(
                                     optimisticItems = [...currentItems, newItem];
                                 }
                                 set({ items: optimisticItems });
-                                console.log("[CartStore] Used optimistic update as last resort");
                             }
                         }
 
@@ -775,7 +753,6 @@ export const useCartStore = create<CartState>()(
                             }
                             return { items: previousItems, pendingAdds: nextPendingAdds };
                         });
-                        console.log("[CartStore] Reverted optimistic update due to error");
                     } finally {
                         set({ isAddingItem: false });
                     }
@@ -792,8 +769,14 @@ export const useCartStore = create<CartState>()(
                         const { options: parsedOptions } = parseCartItemId(itemId);
                         const sizeId = item?.sizeId || parsedOptions.sizeId || undefined;
                         const customizations = item?.customizations || parsedOptions.customizations || undefined;
-                        
-                        const cart = await cartApi.removeItemFromCart(userId, restaurantId, itemId, sizeId, customizations);
+
+                        const cart = await cartApi.removeItemFromCart(
+                            userId,
+                            restaurantId,
+                            itemId,
+                            sizeId,
+                            customizations,
+                        );
 
                         // Check if cart is null (empty cart after deletion)
                         // Backend returns null when cart is deleted (last item removed)
@@ -801,21 +784,18 @@ export const useCartStore = create<CartState>()(
                         if (cartData === null || cartData === undefined) {
                             // Cart is empty, clear items immediately
                             set({ items: [] });
-                            console.log("[CartStore] Cart is empty after removing item");
                         } else {
                             // Parse response and update items immediately
                             const parsedItems = mapCartToItems(cart);
                             if (parsedItems !== null) {
                                 // Update items from response
                                 set({ items: parsedItems });
-                                console.log(`[CartStore] Removed item, cart now has ${parsedItems.length} items`);
                             } else {
                                 // If parsing fails, check if it's an empty cart response
                                 // Backend might return { data: null } or empty structure
                                 const responseData = (cart as { data?: unknown })?.data;
                                 if (responseData === null || responseData === undefined) {
                                     set({ items: [] });
-                                    console.log("[CartStore] Cart is empty (parsed from response)");
                                 } else {
                                     // Try fetchCart as fallback only if we're not sure about empty cart
                                     console.warn("[CartStore] Failed to parse removeItem response, fetching cart...");
@@ -832,7 +812,7 @@ export const useCartStore = create<CartState>()(
                         // On error, still try to update local state by removing item manually
                         const currentItems = get().items;
                         const updatedItems = currentItems.filter(
-                            (item) => !(item.id === itemId && item.restaurantId === restaurantId)
+                            (item) => !(item.id === itemId && item.restaurantId === restaurantId),
                         );
                         set({ items: updatedItems });
 
@@ -852,12 +832,21 @@ export const useCartStore = create<CartState>()(
                         } else {
                             // Parse sizeId and customizations from itemId or get from current items
                             const currentItems = get().items;
-                            const item = currentItems.find((it) => it.id === itemId && it.restaurantId === restaurantId);
+                            const item = currentItems.find(
+                                (it) => it.id === itemId && it.restaurantId === restaurantId,
+                            );
                             const { options: parsedOptions } = parseCartItemId(itemId);
                             const sizeId = item?.sizeId || parsedOptions.sizeId || undefined;
                             const customizations = item?.customizations || parsedOptions.customizations || undefined;
-                            
-                            const cart = await cartApi.updateItemQuantity(userId, restaurantId, itemId, quantity, sizeId, customizations);
+
+                            const cart = await cartApi.updateItemQuantity(
+                                userId,
+                                restaurantId,
+                                itemId,
+                                quantity,
+                                sizeId,
+                                customizations,
+                            );
                             if (!updateItemsFromResponse(cart)) {
                                 await get().fetchCart();
                             }
@@ -887,7 +876,6 @@ export const useCartStore = create<CartState>()(
                         ) {
                             // Cart is cleared, set items to empty array
                             set({ items: [] });
-                            console.log("[CartStore] Cart cleared");
                         }
 
                         if (!options?.silent) {
@@ -917,7 +905,6 @@ export const useCartStore = create<CartState>()(
                         if (cartData === null || cartData === undefined) {
                             // Cart is empty, clear items immediately
                             set({ items: [] });
-                            console.log("[CartStore] Cart is empty after clearing restaurant");
                         } else {
                             // Try to update items from response
                             if (!updateItemsFromResponse(cart)) {
@@ -925,7 +912,6 @@ export const useCartStore = create<CartState>()(
                                 const responseData = (cart as { data?: unknown })?.data;
                                 if (responseData === null || responseData === undefined) {
                                     set({ items: [] });
-                                    console.log("[CartStore] Cart is empty (parsed from response)");
                                 } else {
                                     // Try fetchCart as fallback only if we're not sure about empty cart
                                     await get().fetchCart();
@@ -953,6 +939,6 @@ export const useCartStore = create<CartState>()(
         {
             name: "cart-storage",
             partialize: (state) => ({ userId: state.userId }),
-        }
-    )
+        },
+    ),
 );

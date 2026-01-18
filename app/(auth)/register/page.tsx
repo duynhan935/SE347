@@ -11,9 +11,7 @@ import { FcGoogle } from "react-icons/fc";
 
 import { useAuthStore } from "@/stores/useAuthStore";
 import toast from "react-hot-toast";
-
-const DEFAULT_BACKEND_ORIGIN = "http://localhost:8080";
-const BACKEND_ORIGIN = (process.env.NEXT_PUBLIC_BACKEND_ORIGIN || DEFAULT_BACKEND_ORIGIN).replace(/\/$/, "");
+import { BACKEND_ORIGIN } from "@/lib/config/publicRuntime";
 
 export default function SignUpPage() {
     const [username, setUsername] = useState("");
@@ -52,7 +50,14 @@ export default function SignUpPage() {
                 {/* Logo */}
                 <div className="flex justify-center mb-6">
                     <Link href="/" className="flex items-center">
-                        <Image src={Logo} alt="FoodEats Logo" width={140} height={46} className="h-10 w-auto" priority />
+                        <Image
+                            src={Logo}
+                            alt="FoodEats Logo"
+                            width={140}
+                            height={46}
+                            className="h-10 w-auto"
+                            priority
+                        />
                     </Link>
                 </div>
 
@@ -175,11 +180,13 @@ export default function SignUpPage() {
                     </div>
                 </form>
 
-
                 {/* Sign In Link */}
                 <p className="mt-6 text-center text-sm text-gray-600">
                     Have an account?{" "}
-                    <Link href="/login" className="font-semibold text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline">
+                    <Link
+                        href="/login"
+                        className="font-semibold text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline"
+                    >
                         Sign In
                     </Link>
                 </p>

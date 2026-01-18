@@ -28,7 +28,7 @@ export default function JoinGroupOrderPage() {
     const shareToken = params?.shareToken as string;
     const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
-    
+
     const [groupOrder, setGroupOrder] = useState<GroupOrder | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -39,14 +39,14 @@ export default function JoinGroupOrderPage() {
         try {
             const data = await groupOrderApi.getGroupOrderByToken(shareToken);
             setGroupOrder(data);
-            
+
             // Check if user already joined
-            if (user && data.participants.find(p => p.userId === user.id)) {
+            if (user && data.participants.find((p) => p.userId === user.id)) {
                 // Load existing items
-                const participant = data.participants.find(p => p.userId === user.id);
+                const participant = data.participants.find((p) => p.userId === user.id);
                 if (participant) {
                     const itemsMap = new Map<string, SelectedItem>();
-                    participant.items.forEach(item => {
+                    participant.items.forEach((item) => {
                         itemsMap.set(item.productId, {
                             productId: item.productId,
                             productName: item.productName,
@@ -63,7 +63,7 @@ export default function JoinGroupOrderPage() {
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string }; status?: number }; message?: string };
             console.error("Failed to fetch group order:", error);
-            const errorMessage = err.response?.data?.message || err.message || "Không thể tải group order";
+            const errorMessage = err.response?.data?.message || err.message || "Unable to load the group order.";
             toast.error(errorMessage);
             if (err.response?.status === 404) {
                 router.push("/");
@@ -83,7 +83,7 @@ export default function JoinGroupOrderPage() {
             }
         } catch (error) {
             console.error("Failed to fetch products:", error);
-            toast.error("Không thể tải menu");
+            toast.error("Unable to load the menu.");
         }
     };
 
@@ -110,44 +110,51 @@ export default function JoinGroupOrderPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [groupOrder?.restaurantId]);
 
-
     const handleAddItem = (product: Product) => {
         if (!isAuthenticated || !user) {
-            toast.error("Vui lòng đăng nhập để tham gia");
+            toast.error("Please sign in to join.");
             router.push("/login");
             return;
         }
 
         if (groupOrder?.status !== GroupOrderStatus.OPEN && groupOrder?.status !== GroupOrderStatus.LOCKED) {
-            toast.error("Group order này không còn nhận thêm món");
+            toast.error("This group order is no longer accepting items.");
             return;
         }
 
         const sizes = product.productSizes || [];
         if (sizes.length === 0) {
-            toast.error("Món này chưa có size");
+            toast.error("This item doesn't have any sizes yet.");
             return;
         }
 
         const defaultSize = sizes[0];
-        
+
         const existing = selectedItems.get(product.id);
         if (existing) {
             // Update quantity
-            setSelectedItems(new Map(selectedItems.set(product.id, {
-                ...existing,
-                quantity: existing.quantity + 1,
-            })));
+            setSelectedItems(
+                new Map(
+                    selectedItems.set(product.id, {
+                        ...existing,
+                        quantity: existing.quantity + 1,
+                    }),
+                ),
+            );
         } else {
             // Add new item
-            setSelectedItems(new Map(selectedItems.set(product.id, {
-                productId: product.id,
-                productName: product.productName,
-                sizeId: defaultSize.id,
-                sizeName: defaultSize.sizeName,
-                price: defaultSize.price,
-                quantity: 1,
-            })));
+            setSelectedItems(
+                new Map(
+                    selectedItems.set(product.id, {
+                        productId: product.id,
+                        productName: product.productName,
+                        sizeId: defaultSize.id,
+                        sizeName: defaultSize.sizeName,
+                        price: defaultSize.price,
+                        quantity: 1,
+                    }),
+                ),
+            );
         }
     };
 
@@ -164,26 +171,25 @@ export default function JoinGroupOrderPage() {
         }
     };
 
-
     const handleSubmit = async () => {
         if (!isAuthenticated || !user) {
-            toast.error("Vui lòng đăng nhập");
+            toast.error("Please sign in.");
             return;
         }
 
         if (selectedItems.size === 0) {
-            toast.error("Vui lòng chọn ít nhất một món");
+            toast.error("Please select at least one item.");
             return;
         }
 
         if (groupOrder?.status !== GroupOrderStatus.OPEN && groupOrder?.status !== GroupOrderStatus.LOCKED) {
-            toast.error("Group order này không còn nhận thêm món");
+            toast.error("This group order is no longer accepting items.");
             return;
         }
 
         setIsSubmitting(true);
         try {
-            const items: JoinGroupOrderRequest["items"] = Array.from(selectedItems.values()).map(item => ({
+            const items: JoinGroupOrderRequest["items"] = Array.from(selectedItems.values()).map((item) => ({
                 productId: item.productId,
                 productName: item.productName,
                 quantity: item.quantity,
@@ -192,12 +198,12 @@ export default function JoinGroupOrderPage() {
             }));
 
             await groupOrderApi.joinGroupOrder(shareToken, { items });
-            toast.success("Đã tham gia group order thành công!");
+            toast.success("You joined the group order successfully!");
             router.push(`/group-orders/${shareToken}`);
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string } }; message?: string };
             console.error("Failed to join group order:", error);
-            const errorMessage = err.response?.data?.message || err.message || "Không thể tham gia group order";
+            const errorMessage = err.response?.data?.message || err.message || "Unable to join the group order.";
             toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
@@ -205,7 +211,7 @@ export default function JoinGroupOrderPage() {
     };
 
     const totalAmount = Array.from(selectedItems.values()).reduce((sum, item) => {
-        return sum + (item.price * item.quantity);
+        return sum + item.price * item.quantity;
     }, 0);
 
     // Show loading or redirect message if not authenticated
@@ -217,15 +223,15 @@ export default function JoinGroupOrderPage() {
                         <div className="mb-4">
                             <Users className="w-16 h-16 text-gray-400 mx-auto" />
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Đăng nhập để tham gia</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign in to join</h2>
                         <p className="text-gray-600 mb-6">
-                            Bạn cần đăng nhập để có thể tham gia group order này và thêm món vào đơn.
+                            You need to sign in to join this group order and add items.
                         </p>
                         <Link
                             href={`/login?redirect=${encodeURIComponent(`/group-orders/${shareToken}/join`)}`}
                             className="inline-block px-6 py-3 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors font-medium"
                         >
-                            Đăng nhập ngay
+                            Sign in
                         </Link>
                     </div>
                 </div>
@@ -251,9 +257,9 @@ export default function JoinGroupOrderPage() {
             <main className="bg-gray-50 min-h-screen py-12">
                 <div className="custom-container">
                     <div className="text-center">
-                        <p className="text-gray-600">Không tìm thấy group order</p>
+                        <p className="text-gray-600">Group order not found.</p>
                         <Link href="/" className="text-[#EE4D2D] hover:underline mt-4 inline-block">
-                            Về trang chủ
+                            Back to home
                         </Link>
                     </div>
                 </div>
@@ -262,7 +268,7 @@ export default function JoinGroupOrderPage() {
     }
 
     const canJoin = groupOrder.status === GroupOrderStatus.OPEN || groupOrder.status === GroupOrderStatus.LOCKED;
-    const isJoined = user && groupOrder.participants.find(p => p.userId === user.id);
+    const isJoined = user && groupOrder.participants.find((p) => p.userId === user.id);
 
     return (
         <main className="bg-gray-50 min-h-screen py-12">
@@ -275,17 +281,17 @@ export default function JoinGroupOrderPage() {
                             className="inline-flex items-center gap-2 text-gray-600 hover:text-[#EE4D2D] transition-colors mb-4"
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            Quay lại group order
+                            Back to group order
                         </Link>
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                            {isJoined ? "Cập nhật món của bạn" : "Tham gia Group Order"}
+                            {isJoined ? "Update your items" : "Join Group Order"}
                         </h1>
                         <p className="text-gray-600">{groupOrder.restaurantName}</p>
                     </div>
 
                     {!canJoin && (
                         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                            <p className="text-yellow-800">Group order này không còn nhận thêm món</p>
+                            <p className="text-yellow-800">This group order is no longer accepting items.</p>
                         </div>
                     )}
 
@@ -295,7 +301,7 @@ export default function JoinGroupOrderPage() {
                             <div className="bg-white rounded-lg shadow-lg p-6">
                                 <h2 className="text-xl font-bold text-gray-900 mb-4">Menu</h2>
                                 {products.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-8">Đang tải menu...</p>
+                                    <p className="text-gray-500 text-center py-8">Loading menu...</p>
                                 ) : (
                                     <div className="space-y-4">
                                         {products.map((product) => {
@@ -344,8 +350,8 @@ export default function JoinGroupOrderPage() {
                                                             <button
                                                                 onClick={() => handleRemoveItem(product.id)}
                                                                 className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                                                                aria-label="Giảm số lượng"
-                                                                title="Giảm số lượng"
+                                                                aria-label="Decrease quantity"
+                                                                title="Decrease quantity"
                                                             >
                                                                 <Minus className="w-5 h-5 text-gray-600" />
                                                             </button>
@@ -356,8 +362,8 @@ export default function JoinGroupOrderPage() {
                                                                 onClick={() => handleAddItem(product)}
                                                                 disabled={!canJoin}
                                                                 className="p-1 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
-                                                                aria-label="Tăng số lượng"
-                                                                title="Tăng số lượng"
+                                                                aria-label="Increase quantity"
+                                                                title="Increase quantity"
                                                             >
                                                                 <Plus className="w-5 h-5 text-gray-600" />
                                                             </button>
@@ -368,7 +374,7 @@ export default function JoinGroupOrderPage() {
                                                             disabled={!canJoin}
                                                             className="px-4 py-2 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                         >
-                                                            Thêm
+                                                            Add
                                                         </button>
                                                     )}
                                                 </div>
@@ -384,11 +390,11 @@ export default function JoinGroupOrderPage() {
                             <div className="bg-white rounded-lg shadow-lg p-6 sticky top-8">
                                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                                     <ShoppingCart className="w-5 h-5" />
-                                    Món đã chọn
+                                    Selected items
                                 </h2>
 
                                 {selectedItems.size === 0 ? (
-                                    <p className="text-gray-500 text-center py-8">Chưa chọn món nào</p>
+                                    <p className="text-gray-500 text-center py-8">No items selected.</p>
                                 ) : (
                                     <>
                                         <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
@@ -409,8 +415,8 @@ export default function JoinGroupOrderPage() {
                                                         <button
                                                             onClick={() => handleRemoveItem(item.productId)}
                                                             className="p-1 hover:bg-gray-200 rounded transition-colors"
-                                                            aria-label="Xóa món"
-                                                            title="Xóa món"
+                                                            aria-label="Remove item"
+                                                            title="Remove item"
                                                         >
                                                             <X className="w-4 h-4 text-gray-600" />
                                                         </button>
@@ -421,7 +427,7 @@ export default function JoinGroupOrderPage() {
 
                                         <div className="border-t border-gray-200 pt-4">
                                             <div className="flex items-center justify-between mb-4">
-                                                <span className="font-semibold text-gray-900">Tổng:</span>
+                                                <span className="font-semibold text-gray-900">Total:</span>
                                                 <span className="text-xl font-bold text-[#EE4D2D]">
                                                     ${totalAmount.toFixed(2)}
                                                 </span>
@@ -433,10 +439,10 @@ export default function JoinGroupOrderPage() {
                                                 className="w-full px-4 py-3 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                                             >
                                                 {isSubmitting
-                                                    ? "Đang xử lý..."
+                                                    ? "Processing..."
                                                     : isJoined
-                                                    ? "Cập nhật món"
-                                                    : "Xác nhận tham gia"}
+                                                      ? "Update items"
+                                                      : "Confirm join"}
                                             </button>
                                         </div>
                                     </>
@@ -449,4 +455,3 @@ export default function JoinGroupOrderPage() {
         </main>
     );
 }
-

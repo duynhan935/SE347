@@ -2,6 +2,7 @@
 
 import { authApi } from "@/lib/api/authApi";
 import { dashboardApi, buildDateRangeQuery, type DashboardDateRangePreset } from "@/lib/api/dashboardApi";
+import { formatCurrency } from "@/lib/utils/dashboardFormat";
 import { User } from "@/types";
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { orderApi } from "@/lib/api/orderApi";
@@ -21,18 +22,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
-function formatVnd(value: number): string {
-    try {
-        return new Intl.NumberFormat("vi-VN").format(value);
-    } catch {
-        return value.toLocaleString();
-    }
-}
-
 function formatDateLabel(dateLike: string): string {
     const d = new Date(dateLike);
     if (Number.isNaN(d.getTime())) return String(dateLike);
-    return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+    return d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit" });
 }
 
 interface StatsCardProps {
@@ -126,8 +119,6 @@ export default function AdminDashboard() {
                 dashboardApi.getAdminMerchantsPerformance(dateQuery),
             ]);
 
-            console.log("Dashboard data:", { overview, revenue, ordersStats, revByMerchant, merchantsPerf });
-
             // Pending merchants (approval queue)
             const pendingPage = await authApi.getMerchantsPendingConsideration({ page: 0, size: 5 });
             const pendingList = Array.isArray(pendingPage?.content) ? pendingPage.content : [];
@@ -172,7 +163,7 @@ export default function AdminDashboard() {
                     name: String(s.status),
                     count: typeof s.count === "number" ? s.count : 0,
                     amount: typeof s.totalAmount === "number" ? s.totalAmount : 0,
-                }))
+                })),
             );
 
             setPaymentBreakdown(
@@ -180,7 +171,7 @@ export default function AdminDashboard() {
                     name: String(p.paymentStatus),
                     count: typeof p.count === "number" ? p.count : 0,
                     amount: typeof p.totalAmount === "number" ? p.totalAmount : 0,
-                }))
+                })),
             );
 
             setRevenueByMerchant(
@@ -189,7 +180,7 @@ export default function AdminDashboard() {
                     revenue: typeof r.totalRevenue === "number" ? r.totalRevenue : 0,
                     orders: typeof r.totalOrders === "number" ? r.totalOrders : 0,
                     aov: typeof r.averageOrderValue === "number" ? r.averageOrderValue : 0,
-                }))
+                })),
             );
 
             setMerchantPerformance(
@@ -202,9 +193,9 @@ export default function AdminDashboard() {
                         typeof m.completionRate === "string"
                             ? Number(m.completionRate)
                             : typeof m.completionRate === "number"
-                            ? m.completionRate
-                            : 0,
-                }))
+                              ? m.completionRate
+                              : 0,
+                })),
             );
 
             setStats({
@@ -219,8 +210,8 @@ export default function AdminDashboard() {
                     typeof overview?.completionRate === "string"
                         ? Number(overview.completionRate)
                         : typeof overview?.completionRate === "number"
-                        ? overview.completionRate
-                        : 0,
+                          ? overview.completionRate
+                          : 0,
                 pendingMerchants: pendingCount,
             });
         } catch (error) {
@@ -274,7 +265,7 @@ export default function AdminDashboard() {
                 />
                 <StatsCard
                     title="Total revenue"
-                    value={`${formatVnd(stats.totalRevenue)}₫`}
+                    value={formatCurrency(stats.totalRevenue)}
                     icon={DollarSign}
                     color="bg-yellow-500"
                 />
@@ -289,7 +280,7 @@ export default function AdminDashboard() {
                 />
                 <StatsCard
                     title="Avg order value"
-                    value={`${formatVnd(Math.round(stats.averageOrderValue))}₫`}
+                    value={formatCurrency(Math.round(stats.averageOrderValue))}
                     icon={TrendingUp}
                     color="bg-indigo-500"
                 />
@@ -390,7 +381,7 @@ export default function AdminDashboard() {
 
             {/* Order Status Summary */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Trạng thái đơn hàng</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Order Status</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {statusBreakdown.map((status) => (
                         <div
@@ -399,7 +390,9 @@ export default function AdminDashboard() {
                         >
                             <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 capitalize">{status.name}</p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">{status.count}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{formatVnd(status.amount)}₫</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {formatCurrency(status.amount)}
+                            </p>
                         </div>
                     ))}
                 </div>
@@ -407,7 +400,7 @@ export default function AdminDashboard() {
 
             {/* Payment Status Summary */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Trạng thái thanh toán</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment Status</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {paymentBreakdown.map((payment) => (
                         <div
@@ -417,7 +410,7 @@ export default function AdminDashboard() {
                             <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 capitalize">{payment.name}</p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">{payment.count}</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {formatVnd(payment.amount)}₫
+                                {formatCurrency(payment.amount)}
                             </p>
                         </div>
                     ))}
@@ -432,25 +425,25 @@ export default function AdminDashboard() {
                         <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                             <p className="text-xs text-gray-600 dark:text-gray-400">Products</p>
                             <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
-                                {formatVnd(revenueBreakdown.totalProductAmount)}₫
+                                {formatCurrency(revenueBreakdown.totalProductAmount)}
                             </p>
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                             <p className="text-xs text-gray-600 dark:text-gray-400">Delivery fee</p>
                             <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
-                                {formatVnd(revenueBreakdown.totalDeliveryFee)}₫
+                                {formatCurrency(revenueBreakdown.totalDeliveryFee)}
                             </p>
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                             <p className="text-xs text-gray-600 dark:text-gray-400">Tax</p>
                             <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
-                                {formatVnd(revenueBreakdown.totalTax)}₫
+                                {formatCurrency(revenueBreakdown.totalTax)}
                             </p>
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                             <p className="text-xs text-gray-600 dark:text-gray-400">Discount</p>
                             <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
-                                -{formatVnd(revenueBreakdown.totalDiscount)}₫
+                                -{formatCurrency(revenueBreakdown.totalDiscount)}
                             </p>
                         </div>
                     </div>
@@ -477,12 +470,12 @@ export default function AdminDashboard() {
                                             {m.merchantId}
                                         </p>
                                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                                            {m.orders.toLocaleString()} orders • AOV {formatVnd(Math.round(m.aov))}₫
+                                            {m.orders.toLocaleString()} orders • AOV {formatCurrency(Math.round(m.aov))}
                                         </p>
                                     </div>
                                     <div className="text-right flex-shrink-0">
                                         <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                            {formatVnd(m.revenue)}₫
+                                            {formatCurrency(m.revenue)}
                                         </p>
                                     </div>
                                 </div>
@@ -513,7 +506,7 @@ export default function AdminDashboard() {
                                     </div>
                                     <div className="text-right flex-shrink-0">
                                         <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                            {formatVnd(m.revenue)}₫
+                                            {formatCurrency(m.revenue)}
                                         </p>
                                     </div>
                                 </div>
@@ -548,7 +541,7 @@ export default function AdminDashboard() {
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
                                         {new Date(o.createdAt).toLocaleString("en-US")} •{" "}
-                                        {formatVnd(o.finalAmount || 0)}₫
+                                        {formatCurrency(o.finalAmount || 0)}
                                     </p>
                                 </div>
                             </div>

@@ -23,9 +23,12 @@ export function useNotifications() {
     useOrderSocket({
         userId: user?.id || null,
         onOrderStatusUpdate: (notification) => {
-            const orderId = notification.data.orderId;
-            const status = notification.data.status as OrderStatus;
-            const restaurantName = notification.data.restaurantName;
+            const data = notification.data;
+            if (!data) return;
+
+            const orderId = data.orderId;
+            const status = data.status as OrderStatus;
+            const restaurantName = data.restaurantName;
 
             if (!orderId || !status) return;
 
@@ -75,9 +78,7 @@ export function useNotifications() {
                     addNotification({
                         type: "ORDER_REJECTED",
                         title: "Order Cancelled",
-                        message: `Order ${orderId} has been cancelled. ${
-                            notification.data.reason ? `Reason: ${notification.data.reason}` : ""
-                        }`,
+                        message: `Order ${orderId} has been cancelled. ${data.reason ? `Reason: ${data.reason}` : ""}`,
                         orderId,
                         restaurantName,
                     });
@@ -134,10 +135,7 @@ export function useNotifications() {
                             break;
 
                         case OrderStatus.READY:
-                            if (
-                                previousStatus === OrderStatus.PREPARING ||
-                                previousStatus === OrderStatus.CONFIRMED
-                            ) {
+                            if (previousStatus === OrderStatus.PREPARING || previousStatus === OrderStatus.CONFIRMED) {
                                 addNotification({
                                     type: "ORDER_CONFIRMED",
                                     title: "Order Ready for Delivery",
@@ -149,10 +147,7 @@ export function useNotifications() {
                             break;
 
                         case OrderStatus.COMPLETED:
-                            if (
-                                previousStatus === OrderStatus.READY ||
-                                previousStatus === OrderStatus.PREPARING
-                            ) {
+                            if (previousStatus === OrderStatus.READY || previousStatus === OrderStatus.PREPARING) {
                                 addNotification({
                                     type: "ORDER_COMPLETED",
                                     title: "Order Delivered Successfully",
@@ -209,4 +204,3 @@ export function useNotifications() {
         unreadCount: useNotificationStore((state) => state.unreadCount()),
     };
 }
-

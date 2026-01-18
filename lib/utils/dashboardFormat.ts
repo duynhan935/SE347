@@ -12,21 +12,24 @@ export function toRateNumber(value: unknown, fallback = 0): number {
     return toNumber(value, fallback);
 }
 
-export function formatVnd(amount: unknown): string {
+export function formatCurrency(amount: unknown): string {
     const value = toNumber(amount, 0);
     try {
-        return `${new Intl.NumberFormat("vi-VN").format(value)}₫`;
+        return new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "USD",
+        }).format(value);
     } catch {
-        return `${value.toLocaleString()}₫`;
+        return `$${value.toLocaleString("en-US")}`;
     }
 }
 
 export function formatNumber(amount: unknown): string {
     const value = toNumber(amount, 0);
     try {
-        return new Intl.NumberFormat("vi-VN").format(value);
+        return new Intl.NumberFormat("en-US").format(value);
     } catch {
-        return value.toLocaleString();
+        return value.toLocaleString("en-US");
     }
 }
 
@@ -38,15 +41,15 @@ export function formatPercent(rate: unknown, decimals = 2): string {
 export function humanizeOrderStatus(status: unknown): string {
     const s = String(status ?? "").toLowerCase();
     const map: Record<string, string> = {
-        completed: "Hoàn thành",
-        pending: "Chờ xử lý",
-        confirmed: "Đã xác nhận",
-        preparing: "Đang chuẩn bị",
-        ready: "Sẵn sàng",
-        processing: "Đang xử lý",
-        cancelled: "Đã huỷ",
-        failed: "Thất bại",
-        paid: "Đã thanh toán",
+        completed: "Completed",
+        pending: "Pending",
+        confirmed: "Confirmed",
+        preparing: "Preparing",
+        ready: "Ready",
+        processing: "Processing",
+        cancelled: "Canceled",
+        failed: "Failed",
+        paid: "Paid",
     };
     return map[s] ?? (s ? s : "Unknown");
 }

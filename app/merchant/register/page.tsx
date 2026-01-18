@@ -53,7 +53,7 @@ export default function MerchantRegisterPage() {
                 },
                 () => {
                     toast.error("Unable to retrieve location. Please enter manually.");
-                }
+                },
             );
         } else {
             toast.error("Browser does not support location services.");
@@ -115,7 +115,7 @@ export default function MerchantRegisterPage() {
                     userId = newUser.id;
                 }
             } catch (userError) {
-                console.log("Could not fetch users to get userId:", userError);
+                console.error("Could not fetch users to get userId:", userError);
             }
 
             // Step 3: Create restaurant if we have userId
@@ -136,14 +136,14 @@ export default function MerchantRegisterPage() {
 
                     toast.success(
                         "Merchant registration successful! Your request has been submitted and is pending admin approval. You will receive an email notification when approved.",
-                        { duration: 5000 }
+                        { duration: 5000 },
                     );
                 } catch (restaurantError: unknown) {
                     const errorMsg =
                         (restaurantError as { response?: { data?: { message?: string } } })?.response?.data?.message ||
                         (restaurantError as { message?: string })?.message ||
                         "Unable to create restaurant at this time";
-                    console.log("Restaurant creation error:", errorMsg);
+                    console.error("Restaurant creation error:", errorMsg);
 
                     // Save restaurant info to localStorage for later creation
                     const restaurantInfo = {
@@ -167,7 +167,7 @@ export default function MerchantRegisterPage() {
 
                     toast.success(
                         "Merchant registration successful! Restaurant information has been saved. Restaurant will be created after approval. You will receive an email notification when approved.",
-                        { duration: 5000 }
+                        { duration: 5000 },
                     );
                 }
             } else {
@@ -193,7 +193,7 @@ export default function MerchantRegisterPage() {
 
                 toast.success(
                     "Merchant registration successful! Restaurant information has been saved. Restaurant will be created after approval. You will receive an email notification when approved.",
-                    { duration: 5000 }
+                    { duration: 5000 },
                 );
             }
 
@@ -258,7 +258,14 @@ export default function MerchantRegisterPage() {
                     {/* Logo */}
                     <div className="mb-8">
                         <Link href="/" className="inline-block">
-                            <Image src={Logo} alt="FoodEats Logo" width={160} height={53} className="h-12 w-auto brightness-0 invert" priority />
+                            <Image
+                                src={Logo}
+                                alt="FoodEats Logo"
+                                width={160}
+                                height={53}
+                                className="h-12 w-auto brightness-0 invert"
+                                priority
+                            />
                         </Link>
                     </div>
 
@@ -516,7 +523,10 @@ export default function MerchantRegisterPage() {
                             {/* Opening & Closing Time */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label htmlFor="openingTime" className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label
+                                        htmlFor="openingTime"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
                                         Opening Time <span className="text-red-500">*</span>
                                     </label>
                                     <input
@@ -529,7 +539,10 @@ export default function MerchantRegisterPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="closingTime" className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label
+                                        htmlFor="closingTime"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
                                         Closing Time <span className="text-red-500">*</span>
                                     </label>
                                     <input
@@ -561,7 +574,10 @@ export default function MerchantRegisterPage() {
 
                             {/* Restaurant Image */}
                             <div>
-                                <label htmlFor="restaurantImage" className="block text-sm font-medium text-gray-700 mb-1">
+                                <label
+                                    htmlFor="restaurantImage"
+                                    className="block text-sm font-medium text-gray-700 mb-1"
+                                >
                                     Restaurant Image
                                 </label>
                                 <div className="flex items-center gap-4">
@@ -607,8 +623,9 @@ export default function MerchantRegisterPage() {
                         <div className="bg-blue-50 border border-blue-200 rounded-md p-4 text-sm text-blue-800">
                             <p className="font-semibold mb-1">Note:</p>
                             <p>
-                                Your request will be sent to admin for approval. You will receive an email notification when approved or rejected. 
-                                Restaurant information will be created after you are approved. You can log in after approval.
+                                Your request will be sent to admin for approval. You will receive an email notification
+                                when approved or rejected. Restaurant information will be created after you are
+                                approved. You can log in after approval.
                             </p>
                         </div>
 
@@ -624,7 +641,10 @@ export default function MerchantRegisterPage() {
                         {/* Footer Link */}
                         <p className="text-center text-sm text-gray-600">
                             Already a partner?{" "}
-                            <Link href="/login" className="font-semibold text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline">
+                            <Link
+                                href="/login"
+                                className="font-semibold text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:underline"
+                            >
                                 Sign In
                             </Link>
                         </p>
@@ -634,4 +654,3 @@ export default function MerchantRegisterPage() {
         </div>
     );
 }
-

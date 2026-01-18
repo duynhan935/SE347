@@ -39,7 +39,7 @@ export const MenuItemCard = memo(
         const displayPrice = useMemo(() => {
             if (!sizes || sizes.length === 0) return null;
             // Find minimum price from all sizes
-            const prices = sizes.map(size => size.price).filter(price => price != null);
+            const prices = sizes.map((size) => size.price).filter((price) => price != null);
             if (prices.length === 0) return null;
             return Math.min(...prices);
         }, [sizes]);
@@ -82,15 +82,6 @@ export const MenuItemCard = memo(
 
                 setIsAdding(true);
                 try {
-                    // Use the same image URL that's displayed on the card
-                    console.log("[MenuItemCard] Adding to cart:", {
-                        productId: item.id,
-                        productName: item.productName,
-                        originalImageURL: item.imageURL,
-                        cardImageUrl: cardImageUrl,
-                        imageURLType: typeof item.imageURL,
-                    });
-
                     await addItem(
                         {
                             id: item.id,
@@ -104,7 +95,7 @@ export const MenuItemCard = memo(
                             sizeId: defaultSize.id,
                             sizeName: defaultSize.sizeName,
                         },
-                        1
+                        1,
                     );
                     // Toast is handled by cartStore.addItem
                 } catch (error) {
@@ -116,7 +107,7 @@ export const MenuItemCard = memo(
                     }, 300);
                 }
             },
-            [isAdding, isMounted, user, item, cardImageUrl, addItem, router, restaurantId, restaurantName]
+            [isAdding, isMounted, user, item, cardImageUrl, addItem, router, restaurantId, restaurantName],
         );
 
         const hasImage = cardImageUrl && cardImageUrl !== "/placeholder.png";
@@ -183,7 +174,7 @@ export const MenuItemCard = memo(
                 </div>
             </Link>
         );
-    }
+    },
 );
 
 MenuItemCard.displayName = "MenuItemCard";

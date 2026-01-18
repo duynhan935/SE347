@@ -1,7 +1,7 @@
 "use client";
 
 import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { formatNumber, formatVnd, humanizeOrderStatus, toNumber } from "@/lib/utils/dashboardFormat";
+import { formatCurrency, formatNumber, humanizeOrderStatus, toNumber } from "@/lib/utils/dashboardFormat";
 
 type ApiEnvelope<T> = { success: boolean; data: T };
 
@@ -88,7 +88,7 @@ export default function DashboardVisualization({ data }: { data: DashboardApiBun
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-xl border border-stroke bg-white p-5 shadow-sm">
                     <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                    <p className="mt-2 text-2xl font-bold text-gray-900">{formatVnd(overview?.totalRevenue)}</p>
+                    <p className="mt-2 text-2xl font-bold text-gray-900">{formatCurrency(overview?.totalRevenue)}</p>
                 </div>
                 <div className="rounded-xl border border-stroke bg-white p-5 shadow-sm">
                     <p className="text-sm font-medium text-gray-600">Total Orders</p>
@@ -96,7 +96,9 @@ export default function DashboardVisualization({ data }: { data: DashboardApiBun
                 </div>
                 <div className="rounded-xl border border-stroke bg-white p-5 shadow-sm">
                     <p className="text-sm font-medium text-gray-600">Avg Order Value</p>
-                    <p className="mt-2 text-2xl font-bold text-gray-900">{formatVnd(overview?.averageOrderValue)}</p>
+                    <p className="mt-2 text-2xl font-bold text-gray-900">
+                        {formatCurrency(overview?.averageOrderValue)}
+                    </p>
                 </div>
                 <div className="rounded-xl border border-stroke bg-white p-5 shadow-sm">
                     <p className="text-sm font-medium text-gray-600">Total Restaurants</p>
@@ -120,7 +122,7 @@ export default function DashboardVisualization({ data }: { data: DashboardApiBun
                                     <XAxis type="number" tickFormatter={(v) => formatNumber(v)} stroke="#9ca3af" />
                                     <YAxis type="category" dataKey="restaurantName" width={140} stroke="#9ca3af" />
                                     <Tooltip
-                                        formatter={(value) => formatVnd(value)}
+                                        formatter={(value) => formatCurrency(value)}
                                         labelFormatter={(label) => `Restaurant: ${label}`}
                                     />
                                     <Bar dataKey="totalRevenue" fill="#572af8" radius={[0, 8, 8, 0]} />

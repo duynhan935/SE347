@@ -14,7 +14,7 @@ export default function GroupOrderPage() {
     const shareToken = params?.shareToken as string;
     const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
-    
+
     const [groupOrder, setGroupOrder] = useState<GroupOrder | null>(null);
     const [loading, setLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -23,7 +23,7 @@ export default function GroupOrderPage() {
 
     const fetchGroupOrder = useCallback(async () => {
         if (!shareToken) return;
-        
+
         setLoading(true);
         try {
             const data = await groupOrderApi.getGroupOrderByToken(shareToken);
@@ -32,7 +32,7 @@ export default function GroupOrderPage() {
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string }; status?: number }; message?: string };
             console.error("Failed to fetch group order:", err);
-            const errorMessage = err.response?.data?.message || err.message || "Không thể tải group order";
+            const errorMessage = err.response?.data?.message || err.message || "Unable to load the group order.";
             toast.error(errorMessage);
             if (err.response?.status === 404) {
                 router.push("/");
@@ -51,7 +51,7 @@ export default function GroupOrderPage() {
     // Auto-refresh every 5 seconds if group order is open or locked
     useEffect(() => {
         const currentStatus = groupOrder?.status;
-        
+
         // Clear existing interval
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
@@ -59,7 +59,11 @@ export default function GroupOrderPage() {
         }
 
         // Only set up interval if group order exists and is not in final states
-        if (!currentStatus || currentStatus === GroupOrderStatus.ORDERED || currentStatus === GroupOrderStatus.CANCELLED) {
+        if (
+            !currentStatus ||
+            currentStatus === GroupOrderStatus.ORDERED ||
+            currentStatus === GroupOrderStatus.CANCELLED
+        ) {
             return;
         }
 
@@ -76,11 +80,10 @@ export default function GroupOrderPage() {
         };
     }, [groupOrder?.status, fetchGroupOrder]);
 
-
     const handleCopyLink = () => {
         const shareLink = `${window.location.origin}/group-orders/${shareToken}`;
         navigator.clipboard.writeText(shareLink);
-        toast.success("Đã sao chép link!");
+        toast.success("Link copied.");
     };
 
     const handleLock = async () => {
@@ -93,10 +96,10 @@ export default function GroupOrderPage() {
         try {
             const data = await groupOrderApi.lockGroupOrder(shareToken);
             setGroupOrder(data);
-            toast.success("Đã khóa group order!");
+            toast.success("Group order locked.");
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string } }; message?: string };
-            const errorMessage = err.response?.data?.message || err.message || "Không thể khóa group order";
+            const errorMessage = err.response?.data?.message || err.message || "Unable to lock the group order.";
             toast.error(errorMessage);
         } finally {
             setIsProcessing(false);
@@ -113,7 +116,7 @@ export default function GroupOrderPage() {
         try {
             const result = await groupOrderApi.confirmGroupOrder(shareToken);
             setGroupOrder(result.groupOrder);
-            toast.success("Đã xác nhận group order!");
+            toast.success("Group order confirmed.");
             // Redirect to order detail page
             // Backend returns { groupOrder, order } where order has orderId
             const orderId = result.order?.orderId;
@@ -122,12 +125,12 @@ export default function GroupOrderPage() {
             } else {
                 // Fallback: redirect to orders list if orderId not found
                 console.error("Order ID not found in response:", result);
-                toast.error("Không tìm thấy order ID");
+                toast.error("Order ID not found.");
                 router.push("/account/orders");
             }
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string } }; message?: string };
-            const errorMessage = err.response?.data?.message || err.message || "Không thể xác nhận group order";
+            const errorMessage = err.response?.data?.message || err.message || "Unable to confirm the group order.";
             toast.error(errorMessage);
         } finally {
             setIsProcessing(false);
@@ -140,17 +143,17 @@ export default function GroupOrderPage() {
             router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
             return;
         }
-        if (!confirm("Bạn có chắc chắn muốn hủy group order này?")) {
+        if (!confirm("Are you sure you want to cancel this group order?")) {
             return;
         }
         setIsProcessing(true);
         try {
             await groupOrderApi.cancelGroupOrder(shareToken);
-            toast.success("Đã hủy group order!");
+            toast.success("Group order canceled.");
             router.push("/");
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string } }; message?: string };
-            const errorMessage = err.response?.data?.message || err.message || "Không thể hủy group order";
+            const errorMessage = err.response?.data?.message || err.message || "Unable to cancel the group order.";
             toast.error(errorMessage);
         } finally {
             setIsProcessing(false);
@@ -163,14 +166,18 @@ export default function GroupOrderPage() {
             router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
             return;
         }
-        
+
         // Only creator can remove others, anyone can remove themselves
         if (userId !== user.id && user.id !== groupOrder?.creatorId) {
-            toast.error("Bạn không có quyền xóa người này");
+            toast.error("You don't have permission to remove this participant.");
             return;
         }
 
-        if (!confirm(`Bạn có chắc chắn muốn xóa ${userId === user.id ? "chính mình" : userName} khỏi group order?`)) {
+        if (
+            !confirm(
+                `Are you sure you want to remove ${userId === user.id ? "yourself" : userName} from this group order?`,
+            )
+        ) {
             return;
         }
 
@@ -178,7 +185,7 @@ export default function GroupOrderPage() {
         try {
             const data = await groupOrderApi.removeParticipant(shareToken, userId);
             setGroupOrder(data);
-            toast.success(userId === user.id ? "Đã rời khỏi group order" : "Đã xóa người tham gia");
+            toast.success(userId === user.id ? "You left the group order." : "Participant removed.");
             if (userId === user.id) {
                 // Refresh to update UI
                 setTimeout(() => {
@@ -187,7 +194,7 @@ export default function GroupOrderPage() {
             }
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string } }; message?: string };
-            const errorMessage = err.response?.data?.message || err.message || "Không thể xóa người tham gia";
+            const errorMessage = err.response?.data?.message || err.message || "Unable to remove the participant.";
             toast.error(errorMessage);
         } finally {
             setIsProcessing(false);
@@ -218,9 +225,9 @@ export default function GroupOrderPage() {
                 <div className="custom-container">
                     <div className="max-w-4xl mx-auto">
                         <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-                            <p className="text-gray-600">Không tìm thấy group order</p>
+                            <p className="text-gray-600">Group order not found.</p>
                             <Link href="/" className="text-[#EE4D2D] hover:underline mt-4 inline-block">
-                                Về trang chủ
+                                Back to home
                             </Link>
                         </div>
                     </div>
@@ -230,12 +237,14 @@ export default function GroupOrderPage() {
     }
 
     const isCreator = user?.id === groupOrder.creatorId;
-    const currentParticipant = groupOrder.participants.find(p => p.userId === user?.id);
+    const currentParticipant = groupOrder.participants.find((p) => p.userId === user?.id);
     const isParticipant = !!currentParticipant;
     const canJoin = !isParticipant && groupOrder.status === GroupOrderStatus.OPEN;
     const canLock = isCreator && groupOrder.status === GroupOrderStatus.OPEN && groupOrder.participants.length > 0;
-    const canConfirm = isCreator && (groupOrder.status === GroupOrderStatus.OPEN || groupOrder.status === GroupOrderStatus.LOCKED);
-    const canCancel = isCreator && groupOrder.status !== GroupOrderStatus.ORDERED && groupOrder.status !== GroupOrderStatus.CANCELLED;
+    const canConfirm =
+        isCreator && (groupOrder.status === GroupOrderStatus.OPEN || groupOrder.status === GroupOrderStatus.LOCKED);
+    const canCancel =
+        isCreator && groupOrder.status !== GroupOrderStatus.ORDERED && groupOrder.status !== GroupOrderStatus.CANCELLED;
     const shareLink = typeof window !== "undefined" ? `${window.location.origin}/group-orders/${shareToken}` : "";
 
     // Format price
@@ -263,19 +272,19 @@ export default function GroupOrderPage() {
                                         groupOrder.status === GroupOrderStatus.OPEN
                                             ? "bg-green-100 text-green-800"
                                             : groupOrder.status === GroupOrderStatus.LOCKED
-                                            ? "bg-yellow-100 text-yellow-800"
-                                            : groupOrder.status === GroupOrderStatus.ORDERED
-                                            ? "bg-blue-100 text-blue-800"
-                                            : "bg-red-100 text-red-800"
+                                              ? "bg-yellow-100 text-yellow-800"
+                                              : groupOrder.status === GroupOrderStatus.ORDERED
+                                                ? "bg-blue-100 text-blue-800"
+                                                : "bg-red-100 text-red-800"
                                     }`}
                                 >
                                     {groupOrder.status === GroupOrderStatus.OPEN
-                                        ? "Đang mở"
+                                        ? "Open"
                                         : groupOrder.status === GroupOrderStatus.LOCKED
-                                        ? "Đã khóa"
-                                        : groupOrder.status === GroupOrderStatus.ORDERED
-                                        ? "Đã xác nhận"
-                                        : "Đã hủy"}
+                                          ? "Locked"
+                                          : groupOrder.status === GroupOrderStatus.ORDERED
+                                            ? "Confirmed"
+                                            : "Canceled"}
                                 </span>
                             </div>
                         </div>
@@ -288,19 +297,21 @@ export default function GroupOrderPage() {
 
                         {/* Share Link */}
                         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                            <label htmlFor="share-link" className="sr-only">Link chia sẻ group order</label>
+                            <label htmlFor="share-link" className="sr-only">
+                                Group order share link
+                            </label>
                             <input
                                 id="share-link"
                                 type="text"
                                 readOnly
                                 value={shareLink}
                                 className="flex-1 bg-transparent text-sm text-gray-700 outline-none"
-                                aria-label="Link chia sẻ group order"
+                                aria-label="Group order share link"
                             />
                             <button
                                 onClick={handleCopyLink}
                                 className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-                                title="Sao chép link"
+                                title="Copy link"
                             >
                                 <Copy className="w-4 h-4 text-gray-600" />
                             </button>
@@ -316,7 +327,7 @@ export default function GroupOrderPage() {
                                             className="flex items-center gap-2 px-4 py-2 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors"
                                         >
                                             <Users className="w-4 h-4" />
-                                            Tham gia
+                                            Join
                                         </Link>
                                     ) : (
                                         <Link
@@ -324,43 +335,43 @@ export default function GroupOrderPage() {
                                             className="flex items-center gap-2 px-4 py-2 bg-[#EE4D2D] text-white rounded-lg hover:bg-[#EE4D2D]/90 transition-colors"
                                         >
                                             <Users className="w-4 h-4" />
-                                            Đăng nhập để tham gia
+                                            Sign in to join
                                         </Link>
                                     )}
                                 </>
                             )}
                             {isAuthenticated && user && (
                                 <>
-                                {canLock && (
-                                    <button
-                                        onClick={handleLock}
-                                        disabled={isProcessing}
-                                        className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors disabled:opacity-50"
-                                    >
-                                        <Lock className="w-4 h-4" />
-                                        Khóa
-                                    </button>
-                                )}
-                                {canConfirm && (
-                                    <button
-                                        onClick={handleConfirm}
-                                        disabled={isProcessing}
-                                        className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
-                                    >
-                                        <Check className="w-4 h-4" />
-                                        Xác nhận
-                                    </button>
-                                )}
-                                {canCancel && (
-                                    <button
-                                        onClick={handleCancel}
-                                        disabled={isProcessing}
-                                        className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
-                                    >
-                                        <X className="w-4 h-4" />
-                                        Hủy
-                                    </button>
-                                )}
+                                    {canLock && (
+                                        <button
+                                            onClick={handleLock}
+                                            disabled={isProcessing}
+                                            className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors disabled:opacity-50"
+                                        >
+                                            <Lock className="w-4 h-4" />
+                                            Lock
+                                        </button>
+                                    )}
+                                    {canConfirm && (
+                                        <button
+                                            onClick={handleConfirm}
+                                            disabled={isProcessing}
+                                            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
+                                        >
+                                            <Check className="w-4 h-4" />
+                                            Confirm
+                                        </button>
+                                    )}
+                                    {canCancel && (
+                                        <button
+                                            onClick={handleCancel}
+                                            disabled={isProcessing}
+                                            className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                                        >
+                                            <X className="w-4 h-4" />
+                                            Cancel
+                                        </button>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -370,11 +381,11 @@ export default function GroupOrderPage() {
                     <div className="bg-white rounded-lg shadow-lg p-6">
                         <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <Users className="w-5 h-5" />
-                            Người tham gia ({groupOrder.participants.length})
+                            Participants ({groupOrder.participants.length})
                         </h2>
                         <div className="space-y-4">
                             {groupOrder.participants.length === 0 ? (
-                                <p className="text-gray-500 text-center py-8">Chưa có người tham gia</p>
+                                <p className="text-gray-500 text-center py-8">No participants yet.</p>
                             ) : (
                                 groupOrder.participants.map((participant) => (
                                     <div key={participant.userId} className="border border-gray-200 rounded-lg p-4">
@@ -383,16 +394,18 @@ export default function GroupOrderPage() {
                                                 <p className="font-medium text-gray-900">{participant.userName}</p>
                                                 <div className="flex gap-2 mt-1">
                                                     {participant.userId === groupOrder.creatorId && (
-                                                        <span className="text-xs text-[#EE4D2D]">(Người tạo)</span>
+                                                        <span className="text-xs text-[#EE4D2D]">(Creator)</span>
                                                     )}
                                                     {participant.userId === user?.id && (
-                                                        <span className="text-xs text-blue-600">(Bạn)</span>
+                                                        <span className="text-xs text-blue-600">(You)</span>
                                                     )}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <div className="text-right">
-                                                    <p className="font-bold text-gray-900">${formatPrice(participant.totalAmount)}</p>
+                                                    <p className="font-bold text-gray-900">
+                                                        ${formatPrice(participant.totalAmount)}
+                                                    </p>
                                                     <span
                                                         className={`text-xs ${
                                                             participant.paymentStatus === "paid"
@@ -400,29 +413,40 @@ export default function GroupOrderPage() {
                                                                 : "text-gray-500"
                                                         }`}
                                                     >
-                                                        {participant.paymentStatus === "paid" ? "Đã thanh toán" : "Chưa thanh toán"}
+                                                        {participant.paymentStatus === "paid" ? "Paid" : "Unpaid"}
                                                     </span>
                                                 </div>
                                                 {/* Actions */}
-                                                {(groupOrder.status === GroupOrderStatus.OPEN || groupOrder.status === GroupOrderStatus.LOCKED) && (
+                                                {(groupOrder.status === GroupOrderStatus.OPEN ||
+                                                    groupOrder.status === GroupOrderStatus.LOCKED) && (
                                                     <div className="flex gap-1">
                                                         {/* Edit button - only for current user */}
                                                         {participant.userId === user?.id && (
                                                             <Link
                                                                 href={`/group-orders/${shareToken}/join`}
                                                                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                                                title="Sửa món"
+                                                                title="Edit items"
                                                             >
                                                                 <Edit className="w-4 h-4 text-gray-600" />
                                                             </Link>
                                                         )}
                                                         {/* Remove button - for creator or self */}
-                                                        {(user?.id === groupOrder.creatorId || participant.userId === user?.id) && (
+                                                        {(user?.id === groupOrder.creatorId ||
+                                                            participant.userId === user?.id) && (
                                                             <button
-                                                                onClick={() => handleRemoveParticipant(participant.userId, participant.userName)}
+                                                                onClick={() =>
+                                                                    handleRemoveParticipant(
+                                                                        participant.userId,
+                                                                        participant.userName,
+                                                                    )
+                                                                }
                                                                 disabled={isProcessing}
                                                                 className="p-2 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                                                                title={participant.userId === user?.id ? "Rời khỏi group order" : "Xóa người tham gia"}
+                                                                title={
+                                                                    participant.userId === user?.id
+                                                                        ? "Leave group order"
+                                                                        : "Remove participant"
+                                                                }
                                                             >
                                                                 <Trash2 className="w-4 h-4 text-red-600" />
                                                             </button>
@@ -434,11 +458,16 @@ export default function GroupOrderPage() {
                                         {participant.items.length > 0 && (
                                             <div className="space-y-2 mt-3 pt-3 border-t border-gray-100">
                                                 {participant.items.map((item, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between text-sm">
+                                                    <div
+                                                        key={idx}
+                                                        className="flex items-center justify-between text-sm"
+                                                    >
                                                         <span className="text-gray-700">
                                                             {item.productName} x{item.quantity}
                                                         </span>
-                                                        <span className="text-gray-900">${formatPrice(item.price * item.quantity)}</span>
+                                                        <span className="text-gray-900">
+                                                            ${formatPrice(item.price * item.quantity)}
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -453,36 +482,34 @@ export default function GroupOrderPage() {
                     <div className="bg-white rounded-lg shadow-lg p-6">
                         <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <DollarSign className="w-5 h-5" />
-                            Tổng kết
+                            Summary
                         </h2>
                         <div className="space-y-2">
                             <div className="flex items-center justify-between text-gray-700">
-                                <span>Tổng tiền món:</span>
+                                <span>Items total:</span>
                                 <span>${formatPrice(groupOrder.totalAmount)}</span>
                             </div>
                             <div className="flex items-center justify-between text-gray-700">
-                                <span>Phí giao hàng:</span>
+                                <span>Delivery fee:</span>
                                 <span>${formatPrice(groupOrder.deliveryFee)}</span>
                             </div>
                             <div className="flex items-center justify-between text-gray-700">
-                                <span>Thuế:</span>
+                                <span>Tax:</span>
                                 <span>${formatPrice(groupOrder.tax)}</span>
                             </div>
                             <div className="flex items-center justify-between text-lg font-bold text-gray-900 pt-3 border-t border-gray-200">
-                                <span>Tổng cộng:</span>
+                                <span>Total:</span>
                                 <span>${formatPrice(groupOrder.finalAmount)}</span>
                             </div>
                             {groupOrder.paymentMethod === "split" && (
-                                <p className="text-xs text-gray-500 mt-2">
-                                    Mỗi người sẽ thanh toán phần của mình
-                                </p>
+                                <p className="text-xs text-gray-500 mt-2">Each person pays their own share.</p>
                             )}
                         </div>
                     </div>
 
                     {/* Delivery Address */}
                     <div className="bg-white rounded-lg shadow-lg p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Địa chỉ giao hàng</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">Delivery Address</h2>
                         <p className="text-gray-700">
                             {groupOrder.deliveryAddress.street}, {groupOrder.deliveryAddress.city}
                             {groupOrder.deliveryAddress.state && `, ${groupOrder.deliveryAddress.state}`}
@@ -494,4 +521,3 @@ export default function GroupOrderPage() {
         </main>
     );
 }
-

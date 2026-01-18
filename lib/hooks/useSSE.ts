@@ -3,11 +3,10 @@
 import { useNotificationStore } from "@/stores/useNotificationStore";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { BACKEND_ORIGIN } from "../config/publicRuntime";
 
 // Use API gateway URL (SSE is routed through API gateway)
-const DEFAULT_API_BASE_URL = "http://localhost:8080";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL;
-const NOTIFICATION_URL = API_BASE_URL.replace(/\/$/, "");
+const NOTIFICATION_URL = BACKEND_ORIGIN;
 
 interface UseSSEOptions {
     userId: string | null;
@@ -45,12 +44,10 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
 
         try {
             const sseUrl = `${NOTIFICATION_URL}/api/sse/subcribe/${encodeURIComponent(userId)}`;
-            console.log("🔔 Connecting to SSE:", sseUrl);
 
             const eventSource = new EventSource(sseUrl);
 
             eventSource.onopen = () => {
-                console.log("✅ SSE connected");
                 setIsConnected(true);
 
                 // Clear any pending reconnect
@@ -73,7 +70,6 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
                 // Reconnect after 5 seconds if still authenticated
                 if (isAuthenticated && userId) {
                     reconnectTimeoutRef.current = setTimeout(() => {
-                        console.log("🔄 Reconnecting SSE...");
                         connect();
                     }, 5000);
                 }
@@ -81,7 +77,7 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
 
             // Handle INIT event (connection confirmation)
             eventSource.addEventListener("INIT", (event) => {
-                console.log("🔔 SSE INIT:", event.data);
+                void event;
             });
 
             // Handle PING event (heartbeat)
@@ -92,7 +88,6 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
             // Handle Order Successfully event (order accepted)
             eventSource.addEventListener("Order Successfully", (event) => {
                 const message = event.data || "Your order has been accepted";
-                console.log("✅ Order accepted:", message);
 
                 // Extract restaurant name from message
                 const restaurantName = message.replace("accepted your order", "").trim();
@@ -113,7 +108,6 @@ export function useSSE({ userId, isAuthenticated }: UseSSEOptions) {
             // Handle Order Failed event (order rejected)
             eventSource.addEventListener("Order Failed", (event) => {
                 const message = event.data || "Your order has been rejected";
-                console.log("❌ Order rejected:", message);
 
                 // Extract restaurant name from message
                 const restaurantName = message.replace("rejected your order", "").trim();

@@ -42,42 +42,42 @@ export const useProductStore = create<ProductState>((set) => ({
             const res = await productApi.getAllProducts(params);
             // Handle Page response structure: { content: Product[], totalPages, totalElements, ... }
             const data = res.data;
-            
-            if (data && typeof data === 'object' && 'content' in data) {
+
+            if (data && typeof data === "object" && "content" in data) {
                 // It's a Page response
                 const pageData = data as PageResponse<Product>;
-                set({ 
+                set({
                     products: pageData.content || [],
                     totalPages: pageData.totalPages || 0,
                     totalElements: pageData.totalElements || 0,
                     currentPage: pageData.number !== undefined ? pageData.number + 1 : 0, // Convert 0-indexed to 1-indexed
                     pageSize: pageData.size || 12,
-                    loading: false 
+                    loading: false,
                 });
             } else if (Array.isArray(data)) {
                 // Fallback: direct array response
                 const productsArray = data as Product[];
-                set({ 
+                set({
                     products: productsArray,
                     totalPages: 1,
                     totalElements: productsArray.length,
                     currentPage: 1,
                     pageSize: productsArray.length,
-                    loading: false 
+                    loading: false,
                 });
             } else {
-                set({ 
+                set({
                     products: [],
                     totalPages: 0,
                     totalElements: 0,
                     currentPage: 0,
                     pageSize: 12,
-                    loading: false 
+                    loading: false,
                 });
             }
         } catch (err: any) {
-            set({ 
-                error: err.message || "Failed to load products.", 
+            set({
+                error: err.message || "Failed to load products.",
                 loading: false,
                 products: [],
                 totalPages: 0,
@@ -110,9 +110,7 @@ export const useProductStore = create<ProductState>((set) => ({
     createNewProduct: async (productData: ProductCreateData, imageFile?: File) => {
         set({ loading: true, error: null });
         try {
-            console.log(productData, imageFile);
             const res = await productApi.createProduct(productData, imageFile);
-            console.log(res);
             set((state) => ({
                 products: [...state.products, res.data],
                 loading: false,
@@ -160,7 +158,6 @@ export const useProductStore = create<ProductState>((set) => ({
     deleteProduct: async (ProductId: string) => {
         try {
             set({ loading: true });
-            console.log(ProductId);
             await productApi.deleteProduct(ProductId);
             set((state) => ({
                 products: state.products.filter((res) => res.id !== ProductId),

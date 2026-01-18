@@ -53,8 +53,6 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
 
             if (!newStatus) return;
 
-            console.log("[Delivery Status] Order status updated via websocket:", orderId, newStatus);
-
             // Show toast notification
             const statusMessages: Record<string, string> = {
                 confirmed: "Order confirmed! Restaurant is preparing your order.",
@@ -97,8 +95,10 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                 .getOrderBySlug(order.slug)
                 .then((updatedOrder) => {
                     // Update if status changed or estimated time might have changed
-                    if (updatedOrder.status !== order.status || 
-                        updatedOrder.estimatedDeliveryTime !== order.estimatedDeliveryTime) {
+                    if (
+                        updatedOrder.status !== order.status ||
+                        updatedOrder.estimatedDeliveryTime !== order.estimatedDeliveryTime
+                    ) {
                         setOrder(updatedOrder);
                     }
                 })
@@ -113,7 +113,12 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
 
     // Update estimated time every minute for real-time countdown
     useEffect(() => {
-        if (!order.orderId || !order.estimatedDeliveryTime || order.status === OrderStatus.COMPLETED || order.status === OrderStatus.CANCELLED) {
+        if (
+            !order.orderId ||
+            !order.estimatedDeliveryTime ||
+            order.status === OrderStatus.COMPLETED ||
+            order.status === OrderStatus.CANCELLED
+        ) {
             return;
         }
 
@@ -157,17 +162,17 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                 // Handle different date formats from backend
                 const eta = new Date(order.estimatedDeliveryTime).getTime();
                 if (Number.isNaN(eta)) return 60; // Default to 1 hour if invalid date
-                
+
                 const now = Date.now();
                 const diffMs = eta - now;
                 const diffMinutes = Math.round(diffMs / 60000);
-                
+
                 // Cap at maximum 60 minutes (1 hour)
                 // If estimated time is in the past, negative, or exceeds 60 minutes, default to 60 minutes
                 if (diffMinutes < 0 || diffMinutes > 60) {
                     return 60; // Default to 1 hour
                 }
-                
+
                 // Return calculated time (0-60 minutes)
                 return diffMinutes;
             } catch (error) {
@@ -187,14 +192,17 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
 
     const canCancel = order.status === OrderStatus.PENDING;
 
-    const groupedItems = displayItems.reduce((acc, item) => {
-        const { shopName } = item;
-        if (!acc[shopName]) {
-            acc[shopName] = [];
-        }
-        acc[shopName].push(item);
-        return acc;
-    }, {} as Record<string, DisplayOrderItem[]>);
+    const groupedItems = displayItems.reduce(
+        (acc, item) => {
+            const { shopName } = item;
+            if (!acc[shopName]) {
+                acc[shopName] = [];
+            }
+            acc[shopName].push(item);
+            return acc;
+        },
+        {} as Record<string, DisplayOrderItem[]>,
+    );
 
     if (!order) {
         notFound();
@@ -255,4 +263,3 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
         </div>
     );
 }
-

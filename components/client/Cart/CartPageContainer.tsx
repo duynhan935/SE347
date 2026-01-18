@@ -104,20 +104,23 @@ export default function CartPageContainer() {
 
     // Group items by restaurant
     const groupedItems = useMemo(() => {
-        return items.reduce((acc, item) => {
-            const { restaurantId, restaurantName } = item;
+        return items.reduce(
+            (acc, item) => {
+                const { restaurantId, restaurantName } = item;
 
-            if (!acc[restaurantId]) {
-                acc[restaurantId] = {
-                    restaurantName,
-                    items: [],
-                };
-            }
+                if (!acc[restaurantId]) {
+                    acc[restaurantId] = {
+                        restaurantName,
+                        items: [],
+                    };
+                }
 
-            acc[restaurantId].items.push(item);
+                acc[restaurantId].items.push(item);
 
-            return acc;
-        }, {} as Record<string, { restaurantName: string; items: CartItem[] }>);
+                return acc;
+            },
+            {} as Record<string, { restaurantName: string; items: CartItem[] }>,
+        );
     }, [items]);
 
     // Get selected items for checkout
@@ -192,7 +195,8 @@ export default function CartPageContainer() {
 
                         {/* Description */}
                         <p className="text-gray-600 mb-8 max-w-md">
-                            You haven't added any food items to your cart yet. Explore restaurants and add delicious dishes to your cart.
+                            You haven&apos;t added any food items to your cart yet. Explore restaurants and add
+                            delicious dishes to your cart.
                         </p>
 
                         {/* CTA Button */}
@@ -244,12 +248,12 @@ export default function CartPageContainer() {
                             <div key={restaurantId} className="p-6">
                                 {/* Restaurant Name */}
                                 <h2 className="text-lg font-semibold text-gray-900 mb-4">{group.restaurantName}</h2>
-                                
+
                                 {/* Items */}
                                 {group.items.map((item) => {
                                     const itemKey = `${item.id}-${item.sizeId || ""}`;
                                     const isSelected = selectedItems.has(itemKey);
-                                    
+
                                     return (
                                         <div key={itemKey} className="mb-4 last:mb-0">
                                             <CartItemRow
@@ -289,9 +293,7 @@ export default function CartPageContainer() {
                                 onChange={toggleSelectAll}
                                 className="w-4 h-4 text-[#EE4D2D] border-gray-300 rounded focus:ring-[#EE4D2D] focus:ring-2"
                             />
-                            <span className="text-sm font-medium text-gray-700">
-                                Select All ({selectedItems.size})
-                            </span>
+                            <span className="text-sm font-medium text-gray-700">Select All ({selectedItems.size})</span>
                         </label>
                     </div>
 
@@ -301,12 +303,12 @@ export default function CartPageContainer() {
                             <div key={restaurantId} className="p-4">
                                 {/* Restaurant Name */}
                                 <h2 className="text-base font-semibold text-gray-900 mb-3">{group.restaurantName}</h2>
-                                
+
                                 {/* Items */}
                                 {group.items.map((item) => {
                                     const itemKey = `${item.id}-${item.sizeId || ""}`;
                                     const isSelected = selectedItems.has(itemKey);
-                                    
+
                                     return (
                                         <div key={itemKey} className="mb-3 last:mb-0">
                                             <CartItemRow
