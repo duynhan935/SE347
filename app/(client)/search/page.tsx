@@ -2,22 +2,33 @@
 
 import { CompactFoodCard } from "@/components/client/HomePage/CompactFoodCard";
 import { CompactFoodCardSkeleton } from "@/components/client/HomePage/CompactFoodCardSkeleton";
+import Pagination from "@/components/client/Pagination";
 import SearchFilters from "@/components/client/search/SearchFilters";
 import SearchSortBar from "@/components/client/search/SearchSortBar";
 import { initializeDefaultLocation, useLocationStore } from "@/stores/useLocationStore";
 import { useProductStore } from "@/stores/useProductsStores";
 import { Filter } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export default function SearchPage() {
+    const router = useRouter();
     const searchParams = useSearchParams();
-    const { fetchAllProducts, products, loading: productsLoading } = useProductStore();
+    const { 
+        fetchAllProducts, 
+        products, 
+        loading: productsLoading,
+        totalPages,
+        totalElements,
+    } = useProductStore();
     const { currentAddress, isLocationSet } = useLocationStore();
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     const query = searchParams.get("q") || "";
     const sort = searchParams.get("sort") || "relevance";
+    const pageParam = searchParams.get("page");
+    const currentPageNumber = pageParam ? parseInt(pageParam, 10) : 1;
+    const PAGE_SIZE = 12; // Default page size
 
     // Initialize default location if not set
     useEffect(() => {
@@ -32,16 +43,20 @@ export default function SearchPage() {
             return;
         }
 
-        const params = new URLSearchParams(Array.from(searchParams.entries()));
-        params.set("type", "foods");
+        const params = new URLSearchParams();
         
-        // Set location for distance calculation from current address
+        // Set location for distance calculation from current address (REQUIRED)
         params.set("lat", currentAddress.lat.toString());
         params.set("lon", currentAddress.lng.toString());
 
+        // Set nearby/distance filter (max distance in meters, default 20000)
+        const nearby = searchParams.get("nearby");
+        if (nearby && nearby.trim() !== "") {
+            params.set("nearby", nearby);
+        }
+
         // Convert category params to comma-separated lowercase string for backend
         const categoryParams = searchParams.getAll("category");
-        params.delete("category"); // Remove all category params
         if (categoryParams.length > 0) {
             // Convert to lowercase and join with comma
             const categoryString = categoryParams.map(cat => cat.toLowerCase()).join(",");
@@ -53,79 +68,74 @@ export default function SearchPage() {
             params.set("search", query);
         }
 
-        // Map sort options to API params
-        if (sort === "rating") {
-            params.set("order", "desc");
+        // Map sort options to API params (backend expects locationsorted and rating for sorting)
+        // Backend: locationsorted="asc" or "desc" for distance sorting
+        // Backend: rating="asc" or "desc" for rating sorting
+        if (sort === "distance") {
+            // Sort by distance ascending (nearest first)
+            params.set("locationsorted", "asc");
+        } else if (sort === "rating") {
+            // Sort by rating descending (highest first)
+            params.set("rating", "desc");
         } else if (sort === "popular") {
-            // Assuming API supports popularity sort
-            params.set("order", "desc");
+            // Backend doesn't have popularity sort, use rating descending as fallback
+            params.set("rating", "desc");
         }
+        // "relevance" or default: no sort parameter, backend will use default sorting
 
-        // Map price range filter
+        // Map price range filter (backend expects BigDecimal values)
         const priceRange = searchParams.get("priceRange");
         if (priceRange) {
             const [min, max] = priceRange.split("-");
             if (min) {
-                // Price is already in USD
-                params.set("minPrice", min);
+                // Price is in VND (from SearchFilters), convert to number
+                const minPrice = parseFloat(min);
+                if (!isNaN(minPrice)) {
+                    params.set("minPrice", minPrice.toString());
+                }
             }
             if (max && max !== "+") {
-                // Price is already in USD
-                params.set("maxPrice", max);
+                // Price is in VND, convert to number
+                const maxPrice = parseFloat(max);
+                if (!isNaN(maxPrice)) {
+                    params.set("maxPrice", maxPrice.toString());
+                }
             }
         }
 
-        // Map rating filter
-        const rating = searchParams.get("rating");
-        if (rating) {
-            params.set("rating", rating);
-        }
+        // Add pagination parameters (Spring Boot Pageable uses 0-indexed page, size)
+        // Convert 1-indexed page to 0-indexed for backend
+        const page = currentPageNumber > 0 ? currentPageNumber - 1 : 0;
+        params.set("page", page.toString());
+        params.set("size", PAGE_SIZE.toString());
 
         fetchAllProducts(params);
-    }, [fetchAllProducts, searchParams, sort, query, currentAddress, isLocationSet]);
+    }, [fetchAllProducts, searchParams, sort, query, currentAddress, isLocationSet, currentPageNumber]);
 
-    // Filter products based on URL params (client-side filtering for additional filters)
+    // Filter products based on URL params (client-side filtering for additional filters not supported by backend)
     const filteredProducts = useMemo(() => {
-        // Use API data from store
-        const productsToUse = products;
-        
-        let result = [...productsToUse];
+        // Use API data from store (already filtered and sorted by backend)
+        let result = [...products];
 
-        // Filter by category
-        const categories = searchParams.getAll("category");
-        if (categories.length > 0) {
-            result = result.filter((product) =>
-                categories.includes(product.categoryName)
-            );
-        }
-
-        // Filter by rating
-        const rating = searchParams.get("rating");
-        if (rating) {
-            const minRating = parseFloat(rating);
-            result = result.filter((product) => product.rating >= minRating);
-        }
-
-        // Filter by special filters
+        // Client-side filtering for special filters that backend doesn't support
         const specialFilters = searchParams.getAll("special");
         if (specialFilters.includes("favorite")) {
-            result = result.filter((product) => product.rating >= 4.5 || product.totalReview > 50);
+            // Filter for highly rated or popular products
+            result = result.filter((product) => product.rating >= 4.5 || (product.totalReview || 0) > 50);
         }
 
-        // Sort products
-        if (sort === "rating") {
-            result.sort((a, b) => b.rating - a.rating);
-        } else if (sort === "popular") {
-            result.sort((a, b) => (b.totalReview || 0) - (a.totalReview || 0));
-        } else if (sort === "distance") {
-            // Distance sorting would be handled by API
-            // Just maintain current order
+        // Note: Rating filter is handled client-side because backend uses 'rating' parameter for sorting, not filtering
+        const ratingFilter = searchParams.get("rating");
+        if (ratingFilter && sort !== "rating") {
+            // Only apply rating filter if not using rating sort (to avoid confusion)
+            const minRating = parseFloat(ratingFilter);
+            if (!isNaN(minRating)) {
+                result = result.filter((product) => (product.rating || 0) >= minRating);
+            }
         }
 
         return result;
-    }, [searchParams, sort]);
-
-    const totalResults = filteredProducts.length;
+    }, [products, searchParams, sort]);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -169,7 +179,9 @@ export default function SearchPage() {
                             <p className="text-sm text-gray-500">
                                 {productsLoading
                                     ? "Loading..."
-                                    : `${totalResults} ${totalResults === 1 ? 'result' : 'results'} found`}
+                                    : totalElements > 0
+                                    ? `Showing ${((currentPageNumber - 1) * PAGE_SIZE) + 1}-${Math.min(currentPageNumber * PAGE_SIZE, totalElements)} of ${totalElements} ${totalElements === 1 ? 'result' : 'results'}`
+                                    : "No results found"}
                             </p>
                         </div>
 
@@ -184,14 +196,39 @@ export default function SearchPage() {
                                 ))}
                             </div>
                         ) : filteredProducts && filteredProducts.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {filteredProducts.slice(0, 12).map((product) => (
-                                    <CompactFoodCard
-                                        key={product.id}
-                                        product={product}
-                                    />
-                                ))}
-                            </div>
+                            <>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    {filteredProducts.map((product) => (
+                                        <CompactFoodCard
+                                            key={product.id}
+                                            product={product}
+                                        />
+                                    ))}
+                                </div>
+
+                                {/* Pagination */}
+                                {totalPages > 1 && (
+                                    <div className="mt-8 flex justify-center">
+                                        <Pagination
+                                            currentPage={currentPageNumber}
+                                            totalPages={totalPages}
+                                            onPageChange={(newPage: number) => {
+                                                const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+                                                if (newPage === 1) {
+                                                    currentParams.delete("page");
+                                                } else {
+                                                    currentParams.set("page", newPage.toString());
+                                                }
+                                                router.push(`/search?${currentParams.toString()}`, { scroll: false });
+                                                // Scroll to top after navigation
+                                                window.scrollTo({ top: 0, behavior: "smooth" });
+                                            }}
+                                            showInfo={true}
+                                            scrollToTop={false} // We handle scrolling manually
+                                        />
+                                    </div>
+                                )}
+                            </>
                         ) : (
                             <div className="text-center py-20 bg-white rounded-lg">
                                 <div className="flex flex-col items-center justify-center">

@@ -36,7 +36,14 @@ export const MenuItemCard = memo(
         // Use the same image URL that's displayed on the card
         const cardImageUrl = useMemo(() => getImageUrl(item.imageURL), [item.imageURL]);
         const sizes = useMemo(() => item.productSizes ?? [], [item.productSizes]);
-        const displayPrice = useMemo(() => sizes[0]?.price, [sizes]);
+        const displayPrice = useMemo(() => {
+            if (!sizes || sizes.length === 0) return null;
+            // Find minimum price from all sizes
+            const prices = sizes.map(size => size.price).filter(price => price != null);
+            if (prices.length === 0) return null;
+            return Math.min(...prices);
+        }, [sizes]);
+        const hasMultipleSizes = useMemo(() => sizes && sizes.length > 1, [sizes]);
 
         const handleAddToCart = useCallback(
             async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -156,7 +163,7 @@ export const MenuItemCard = memo(
                     )}
                     <div className="flex justify-between items-center mt-auto pt-2">
                         <p className="font-bold text-lg md:text-xl text-[#EE4D2D]">
-                            {sizes.length > 1 ? "From " : ""}
+                            {hasMultipleSizes && displayPrice ? "From " : ""}
                             {displayPrice ? `$${displayPrice.toFixed(2)}` : "N/A"}
                         </p>
                         <button

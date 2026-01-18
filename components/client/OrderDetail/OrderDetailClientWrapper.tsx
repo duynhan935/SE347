@@ -20,8 +20,9 @@ export default function OrderDetailClientWrapper({ initialOrder }: OrderDetailCl
     useOrderSocket({
         userId: user?.id || null,
         onOrderStatusUpdate: (notification) => {
-            const orderId = notification.data.orderId;
-            const newStatus = notification.data.status;
+            // Backend emits orderId and status at root level, not in data
+            const orderId = notification.orderId || notification.data?.orderId;
+            const newStatus = notification.status || notification.data?.status;
 
             // Only update if this is the order we're viewing
             if (!orderId || orderId !== order.orderId) {
@@ -46,7 +47,7 @@ export default function OrderDetailClientWrapper({ initialOrder }: OrderDetailCl
 
             // Fetch updated order data
             orderApi
-                .getOrderById(order.orderId)
+                .getOrderBySlug(order.slug)
                 .then((updatedOrder) => {
                     setOrder(updatedOrder);
                 })
@@ -63,11 +64,11 @@ export default function OrderDetailClientWrapper({ initialOrder }: OrderDetailCl
 
     // Poll for order updates as fallback (every 10 seconds)
     useEffect(() => {
-        if (!order.orderId) return;
+        if (!order.slug) return;
 
         const intervalId = setInterval(() => {
             orderApi
-                .getOrderById(order.orderId)
+                .getOrderBySlug(order.slug)
                 .then((updatedOrder) => {
                     // Only update if status changed
                     if (updatedOrder.status !== order.status) {
@@ -81,7 +82,7 @@ export default function OrderDetailClientWrapper({ initialOrder }: OrderDetailCl
         }, 10000); // Poll every 10 seconds
 
         return () => clearInterval(intervalId);
-    }, [order.orderId, order.status]);
+    }, [order.slug, order.status]);
 
     return <OrderDetailClient order={order} />;
 }

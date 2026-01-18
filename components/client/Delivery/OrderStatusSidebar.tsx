@@ -1,7 +1,7 @@
 "use client";
 import { orderApi } from "@/lib/api/orderApi";
-import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { StatusBadge } from "./StatusBadge";
 
 type StatusType = "Pending" | "Success" | "Cancel";
@@ -67,8 +67,14 @@ export const OrderStatusSidebar = ({
             {!isCancelled ? (
                 <>
                     <div className="border rounded-lg p-6 mt-6 text-center">
-                        <p className="text-gray-600">Your Order Will Come In</p>
-                        <p className="text-4xl font-bold my-2">{status.estimatedTime} Minutes</p>
+                        <p className="text-gray-600 mb-2">Your Order Will Come In</p>
+                        {status.estimatedTime > 0 ? (
+                            <p className="text-4xl font-bold my-2 text-[#EE4D2D]">
+                                {status.estimatedTime} {status.estimatedTime === 1 ? "Minute" : "Minutes"}
+                            </p>
+                        ) : (
+                            <p className="text-lg font-semibold my-2 text-gray-500">Calculating...</p>
+                        )}
                     </div>
                     <button
                         disabled={!canCancel || isCancelled}

@@ -9,8 +9,9 @@ import { getImageUrl } from "@/lib/utils";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Address } from "@/types";
-import { Edit2, Truck } from "lucide-react";
+import { ArrowLeft, Edit2, Truck } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -336,8 +337,10 @@ export default function PaymentPageClient() {
             const order = await orderApi.createOrder(payload);
 
             // For Stripe payment, DON'T clear cart yet - wait for payment success
-            // Save order ID for payment step
+            // Save order ID and slug for payment step
             setCreatedOrderIds([order.orderId]);
+            // Store slug for redirect (use slug if available, fallback to orderId)
+            const orderSlug = order.slug || order.orderId;
             
             // Set isProcessingCardPayment to show loading state
             setIsProcessingCardPayment(true);
@@ -424,7 +427,20 @@ export default function PaymentPageClient() {
             setTimeout(() => {
                 const paymentForm = document.querySelector('[data-payment-form]');
                 if (paymentForm) {
-                    paymentForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // For desktop (payment form is in sticky column), scroll window to show the form
+                    // For mobile, scroll the form into view
+                    if (window.innerWidth >= 1024) {
+                        // Desktop: Scroll window to position payment form in view
+                        const formRect = paymentForm.getBoundingClientRect();
+                        const formTop = formRect.top + window.pageYOffset;
+                        window.scrollTo({ 
+                            top: formTop - 100, // Offset from top
+                            behavior: 'smooth' 
+                        });
+                    } else {
+                        // Mobile: Use scrollIntoView
+                        paymentForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                 }
             }, 300);
         } catch (error: unknown) {
@@ -468,9 +484,19 @@ export default function PaymentPageClient() {
 
         // Redirect immediately to prevent cart empty check from triggering
         // Use router.replace to prevent back navigation to payment page
+        // Redirect to delivery status page (not order details page)
         if (createdOrderIds.length > 0) {
-            // Add timestamp to force Next.js to revalidate and fetch fresh data
-            router.replace(`/orders/${createdOrderIds[0]}?t=${Date.now()}`);
+            // Fetch order to get slug for redirect
+            try {
+                const order = await orderApi.getOrderById(createdOrderIds[0]);
+                const redirectSlug = order.slug || createdOrderIds[0];
+                // Add timestamp to force Next.js to revalidate and fetch fresh data
+                router.replace(`/delivery/${redirectSlug}?t=${Date.now()}`);
+            } catch (error) {
+                // Fallback to orderId if fetch fails
+                console.error("Failed to fetch order slug, using orderId:", error);
+                router.replace(`/delivery/${createdOrderIds[0]}?t=${Date.now()}`);
+            }
         }
 
         // Clear cart silently (no toast) after redirect has started
@@ -518,11 +544,21 @@ export default function PaymentPageClient() {
 
     return (
         <div className="custom-container p-4 sm:p-6 md:p-12">
-            <h1 className="text-2xl md:text-3xl font-bold mb-6">Checkout</h1>
+            {/* Header with Back Button */}
+            <div className="mb-6">
+                <Link
+                    href="/cart"
+                    className="inline-flex items-center gap-2 text-gray-600 hover:text-[#EE4D2D] transition-colors mb-4 group"
+                >
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                    <span className="text-sm font-medium">Back to Cart</span>
+                </Link>
+                <h1 className="text-2xl md:text-3xl font-bold">Checkout</h1>
+            </div>
 
             {/* Desktop: 2 Column Layout */}
             <div className="hidden lg:grid lg:grid-cols-[65%_35%] gap-6">
-                {/* Left Column: Delivery Info & Payment */}
+                {/* Left Column: Delivery Details Only */}
                 <div className="space-y-6">
                     {/* Block A: Delivery Details */}
                     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
@@ -662,35 +698,11 @@ export default function PaymentPageClient() {
                             )}
                         </form>
                     </div>
-
-                    {/* Block B: Payment Method */}
-                    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6" data-payment-form>
-                        <h2 className="text-xl font-bold mb-4">Payment Method</h2>
-                        {isProcessingCardPayment && stripeClientSecret ? (
-                            <PaymentMethodSelector
-                                key={stripeClientSecret} // Force re-render when clientSecret changes
-                                stripeClientSecret={stripeClientSecret}
-                                isProcessingCardPayment={isProcessingCardPayment}
-                                onPaymentSuccess={handlePaymentSuccess}
-                                onPaymentError={handlePaymentError}
-                            />
-                        ) : (
-                            <div className="text-gray-500 text-sm py-8 text-center">
-                                {isProcessingCardPayment ? (
-                                    <div className="flex items-center justify-center space-x-2">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#EE4D2D]"></div>
-                                        <span>Preparing payment form...</span>
-                                    </div>
-                                ) : (
-                                    "Please click 'Place Order' to continue with payment"
-                                )}
-                            </div>
-                        )}
-                    </div>
                 </div>
 
-                {/* Right Column: Order Summary (Sticky) */}
-                <div className="lg:sticky lg:top-24 h-fit">
+                {/* Right Column: Order Summary + Payment Method */}
+                <div className="space-y-6 lg:sticky lg:top-24 h-fit">
+                    {/* Block A: Order Summary */}
                     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                         <h2 className="text-xl font-bold mb-4">Order Summary</h2>
 
@@ -747,21 +759,50 @@ export default function PaymentPageClient() {
                         </div>
 
                         {/* Total */}
-                        <div className="flex justify-between items-center mb-6 pt-4 border-t border-gray-200">
+                        <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                             <span className="text-lg font-semibold text-gray-900">Total</span>
                             <span className="text-2xl font-bold text-[#EE4D2D]">{formatPriceUSD(total)} $</span>
                         </div>
+                    </div>
 
-                        {/* Place Order Button - Only show if not processing card payment */}
-                        {!isProcessingCardPayment && (
-                            <button
-                                type="submit"
-                                onClick={handleSubmit}
-                                disabled={isSubmitting}
-                                className="w-full bg-[#EE4D2D] text-white font-semibold py-4 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isSubmitting ? "Placing order..." : "Place Order"}
-                            </button>
+                    {/* Block B: Payment Method */}
+                    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6" data-payment-form>
+                        <h2 className="text-xl font-bold mb-4">Payment Method</h2>
+                        {isProcessingCardPayment && stripeClientSecret ? (
+                            <div className="space-y-4">
+                                <PaymentMethodSelector
+                                    key={stripeClientSecret} // Force re-render when clientSecret changes
+                                    stripeClientSecret={stripeClientSecret}
+                                    isProcessingCardPayment={isProcessingCardPayment}
+                                    onPaymentSuccess={handlePaymentSuccess}
+                                    onPaymentError={handlePaymentError}
+                                />
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="text-gray-500 text-sm py-4 text-center">
+                                    {isProcessingCardPayment ? (
+                                        <div className="flex items-center justify-center space-x-2">
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#EE4D2D]"></div>
+                                            <span>Preparing payment form...</span>
+                                        </div>
+                                    ) : (
+                                        "Please click 'Place Order' to continue with payment"
+                                    )}
+                                </div>
+                                
+                                {/* Place Order Button - Only show if not processing card payment */}
+                                {!isProcessingCardPayment && (
+                                    <button
+                                        type="submit"
+                                        onClick={handleSubmit}
+                                        disabled={isSubmitting}
+                                        className="w-full bg-[#EE4D2D] text-white font-semibold py-4 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                                    >
+                                        {isSubmitting ? "Placing order..." : "Place Order"}
+                                    </button>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>
@@ -908,31 +949,6 @@ export default function PaymentPageClient() {
                     </form>
                 </div>
 
-                {/* Payment Method */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4" data-payment-form>
-                    <h2 className="text-lg font-bold mb-4">Payment Method</h2>
-                    {isProcessingCardPayment && stripeClientSecret ? (
-                        <PaymentMethodSelector
-                            key={stripeClientSecret} // Force re-render when clientSecret changes
-                            stripeClientSecret={stripeClientSecret}
-                            isProcessingCardPayment={isProcessingCardPayment}
-                            onPaymentSuccess={handlePaymentSuccess}
-                            onPaymentError={handlePaymentError}
-                        />
-                    ) : (
-                        <div className="text-gray-500 text-sm py-8 text-center">
-                            {isProcessingCardPayment ? (
-                                <div className="flex items-center justify-center space-x-2">
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#EE4D2D]"></div>
-                                    <span>Preparing payment form...</span>
-                                </div>
-                            ) : (
-                                "Please click 'Place Order' to continue with payment"
-                            )}
-                        </div>
-                    )}
-                </div>
-
                 {/* Order Summary */}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
                     <h2 className="text-lg font-bold mb-4">Order Summary</h2>
@@ -996,21 +1012,44 @@ export default function PaymentPageClient() {
                     </div>
                 </div>
 
-                {/* Fixed Bottom Bar */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">Total</span>
-                        <span className="text-lg font-bold text-[#EE4D2D]">{formatPriceUSD(total)} $</span>
-                    </div>
-                    {!isProcessingCardPayment && (
-                        <button
-                            type="submit"
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                            className="w-full bg-[#EE4D2D] text-white font-semibold py-3 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSubmitting ? "Placing order..." : "Place Order"}
-                        </button>
+                {/* Payment Method */}
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4" data-payment-form>
+                    <h2 className="text-lg font-bold mb-4">Payment Method</h2>
+                    {isProcessingCardPayment && stripeClientSecret ? (
+                        <div className="space-y-4">
+                            <PaymentMethodSelector
+                                key={stripeClientSecret} // Force re-render when clientSecret changes
+                                stripeClientSecret={stripeClientSecret}
+                                isProcessingCardPayment={isProcessingCardPayment}
+                                onPaymentSuccess={handlePaymentSuccess}
+                                onPaymentError={handlePaymentError}
+                            />
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="text-gray-500 text-sm py-4 text-center">
+                                {isProcessingCardPayment ? (
+                                    <div className="flex items-center justify-center space-x-2">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#EE4D2D]"></div>
+                                        <span>Preparing payment form...</span>
+                                    </div>
+                                ) : (
+                                    "Please click 'Place Order' to continue with payment"
+                                )}
+                            </div>
+                            
+                            {/* Place Order Button - Only show if not processing card payment */}
+                            {!isProcessingCardPayment && (
+                                <button
+                                    type="submit"
+                                    onClick={handleSubmit}
+                                    disabled={isSubmitting}
+                                    className="w-full bg-[#EE4D2D] text-white font-semibold py-4 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSubmitting ? "Placing order..." : "Place Order"}
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>

@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Socket, io } from "socket.io-client";
 
-const DEFAULT_ORDER_SOCKET_URL = "http://localhost:8082";
+const DEFAULT_ORDER_SOCKET_URL = "http://localhost:8080";
 const ORDER_SOCKET_URL = (process.env.NEXT_PUBLIC_ORDER_SOCKET_URL || DEFAULT_ORDER_SOCKET_URL).replace(/\/$/, "");
 
 interface OrderNotification {
     type: string;
-    data: {
+    // For new-order event
+    data?: {
         orderId: string;
         totalAmount?: number;
         itemCount?: number;
@@ -18,6 +19,12 @@ interface OrderNotification {
         restaurantName?: string;
         reason?: string;
     };
+    // For order-status-updated event (fields at root level)
+    orderId?: string;
+    status?: string;
+    previousStatus?: string;
+    paymentStatus?: string;
+    cancellationReason?: string;
     timestamp: Date;
     sound?: string;
 }
@@ -65,9 +72,10 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
             }
 
             // Join user room if user (for receiving order status updates)
+            // Backend uses 'join-user-orders' event, not 'join-user'
             if (userId) {
-                socket.emit("join-user", userId);
-                console.log(`[Order Socket] Joined user room: ${userId}`);
+                socket.emit("join-user-orders", userId);
+                console.log(`[Order Socket] Joined user orders room: ${userId}`);
             }
         });
 
@@ -88,9 +96,18 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
         });
 
         // Listen for order status updates (user)
+        // Backend emits order-status-updated with orderId, status at root level
         socket.on("order-status-updated", (notification: OrderNotification) => {
             console.log("[Order Socket] Order status updated:", notification);
-            onOrderStatusUpdateRef.current?.(notification);
+            // Transform notification to match expected format
+            const transformedNotification: OrderNotification = {
+                ...notification,
+                data: {
+                    orderId: notification.orderId || notification.data?.orderId || "",
+                    status: notification.status || notification.data?.status,
+                },
+            };
+            onOrderStatusUpdateRef.current?.(transformedNotification);
         });
 
         return () => {

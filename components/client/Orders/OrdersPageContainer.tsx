@@ -4,7 +4,7 @@ import { getImageUrl } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { OrderStatus } from "@/types/order.type";
-import { Package } from "lucide-react";
+import { Package, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ import { OrderSkeleton } from "./OrderSkeleton";
 
 export interface OrdersPageOrder {
     id: string;
+    slug?: string; // Order slug for URL routing
     createdAt: string;
     totalAmount: number;
     items: OrderListItem[];
@@ -255,6 +256,18 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                                     </span>
                                                 )}
                                             </div>
+                                            {/* Track Order Button - Below Status */}
+                                            {order.status && order.status !== OrderStatus.CANCELLED && (
+                                                <div className="mt-3">
+                                                    <Link
+                                                        href={`/delivery/${order.slug || order.id}`}
+                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors border border-blue-200"
+                                                    >
+                                                        <Truck className="w-4 h-4" />
+                                                        Track Order
+                                                    </Link>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Body Card */}
@@ -290,7 +303,7 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                             </p>
                                             <div className="flex items-center gap-3">
                                                 <Link
-                                                    href={`/orders/${order.id}`}
+                                                    href={`/orders/${order.slug || order.id}`}
                                                     className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors"
                                                 >
                                                     View Details

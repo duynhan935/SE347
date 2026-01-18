@@ -1,8 +1,21 @@
 import type { Product, ProductCreateData, Review } from "@/types";
 import api from "../axios";
 
+// Page response structure from Spring Boot
+export interface PageResponse<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    size: number;
+    number: number; // Current page (0-indexed)
+    numberOfElements: number;
+    first: boolean;
+    last: boolean;
+    empty: boolean;
+}
+
 export const productApi = {
-    getAllProducts: (params: URLSearchParams) => api.get<Product[]>("/products", { params: params }),
+    getAllProducts: (params: URLSearchParams) => api.get<PageResponse<Product>>("/products", { params: params }),
     getProductsByRestaurantId: (restaurantId: string) => api.get<Product[]>(`/products/restaurant/${restaurantId}`),
     getProductBySlug: (slug: string) => {
         // Decode slug multiple times until no more %25 (encoded %)
