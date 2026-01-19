@@ -36,25 +36,22 @@ export interface CreateOrderRequest {
 
 export const orderApi = {
     // Public: Get an order by ID
-    getOrderById: async (orderId: string): Promise<Order> => {
-        const response = await api.get<{ success: boolean; data: Order }>(`/orders/${orderId}`);
+    getOrderById: async (orderId: string, options?: { cacheBust?: boolean }): Promise<Order> => {
+        const cacheBust = options?.cacheBust !== false; // Default to true
+        const url = cacheBust ? `/orders/${orderId}?t=${Date.now()}` : `/orders/${orderId}`;
+        const response = await api.get<{ success: boolean; data: Order }>(url);
         return response.data.data;
     },
 
     // Public: Get an order by slug
     getOrderBySlug: async (slug: string, options?: { cacheBust?: boolean }): Promise<Order> => {
-        // Add cache-busting query param to force fetch fresh data
+        // Add cache-busting query param to force fetch fresh data.
+        // Avoid sending custom cache-control headers here because they trigger
+        // a CORS preflight and the backend does not allow them in Access-Control-Allow-Headers.
         const cacheBust = options?.cacheBust !== false; // Default to true
-        const url = cacheBust 
-            ? `/orders/slug/${slug}?t=${Date.now()}` 
-            : `/orders/slug/${slug}`;
-        const response = await api.get<{ success: boolean; data: Order }>(url, {
-            headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            }
-        });
+        const url = cacheBust ? `/orders/slug/${slug}?t=${Date.now()}` : `/orders/slug/${slug}`;
+
+        const response = await api.get<{ success: boolean; data: Order }>(url);
         return response.data.data;
     },
 

@@ -61,16 +61,21 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
 
         socket.on("connect", () => {
             setIsConnected(true);
+            console.log("[Order Socket] Connected, socket ID:", socket.id);
 
             // Join restaurant room if merchant
             if (restaurantId) {
+                console.log("[Order Socket] Joining restaurant room:", restaurantId);
                 socket.emit("join-restaurant", restaurantId);
             }
 
             // Join user room if user (for receiving order status updates)
             // Backend uses 'join-user-orders' event, not 'join-user'
             if (userId) {
+                console.log("[Order Socket] Joining user orders room:", userId);
                 socket.emit("join-user-orders", userId);
+            } else {
+                console.warn("[Order Socket] No userId provided, cannot join user orders room");
             }
         });
 
@@ -91,6 +96,7 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
         // Listen for order status updates (user)
         // Backend emits order-status-updated with orderId, status at root level
         socket.on("order-status-updated", (notification: OrderNotification) => {
+            console.log("[Order Socket] Received order-status-updated event:", notification);
             // Transform notification to match expected format
             const transformedNotification: OrderNotification = {
                 ...notification,
@@ -99,6 +105,7 @@ export function useOrderSocket({ restaurantId, userId, onNewOrder, onOrderStatus
                     status: notification.status || notification.data?.status,
                 },
             };
+            console.log("[Order Socket] Transformed notification:", transformedNotification);
             onOrderStatusUpdateRef.current?.(transformedNotification);
         });
 

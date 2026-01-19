@@ -2,7 +2,12 @@ type PublicEnvValue = string | undefined;
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
-const getEnv = (value: PublicEnvValue) => (typeof value === "string" && value.trim() ? value.trim() : undefined);
+const getEnv = (value: PublicEnvValue): string | undefined => {
+    if (typeof value === "string" && value.trim()) {
+        return value.trim();
+    }
+    return undefined;
+};
 
 /**
  * Base URL for REST API calls.
