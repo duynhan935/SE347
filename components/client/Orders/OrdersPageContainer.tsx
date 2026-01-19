@@ -1,6 +1,7 @@
 "use client";
 
 import { getImageUrl } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/dashboardFormat";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { OrderStatus } from "@/types/order.type";
@@ -13,7 +14,6 @@ import toast from "react-hot-toast";
 import OrderHistorySidebar from "./OrderHistorySidebar";
 import { type OrderListItem } from "./OrderItemRow";
 import { OrderSkeleton } from "./OrderSkeleton";
-import { formatCurrency } from "@/lib/utils/dashboardFormat";
 
 export interface OrdersPageOrder {
     id: string;
@@ -239,6 +239,10 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                 const firstItem = order.items[0];
                                 const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
+                                // Normalize image URL using helper (handles absolute/relative URLs and placeholders)
+                                const cardImageUrl = firstItem?.imageURL ? getImageUrl(firstItem.imageURL) : null;
+                                const hasImage = cardImageUrl && cardImageUrl !== "/placeholder.png";
+
                                 return (
                                     <div
                                         key={order.id}
@@ -276,16 +280,20 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                                         {/* Body Card */}
                                         <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
                                             <div className="flex items-center gap-4">
-                                                {firstItem?.imageURL && (
+                                                {hasImage && cardImageUrl ? (
                                                     <div className="relative h-16 w-16 flex-shrink-0 rounded-md overflow-hidden bg-gray-200">
                                                         <Image
-                                                            src={firstItem.imageURL}
-                                                            alt={firstItem.productName}
+                                                            src={cardImageUrl}
+                                                            alt={firstItem?.productName || "Order item"}
                                                             fill
                                                             className="object-cover"
                                                             sizes="64px"
-                                                            unoptimized
+                                                            unoptimized={cardImageUrl.startsWith("http")}
                                                         />
+                                                    </div>
+                                                ) : (
+                                                    <div className="h-16 w-16 flex-shrink-0 rounded-md bg-gray-100 flex items-center justify-center text-gray-300">
+                                                        <Package className="w-6 h-6" />
                                                     </div>
                                                 )}
                                                 <div className="flex-1 min-w-0">

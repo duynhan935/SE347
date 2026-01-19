@@ -67,16 +67,34 @@ export const useNotificationStore = create<NotificationStore>()(
                     };
                 });
 
-                // Play sound if available
-                if (typeof window !== "undefined" && "Audio" in window) {
+                // Play notification sound using Web Audio API (no file needed)
+                if (typeof window !== "undefined" && "AudioContext" in window) {
                     try {
-                        const audio = new Audio("/sounds/notification.mp3");
-                        audio.volume = 0.5;
-                        audio.play().catch(() => {
-                            // Ignore audio play errors
-                        });
+                        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+                        if (!AudioCtx) return;
+
+                        const audioContext = new AudioCtx();
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+
+                        oscillator.type = "sine";
+                        oscillator.frequency.value = 880; // A5 note
+                        gainNode.gain.value = 0.1; // Lower volume for notifications
+
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.15);
+
+                        // Clean up audio context after sound plays
+                        setTimeout(() => {
+                            audioContext.close().catch(() => {
+                                // Ignore cleanup errors
+                            });
+                        }, 200);
                     } catch {
-                        // Ignore audio errors
+                        // Ignore audio errors (may be blocked by browser policy)
                     }
                 }
             },

@@ -34,7 +34,7 @@ export function MerchantNotificationBell() {
     useOrderSocket({
         restaurantId,
         userId: user?.id || null,
-        onNewOrder: (notification) => {
+        onNewOrder: async (notification) => {
             const data = notification.data;
             if (!data) return;
 
@@ -57,8 +57,21 @@ export function MerchantNotificationBell() {
                 restaurantName: data.restaurantName,
             });
 
-            // Increment pending orders count for sidebar badge
-            incrementPendingOrdersCount();
+            // Fetch latest orders and update pending count accurately
+            if (restaurantId && user?.id) {
+                try {
+                    const { orders } = await orderApi.getOrdersByRestaurant(restaurantId, user.id);
+                    const pendingCount = orders.filter((o) => o.status === OrderStatus.PENDING).length;
+                    setPendingOrdersCount(pendingCount);
+                } catch (error) {
+                    console.error("Failed to refresh pending orders count:", error);
+                    // Fallback: increment count if fetch fails
+                    incrementPendingOrdersCount();
+                }
+            } else {
+                // Fallback: increment count if restaurantId or user.id is not available
+                incrementPendingOrdersCount();
+            }
         },
     });
 
