@@ -121,14 +121,14 @@ export default function MerchantRegisterPage() {
             localStorage.setItem(`pending_restaurant_${email}`, JSON.stringify(pendingRestaurant));
 
             toast.success(
-                "Merchant registration successful! Your request is pending admin approval. After approval, you'll complete restaurant setup.",
+                "Merchant registration successful! Your request is pending admin approval. You will be notified once your account is approved.",
                 { duration: 5000 },
             );
 
-            // Redirect to login page after successful registration
-            // Merchant will be able to login only after admin approval
+            // Redirect to home page after successful registration
+            // User will be able to login as merchant only after admin approval
             setTimeout(() => {
-                router.push("/login");
+                router.push("/");
             }, 2000);
         } catch (error: unknown) {
             let errorMessage = "Unable to submit request. Please try again.";

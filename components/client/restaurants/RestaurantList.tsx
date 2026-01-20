@@ -79,15 +79,34 @@ export default function RestaurantList() {
                 params.delete("category"); // Remove all category params
                 if (categoryParams.length > 0) {
                         // Convert to lowercase and join with comma
-                        const categoryString = categoryParams.map(cat => cat.toLowerCase()).join(",");
+                        const categoryString = categoryParams.map((cat) => cat.toLowerCase()).join(",");
                         params.set("category", categoryString);
                 }
                 
                 if (searchType === "restaurants") {
+                        // Restaurants search: rely on store to inject default lat/lon if missing.
                         getAllRestaurants(params);
                 } else if (searchType === "foods") {
-                        params.set("lat", "10.7626");
-                        params.set("lon", "106.6825");
+                        // Foods search: ensure coordinates are present for distance-based queries.
+                        if (!params.has("lat")) params.set("lat", "10.7626");
+                        if (!params.has("lon")) params.set("lon", "106.6825");
+
+                        // Map UI sort param "order" to backend sort params:
+                        // - "desc"  -> rating=desc  (top rated)
+                        // - "asc"   -> locationsorted=asc (closest first)
+                        const order = params.get("order");
+                        if (order) {
+                                params.delete("order");
+                                params.delete("rating");
+                                params.delete("locationsorted");
+
+                                if (order === "desc") {
+                                        params.set("rating", "desc");
+                                } else if (order === "asc") {
+                                        params.set("locationsorted", "asc");
+                                }
+                        }
+
                         fetchAllProducts(params);
                 }
                 getAllCategories();

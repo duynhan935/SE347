@@ -99,11 +99,6 @@ export default function FilterSidebar() {
         };
 
         const handleNearbyClick = () => {
-                if (loading || !coords) {
-                        if (error) alert(error);
-                        return;
-                }
-
                 const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
 
                 // If "nearby" is active, turn it off
@@ -111,11 +106,32 @@ export default function FilterSidebar() {
                         currentParams.delete("nearby");
                         currentParams.delete("lat");
                         currentParams.delete("lon");
-                } else {
-                        currentParams.set("nearby", "20");
-                        currentParams.set("lat", "10.7626");
-                        currentParams.set("lon", "106.6825");
+                        router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
+                        return;
                 }
+
+                // When enabling "Nearby", prefer real geolocation if available,
+                // otherwise fall back to the default coordinates from useGeolocation hook.
+                if (loading) {
+                        // Still resolving location – avoid toggling to a broken state
+                        return;
+                }
+
+                const latitude = coords?.latitude;
+                const longitude = coords?.longitude;
+
+                if (!latitude || !longitude) {
+                        if (error) {
+                                alert(error);
+                        }
+                        return;
+                }
+
+                // Backend expects distance in meters; use a reasonable radius (e.g. 5km)
+                currentParams.set("nearby", "5000");
+                currentParams.set("lat", latitude.toString());
+                currentParams.set("lon", longitude.toString());
+
                 router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
         };
 

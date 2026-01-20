@@ -64,9 +64,11 @@ api.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+        const status = error.response?.status;
+
         // Handle 401 Unauthorized - token expired
         // Skip token refresh for refresh token endpoint itself to avoid infinite loop
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (status === 401 && !originalRequest._retry) {
             // Guest mode: if we didn't send a token, don't attempt refresh.
             // This prevents noisy 400s from /users/refreshtoken when the user is not logged in.
             const accessTokenFromStore = normalizeToken(useAuthStore.getState().accessToken);
@@ -74,6 +76,13 @@ api.interceptors.response.use(
                 typeof window !== "undefined" ? normalizeToken(localStorage.getItem("accessToken")) : null;
             const hasAccessToken = !!(accessTokenFromStore || accessTokenFromStorage);
             if (!hasAccessToken) {
+                return Promise.reject(error);
+            }
+
+            // If the 401 comes from the "who am I" endpoint, treat it as "invalid/expired session"
+            // and DON'T try to refresh. Just logout and treat as guest.
+            if (originalRequest.url?.includes("/users/accesstoken")) {
+                useAuthStore.getState().logout();
                 return Promise.reject(error);
             }
 
@@ -139,7 +148,6 @@ api.interceptors.response.use(
             }
         }
 
-        const status = error.response?.status;
         const data = error.response?.data;
         const errorCode = data && typeof data === "object" && "errorCode" in data ? data.errorCode : null;
 
