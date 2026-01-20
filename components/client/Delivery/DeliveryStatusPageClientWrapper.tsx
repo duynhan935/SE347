@@ -2,8 +2,10 @@
 
 import { orderApi } from "@/lib/api/orderApi";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
+import { getImageUrl } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Order, OrderStatus } from "@/types/order.type";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -27,6 +29,7 @@ type DisplayOrderItem = {
     price: number;
     quantity: number;
     note?: string;
+    imageURL?: string | null;
 };
 
 interface DeliveryStatusPageClientWrapperProps {
@@ -259,6 +262,8 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
         price: item.price,
         quantity: item.quantity,
         note: item.customizations,
+        // Prefer explicit imageURL from order; fall back to cartItemImage if present.
+        imageURL: item.imageURL || item.cartItemImage || null,
     }));
 
     const totalItems = displayItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -368,9 +373,23 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                                             key={item.id}
                                             className="flex items-start gap-4 pt-4 border-b pb-2 last:border-b-0"
                                         >
-                                            <div className="w-[64px] h-[64px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
-                                                No Image
-                                            </div>
+                                            {/* Product image */}
+                                            {item.imageURL ? (
+                                                <div className="relative w-[64px] h-[64px] rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                                                    <Image
+                                                        src={getImageUrl(item.imageURL)}
+                                                        alt={item.name}
+                                                        fill
+                                                        className="object-cover"
+                                                        sizes="64px"
+                                                        unoptimized={getImageUrl(item.imageURL).startsWith("http")}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="w-[64px] h-[64px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
+                                                    No Image
+                                                </div>
+                                            )}
                                             <div className="flex-grow">
                                                 <p className="font-semibold">{item.name}</p>
                                                 <p className="text-sm text-gray-500">{item.note}</p>

@@ -1,12 +1,11 @@
 "use client";
 
-import { productApi } from "@/lib/api/productApi";
 import { getImageUrl } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/dashboardFormat";
 import { Order, OrderStatus } from "@/types/order.type";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { formatCurrency } from "@/lib/utils/dashboardFormat";
+import { useMemo, useState } from "react";
 import { OrderSummary } from "./OrderSummary";
 import ReviewForm from "./ReviewForm";
 
@@ -30,66 +29,19 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [hasReviewed, setHasReviewed] = useState(false);
 
-    const [productImages, setProductImages] = useState<Record<string, string>>({});
-
-    // Fetch product images for items that don't have imageURL
-    useEffect(() => {
-        const fetchImages = async () => {
-            const itemsNeedingImages = order.items.filter((item) => !item.imageURL && !item.cartItemImage);
-
-            if (itemsNeedingImages.length === 0) return;
-
-            try {
-                const imagePromises = itemsNeedingImages.map(async (item) => {
-                    try {
-                        const product = await productApi.getProductById(item.productId);
-                        // Get image URL as string (handle StaticImageData)
-                        const imageURL = product.data.imageURL ? getImageUrl(product.data.imageURL, "") : "";
-                        return {
-                            productId: item.productId,
-                            imageURL,
-                        };
-                    } catch (error) {
-                        console.error(`Failed to fetch image for product ${item.productId}:`, error);
-                        return { productId: item.productId, imageURL: "" };
-                    }
-                });
-
-                const results = await Promise.all(imagePromises);
-                const imagesMap = results.reduce(
-                    (acc, { productId, imageURL }) => {
-                        if (imageURL) acc[productId] = imageURL;
-                        return acc;
-                    },
-                    {} as Record<string, string>,
-                );
-
-                setProductImages(imagesMap);
-            } catch (error) {
-                console.error("Failed to fetch product images:", error);
-            }
-        };
-
-        fetchImages();
-    }, [order.items]);
-
     const displayItems: DisplayOrderItem[] = useMemo(() => {
-        return order.items.map((item, index) => {
-            // Get image from order item, fetched product, or placeholder
-            const imageURL = item.imageURL || item.cartItemImage || productImages[item.productId] || null;
-
-            return {
-                id: `${order?.orderId}-${item.productId}-${index}`,
-                name: item.productName,
-                shopName: order?.restaurant?.name || "Restaurant",
-                price: item.price,
-                quantity: item.quantity,
-                note: item.customizations,
-                productId: item.productId,
-                imageURL: imageURL || undefined,
-            };
-        });
-    }, [order.items, order?.orderId, order?.restaurant?.name, productImages]);
+        return order.items.map((item, index) => ({
+            id: `${order?.orderId}-${item.productId}-${index}`,
+            name: item.productName,
+            shopName: order?.restaurant?.name || "Restaurant",
+            price: item.price,
+            quantity: item.quantity,
+            note: item.customizations,
+            productId: item.productId,
+            // Prefer image fields already stored on the order; fall back handled by getImageUrl
+            imageURL: (item.imageURL || item.cartItemImage) ?? undefined,
+        }));
+    }, [order.items, order?.orderId, order?.restaurant?.name]);
 
     const totalItems = displayItems.reduce((sum, item) => sum + item.quantity, 0);
 
