@@ -3,9 +3,28 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { authApi } from "./api/authApi";
 import { API_URL } from "./config/publicRuntime";
 
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+
+/**
+ * Runtime API base URL selection:
+ * - Client-side (browser): use NEXT_PUBLIC_API_URL (API_URL)
+ * - Server-side (Next.js SSR inside Docker): use API_INTERNAL_URL if provided (e.g. http://api-gateway:8080/api)
+ */
+const getRuntimeApiUrl = () => {
+    // SSR / server-side
+    if (typeof window === "undefined") {
+        const internal = process.env.API_INTERNAL_URL;
+        if (typeof internal === "string" && internal.trim()) {
+            return trimTrailingSlash(internal.trim());
+        }
+    }
+    // Browser (or fallback)
+    return API_URL;
+};
+
 // Create Axios instance
 const api = axios.create({
-    baseURL: API_URL,
+    baseURL: getRuntimeApiUrl(),
     timeout: 30000,
     // Required so the browser sends/receives refresh-token cookies from the API gateway.
     withCredentials: true,
@@ -108,7 +127,7 @@ api.interceptors.response.use(
                             originalRequest.headers["Authorization"] = `Bearer ${accessToken}`;
                         }
                         // Ensure baseURL is correct (prevent redirects to Docker hostnames)
-                        originalRequest.baseURL = API_URL;
+                        originalRequest.baseURL = getRuntimeApiUrl();
                         return api(originalRequest);
                     })
                     .catch((err) => {
@@ -137,7 +156,7 @@ api.interceptors.response.use(
                     originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
                 }
                 // Ensure baseURL is correct (prevent redirects to Docker hostnames)
-                originalRequest.baseURL = API_URL;
+                originalRequest.baseURL = getRuntimeApiUrl();
                 return api(originalRequest);
             } catch (refreshError) {
                 // If refresh fails (401 or other error), logout and reject

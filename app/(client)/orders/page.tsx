@@ -56,6 +56,8 @@ const OrdersPage = () => {
                     price?: number;
                     quantity?: number;
                     customizations?: string;
+                    imageURL?: string | null;
+                    cartItemImage?: string | null;
                 }>;
                 restaurant?: { name?: string };
                 restaurantName?: string;
@@ -77,6 +79,7 @@ const OrdersPage = () => {
             const items = Array.isArray(typedOrder.items)
                 ? typedOrder.items.map((item, itemIndex) => {
                       const fallbackId = `${orderId}-item-${itemIndex + 1}`;
+                      const imageURL = item.imageURL || item.cartItemImage || null;
                       return {
                           id: fallbackId,
                           productId: (item.productId ?? fallbackId).toString(),
@@ -86,7 +89,8 @@ const OrdersPage = () => {
                           price: typeof item.price === "number" ? item.price : 0,
                           quantity: typeof item.quantity === "number" ? item.quantity : 0,
                           customizations: item.customizations || undefined,
-                          imageURL: (item as { imageURL?: string | null }).imageURL || undefined,
+                          // Preserve image URL from order item so order list + reorder can show the same image
+                          imageURL: imageURL || undefined,
                       };
                   })
                 : [];

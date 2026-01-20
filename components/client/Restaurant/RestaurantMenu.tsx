@@ -2,7 +2,7 @@
 import { type Category, type Product } from "@/types";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MenuItemCard } from "./MenuItemCard";
+import { CompactFoodCard } from "../HomePage/CompactFoodCard";
 
 type MenuProps = {
     restaurantId: string;
@@ -232,11 +232,8 @@ export default function RestaurantMenu({ restaurantId, restaurantName, products,
                                                 }
                                             }}
                                         >
-                                            <MenuItemCard
-                                                item={item}
-                                                restaurantId={restaurantId}
-                                                restaurantName={restaurantName}
-                                            />
+                                            {/* Reuse the same card design as Featured Foods on home page */}
+                                            <CompactFoodCard product={item} />
                                         </div>
                                     );
                                 })}

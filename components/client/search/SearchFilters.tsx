@@ -273,9 +273,22 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
     );
 
     if (isMobile) {
+        // Mobile: show filters as a left sidebar drawer (like restaurants page)
         return (
             <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
-                <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div
+                    className="fixed top-0 left-0 h-full w-[85%] max-w-sm bg-white shadow-xl overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex justify-end p-4 border-b border-gray-200">
+                        <button
+                            onClick={onClose}
+                            className="p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+                            aria-label="Close filters"
+                        >
+                            <X className="w-5 h-5 text-gray-600" />
+                        </button>
+                    </div>
                     {content}
                 </div>
             </div>
