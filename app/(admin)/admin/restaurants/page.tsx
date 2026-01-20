@@ -259,8 +259,7 @@ export default function RestaurantsPage() {
                                             {restaurant.resName}
                                         </h3>
                                         <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                            Owner:{" "}
-                                            {ownersByMerchantId[restaurant.merchantId]?.username || "—"}
+                                            Owner: {ownersByMerchantId[restaurant.merchantId]?.username || "—"}
                                             {ownersByMerchantId[restaurant.merchantId]?.email
                                                 ? ` (${ownersByMerchantId[restaurant.merchantId]?.email})`
                                                 : ""}

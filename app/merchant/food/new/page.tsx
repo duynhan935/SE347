@@ -53,13 +53,7 @@ export default function NewFoodPage() {
     }
 
     if (isLoadingRestaurant) {
-        return (
-            <GlobalLoader
-                label="Loading"
-                sublabel="Loading restaurant information"
-                showLogo
-            />
-        );
+        return <GlobalLoader label="Loading" sublabel="Loading restaurant information" showLogo />;
     }
 
     if (!hasRestaurant || !currentRestaurant) {

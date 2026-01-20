@@ -163,7 +163,11 @@ api.interceptors.response.use(
 
         // Skip logging for merchant dashboard "no restaurant yet" state.
         // Backend returns 404 when the merchant has not created a restaurant.
-        if (status === 404 && error.config?.url?.includes("/dashboard/merchant/") && error.config?.url?.includes("/restaurant")) {
+        if (
+            status === 404 &&
+            error.config?.url?.includes("/dashboard/merchant/") &&
+            error.config?.url?.includes("/restaurant")
+        ) {
             return Promise.reject(error);
         }
 

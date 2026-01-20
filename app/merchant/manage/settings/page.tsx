@@ -45,8 +45,10 @@ export default function MerchantSettingsPage() {
                 resName: typeof parsed.resName === "string" ? parsed.resName : prev.resName,
                 address: typeof parsed.address === "string" ? parsed.address : prev.address,
                 phone: typeof parsed.phone === "string" ? parsed.phone : prev.phone,
-                openingTime: typeof parsed.openingTime === "string" ? parsed.openingTime.substring(0, 5) : prev.openingTime,
-                closingTime: typeof parsed.closingTime === "string" ? parsed.closingTime.substring(0, 5) : prev.closingTime,
+                openingTime:
+                    typeof parsed.openingTime === "string" ? parsed.openingTime.substring(0, 5) : prev.openingTime,
+                closingTime:
+                    typeof parsed.closingTime === "string" ? parsed.closingTime.substring(0, 5) : prev.closingTime,
                 longitude: typeof parsed.longitude === "number" ? parsed.longitude : prev.longitude,
                 latitude: typeof parsed.latitude === "number" ? parsed.latitude : prev.latitude,
             }));
@@ -168,13 +170,7 @@ export default function MerchantSettingsPage() {
     }
 
     if (isLoadingRestaurant) {
-        return (
-            <GlobalLoader
-                label="Loading"
-                sublabel="Loading restaurant information"
-                showLogo
-            />
-        );
+        return <GlobalLoader label="Loading" sublabel="Loading restaurant information" showLogo />;
     }
 
     return (

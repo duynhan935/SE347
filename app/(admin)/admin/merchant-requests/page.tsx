@@ -29,7 +29,11 @@ export default function MerchantRequestsPage() {
     const fetchMerchantRequests = async () => {
         setLoading(true);
         try {
-            const response = await authApi.getMerchantsPendingConsideration({ page: 0, size: 200, sort: "createdAt,desc" });
+            const response = await authApi.getMerchantsPendingConsideration({
+                page: 0,
+                size: 200,
+                sort: "createdAt,desc",
+            });
             setRequests(response?.content || []);
         } catch (error) {
             console.error("Failed to fetch merchant requests:", error);

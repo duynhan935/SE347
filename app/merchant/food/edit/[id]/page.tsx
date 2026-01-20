@@ -69,11 +69,7 @@ export default function EditFoodPage() {
         return (
             <GlobalLoader
                 label={loading ? "Loading" : "Loading"}
-                sublabel={
-                    loading
-                        ? "Loading food item information"
-                        : "Loading restaurant information"
-                }
+                sublabel={loading ? "Loading food item information" : "Loading restaurant information"}
                 showLogo
             />
         );
@@ -139,4 +135,3 @@ export default function EditFoodPage() {
         </div>
     );
 }
-

@@ -298,8 +298,8 @@ export default function MerchantDashboard() {
                         <div className="flex-1">
                             <p className="font-semibold">Restaurant setup required</p>
                             <p className="mt-1 text-sm opacity-90">
-                                Your account is approved, but you haven’t created a restaurant profile yet. Create one to
-                                unlock dashboard stats, orders, and food management.
+                                Your account is approved, but you haven’t created a restaurant profile yet. Create one
+                                to unlock dashboard stats, orders, and food management.
                             </p>
                             <div className="mt-4">
                                 <Link

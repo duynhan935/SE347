@@ -123,8 +123,8 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
             const restaurantsArray = Array.isArray(data)
                 ? data
                 : data && typeof data === "object" && "content" in data && Array.isArray(data.content)
-                ? data.content
-                : [];
+                  ? data.content
+                  : [];
             set({ restaurants: restaurantsArray, loading: false });
         } catch (err: any) {
             set({
@@ -182,7 +182,7 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
             await restaurantApi.updateRestaurantStatus(restaurantId);
             set((state) => ({
                 restaurants: state.restaurants.map((res) =>
-                    res.id === restaurantId ? { ...res, enabled: !res.enabled } : res
+                    res.id === restaurantId ? { ...res, enabled: !res.enabled } : res,
                 ),
                 loading: false,
                 error: null,
