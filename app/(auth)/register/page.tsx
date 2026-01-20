@@ -9,9 +9,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 
+import { BACKEND_ORIGIN } from "@/lib/config/publicRuntime";
 import { useAuthStore } from "@/stores/useAuthStore";
 import toast from "react-hot-toast";
-import { BACKEND_ORIGIN } from "@/lib/config/publicRuntime";
 
 export default function SignUpPage() {
     const [username, setUsername] = useState("");
@@ -38,10 +38,6 @@ export default function SignUpPage() {
         } else {
             toast.error(error || "Registration failed. Please try again.");
         }
-    };
-
-    const handleRegisterMerchant = () => {
-        router.push("/merchant/register");
     };
 
     return (
@@ -161,23 +157,13 @@ export default function SignUpPage() {
                         </div>
                     </div>
 
-                    <div className="flex gap-3">
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="flex-1 py-3 px-4 bg-[#EE4D2D] text-white font-semibold rounded-md hover:bg-[#EE4D2D]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EE4D2D] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {loading ? "Signing Up..." : "Sign Up"}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleRegisterMerchant}
-                            disabled={loading}
-                            className="flex-1 py-3 px-4 border-2 border-[#EE4D2D] text-[#EE4D2D] font-semibold rounded-md hover:bg-[#EE4D2D]/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EE4D2D] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Register Merchant
-                        </button>
-                    </div>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-3 px-4 bg-[#EE4D2D] text-white font-semibold rounded-md hover:bg-[#EE4D2D]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EE4D2D] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {loading ? "Signing Up..." : "Sign Up"}
+                    </button>
                 </form>
 
                 {/* Sign In Link */}

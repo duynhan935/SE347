@@ -53,7 +53,16 @@ export default function SearchBar() {
                     restaurantApi.getAllRestaurants(
                         new URLSearchParams({ search: trimmedQuery, limit: "5", lat: "10.762622", lon: "106.660172" }),
                     ),
-                    productApi.getAllProducts(new URLSearchParams({ search: trimmedQuery, limit: "5" })),
+                    // Product search API also requires lat/lon for distance-based queries.
+                    // Use the same default coordinates as restaurant suggestions (HCM) to avoid 400 errors.
+                    productApi.getAllProducts(
+                        new URLSearchParams({
+                            search: trimmedQuery,
+                            limit: "5",
+                            lat: "10.762622",
+                            lon: "106.660172",
+                        }),
+                    ),
                 ]);
 
                 const restaurantSuggestions: SearchSuggestion[] = (restaurantsRes.data?.content || []).map(

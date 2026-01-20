@@ -2,9 +2,10 @@
 
 import { useCategoryStore } from "@/stores/categoryStore";
 import { Category } from "@/types";
-import { ChevronDown, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import FilterSection from "./FilterSection";
 
 const priceRanges = [
     { value: "0-30000", label: "Under $1.20", min: 0, max: 30000 },
@@ -138,22 +139,6 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
         selectedDistrict ||
         selectedSpecialFilters.length > 0;
 
-    const FilterSection = ({ title, children }: { title: string; children: React.ReactNode }) => {
-        const [isOpen, setIsOpen] = useState(true);
-        return (
-            <div className="py-4 border-b border-gray-200">
-                <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="w-full flex justify-between items-center mb-3"
-                >
-                    <h5 className="font-semibold text-gray-900 text-sm">{title}</h5>
-                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                </button>
-                {isOpen && <div className="space-y-2">{children}</div>}
-            </div>
-        );
-    };
-
     const content = (
         <div className={`${isMobile ? "p-4" : "p-4"} bg-white ${isMobile ? "" : "sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-hide"}`}>
             {/* Header */}
@@ -171,7 +156,8 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
             </div>
 
             {/* Category Filter */}
-            <FilterSection title="Categories">
+            {/* Default closed so it doesn't pop open again on URL changes (price/rating/etc.) */}
+            <FilterSection title="Categories" defaultOpen={false}>
                 {categories && categories.length > 0 ? (
                     <div className="space-y-3">
                         {categories.map((category: Category) => (

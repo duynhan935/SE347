@@ -161,7 +161,7 @@ export default function SearchPage() {
                         <div className="mb-4">
                             {query ? (
                                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                                    Search results for &quot;{query}&quot;
+                                    Search results for "{query}"
                                 </h1>
                             ) : (
                                 <h1 className="text-2xl font-bold text-gray-900 mb-2">All Food Items</h1>
@@ -225,7 +225,7 @@ export default function SearchPage() {
                                     <h3 className="text-xl font-semibold text-gray-800 mb-2">No results found</h3>
                                     <p className="text-gray-500 text-sm max-w-md mb-6">
                                         {query
-                                            ? `No food items found for &quot;${query}&quot;. Try searching with different keywords.`
+                                            ? `No food items found for "${query}". Try searching with different keywords.`
                                             : "No food items match your filters."}
                                     </p>
                                     <button
