@@ -95,8 +95,8 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
             set({
                 restaurants: data,
                 restaurant: data[0] || null,
-                products: data[0].products || [],
-                categories: data[0].cate || [],
+                products: data?.[0]?.products || [],
+                categories: data?.[0]?.cate || [],
                 loading: false,
             });
         } catch (err: any) {

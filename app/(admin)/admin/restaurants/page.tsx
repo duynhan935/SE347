@@ -1,8 +1,10 @@
 "use client";
 
 import RestaurantFormModal from "@/components/admin/restaurants/RestaurantFormModal";
+import { authApi } from "@/lib/api/authApi";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { restaurantApi } from "@/lib/api/restaurantApi";
-import { Restaurant, RestaurantData } from "@/types";
+import { Restaurant, RestaurantData, User } from "@/types";
 import { Ban, CheckCircle, Clock, Edit, Loader2, MapPin, Plus, Search, Trash } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -15,6 +17,9 @@ export default function RestaurantsPage() {
     const [filterStatus, setFilterStatus] = useState<string>("ALL");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
+    const [ownersByMerchantId, setOwnersByMerchantId] = useState<Record<string, User>>({});
+
+    const confirmAction = useConfirm();
 
     useEffect(() => {
         fetchRestaurants();
@@ -36,6 +41,40 @@ export default function RestaurantsPage() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const merchantIds = Array.from(
+            new Set(restaurants.map((r) => r.merchantId).filter((id): id is string => Boolean(id))),
+        );
+        const missing = merchantIds.filter((id) => !ownersByMerchantId[id]);
+        if (missing.length === 0) return;
+
+        let cancelled = false;
+
+        const run = async () => {
+            const results = await Promise.allSettled(missing.map((id) => authApi.getUserById(id)));
+            if (cancelled) return;
+
+            const next: Record<string, User> = {};
+            for (const r of results) {
+                if (r.status === "fulfilled" && r.value?.id) {
+                    next[r.value.id] = r.value;
+                }
+            }
+
+            if (Object.keys(next).length > 0) {
+                setOwnersByMerchantId((prev) => ({ ...prev, ...next }));
+            }
+        };
+
+        run().catch(() => {
+            // Owner enrichment is best-effort.
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [restaurants, ownersByMerchantId]);
 
     const handleSaveRestaurant = async (restaurantData: RestaurantData, imageFile?: File) => {
         try {
@@ -71,7 +110,14 @@ export default function RestaurantsPage() {
     };
 
     const handleDeleteRestaurant = async (restaurantId: string) => {
-        if (!confirm("Are you sure you want to delete this restaurant? This action cannot be undone.")) return;
+        const ok = await confirmAction({
+            title: "Delete restaurant?",
+            description: "This action cannot be undone.",
+            confirmText: "Delete",
+            cancelText: "Cancel",
+            variant: "danger",
+        });
+        if (!ok) return;
 
         try {
             await restaurantApi.deleteRestaurant(restaurantId);
@@ -212,6 +258,13 @@ export default function RestaurantsPage() {
                                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                                             {restaurant.resName}
                                         </h3>
+                                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                            Owner:{" "}
+                                            {ownersByMerchantId[restaurant.merchantId]?.username || "—"}
+                                            {ownersByMerchantId[restaurant.merchantId]?.email
+                                                ? ` (${ownersByMerchantId[restaurant.merchantId]?.email})`
+                                                : ""}
+                                        </div>
                                         <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mt-1">
                                             <MapPin size={14} />
                                             <span className="line-clamp-1">{restaurant.address}</span>

@@ -71,11 +71,6 @@ const menuItems: MenuItem[] = [
         href: "/admin/sizes",
     },
     {
-        label: "Promotions",
-        icon: Percent,
-        href: "/admin/promotions",
-    },
-    {
         label: "Settings",
         icon: Settings,
         href: "/admin/settings",

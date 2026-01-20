@@ -6,6 +6,8 @@ import { create } from "zustand";
 interface AuthState {
     user: User | null;
     accessToken: string | null;
+    // Refresh token is managed by backend as an HttpOnly cookie.
+    // Keep field for backward compatibility, but do not persist it in localStorage.
     refreshToken: string | null;
     isAuthenticated: boolean;
     loading: boolean;
@@ -22,7 +24,7 @@ interface AuthState {
         role: string;
     }) => Promise<boolean>;
     logout: () => void;
-    setTokens: (access: string, refresh: string) => void;
+    setTokens: (access: string | null, refresh: string | null) => void;
     fetchProfile: () => Promise<void>;
     updateProfile: (userData: { username: string; phone: string }) => Promise<boolean>;
     initializeAuth: () => Promise<void>;
@@ -31,11 +33,18 @@ interface AuthState {
     handleOAuthLogin: (accessToken: string) => Promise<boolean>;
 }
 
+const normalizeToken = (value: string | null): string | null => {
+    if (!value) return null;
+    const v = value.trim();
+    if (!v || v === "null" || v === "undefined") return null;
+    return v;
+};
+
 const getInitialTokens = (): { accessToken: string | null; refreshToken: string | null } => {
     if (typeof window !== "undefined") {
-        const accessToken = localStorage.getItem("accessToken");
-        const refreshToken = localStorage.getItem("refreshToken");
-        return { accessToken, refreshToken };
+        const accessToken = normalizeToken(localStorage.getItem("accessToken"));
+        // Refresh token is no longer stored in localStorage.
+        return { accessToken, refreshToken: null };
     }
     return { accessToken: null, refreshToken: null };
 };
@@ -57,17 +66,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             isAuthenticated: !!access,
         });
         if (typeof window !== "undefined") {
-            localStorage.setItem("accessToken", access);
-            localStorage.setItem("refreshToken", refresh);
+            if (access) {
+                localStorage.setItem("accessToken", access);
+            } else {
+                localStorage.removeItem("accessToken");
+            }
+            // Do not persist refresh token in localStorage.
+            localStorage.removeItem("refreshToken");
         }
     },
 
     login: async (credentials) => {
         set({ loading: true, error: null });
         try {
-            const { accessToken, refreshToken } = await authApi.login(credentials);
+            const { accessToken } = await authApi.login(credentials);
             // Set tokens first to mark as authenticated immediately
-            get().setTokens(accessToken, refreshToken);
+            get().setTokens(accessToken, null);
             // Fetch profile in background - don't block login success
             // Use Promise.race with timeout to prevent hanging
             const profilePromise = get().fetchProfile();
@@ -207,9 +221,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     initializeAuth: async () => {
-        // Quick check - if no tokens, skip immediately
-        const { accessToken, refreshToken } = getInitialTokens();
-        if (!accessToken || !refreshToken) {
+        // Quick check - if no access token, skip immediately (guest mode)
+        const { accessToken } = getInitialTokens();
+        if (!accessToken) {
             set({
                 user: null,
                 accessToken: null,
@@ -221,7 +235,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
 
         // Set tokens immediately for faster UI response
-        set({ accessToken, refreshToken, isAuthenticated: true, loading: true });
+        set({ accessToken, refreshToken: null, isAuthenticated: true, loading: true });
 
         try {
             // Fetch user profile in background - don't block if it fails
@@ -320,7 +334,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             // Set the access token (OAuth doesn't provide refresh token in this flow)
             // Store accessToken as both access and refresh for now
             // Backend should handle token refresh separately if needed
-            get().setTokens(accessToken, accessToken);
+            get().setTokens(accessToken, null);
             // Fetch user profile to complete login
             await get().fetchProfile();
             set({ loading: false });

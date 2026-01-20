@@ -1,7 +1,9 @@
 "use client";
 
 import type { Category, Product, ProductCreateData, Restaurant, Size } from "@/types";
-import { Loader2 } from "lucide-react";
+import { categoryApi } from "@/lib/api/categoryApi";
+import { sizeApi } from "@/lib/api/sizeApi";
+import { Loader2, Plus } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -18,6 +20,14 @@ type FoodFormProps = {
 };
 
 export default function FoodForm({ food = null, categories, sizes, restaurant, onSave, onCancel }: FoodFormProps) {
+    const [localCategories, setLocalCategories] = useState<Category[]>(categories);
+    const [localSizes, setLocalSizes] = useState<Size[]>(sizes);
+
+    const [newCategoryName, setNewCategoryName] = useState("");
+    const [newSizeName, setNewSizeName] = useState("");
+    const [creatingCategory, setCreatingCategory] = useState(false);
+    const [creatingSize, setCreatingSize] = useState(false);
+
     const [formData, setFormData] = useState<ProductCreateData>({
         productName: "",
         description: "",
@@ -31,6 +41,14 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
     const [imagePreview, setImagePreview] = useState<string>("");
     const [saving, setSaving] = useState(false);
     const [selectedSizes, setSelectedSizes] = useState<SelectedSize[]>([]);
+
+    useEffect(() => {
+        setLocalCategories(categories);
+    }, [categories]);
+
+    useEffect(() => {
+        setLocalSizes(sizes);
+    }, [sizes]);
 
     useEffect(() => {
         if (food) {
@@ -75,6 +93,71 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
 
     const handleSizePrice = (sizeId: string, price: number) => {
         setSelectedSizes(selectedSizes.map((s) => (s.sizeId === sizeId ? { ...s, price } : s)));
+    };
+
+    const handleCreateCategory = async () => {
+        const name = newCategoryName.trim();
+        if (!name) {
+            toast.error("Please enter a category name");
+            return;
+        }
+
+        const existing = localCategories.find((c) => c.cateName.toLowerCase() === name.toLowerCase());
+        if (existing) {
+            setFormData((prev) => ({ ...prev, categoryId: existing.id }));
+            setNewCategoryName("");
+            toast.success("Category already exists — selected it.");
+            return;
+        }
+
+        setCreatingCategory(true);
+        try {
+            const res = await categoryApi.createCategory({ cateName: name });
+            const created = res.data;
+            setLocalCategories((prev) => [created, ...prev]);
+            setFormData((prev) => ({ ...prev, categoryId: created.id }));
+            setNewCategoryName("");
+            toast.success("Category created");
+        } catch (error) {
+            console.error("Failed to create category:", error);
+            toast.error("Unable to create category");
+        } finally {
+            setCreatingCategory(false);
+        }
+    };
+
+    const handleCreateSize = async () => {
+        const name = newSizeName.trim();
+        if (!name) {
+            toast.error("Please enter a size name");
+            return;
+        }
+
+        const existing = localSizes.find((s) => s.name.toLowerCase() === name.toLowerCase());
+        if (existing) {
+            const alreadySelected = selectedSizes.some((s) => s.sizeId === existing.id);
+            if (!alreadySelected) {
+                setSelectedSizes((prev) => [...prev, { sizeId: existing.id, price: 0 }]);
+            }
+            setNewSizeName("");
+            toast.success("Size already exists — added it.");
+            return;
+        }
+
+        setCreatingSize(true);
+        try {
+            const res = await sizeApi.createSize({ name });
+            const created = res.data;
+            setLocalSizes((prev) => [created, ...prev]);
+            setSelectedSizes((prev) => [...prev, { sizeId: created.id, price: 0 }]);
+            setNewSizeName("");
+            toast.success("Size created — set its price");
+        } catch (error) {
+            console.error("Failed to create size:", error);
+            toast.error("Unable to create size");
+        } finally {
+            setCreatingSize(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -160,12 +243,31 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none transition focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
                 >
                     <option value="">Select category</option>
-                    {categories.map((cat) => (
+                    {localCategories.map((cat) => (
                         <option key={cat.id} value={cat.id}>
                             {cat.cateName}
                         </option>
                     ))}
                 </select>
+
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="Create new category..."
+                        className="flex-1 min-w-[220px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
+                    />
+                    <button
+                        type="button"
+                        onClick={handleCreateCategory}
+                        disabled={creatingCategory}
+                        className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 disabled:opacity-60 dark:border-white/10 dark:bg-gray-900 dark:text-white"
+                    >
+                        {creatingCategory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                        Add
+                    </button>
+                </div>
             </div>
 
             <div>
@@ -173,8 +275,27 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                     Size & Price <span className="text-red-500">*</span>
                 </label>
 
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <input
+                        type="text"
+                        value={newSizeName}
+                        onChange={(e) => setNewSizeName(e.target.value)}
+                        placeholder="Create new size..."
+                        className="flex-1 min-w-[220px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
+                    />
+                    <button
+                        type="button"
+                        onClick={handleCreateSize}
+                        disabled={creatingSize}
+                        className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 disabled:opacity-60 dark:border-white/10 dark:bg-gray-900 dark:text-white"
+                    >
+                        {creatingSize ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                        Add
+                    </button>
+                </div>
+
                 <div className="space-y-2">
-                    {sizes.map((size) => {
+                    {localSizes.map((size) => {
                         const selectedSize = selectedSizes.find((s) => s.sizeId === size.id);
                         const isSelected = Boolean(selectedSize);
 

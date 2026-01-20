@@ -1,6 +1,7 @@
 "use client";
 
 import SizeFormModal from "@/components/admin/sizes/SizeFormModal";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { sizeApi } from "@/lib/api/sizeApi";
 import { Size, SizeData } from "@/types";
 import { Edit, Loader2, Plus, Search, Trash } from "lucide-react";
@@ -13,6 +14,8 @@ export default function SizesPage() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSize, setEditingSize] = useState<Size | null>(null);
+
+    const confirmAction = useConfirm();
 
     useEffect(() => {
         fetchSizes();
@@ -50,7 +53,14 @@ export default function SizesPage() {
     };
 
     const handleDeleteSize = async (sizeId: string) => {
-        if (!confirm("Are you sure you want to delete this size?")) return;
+        const ok = await confirmAction({
+            title: "Delete size?",
+            description: "This action cannot be undone.",
+            confirmText: "Delete",
+            cancelText: "Cancel",
+            variant: "danger",
+        });
+        if (!ok) return;
 
         try {
             await sizeApi.deleteSize(sizeId);

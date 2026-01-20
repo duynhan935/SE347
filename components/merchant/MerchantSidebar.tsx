@@ -49,11 +49,6 @@ export default function MerchantSidebar({ sidebarOpen, setSidebarOpen }: Merchan
             href: "/merchant/food",
         },
         {
-            icon: Users,
-            label: "Staff",
-            href: "/merchant/manage/staff",
-        },
-        {
             icon: BarChart3,
             label: "Reports",
             href: "/merchant/reports",

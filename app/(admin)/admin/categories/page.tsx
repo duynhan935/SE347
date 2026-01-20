@@ -1,6 +1,7 @@
 "use client";
 
 import CategoryFormModal from "@/components/admin/categories/CategoryFormModal";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { categoryApi } from "@/lib/api/categoryApi";
 import { Category, CategoryData } from "@/types";
 import { Edit, Loader2, Plus, Search, Trash } from "lucide-react";
@@ -13,6 +14,8 @@ export default function CategoriesPage() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
+    const confirmAction = useConfirm();
 
     useEffect(() => {
         fetchCategories();
@@ -50,7 +53,14 @@ export default function CategoriesPage() {
     };
 
     const handleDeleteCategory = async (categoryId: string) => {
-        if (!confirm("Are you sure you want to delete this category?")) return;
+        const ok = await confirmAction({
+            title: "Delete category?",
+            description: "This action cannot be undone.",
+            confirmText: "Delete",
+            cancelText: "Cancel",
+            variant: "danger",
+        });
+        if (!ok) return;
 
         try {
             await categoryApi.deleteCategory(categoryId);

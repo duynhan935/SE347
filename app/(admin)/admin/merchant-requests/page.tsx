@@ -1,18 +1,26 @@
 "use client";
 
 import { authApi } from "@/lib/api/authApi";
+import { restaurantApi } from "@/lib/api/restaurantApi";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { useNotificationStore } from "@/stores/useNotificationStore";
 import { User as UserType } from "@/types";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Calendar, CheckCircle, Loader2, Mail, RefreshCw, Search, User, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function MerchantRequestsPage() {
     const { markAsRead } = useNotificationStore();
+    const confirm = useConfirm();
     const [requests, setRequests] = useState<UserType[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
+
+    const [rejectOpen, setRejectOpen] = useState(false);
+    const [rejectTarget, setRejectTarget] = useState<UserType | null>(null);
+    const [rejectReason, setRejectReason] = useState("");
 
     useEffect(() => {
         fetchMerchantRequests();
@@ -21,16 +29,8 @@ export default function MerchantRequestsPage() {
     const fetchMerchantRequests = async () => {
         setLoading(true);
         try {
-            const response = await authApi.getAllUsers();
-            const users = response?.content || [];
-
-            // Filter users with role MERCHANT and not enabled (pending approval)
-            const pendingMerchants = users.filter((u) => {
-                const isMerchant = u.role === "MERCHANT";
-                const isPending = u.enabled === false;
-                return isMerchant && isPending;
-            });
-            setRequests(pendingMerchants);
+            const response = await authApi.getMerchantsPendingConsideration({ page: 0, size: 200, sort: "createdAt,desc" });
+            setRequests(response?.content || []);
         } catch (error) {
             console.error("Failed to fetch merchant requests:", error);
             toast.error("Unable to load merchant requests list");
@@ -40,20 +40,44 @@ export default function MerchantRequestsPage() {
         }
     };
 
-    const handleApprove = async (userId: string) => {
-        if (!confirm("Are you sure you want to approve this merchant?")) {
-            return;
-        }
+    const handleApprove = async (request: UserType) => {
+        const ok = await confirm({
+            title: "Approve merchant",
+            description: `Approve ${request.username} as a merchant?`,
+            confirmText: "Approve",
+            cancelText: "Cancel",
+        });
+        if (!ok) return;
 
-        setProcessingId(userId);
+        setProcessingId(request.id);
         try {
-            await authApi.approveMerchant(userId);
+            await authApi.approveMerchant(request.id);
             toast.success("Merchant approved successfully!");
+
+            // Best-effort: initialize a default restaurant to avoid merchant dashboard 404s.
+            // Only run when we have a usable phone; otherwise merchant will complete setup after first login.
+            const phone = request.phone?.trim();
+            if (phone) {
+                try {
+                    await restaurantApi.createRestaurant({
+                        resName: request.username ? `${request.username}'s Restaurant` : "My Restaurant",
+                        address: "Not updated",
+                        longitude: 106.809883,
+                        latitude: 10.841228,
+                        openingTime: "09:00:00",
+                        closingTime: "22:00:00",
+                        phone,
+                        merchantId: request.id,
+                    });
+                } catch {
+                    // Silent: merchant can complete setup later.
+                }
+            }
 
             // Mark related notifications as read
             const { notifications } = useNotificationStore.getState();
             notifications
-                .filter((n) => n.type === "ADMIN_MERCHANT_REQUEST" && n.merchantId === userId)
+                .filter((n) => n.type === "ADMIN_MERCHANT_REQUEST" && n.merchantId === request.id)
                 .forEach((n) => markAsRead(n.id));
 
             fetchMerchantRequests();
@@ -68,21 +92,29 @@ export default function MerchantRequestsPage() {
         }
     };
 
-    const handleReject = async (userId: string) => {
-        const reason = prompt("Enter rejection reason:");
-        if (!reason || reason.trim() === "") {
+    const openReject = (request: UserType) => {
+        setRejectTarget(request);
+        setRejectReason("");
+        setRejectOpen(true);
+    };
+
+    const handleReject = async () => {
+        if (!rejectTarget) return;
+        const reason = rejectReason.trim();
+        if (!reason) {
+            toast.error("Please enter a rejection reason");
             return;
         }
 
-        setProcessingId(userId);
+        setProcessingId(rejectTarget.id);
         try {
-            await authApi.rejectMerchant(userId, { reason: reason.trim() });
+            await authApi.rejectMerchant(rejectTarget.id, { reason });
             toast.success("Merchant rejected successfully!");
 
             // Mark related notifications as read
             const { notifications } = useNotificationStore.getState();
             notifications
-                .filter((n) => n.type === "ADMIN_MERCHANT_REQUEST" && n.merchantId === userId)
+                .filter((n) => n.type === "ADMIN_MERCHANT_REQUEST" && n.merchantId === rejectTarget.id)
                 .forEach((n) => markAsRead(n.id));
 
             fetchMerchantRequests();
@@ -94,6 +126,8 @@ export default function MerchantRequestsPage() {
             toast.error(errorMessage);
         } finally {
             setProcessingId(null);
+            setRejectOpen(false);
+            setRejectTarget(null);
         }
     };
 
@@ -196,6 +230,10 @@ export default function MerchantRequestsPage() {
                                                     <Mail size={16} />
                                                     <span>{request.email}</span>
                                                 </div>
+                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                    <User size={16} />
+                                                    <span>Reason: Not provided</span>
+                                                </div>
                                                 {request.phone && (
                                                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                                         <User size={16} />
@@ -218,7 +256,7 @@ export default function MerchantRequestsPage() {
                                     {/* Actions */}
                                     <div className="flex items-center gap-2 ml-4">
                                         <button
-                                            onClick={() => handleApprove(request.id)}
+                                            onClick={() => handleApprove(request)}
                                             disabled={processingId === request.id}
                                             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
@@ -226,7 +264,7 @@ export default function MerchantRequestsPage() {
                                             <span>Approve</span>
                                         </button>
                                         <button
-                                            onClick={() => handleReject(request.id)}
+                                            onClick={() => openReject(request)}
                                             disabled={processingId === request.id}
                                             className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
@@ -240,6 +278,45 @@ export default function MerchantRequestsPage() {
                     </div>
                 )}
             </div>
+
+            <Dialog.Root open={rejectOpen} onOpenChange={setRejectOpen}>
+                <Dialog.Portal>
+                    <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-[2px]" />
+                    <Dialog.Content className="fixed left-1/2 top-1/2 z-[61] w-[92vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-gray-200 bg-white p-6 shadow-xl outline-none dark:border-gray-700 dark:bg-gray-900">
+                        <Dialog.Title className="text-lg font-semibold text-gray-900 dark:text-white">
+                            Reject merchant
+                        </Dialog.Title>
+                        <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                            Provide a reason to reject {rejectTarget?.username}.
+                        </div>
+                        <textarea
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            rows={4}
+                            className="mt-4 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-brand-yellow dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                            placeholder="Enter rejection reason..."
+                        />
+                        <div className="mt-6 flex items-center justify-end gap-2">
+                            <button
+                                type="button"
+                                disabled={processingId === rejectTarget?.id}
+                                onClick={() => setRejectOpen(false)}
+                                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={processingId === rejectTarget?.id}
+                                onClick={handleReject}
+                                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                            >
+                                Reject
+                            </button>
+                        </div>
+                    </Dialog.Content>
+                </Dialog.Portal>
+            </Dialog.Root>
         </div>
     );
 }

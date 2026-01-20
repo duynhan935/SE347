@@ -21,6 +21,13 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
     const prevIsAuthenticatedRef = useRef<boolean | null>(null);
     const hasRedirectedRef = useRef(false);
 
+    const hasValidAccessToken = () => {
+        if (typeof window === "undefined") return false;
+        const raw = localStorage.getItem("accessToken");
+        const v = raw?.trim();
+        return !!v && v !== "null" && v !== "undefined";
+    };
+
     useEffect(() => {
         setMounted(true);
     }, []);
@@ -31,8 +38,8 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
 
         const handleStorageChange = (e: StorageEvent) => {
             // If tokens were removed in another tab, check authentication state
-            if ((e.key === "accessToken" || e.key === "refreshToken") && !e.newValue) {
-                const hasTokens = localStorage.getItem("accessToken") || localStorage.getItem("refreshToken");
+            if (e.key === "accessToken" && !e.newValue) {
+                const hasTokens = hasValidAccessToken();
 
                 // If no tokens exist and we're on a protected route, redirect
                 if (!hasTokens && !isLoggingOut) {
@@ -83,9 +90,7 @@ export default function ProtectedRoute({ children, allowedRoles, requireAuth = t
         }
 
         // Check if tokens exist immediately (client-side only)
-        const hasTokens =
-            typeof window !== "undefined" &&
-            (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
+        const hasTokens = hasValidAccessToken();
 
         // Fast path: If not loading and definitely not authenticated (no tokens and not authenticated)
         // Redirect immediately without delay

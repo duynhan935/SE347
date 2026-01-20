@@ -1,6 +1,7 @@
 "use client";
 
 import { authApi } from "@/lib/api/authApi";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { User } from "@/types";
 import { Edit, Loader2, Search, Trash, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -12,6 +13,8 @@ export default function UsersPage() {
     const [loading, setLoading] = useState(true);
     const [filterRole, setFilterRole] = useState<string>("ALL");
     const [filterStatus, setFilterStatus] = useState<string>("ALL");
+
+    const confirmAction = useConfirm();
 
     useEffect(() => {
         fetchUsers();
@@ -31,11 +34,18 @@ export default function UsersPage() {
         }
     };
 
-    const handleDeleteUser = async (userId: string) => {
-        if (!confirm("Are you sure you want to delete this user?")) return;
+    const handleDeleteUser = async (user: User) => {
+        const ok = await confirmAction({
+            title: "Delete user?",
+            description: `This will permanently delete ${user.username}.`,
+            confirmText: "Delete",
+            cancelText: "Cancel",
+            variant: "danger",
+        });
+        if (!ok) return;
 
         try {
-            await authApi.deleteUser(userId);
+            await authApi.deleteUser(user.id);
             toast.success("User deleted.");
             fetchUsers();
         } catch (error) {
@@ -201,7 +211,7 @@ export default function UsersPage() {
                                                     <Edit size={18} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDeleteUser(user.id)}
+                                                    onClick={() => handleDeleteUser(user)}
                                                     className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                                     title="Delete"
                                                 >

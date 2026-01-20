@@ -7,12 +7,21 @@ import { API_URL } from "./config/publicRuntime";
 const api = axios.create({
     baseURL: API_URL,
     timeout: 30000,
+    // Required so the browser sends/receives refresh-token cookies from the API gateway.
+    withCredentials: true,
     // Do not auto-follow redirects (prevents redirects to Docker hostnames)
     maxRedirects: 0,
     // Throw for 4xx/5xx so auth refresh + callers can handle properly.
     // Keep redirects (3xx) as non-throw since maxRedirects=0 is used to prevent following Docker hostname redirects.
     validateStatus: (status) => status < 400,
 });
+
+const normalizeToken = (value: string | null): string | null => {
+    if (!value) return null;
+    const v = value.trim();
+    if (!v || v === "null" || v === "undefined") return null;
+    return v;
+};
 
 let failedQueue: { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }[] = []; // Queue for failed requests during refresh
 let isRefreshing = false; // Flag to prevent multiple refresh attempts
@@ -32,8 +41,9 @@ const processQueue = (error: AxiosError | null, token: string | null = null) => 
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         // Get token from Zustand store
-        const accessTokenFromStore = useAuthStore.getState().accessToken;
-        const accessTokenFromStorage = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+        const accessTokenFromStore = normalizeToken(useAuthStore.getState().accessToken);
+        const accessTokenFromStorage =
+            typeof window !== "undefined" ? normalizeToken(localStorage.getItem("accessToken")) : null;
         const accessToken = accessTokenFromStore || accessTokenFromStorage;
         if (accessToken && config.headers) {
             // Only add if the request isn't for refreshing the token itself
@@ -57,6 +67,16 @@ api.interceptors.response.use(
         // Handle 401 Unauthorized - token expired
         // Skip token refresh for refresh token endpoint itself to avoid infinite loop
         if (error.response?.status === 401 && !originalRequest._retry) {
+            // Guest mode: if we didn't send a token, don't attempt refresh.
+            // This prevents noisy 400s from /users/refreshtoken when the user is not logged in.
+            const accessTokenFromStore = normalizeToken(useAuthStore.getState().accessToken);
+            const accessTokenFromStorage =
+                typeof window !== "undefined" ? normalizeToken(localStorage.getItem("accessToken")) : null;
+            const hasAccessToken = !!(accessTokenFromStore || accessTokenFromStorage);
+            if (!hasAccessToken) {
+                return Promise.reject(error);
+            }
+
             // If this is the refresh token endpoint itself, just logout
             if (originalRequest.url?.includes("/users/refreshtoken")) {
                 useAuthStore.getState().logout();
@@ -65,13 +85,8 @@ api.interceptors.response.use(
 
             originalRequest._retry = true;
 
-            const refreshToken = useAuthStore.getState().refreshToken;
-
-            // If there's no refresh token, logout
-            if (!refreshToken) {
-                useAuthStore.getState().logout();
-                return Promise.reject(error);
-            }
+            // Refresh token is stored as an HttpOnly cookie by the backend.
+            // We do not rely on localStorage refresh tokens (can be missing/invalid).
 
             // If already refreshing, queue this request
             if (isRefreshing) {
@@ -96,13 +111,16 @@ api.interceptors.response.use(
 
             try {
                 // Try to refresh the token
-                const newAccessToken = await authApi.refreshAccessToken(refreshToken);
+                const newAccessToken = await authApi.refreshAccessToken();
 
                 // Update the store with new access token
-                useAuthStore.getState().setTokens(newAccessToken, refreshToken);
+                useAuthStore.getState().setTokens(newAccessToken, null);
 
                 // Process queued requests
                 processQueue(null, newAccessToken);
+
+                // Refresh finished successfully
+                isRefreshing = false;
 
                 // Retry original request with new token
                 // Ensure we use the correct baseURL and don't follow redirects to wrong URLs
@@ -140,6 +158,12 @@ api.interceptors.response.use(
             !error.config?.url?.includes("/unreadCount")
         ) {
             // Just reject without logging - chat page will handle it gracefully
+            return Promise.reject(error);
+        }
+
+        // Skip logging for merchant dashboard "no restaurant yet" state.
+        // Backend returns 404 when the merchant has not created a restaurant.
+        if (status === 404 && error.config?.url?.includes("/dashboard/merchant/") && error.config?.url?.includes("/restaurant")) {
             return Promise.reject(error);
         }
 

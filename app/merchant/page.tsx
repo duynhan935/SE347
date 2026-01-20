@@ -148,14 +148,34 @@ export default function MerchantDashboard() {
             try {
                 const merchantId = user.id;
 
-                const [restaurant, ov, top, ratings] = await Promise.all([
-                    dashboardApi.getMerchantRestaurantOverview(merchantId),
+                let restaurant: Awaited<ReturnType<typeof dashboardApi.getMerchantRestaurantOverview>> | null = null;
+                try {
+                    restaurant = await dashboardApi.getMerchantRestaurantOverview(merchantId);
+                    setRestaurantOverview(restaurant);
+                } catch (error: unknown) {
+                    const status =
+                        error && typeof error === "object" && "response" in error
+                            ? (error as { response?: { status?: number } }).response?.status
+                            : undefined;
+
+                    // Normal: merchant has no restaurant yet
+                    if (status === 404) {
+                        setRestaurantOverview(null);
+                        setOverview(null);
+                        setTopProducts([]);
+                        setRatingStats(null);
+                        setRecentOrders([]);
+                        return;
+                    }
+                    throw error;
+                }
+
+                const [ov, top, ratings] = await Promise.all([
                     dashboardApi.getMerchantOverview(merchantId, dateQuery),
                     dashboardApi.getMerchantTopProducts(merchantId, { limit: 10, ...dateQuery }),
                     dashboardApi.getMerchantRatingStats(merchantId, dateQuery),
                 ]);
 
-                setRestaurantOverview(restaurant);
                 setOverview(ov);
 
                 setTopProducts(
@@ -270,6 +290,30 @@ export default function MerchantDashboard() {
                     </Link>
                 </div>
             </div>
+
+            {!loading && !restaurantOverview && (
+                <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 text-yellow-900 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-200">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="mt-0.5" size={18} />
+                        <div className="flex-1">
+                            <p className="font-semibold">Restaurant setup required</p>
+                            <p className="mt-1 text-sm opacity-90">
+                                Your account is approved, but you haven’t created a restaurant profile yet. Create one to
+                                unlock dashboard stats, orders, and food management.
+                            </p>
+                            <div className="mt-4">
+                                <Link
+                                    href="/merchant/manage/settings"
+                                    className="inline-flex items-center gap-2 rounded-lg bg-brand-orange px-4 py-2 text-sm font-semibold text-white hover:bg-brand-orange/90"
+                                >
+                                    <Store size={16} />
+                                    Create restaurant profile
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Stats Cards - TailAdmin Style */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">

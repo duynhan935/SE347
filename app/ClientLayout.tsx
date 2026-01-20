@@ -5,6 +5,7 @@ import Header from "@/components/header/Header";
 import Footer from "@/components/layout/client/Footer";
 import ChatProvider from "@/components/providers/ChatProvider";
 import SSEProvider from "@/components/providers/SSEProvider";
+import ConfirmProvider from "@/components/ui/ConfirmModal";
 import { useCartSync } from "@/lib/hooks/useCartSync";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePathname, useRouter } from "next/navigation";
@@ -36,13 +37,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
         return (
                 <AuthProvider>
-                        <SSEProvider>
-                                <ChatProvider>
-                                        {showHeaderFooter && <Header />}
-                                        <main className={mainClassName}>{children}</main>
-                                        {showHeaderFooter && <Footer />}
-                                </ChatProvider>
-                        </SSEProvider>
+                        <ConfirmProvider>
+                                <SSEProvider>
+                                        <ChatProvider>
+                                                {showHeaderFooter && <Header />}
+                                                <main className={mainClassName}>{children}</main>
+                                                {showHeaderFooter && <Footer />}
+                                        </ChatProvider>
+                                </SSEProvider>
+                        </ConfirmProvider>
                 </AuthProvider>
         );
 }

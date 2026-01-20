@@ -6,6 +6,7 @@ import { DollarSign, Download, ShoppingBag, Star, Store } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { formatCurrency, formatNumber } from "@/lib/utils/dashboardFormat";
+import Link from "next/link";
 import {
     Area,
     AreaChart,
@@ -76,8 +77,29 @@ export default function MerchantReportsPage() {
             setLoading(true);
             try {
                 const merchantId = user.id;
-                const [restaurant, revenue, trend, hourly, timeAnalytics, top, ratings] = await Promise.all([
-                    dashboardApi.getMerchantRestaurantOverview(merchantId),
+                let restaurant: Awaited<ReturnType<typeof dashboardApi.getMerchantRestaurantOverview>> | null = null;
+                try {
+                    restaurant = await dashboardApi.getMerchantRestaurantOverview(merchantId);
+                } catch (error: unknown) {
+                    const status =
+                        error && typeof error === "object" && "response" in error
+                            ? (error as { response?: { status?: number } }).response?.status
+                            : undefined;
+                    if (status === 404) {
+                        setRestaurantOverview(null);
+                        setRevenueAnalytics(null);
+                        setRevenueTrend([]);
+                        setHourlyStats([]);
+                        setWeekdayStats([]);
+                        setTimeSummary(null);
+                        setTopProducts([]);
+                        setRatingStats(null);
+                        return;
+                    }
+                    throw error;
+                }
+
+                const [revenue, trend, hourly, timeAnalytics, top, ratings] = await Promise.all([
                     dashboardApi.getMerchantRevenue(merchantId, dateQuery),
                     dashboardApi.getMerchantRevenueTrend(merchantId, dateQuery),
                     dashboardApi.getMerchantHourlyStatistics(merchantId, dateQuery),
@@ -231,6 +253,28 @@ export default function MerchantReportsPage() {
                     </button>
                 </div>
             </div>
+
+            {!loading && !restaurantOverview && (
+                <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 text-yellow-900 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-200">
+                    <div className="flex items-start gap-3">
+                        <Store className="mt-0.5" size={18} />
+                        <div className="flex-1">
+                            <p className="font-semibold">Restaurant setup required</p>
+                            <p className="mt-1 text-sm opacity-90">
+                                Create your restaurant profile to unlock reports and analytics.
+                            </p>
+                            <div className="mt-4">
+                                <Link
+                                    href="/merchant/manage/settings"
+                                    className="inline-flex items-center gap-2 rounded-lg bg-brand-orange px-4 py-2 text-sm font-semibold text-white hover:bg-brand-orange/90"
+                                >
+                                    Create restaurant profile
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

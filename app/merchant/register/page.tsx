@@ -2,7 +2,7 @@
 
 import { Logo } from "@/constants";
 import { authApi } from "@/lib/api/authApi";
-import { restaurantApi } from "@/lib/api/restaurantApi";
+// Restaurant is created after approval (or via first-time setup)
 import { Check, Eye, EyeOff, MapPin, Upload } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -105,97 +105,25 @@ export default function MerchantRegisterPage() {
                 role: "MERCHANT",
             });
 
-            // Step 2: Get userId by fetching all users and finding the newly registered one
-            let userId: string | null = null;
-            try {
-                const usersPage = await authApi.getAllUsers();
-                const users = Array.isArray(usersPage?.content) ? usersPage.content : [];
-                const newUser = users.find((u) => u.email === email && u.role === "MERCHANT");
-                if (newUser) {
-                    userId = newUser.id;
-                }
-            } catch (userError) {
-                console.error("Could not fetch users to get userId:", userError);
-            }
+            // Restaurant creation requires an authenticated MERCHANT/ADMIN token.
+            // At registration time the merchant is still pending approval, so we only store the details
+            // to be used later by a first-time setup flow after approval.
+            const pendingRestaurant = {
+                resName,
+                address,
+                longitude,
+                latitude,
+                openingTime,
+                closingTime,
+                phone,
+                email,
+            };
+            localStorage.setItem(`pending_restaurant_${email}`, JSON.stringify(pendingRestaurant));
 
-            // Step 3: Create restaurant if we have userId
-            if (userId) {
-                try {
-                    const restaurantData = {
-                        resName,
-                        address,
-                        longitude,
-                        latitude,
-                        openingTime,
-                        closingTime,
-                        phone,
-                        merchantId: userId,
-                    };
-
-                    await restaurantApi.createRestaurant(restaurantData, restaurantImage || undefined);
-
-                    toast.success(
-                        "Merchant registration successful! Your request has been submitted and is pending admin approval. You will receive an email notification when approved.",
-                        { duration: 5000 },
-                    );
-                } catch (restaurantError: unknown) {
-                    const errorMsg =
-                        (restaurantError as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-                        (restaurantError as { message?: string })?.message ||
-                        "Unable to create restaurant at this time";
-                    console.error("Restaurant creation error:", errorMsg);
-
-                    // Save restaurant info to localStorage for later creation
-                    const restaurantInfo = {
-                        resName,
-                        address,
-                        longitude,
-                        latitude,
-                        openingTime,
-                        closingTime,
-                        phone,
-                        email,
-                        imageFile: restaurantImage
-                            ? {
-                                  name: restaurantImage.name,
-                                  type: restaurantImage.type,
-                                  size: restaurantImage.size,
-                              }
-                            : null,
-                    };
-                    localStorage.setItem(`pending_restaurant_${email}`, JSON.stringify(restaurantInfo));
-
-                    toast.success(
-                        "Merchant registration successful! Restaurant information has been saved. Restaurant will be created after approval. You will receive an email notification when approved.",
-                        { duration: 5000 },
-                    );
-                }
-            } else {
-                // If we can't get userId, save restaurant info for later
-                const restaurantInfo = {
-                    resName,
-                    address,
-                    longitude,
-                    latitude,
-                    openingTime,
-                    closingTime,
-                    phone,
-                    email,
-                    imageFile: restaurantImage
-                        ? {
-                              name: restaurantImage.name,
-                              type: restaurantImage.type,
-                              size: restaurantImage.size,
-                          }
-                        : null,
-                };
-                localStorage.setItem(`pending_restaurant_${email}`, JSON.stringify(restaurantInfo));
-
-                toast.success(
-                    "Merchant registration successful! Restaurant information has been saved. Restaurant will be created after approval. You will receive an email notification when approved.",
-                    { duration: 5000 },
-                );
-            }
+            toast.success(
+                "Merchant registration successful! Your request is pending admin approval. After approval, you'll complete restaurant setup.",
+                { duration: 5000 },
+            );
 
             // Redirect to login page after successful registration
             // Merchant will be able to login only after admin approval

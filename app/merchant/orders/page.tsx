@@ -7,6 +7,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useMerchantOrderStore } from "@/stores/useMerchantOrderStore";
 import { Order, OrderStatus } from "@/types/order.type";
 import { CheckCircle, Package, RefreshCw, XCircle } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -17,6 +18,7 @@ export default function MerchantOrdersPage() {
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<OrderStatus | "ALL">("ALL");
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
+    const [restaurantLoading, setRestaurantLoading] = useState(true);
     const [rejectReason, setRejectReason] = useState<{ [orderId: string]: string }>({});
     const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null);
 
@@ -88,7 +90,12 @@ export default function MerchantOrdersPage() {
     // Business rule: 1 merchant = 1 restaurant
     useEffect(() => {
         const fetchRestaurantId = async () => {
-            if (!user?.id) return;
+            if (!user?.id || user.role !== "MERCHANT") {
+                setRestaurantId(null);
+                setRestaurantLoading(false);
+                return;
+            }
+            setRestaurantLoading(true);
             try {
                 const response = await restaurantApi.getRestaurantByMerchantId(user.id);
                 const data = response.data;
@@ -100,10 +107,15 @@ export default function MerchantOrdersPage() {
             } catch (error) {
                 console.error("Failed to fetch restaurants:", error);
                 setRestaurantId(null);
+            } finally {
+                setRestaurantLoading(false);
             }
         };
         fetchRestaurantId();
-    }, [user?.id]);
+    }, [user?.id, user?.role]);
+
+    const showSetupRequired =
+        !restaurantLoading && user?.id && user.role === "MERCHANT" && (restaurantId === null || restaurantId === "");
 
     const fetchOrders = useCallback(
         async (options?: { background?: boolean }) => {
@@ -136,7 +148,7 @@ export default function MerchantOrdersPage() {
                 }
             }
         },
-        [restaurantId, user?.id],
+        [restaurantId, user?.id, setPendingOrdersCount],
     );
 
     const normalizeSocketOrder = useCallback(
@@ -358,7 +370,7 @@ export default function MerchantOrdersPage() {
         }, 15000);
 
         return () => window.clearInterval(intervalId);
-    }, [fetchOrders, isOrderSocketConnected, playNotificationBeep, restaurantId, user?.id]);
+    }, [fetchOrders, isOrderSocketConnected, playNotificationBeep, restaurantId, setPendingOrdersCount, user?.id]);
 
     useEffect(() => {
         if (user?.id && restaurantId) {
@@ -487,6 +499,31 @@ export default function MerchantOrdersPage() {
                 return null;
         }
     };
+
+    if (!user?.id || user.role !== "MERCHANT") {
+        return (
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-700 dark:border-white/10 dark:bg-gray-900 dark:text-gray-200">
+                You must be a merchant to access this page.
+            </div>
+        );
+    }
+
+    if (showSetupRequired) {
+        return (
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-700 dark:border-white/10 dark:bg-gray-900 dark:text-gray-200">
+                <h2 className="text-xl font-bold mb-2">Restaurant setup required</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    You need a restaurant profile before you can manage orders.
+                </p>
+                <Link
+                    href="/merchant/manage/settings"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg transition-colors"
+                >
+                    Go to Settings
+                </Link>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -704,9 +741,9 @@ export default function MerchantOrdersPage() {
                                                 ) : nextStatus ? (
                                                     <button
                                                         onClick={() => handleUpdateStatus(order.orderId, nextStatus)}
-                                                        className="text-brand-orange hover:text-brand-orange/80"
+                                                        className="text-brand-orange hover:text-brand-orange/80 font-medium"
                                                     >
-                                                        Update
+                                                        Update to {getStatusLabel(nextStatus)}
                                                     </button>
                                                 ) : (
                                                     <span className="text-gray-400">—</span>

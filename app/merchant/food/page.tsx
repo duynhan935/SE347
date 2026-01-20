@@ -4,11 +4,9 @@ import ConfirmDeleteFoodModal from "@/components/merchant/food/ConfirmDeleteFood
 import FoodCard from "@/components/merchant/food/FoodCard";
 import FoodSearch from "@/components/merchant/food/FoodSearch";
 import FoodStats from "@/components/merchant/food/FoodStats";
-import { restaurantApi } from "@/lib/api/restaurantApi";
+import { useMerchantRestaurant } from "@/lib/hooks/useMerchantRestaurant";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useProductStore } from "@/stores/useProductsStores";
-import { useRestaurantStore } from "@/stores/useRestaurantStore";
-import { RestaurantData } from "@/types";
 import { Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -16,76 +14,23 @@ import toast from "react-hot-toast";
 
 export default function FoodPage() {
     const { user } = useAuthStore();
-    const { restaurants, getRestaurantByMerchantId } = useRestaurantStore();
     const { products, loading, fetchProductsByRestaurantId, deleteProduct } = useProductStore();
+    const { currentRestaurant, isLoadingRestaurant, hasRestaurant } = useMerchantRestaurant();
 
     const [searchTerm, setSearchTerm] = useState("");
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
     const [deleteTargetName, setDeleteTargetName] = useState<string | null>(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
-    const [isLoadingRestaurant, setIsLoadingRestaurant] = useState(false);
-    const [isCreatingRestaurant, setIsCreatingRestaurant] = useState(false);
-
-    const currentRestaurant = restaurants[0] || null;
-
-    // Load restaurant - auto-create if not present
-    useEffect(() => {
-        if (!user?.id || user.role !== "MERCHANT" || isLoadingRestaurant || isCreatingRestaurant) return;
-
-        setIsLoadingRestaurant(true);
-        const loadOrCreateRestaurant = async () => {
-            try {
-                // Load restaurant from API
-                const response = await restaurantApi.getRestaurantByMerchantId(user.id);
-                const restaurantList = response.data || [];
-
-                // If no restaurant exists, auto-create a default one
-                if (restaurantList.length === 0) {
-                    setIsCreatingRestaurant(true);
-                    const defaultRestaurantData: RestaurantData = {
-                        resName: user.username || "My Restaurant",
-                        address: "Not updated",
-                        longitude: 106.809883,
-                        latitude: 10.841228,
-                        openingTime: "09:00:00",
-                        closingTime: "22:00:00",
-                        phone: user.phone || "",
-                        merchantId: user.id,
-                    };
-
-                    await restaurantApi.createRestaurant(defaultRestaurantData);
-                    toast.success("Restaurant automatically created for you!");
-
-                    // Reload restaurant after creation
-                    await getRestaurantByMerchantId(user.id);
-                    setIsCreatingRestaurant(false);
-                } else {
-                    // Update store with existing restaurant
-                    await getRestaurantByMerchantId(user.id);
-                }
-            } catch (error) {
-                console.error("Failed to load/create restaurant:", error);
-                toast.error("Unable to load restaurant information");
-                setIsCreatingRestaurant(false);
-            } finally {
-                setIsLoadingRestaurant(false);
-            }
-        };
-
-        loadOrCreateRestaurant();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id, user?.role]);
-
     // Load products when restaurant is available
     useEffect(() => {
-        if (currentRestaurant?.id && !isLoadingRestaurant && !isCreatingRestaurant) {
+        if (currentRestaurant?.id && !isLoadingRestaurant) {
             fetchProductsByRestaurantId(currentRestaurant.id).catch((error) => {
                 console.error("Failed to load products:", error);
                 toast.error("Unable to load food items list");
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentRestaurant?.id, isLoadingRestaurant, isCreatingRestaurant]);
+    }, [currentRestaurant?.id, isLoadingRestaurant]);
 
     // Filter foods by search term
     const filteredFoods = useMemo(() => {
@@ -128,19 +73,33 @@ export default function FoodPage() {
         }
     };
 
-    // Show loading while creating restaurant
-    if (isLoadingRestaurant || isCreatingRestaurant || !currentRestaurant) {
+    if (isLoadingRestaurant) {
         return (
             <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="h-12 w-12 text-brand-orange animate-spin mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    {isCreatingRestaurant ? "Creating restaurant..." : "Loading information..."}
+                    Loading information...
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 text-center">
-                    {isCreatingRestaurant
-                        ? "System is automatically creating a restaurant for you. Please wait..."
-                        : "Loading restaurant data..."}
+                    Loading restaurant data...
                 </p>
+            </div>
+        );
+    }
+
+    if (!hasRestaurant || !currentRestaurant) {
+        return (
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-700 dark:border-white/10 dark:bg-gray-900 dark:text-gray-200">
+                <h2 className="text-xl font-bold mb-2">Restaurant setup required</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    You need to create your restaurant profile before managing food items.
+                </p>
+                <Link
+                    href="/merchant/manage/settings"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg transition-colors"
+                >
+                    Go to Settings
+                </Link>
             </div>
         );
     }

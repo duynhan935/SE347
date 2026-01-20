@@ -3,7 +3,6 @@ import api from "../axios";
 
 interface LoginResponse {
     accessToken: string;
-    refreshToken: string;
 }
 
 interface RegisterResponse {
@@ -71,11 +70,14 @@ export const authApi = {
         });
         return response.data;
     },
-    refreshAccessToken: async (refreshToken: string) => {
+    refreshAccessToken: async (refreshToken?: string) => {
         const response = await api.get<RefreshTokenResponse>("/users/refreshtoken", {
-            headers: {
-                "Refresh-Token": refreshToken,
-            },
+            // Backend primarily uses HttpOnly cookie refresh token; header is an optional fallback.
+            headers: refreshToken
+                ? {
+                      "Refresh-Token": refreshToken,
+                  }
+                : undefined,
         });
         // The backend returns message field with the new access token
         return response.data.message;

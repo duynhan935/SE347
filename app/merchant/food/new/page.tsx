@@ -18,7 +18,7 @@ export default function NewFoodPage() {
     const router = useRouter();
     const { user } = useAuthStore();
     const { createNewProduct } = useProductStore();
-    const { currentRestaurant, isLoadingRestaurant, isCreatingRestaurant } = useMerchantRestaurant();
+    const { currentRestaurant, isLoadingRestaurant, hasRestaurant } = useMerchantRestaurant();
 
     const [categories, setCategories] = useState<Category[]>([]);
     const [sizes, setSizes] = useState<Size[]>([]);
@@ -52,13 +52,30 @@ export default function NewFoodPage() {
         );
     }
 
-    if (isLoadingRestaurant || isCreatingRestaurant || !currentRestaurant) {
+    if (isLoadingRestaurant) {
         return (
             <GlobalLoader
-                label={isCreatingRestaurant ? "Setting up" : "Loading"}
-                sublabel={isCreatingRestaurant ? "Creating your restaurant profile" : "Loading restaurant information"}
+                label="Loading"
+                sublabel="Loading restaurant information"
                 showLogo
             />
+        );
+    }
+
+    if (!hasRestaurant || !currentRestaurant) {
+        return (
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-700 dark:border-white/10 dark:bg-gray-900 dark:text-gray-200">
+                <h2 className="text-xl font-bold mb-2">Restaurant setup required</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    Create your restaurant profile before adding food items.
+                </p>
+                <Link
+                    href="/merchant/manage/settings"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg transition-colors"
+                >
+                    Go to Settings
+                </Link>
+            </div>
         );
     }
 

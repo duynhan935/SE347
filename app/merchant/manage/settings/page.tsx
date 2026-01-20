@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 
 export default function MerchantSettingsPage() {
     const { user } = useAuthStore();
-    const { currentRestaurant, isLoadingRestaurant, isCreatingRestaurant } = useMerchantRestaurant();
+    const { currentRestaurant, isLoadingRestaurant, hasRestaurant } = useMerchantRestaurant();
     const { getRestaurantByMerchantId } = useRestaurantStore();
 
     const [formData, setFormData] = useState<RestaurantData>({
@@ -30,6 +30,30 @@ export default function MerchantSettingsPage() {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string>("");
     const [saving, setSaving] = useState(false);
+
+    // Prefill from pending restaurant info (captured during merchant registration)
+    useEffect(() => {
+        if (!user?.email) return;
+        try {
+            const raw = localStorage.getItem(`pending_restaurant_${user.email}`);
+            if (!raw) return;
+            const parsed = JSON.parse(raw) as Partial<RestaurantData> | null;
+            if (!parsed) return;
+
+            setFormData((prev) => ({
+                ...prev,
+                resName: typeof parsed.resName === "string" ? parsed.resName : prev.resName,
+                address: typeof parsed.address === "string" ? parsed.address : prev.address,
+                phone: typeof parsed.phone === "string" ? parsed.phone : prev.phone,
+                openingTime: typeof parsed.openingTime === "string" ? parsed.openingTime.substring(0, 5) : prev.openingTime,
+                closingTime: typeof parsed.closingTime === "string" ? parsed.closingTime.substring(0, 5) : prev.closingTime,
+                longitude: typeof parsed.longitude === "number" ? parsed.longitude : prev.longitude,
+                latitude: typeof parsed.latitude === "number" ? parsed.latitude : prev.latitude,
+            }));
+        } catch {
+            // Ignore invalid pending payload
+        }
+    }, [user?.email]);
 
     // Load restaurant data
     useEffect(() => {
@@ -72,8 +96,8 @@ export default function MerchantSettingsPage() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (!currentRestaurant?.id || !user?.id) {
-            toast.error("Restaurant information not available");
+        if (!user?.id) {
+            toast.error("User information not available");
             return;
         }
 
@@ -108,8 +132,18 @@ export default function MerchantSettingsPage() {
                 merchantId: user.id,
             };
 
-            await restaurantApi.updateRestaurant(currentRestaurant.id, restaurantData, imageFile || undefined);
-            toast.success("Restaurant information updated successfully");
+            if (hasRestaurant && currentRestaurant?.id) {
+                await restaurantApi.updateRestaurant(currentRestaurant.id, restaurantData, imageFile || undefined);
+                toast.success("Restaurant information updated successfully");
+            } else {
+                await restaurantApi.createRestaurant(restaurantData, imageFile || undefined);
+                toast.success("Restaurant profile created successfully");
+
+                // Clear pending payload after successful setup
+                if (user.email) {
+                    localStorage.removeItem(`pending_restaurant_${user.email}`);
+                }
+            }
 
             // Refresh restaurant data
             await getRestaurantByMerchantId(user.id);
@@ -133,11 +167,11 @@ export default function MerchantSettingsPage() {
         );
     }
 
-    if (isLoadingRestaurant || isCreatingRestaurant || !currentRestaurant) {
+    if (isLoadingRestaurant) {
         return (
             <GlobalLoader
-                label={isCreatingRestaurant ? "Setting up" : "Loading"}
-                sublabel={isCreatingRestaurant ? "Creating your restaurant profile" : "Loading restaurant information"}
+                label="Loading"
+                sublabel="Loading restaurant information"
                 showLogo
             />
         );
@@ -153,6 +187,11 @@ export default function MerchantSettingsPage() {
             {/* Restaurant Information Section */}
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Restaurant Information</h2>
+                {!hasRestaurant && (
+                    <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-200">
+                        No restaurant profile found yet. Complete this form to create your restaurant.
+                    </div>
+                )}
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Restaurant Name */}
                     <div>
