@@ -9,6 +9,35 @@ import { useMemo, useState } from "react";
 import { OrderSummary } from "./OrderSummary";
 import ReviewForm from "./ReviewForm";
 
+// Helper function to parse productId and extract imageURL from encoded options
+const parseProductIdForImage = (productId: string): string | null => {
+    try {
+        const separatorIndex = productId.indexOf("--");
+        if (separatorIndex === -1) {
+            return null;
+        }
+        
+        const encoded = productId.slice(separatorIndex + 2);
+        // Base64 URL decode
+        const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64 + "===".slice((base64.length + 3) % 4);
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        const json = new TextDecoder().decode(bytes);
+        const parsed = JSON.parse(json);
+        
+        if (parsed && typeof parsed === "object" && parsed.imageURL) {
+            return parsed.imageURL;
+        }
+    } catch (error) {
+        console.debug("[OrderDetail] Failed to parse productId for image:", error);
+    }
+    return null;
+};
+
 type DisplayOrderItem = {
     id: string;
     name: string;
@@ -31,7 +60,7 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
 
     const displayItems: DisplayOrderItem[] = useMemo(() => {
         return order.items.map((item, index) => {
-            // Priority: cartItemImage > imageURL (vì cart chỉ có cartItemImage)
+            // Priority: cartItemImage > imageURL > productId encoded options
             let imageURL: string | undefined = undefined;
             
             // Helper function to check if image URL is valid
@@ -41,24 +70,20 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                 return trimmed !== "" && trimmed !== "/placeholder.png";
             };
             
-            // Debug: Log để kiểm tra dữ liệu
-            console.log(`[OrderDetail] Item ${index}:`, {
-                productId: item.productId,
-                productName: item.productName,
-                cartItemImage: item.cartItemImage,
-                imageURL: item.imageURL,
-            });
-            
+            // 1. Check cartItemImage first (vì cart chỉ có cartItemImage)
             if (isValidImageUrl(item.cartItemImage)) {
                 imageURL = item.cartItemImage!.trim();
-                console.log(`[OrderDetail] Using cartItemImage: ${imageURL}`);
-            } else if (isValidImageUrl(item.imageURL)) {
-                imageURL = item.imageURL!.trim();
-                console.log(`[OrderDetail] Using imageURL: ${imageURL}`);
             }
-            
-            if (!imageURL) {
-                console.warn(`[OrderDetail] No image found for item: ${item.productName} (${item.productId})`);
+            // 2. Fallback to imageURL if cartItemImage is not available
+            else if (isValidImageUrl(item.imageURL)) {
+                imageURL = item.imageURL!.trim();
+            }
+            // 3. Try to extract imageURL from productId encoded options
+            else {
+                const imageFromProductId = parseProductIdForImage(item.productId);
+                if (isValidImageUrl(imageFromProductId)) {
+                    imageURL = imageFromProductId!.trim();
+                }
             }
             
             return {

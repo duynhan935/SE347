@@ -13,6 +13,35 @@ import toast from "react-hot-toast";
 import OrderTrackingTimeline from "../Orders/OrderTrackingTimeline";
 import { OrderStatusSidebar } from "./OrderStatusSidebar";
 
+// Helper function to parse productId and extract imageURL from encoded options
+const parseProductIdForImage = (productId: string): string | null => {
+    try {
+        const separatorIndex = productId.indexOf("--");
+        if (separatorIndex === -1) {
+            return null;
+        }
+        
+        const encoded = productId.slice(separatorIndex + 2);
+        // Base64 URL decode
+        const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64 + "===".slice((base64.length + 3) % 4);
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        const json = new TextDecoder().decode(bytes);
+        const parsed = JSON.parse(json);
+        
+        if (parsed && typeof parsed === "object" && parsed.imageURL) {
+            return parsed.imageURL;
+        }
+    } catch (error) {
+        console.debug("[Delivery] Failed to parse productId for image:", error);
+    }
+    return null;
+};
+
 type StatusType = "Pending" | "Success" | "Cancel";
 
 type DisplayOrderStatus = {
@@ -258,16 +287,8 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
     }, [order.orderId, order.estimatedDeliveryTime, order.status]);
 
     const displayItems: DisplayOrderItem[] = order.items.map((item, index) => {
-        // Priority: cartItemImage > imageURL > cart store > null
+        // Priority: cartItemImage > imageURL > productId encoded options > cart store > null
         let imageURL: string | null = null;
-        
-        // Debug: Log để kiểm tra dữ liệu
-        console.log(`[Delivery] Item ${index}:`, {
-            productId: item.productId,
-            productName: item.productName,
-            cartItemImage: item.cartItemImage,
-            imageURL: item.imageURL,
-        });
         
         // Helper function to check if image URL is valid
         const isValidImageUrl = (url: string | null | undefined): boolean => {
@@ -279,15 +300,21 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
         // 1. Check cartItemImage first (vì cart chỉ có cartItemImage)
         if (isValidImageUrl(item.cartItemImage)) {
             imageURL = item.cartItemImage!.trim();
-            console.log(`[Delivery] Using cartItemImage: ${imageURL}`);
         }
         // 2. Fallback to imageURL if cartItemImage is not available
         else if (isValidImageUrl(item.imageURL)) {
             imageURL = item.imageURL!.trim();
-            console.log(`[Delivery] Using imageURL: ${imageURL}`);
         }
-        // 3. If no valid image in order, try to find it from cart store by productId
+        // 3. Try to extract imageURL from productId encoded options
         else {
+            const imageFromProductId = parseProductIdForImage(item.productId);
+            if (isValidImageUrl(imageFromProductId)) {
+                imageURL = imageFromProductId!.trim();
+            }
+        }
+        
+        // 4. If still no image, try to find it from cart store by productId
+        if (!imageURL) {
             const cartItem = cartItems.find(
                 (cartItem) => cartItem.baseProductId === item.productId || cartItem.id === item.productId
             );
@@ -295,13 +322,8 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                 const cartImageUrl = getImageUrl(cartItem.image);
                 if (isValidImageUrl(cartImageUrl)) {
                     imageURL = cartImageUrl;
-                    console.log(`[Delivery] Using cart store image: ${imageURL}`);
                 }
             }
-        }
-        
-        if (!imageURL) {
-            console.warn(`[Delivery] No image found for item: ${item.productName} (${item.productId})`);
         }
         
         return {
