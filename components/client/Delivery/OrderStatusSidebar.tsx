@@ -1,7 +1,12 @@
 "use client";
 import { orderApi } from "@/lib/api/orderApi";
+import { paymentApi } from "@/lib/api/paymentApi";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { Order, PaymentStatus } from "@/types/order.type";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import toast from "react-hot-toast";
+import PaymentMethodSelector from "../Payment/PaymentMethodSelector";
 import { StatusBadge } from "./StatusBadge";
 
 type StatusType = "Pending" | "Success" | "Cancel";
@@ -18,15 +23,30 @@ export const OrderStatusSidebar = ({
     orderId,
     canCancel,
     orderStatus,
+    order,
+    onOrderUpdate,
 }: {
     status: OrderStatus;
     orderId: string;
     canCancel: boolean;
     orderStatus?: string; // Order status from order object (e.g., "completed", "cancelled")
+    order?: Order; // Full order object to access paymentStatus and finalAmount
+    onOrderUpdate?: () => void; // Callback to refresh order data after payment
 }) => {
+    const { user } = useAuthStore();
     const isCancelled = status.restaurantStatus === "Cancel";
     const isCompleted = orderStatus?.toLowerCase() === "completed";
     const router = useRouter();
+    
+    // Payment states
+    const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+    const [isProcessingCardPayment, setIsProcessingCardPayment] = useState(false);
+    const [isPaymentSuccess, setIsPaymentSuccess] = useState(false);
+    
+    // Check if payment is needed
+    const paymentStatus = order?.paymentStatus?.toLowerCase() as PaymentStatus | undefined;
+    const needsPayment = paymentStatus && paymentStatus !== "paid" && paymentStatus !== "completed" && paymentStatus !== "refunded";
+    const finalAmount = order?.finalAmount || 0;
     const handleCancel = async () => {
         if (!canCancel || isCancelled) return;
         const reason = window.prompt("Why are you cancelling this order?", "Changed my mind");
@@ -41,6 +61,107 @@ export const OrderStatusSidebar = ({
         } catch (error) {
             console.error("Failed to cancel order:", error);
             toast.error("Could not cancel order");
+        }
+    };
+
+    // Handle payment initiation
+    const handleInitiatePayment = async () => {
+        if (!user?.id || !order) {
+            toast.error("Please login to complete payment");
+            return;
+        }
+
+        if (needsPayment === false) {
+            toast.error("This order is already paid");
+            return;
+        }
+
+        setIsProcessingCardPayment(true);
+        const loadingToast = toast.loading("Preparing payment...");
+
+        try {
+            // Calculate total amount (tax is already included in finalAmount from backend)
+            const calculatedTotal = finalAmount;
+
+            // Create payment
+            const paymentResponse = await paymentApi.createPayment({
+                orderId: order.orderId,
+                userId: user.id,
+                amount: calculatedTotal,
+                currency: "USD",
+                paymentMethod: "card",
+            });
+
+            // Check response structure
+            if (!paymentResponse) {
+                throw new Error("Payment response is null or undefined");
+            }
+
+            // Backend returns: { success: true, message: "...", data: { clientSecret, paymentId, status } }
+            const responseData = (paymentResponse as { data?: unknown }).data || paymentResponse;
+
+            if (!responseData || typeof responseData !== "object") {
+                throw new Error("Payment response data is missing or invalid");
+            }
+
+            const responseDataObj = responseData as Record<string, unknown>;
+            const clientSecret = responseDataObj.clientSecret as string | undefined;
+
+            if (!clientSecret) {
+                throw new Error("Failed to get payment client secret from backend");
+            }
+
+            // Set states to show Stripe form
+            setStripeClientSecret(clientSecret);
+
+            // Dismiss loading toast
+            toast.dismiss(loadingToast);
+        } catch (error: unknown) {
+            // Extract error message
+            let errorMessage = "Unable to create payment. Please try again.";
+
+            if (error && typeof error === "object") {
+                const errorObj = error as { response?: { data?: { message?: string } }; message?: string };
+                if (errorObj.response?.data?.message) {
+                    errorMessage = errorObj.response.data.message;
+                } else if (errorObj.message) {
+                    errorMessage = errorObj.message;
+                }
+            }
+
+            toast.dismiss(loadingToast);
+            toast.error(errorMessage, { duration: 5000 });
+            setIsProcessingCardPayment(false);
+            setStripeClientSecret(null);
+        }
+    };
+
+    // Handle payment success
+    const handlePaymentSuccess = async () => {
+        setIsPaymentSuccess(true);
+        setIsProcessingCardPayment(false);
+        setStripeClientSecret(null);
+
+        toast.success("Payment successful! Your order has been paid.", {
+            duration: 3000,
+        });
+
+        // Refresh order data to update paymentStatus
+        if (onOrderUpdate) {
+            onOrderUpdate();
+        } else {
+            router.refresh();
+        }
+    };
+
+    // Handle payment error
+    const handlePaymentError = (error: string) => {
+        if (error.includes("terminal state") || error.includes("terminal") || error.includes("cannot be used")) {
+            toast.error("Payment Intent has been used or expired. Please try again.", { duration: 5000 });
+            setIsProcessingCardPayment(false);
+            setStripeClientSecret(null);
+        } else {
+            toast.error(error, { duration: 5000 });
         }
     };
     return (
@@ -66,6 +187,46 @@ export const OrderStatusSidebar = ({
                     </div>
                 </div>
             </div>
+
+            {/* Payment Section - Show if payment is needed */}
+            {needsPayment && !isCancelled && !isPaymentSuccess && (
+                <div className="border rounded-lg p-6 mt-6" data-payment-form>
+                    <h3 className="text-lg font-bold mb-4">Complete Payment</h3>
+                    <div className="mb-4">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-gray-600">Total Amount</span>
+                            <span className="text-2xl font-bold text-[#EE4D2D]">
+                                ${finalAmount.toFixed(2)}
+                            </span>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-2">
+                            Please complete payment to proceed with your order.
+                        </p>
+                    </div>
+                    
+                    {isProcessingCardPayment && stripeClientSecret ? (
+                        <PaymentMethodSelector
+                            key={stripeClientSecret}
+                            stripeClientSecret={stripeClientSecret}
+                            isProcessingCardPayment={isProcessingCardPayment}
+                            onPaymentSuccess={handlePaymentSuccess}
+                            onPaymentError={handlePaymentError}
+                        />
+                    ) : (
+                        <button
+                            onClick={handleInitiatePayment}
+                            disabled={isProcessingCardPayment}
+                            className={`w-full font-bold py-3 rounded-md transition-colors ${
+                                isProcessingCardPayment
+                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                    : "bg-[#EE4D2D] text-white hover:bg-[#EE4D2D]/90"
+                            }`}
+                        >
+                            {isProcessingCardPayment ? "Preparing payment..." : "Pay Now"}
+                        </button>
+                    )}
+                </div>
+            )}
 
             {!isCancelled && !isCompleted ? (
                 <>
