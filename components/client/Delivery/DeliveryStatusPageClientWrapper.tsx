@@ -3,6 +3,7 @@
 import { orderApi } from "@/lib/api/orderApi";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { getImageUrl } from "@/lib/utils";
+import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Order, OrderStatus } from "@/types/order.type";
 import Image from "next/image";
@@ -11,6 +12,35 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import OrderTrackingTimeline from "../Orders/OrderTrackingTimeline";
 import { OrderStatusSidebar } from "./OrderStatusSidebar";
+
+// Helper function to parse productId and extract imageURL from encoded options
+const parseProductIdForImage = (productId: string): string | null => {
+    try {
+        const separatorIndex = productId.indexOf("--");
+        if (separatorIndex === -1) {
+            return null;
+        }
+        
+        const encoded = productId.slice(separatorIndex + 2);
+        // Base64 URL decode
+        const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64 + "===".slice((base64.length + 3) % 4);
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        const json = new TextDecoder().decode(bytes);
+        const parsed = JSON.parse(json);
+        
+        if (parsed && typeof parsed === "object" && parsed.imageURL) {
+            return parsed.imageURL;
+        }
+    } catch (error) {
+        console.debug("[Delivery] Failed to parse productId for image:", error);
+    }
+    return null;
+};
 
 type StatusType = "Pending" | "Success" | "Cancel";
 
@@ -38,6 +68,7 @@ interface DeliveryStatusPageClientWrapperProps {
 
 export default function DeliveryStatusPageClientWrapper({ initialOrder }: DeliveryStatusPageClientWrapperProps) {
     const { user } = useAuthStore();
+    const { items: cartItems } = useCartStore();
     // Normalize initialOrder status right away to ensure consistency
     const normalizedInitialOrder: Order = {
         ...initialOrder,
@@ -255,16 +286,56 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
         return () => clearInterval(intervalId);
     }, [order.orderId, order.estimatedDeliveryTime, order.status]);
 
-    const displayItems: DisplayOrderItem[] = order.items.map((item, index) => ({
-        id: `${order.orderId}-${item.productId}-${index}`,
-        name: item.productName,
-        shopName: order.restaurant?.name || "Restaurant",
-        price: item.price,
-        quantity: item.quantity,
-        note: item.customizations,
-        // Prefer explicit imageURL from order; fall back to cartItemImage if present.
-        imageURL: item.imageURL || item.cartItemImage || null,
-    }));
+    const displayItems: DisplayOrderItem[] = order.items.map((item, index) => {
+        // Priority: cartItemImage > imageURL > productId encoded options > cart store > null
+        let imageURL: string | null = null;
+        
+        // Helper function to check if image URL is valid
+        const isValidImageUrl = (url: string | null | undefined): boolean => {
+            if (!url || typeof url !== "string") return false;
+            const trimmed = url.trim();
+            return trimmed !== "" && trimmed !== "/placeholder.png";
+        };
+        
+        // 1. Check cartItemImage first (vì cart chỉ có cartItemImage)
+        if (isValidImageUrl(item.cartItemImage)) {
+            imageURL = item.cartItemImage!.trim();
+        }
+        // 2. Fallback to imageURL if cartItemImage is not available
+        else if (isValidImageUrl(item.imageURL)) {
+            imageURL = item.imageURL!.trim();
+        }
+        // 3. Try to extract imageURL from productId encoded options
+        else {
+            const imageFromProductId = parseProductIdForImage(item.productId);
+            if (isValidImageUrl(imageFromProductId)) {
+                imageURL = imageFromProductId!.trim();
+            }
+        }
+        
+        // 4. If still no image, try to find it from cart store by productId
+        if (!imageURL) {
+            const cartItem = cartItems.find(
+                (cartItem) => cartItem.baseProductId === item.productId || cartItem.id === item.productId
+            );
+            if (cartItem) {
+                const cartImageUrl = getImageUrl(cartItem.image);
+                if (isValidImageUrl(cartImageUrl)) {
+                    imageURL = cartImageUrl;
+                }
+            }
+        }
+        
+        return {
+            id: `${order.orderId}-${item.productId}-${index}`,
+            name: item.productName,
+            shopName: order.restaurant?.name || "Restaurant",
+            price: item.price,
+            quantity: item.quantity,
+            note: item.customizations,
+            imageURL: imageURL,
+        };
+    });
 
     const totalItems = displayItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -368,21 +439,26 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                             <div key={shopName}>
                                 <h2 className="text-lg font-semibold mb-2">{shopName}</h2>
                                 <div className="space-y-4 border-t">
-                                    {items.map((item) => (
+                                    {items.map((item) => {
+                                        const imageUrl = getImageUrl(item.imageURL || null);
+                                        const finalImageUrl = imageUrl || "/placeholder.png";
+                                        const hasImage = finalImageUrl && finalImageUrl !== "/placeholder.png";
+                                        
+                                        return (
                                         <div
                                             key={item.id}
                                             className="flex items-start gap-4 pt-4 border-b pb-2 last:border-b-0"
                                         >
                                             {/* Product image */}
-                                            {item.imageURL ? (
+                                            {hasImage ? (
                                                 <div className="relative w-[64px] h-[64px] rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
                                                     <Image
-                                                        src={getImageUrl(item.imageURL)}
+                                                        src={finalImageUrl}
                                                         alt={item.name}
                                                         fill
                                                         className="object-cover"
                                                         sizes="64px"
-                                                        unoptimized={getImageUrl(item.imageURL).startsWith("http")}
+                                                        unoptimized={finalImageUrl.startsWith("http")}
                                                     />
                                                 </div>
                                             ) : (
@@ -399,7 +475,8 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                                                 <p className="font-bold">${(item.price * item.quantity).toFixed(2)}</p>
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ))}

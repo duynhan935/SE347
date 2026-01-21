@@ -9,6 +9,35 @@ import { useMemo, useState } from "react";
 import { OrderSummary } from "./OrderSummary";
 import ReviewForm from "./ReviewForm";
 
+// Helper function to parse productId and extract imageURL from encoded options
+const parseProductIdForImage = (productId: string): string | null => {
+    try {
+        const separatorIndex = productId.indexOf("--");
+        if (separatorIndex === -1) {
+            return null;
+        }
+        
+        const encoded = productId.slice(separatorIndex + 2);
+        // Base64 URL decode
+        const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64 + "===".slice((base64.length + 3) % 4);
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        const json = new TextDecoder().decode(bytes);
+        const parsed = JSON.parse(json);
+        
+        if (parsed && typeof parsed === "object" && parsed.imageURL) {
+            return parsed.imageURL;
+        }
+    } catch (error) {
+        console.debug("[OrderDetail] Failed to parse productId for image:", error);
+    }
+    return null;
+};
+
 type DisplayOrderItem = {
     id: string;
     name: string;
@@ -30,17 +59,44 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
     const [hasReviewed, setHasReviewed] = useState(false);
 
     const displayItems: DisplayOrderItem[] = useMemo(() => {
-        return order.items.map((item, index) => ({
-            id: `${order?.orderId}-${item.productId}-${index}`,
-            name: item.productName,
-            shopName: order?.restaurant?.name || "Restaurant",
-            price: item.price,
-            quantity: item.quantity,
-            note: item.customizations,
-            productId: item.productId,
-            // Prefer image fields already stored on the order; fall back handled by getImageUrl
-            imageURL: (item.imageURL || item.cartItemImage) ?? undefined,
-        }));
+        return order.items.map((item, index) => {
+            // Priority: cartItemImage > imageURL > productId encoded options
+            let imageURL: string | undefined = undefined;
+            
+            // Helper function to check if image URL is valid
+            const isValidImageUrl = (url: string | null | undefined): boolean => {
+                if (!url || typeof url !== "string") return false;
+                const trimmed = url.trim();
+                return trimmed !== "" && trimmed !== "/placeholder.png";
+            };
+            
+            // 1. Check cartItemImage first (vì cart chỉ có cartItemImage)
+            if (isValidImageUrl(item.cartItemImage)) {
+                imageURL = item.cartItemImage!.trim();
+            }
+            // 2. Fallback to imageURL if cartItemImage is not available
+            else if (isValidImageUrl(item.imageURL)) {
+                imageURL = item.imageURL!.trim();
+            }
+            // 3. Try to extract imageURL from productId encoded options
+            else {
+                const imageFromProductId = parseProductIdForImage(item.productId);
+                if (isValidImageUrl(imageFromProductId)) {
+                    imageURL = imageFromProductId!.trim();
+                }
+            }
+            
+            return {
+                id: `${order?.orderId}-${item.productId}-${index}`,
+                name: item.productName,
+                shopName: order?.restaurant?.name || "Restaurant",
+                price: item.price,
+                quantity: item.quantity,
+                note: item.customizations,
+                productId: item.productId,
+                imageURL: imageURL,
+            };
+        });
     }, [order.items, order?.orderId, order?.restaurant?.name]);
 
     const totalItems = displayItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -118,24 +174,26 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
 
                                 {/* Items */}
                                 <div className="p-5">
-                                    {items.map((item) => (
+                                    {items.map((item) => {
+                                        const imageUrl = getImageUrl(item.imageURL || null);
+                                        const finalImageUrl = imageUrl || "/placeholder.png";
+                                        const hasImage = finalImageUrl && finalImageUrl !== "/placeholder.png";
+                                        
+                                        return (
                                         <div
                                             key={item.id}
                                             className="flex items-start gap-4 py-5 border-b border-gray-100 last:border-b-0"
                                         >
                                             {/* Product Image */}
-                                            {item.imageURL ? (
+                                            {hasImage ? (
                                                 <div className="relative h-20 w-20 md:h-24 md:w-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 shadow-sm">
                                                     <Image
-                                                        src={getImageUrl(item.imageURL, "/placeholder.png")}
+                                                        src={finalImageUrl}
                                                         alt={item.name}
                                                         fill
                                                         className="object-cover"
                                                         sizes="(max-width: 768px) 80px, 96px"
-                                                        unoptimized={
-                                                            typeof item.imageURL === "string" &&
-                                                            item.imageURL.startsWith("http")
-                                                        }
+                                                        unoptimized={finalImageUrl.startsWith("http")}
                                                     />
                                                 </div>
                                             ) : (
@@ -174,7 +232,8 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                                                 </p>
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ))}
