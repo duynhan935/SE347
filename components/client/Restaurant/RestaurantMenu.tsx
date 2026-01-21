@@ -7,12 +7,22 @@ import { CompactFoodCard } from "../HomePage/CompactFoodCard";
 type MenuProps = {
     restaurantId: string;
     restaurantName: string;
+    restaurantSlug?: string;
+    restaurantDuration?: number;
     products: Product[];
     categories: Category[];
     highlightProductId?: string;
 };
 
-export default function RestaurantMenu({ restaurantId, restaurantName, products, categories, highlightProductId }: MenuProps) {
+export default function RestaurantMenu({
+    restaurantId,
+    restaurantName,
+    restaurantSlug,
+    restaurantDuration,
+    products,
+    categories,
+    highlightProductId,
+}: MenuProps) {
     const slugify = (text: string) =>
         text
             .toLowerCase()
@@ -233,7 +243,15 @@ export default function RestaurantMenu({ restaurantId, restaurantName, products,
                                             }}
                                         >
                                             {/* Reuse the same card design as Featured Foods on home page */}
-                                            <CompactFoodCard product={item} />
+                                            <CompactFoodCard
+                                                product={item}
+                                                restaurant={{
+                                                    id: restaurantId,
+                                                    resName: restaurantName,
+                                                    slug: restaurantSlug,
+                                                    duration: restaurantDuration,
+                                                }}
+                                            />
                                         </div>
                                     );
                                 })}

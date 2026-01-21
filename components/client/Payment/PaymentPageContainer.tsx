@@ -43,7 +43,7 @@ export default function PaymentPageClient() {
     const [deliverStyle, setDeliverStyle] = useState<"delivery" | "pickup">("delivery");
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const [useNewAddress, setUseNewAddress] = useState(false);
-    
+
     // Stripe payment states
     const [createdOrderIds, setCreatedOrderIds] = useState<string[]>([]);
     const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
@@ -62,11 +62,11 @@ export default function PaymentPageClient() {
     // Filter items by restaurant if restaurantId provided
     const orderItems = useMemo(
         () => (restaurantId ? items.filter((item) => item.restaurantId === restaurantId) : items),
-        [restaurantId, items]
+        [restaurantId, items],
     );
     const subtotal = useMemo(
         () => orderItems.reduce((total, item) => total + item.price * item.quantity, 0),
-        [orderItems]
+        [orderItems],
     );
     const shipping = deliverStyle === "pickup" ? 0 : SHIPPING_FEE;
     const tax = subtotal * 0.05;
@@ -81,9 +81,15 @@ export default function PaymentPageClient() {
                 .then((data) => {
                     if (Array.isArray(data) && data.length > 0) {
                         setAddresses(data);
-                        setSelectedAddressId(data[0].id);
-                        // Auto-fill form with first address
-                        const firstAddress = data[0];
+                        const preferredLocation = (user as unknown as { defaultAddress?: string | null })
+                            ?.defaultAddress;
+                        const preferred =
+                            (preferredLocation ? data.find((a) => a.location === preferredLocation) : undefined) ||
+                            data[0];
+
+                        setSelectedAddressId(preferred.id);
+                        // Auto-fill form with preferred address
+                        const firstAddress = preferred;
                         setFormData((prev) => ({
                             ...prev,
                             street: firstAddress.location || "",
@@ -201,7 +207,6 @@ export default function PaymentPageClient() {
         }
     }, [locationError]);
 
-
     // Handle address selection
     const handleAddressSelect = (addressId: string) => {
         setSelectedAddressId(addressId);
@@ -213,6 +218,11 @@ export default function PaymentPageClient() {
                 street: selectedAddress.location || "",
             }));
         }
+    };
+
+    const handleUseNewAddress = () => {
+        setUseNewAddress(true);
+        setSelectedAddressId(null);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -257,11 +267,19 @@ export default function PaymentPageClient() {
             }
         }
 
-        const latitude = coords?.latitude ?? undefined;
-        const longitude = coords?.longitude ?? undefined;
+        const selectedSavedAddress =
+            !useNewAddress && selectedAddressId ? addresses.find((addr) => addr.id === selectedAddressId) : undefined;
 
-        if (deliverStyle === "delivery" && (typeof latitude !== "number" || typeof longitude !== "number")) {
-            toast.error("Unable to determine your location. Please enable location services and try again.");
+        const resolvedLatitude = selectedSavedAddress?.latitude ?? coords?.latitude;
+        const resolvedLongitude = selectedSavedAddress?.longitude ?? coords?.longitude;
+
+        if (
+            deliverStyle === "delivery" &&
+            (typeof resolvedLatitude !== "number" || typeof resolvedLongitude !== "number")
+        ) {
+            toast.error(
+                "Unable to determine delivery coordinates. Please select a saved address or enable location services and try again.",
+            );
             return;
         }
 
@@ -269,16 +287,19 @@ export default function PaymentPageClient() {
 
         try {
             // Group items by restaurant (should only be one)
-            const restaurantGroups = orderItems.reduce((acc, item) => {
-                if (!acc[item.restaurantId]) {
-                    acc[item.restaurantId] = {
-                        restaurantName: item.restaurantName,
-                        items: [] as CartItem[],
-                    };
-                }
-                acc[item.restaurantId].items.push(item);
-                return acc;
-            }, {} as Record<string, { restaurantName?: string; items: CartItem[] }>);
+            const restaurantGroups = orderItems.reduce(
+                (acc, item) => {
+                    if (!acc[item.restaurantId]) {
+                        acc[item.restaurantId] = {
+                            restaurantName: item.restaurantName,
+                            items: [] as CartItem[],
+                        };
+                    }
+                    acc[item.restaurantId].items.push(item);
+                    return acc;
+                },
+                {} as Record<string, { restaurantName?: string; items: CartItem[] }>,
+            );
 
             const restaurantEntries = Object.entries(restaurantGroups);
 
@@ -288,17 +309,9 @@ export default function PaymentPageClient() {
 
             const [restId, group] = restaurantEntries[0];
 
-            // Get selected address coordinates
-            let finalLatitude = latitude;
-            let finalLongitude = longitude;
-
-            if (selectedAddressId && !useNewAddress) {
-                const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId);
-                if (selectedAddress) {
-                    finalLatitude = selectedAddress.latitude;
-                    finalLongitude = selectedAddress.longitude;
-                }
-            }
+            // Get final delivery coordinates (saved address if selected, otherwise device geolocation)
+            const finalLatitude = resolvedLatitude;
+            const finalLongitude = resolvedLongitude;
 
             const payload: CreateOrderRequest = {
                 userId: user.id,
@@ -341,10 +354,10 @@ export default function PaymentPageClient() {
             setCreatedOrderIds([order.orderId]);
             // Store slug for redirect (use slug if available, fallback to orderId)
             const orderSlug = order.slug || order.orderId;
-            
+
             // Set isProcessingCardPayment to show loading state
             setIsProcessingCardPayment(true);
-            
+
             // Create payment and show Stripe form
             await handleCardPayment(order);
         } catch (error: unknown) {
@@ -399,7 +412,7 @@ export default function PaymentPageClient() {
             // Backend returns: { success: true, message: "...", data: { clientSecret, paymentId, status } }
             // But paymentApi.createPayment returns response.data, so it might be the data directly
             const responseData = (paymentResponse as { data?: unknown }).data || paymentResponse;
-            
+
             if (!responseData || typeof responseData !== "object") {
                 throw new Error("Payment response data is missing or invalid");
             }
@@ -419,13 +432,13 @@ export default function PaymentPageClient() {
             // Set states to show Stripe form
             setStripeClientSecret(clientSecret);
             setPaymentId(paymentIdFromResponse);
-            
+
             // Dismiss loading toast
             toast.dismiss(loadingToast);
-            
+
             // Scroll to payment form after a short delay to ensure it's rendered
             setTimeout(() => {
-                const paymentForm = document.querySelector('[data-payment-form]');
+                const paymentForm = document.querySelector("[data-payment-form]");
                 if (paymentForm) {
                     // For desktop (payment form is in sticky column), scroll window to show the form
                     // For mobile, scroll the form into view
@@ -433,20 +446,20 @@ export default function PaymentPageClient() {
                         // Desktop: Scroll window to position payment form in view
                         const formRect = paymentForm.getBoundingClientRect();
                         const formTop = formRect.top + window.pageYOffset;
-                        window.scrollTo({ 
+                        window.scrollTo({
                             top: formTop - 100, // Offset from top
-                            behavior: 'smooth' 
+                            behavior: "smooth",
                         });
                     } else {
                         // Mobile: Use scrollIntoView
-                        paymentForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        paymentForm.scrollIntoView({ behavior: "smooth", block: "center" });
                     }
                 }
             }, 300);
         } catch (error: unknown) {
             // Extract error message
             let errorMessage = "Unable to create payment. Please try again.";
-            
+
             if (error && typeof error === "object") {
                 const errorObj = error as { response?: { data?: { message?: string } }; message?: string };
                 if (errorObj.response?.data?.message) {
@@ -455,7 +468,7 @@ export default function PaymentPageClient() {
                     errorMessage = errorObj.message;
                 }
             }
-            
+
             toast.dismiss(loadingToast);
             toast.error(errorMessage, { duration: 5000 });
             setIsProcessingCardPayment(false);
@@ -468,10 +481,10 @@ export default function PaymentPageClient() {
     const handlePaymentSuccess = async () => {
         // Stripe webhook will automatically update payment status
         // No need to call completePayment API - webhook handles it
-        
+
         // Set payment success flag FIRST to prevent cart empty check from redirecting
         setIsPaymentSuccess(true);
-        
+
         // Reset payment states
         setIsProcessingCardPayment(false);
         setStripeClientSecret(null);
@@ -600,7 +613,9 @@ export default function PaymentPageClient() {
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {/* Name */}
                             <div>
-                                <label htmlFor="desktop-name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                <label htmlFor="desktop-name" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Name
+                                </label>
                                 <input
                                     id="desktop-name"
                                     type="text"
@@ -614,7 +629,9 @@ export default function PaymentPageClient() {
 
                             {/* Phone */}
                             <div>
-                                <label htmlFor="desktop-phone" className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                <label htmlFor="desktop-phone" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Phone Number
+                                </label>
                                 <input
                                     id="desktop-phone"
                                     type="tel"
@@ -629,62 +646,100 @@ export default function PaymentPageClient() {
                             {/* Address Selection */}
                             {deliverStyle === "delivery" && (
                                 <>
-                                    {addresses.length > 0 && !useNewAddress ? (
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Select Address
-                                            </label>
-                                            <select
-                                                value={selectedAddressId || ""}
-                                                onChange={(e) => handleAddressSelect(e.target.value)}
-                                                aria-label="Select Address"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
-                                            >
-                                                {addresses.map((addr) => (
-                                                    <option key={addr.id} value={addr.id}>
-                                                        {addr.location}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <button
-                                                type="button"
-                                                onClick={() => setUseNewAddress(true)}
-                                                className="mt-2 text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80 flex items-center gap-1"
-                                            >
-                                                <Edit2 className="w-3 h-3" />
-                                                Use new address
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Street Address
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="street"
-                                                value={formData.street}
-                                                onChange={handleChange}
-                                                required
-                                                placeholder="Enter your address"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
-                                            />
-                                            {addresses.length > 0 && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
+                                    <fieldset className="space-y-3">
+                                        <legend className="block text-sm font-medium text-gray-700">
+                                            Delivery address
+                                        </legend>
+
+                                        {addresses.length > 0 && (
+                                            <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3">
+                                                <input
+                                                    type="radio"
+                                                    name="addressMode"
+                                                    checked={!useNewAddress}
+                                                    onChange={() => {
                                                         setUseNewAddress(false);
-                                                        if (addresses.length > 0) {
+                                                        if (!selectedAddressId && addresses[0]?.id) {
                                                             handleAddressSelect(addresses[0].id);
                                                         }
                                                     }}
-                                                    className="mt-2 text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80"
-                                                >
-                                                    Use saved address
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
+                                                    className="mt-1 h-4 w-4 accent-[#EE4D2D]"
+                                                />
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        Use a saved address
+                                                    </div>
+                                                    {!useNewAddress && (
+                                                        <div className="mt-2 space-y-2">
+                                                            {addresses.map((addr) => {
+                                                                const selected = addr.id === selectedAddressId;
+                                                                return (
+                                                                    <button
+                                                                        key={addr.id}
+                                                                        type="button"
+                                                                        onClick={() => handleAddressSelect(addr.id)}
+                                                                        className={
+                                                                            "w-full rounded-lg border p-3 text-left transition-colors " +
+                                                                            (selected
+                                                                                ? "border-[#EE4D2D] bg-[#EE4D2D]/5"
+                                                                                : "border-gray-200 hover:bg-gray-50")
+                                                                        }
+                                                                    >
+                                                                        <div className="flex items-center justify-between gap-3">
+                                                                            <div className="min-w-0 flex-1">
+                                                                                <div className="truncate text-sm text-gray-900">
+                                                                                    {addr.location}
+                                                                                </div>
+                                                                            </div>
+                                                                            {selected && (
+                                                                                <span className="text-xs font-semibold text-[#EE4D2D]">
+                                                                                    Selected
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </label>
+                                        )}
+
+                                        <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3">
+                                            <input
+                                                type="radio"
+                                                name="addressMode"
+                                                checked={useNewAddress || addresses.length === 0}
+                                                onChange={handleUseNewAddress}
+                                                className="mt-1 h-4 w-4 accent-[#EE4D2D]"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        Use a new address
+                                                    </div>
+                                                    <span className="text-xs text-gray-500">One-time</span>
+                                                </div>
+                                                {(useNewAddress || addresses.length === 0) && (
+                                                    <div className="mt-2">
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            Street Address
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            name="street"
+                                                            value={formData.street}
+                                                            onChange={handleChange}
+                                                            required
+                                                            placeholder="Enter your address"
+                                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </label>
+                                    </fieldset>
 
                                     {/* Note for Driver */}
                                     <div>
@@ -796,7 +851,7 @@ export default function PaymentPageClient() {
                                         "Please click 'Place Order' to continue with payment"
                                     )}
                                 </div>
-                                
+
                                 {/* Place Order Button - Only show if not processing card payment */}
                                 {!isProcessingCardPayment && (
                                     <button
@@ -850,7 +905,9 @@ export default function PaymentPageClient() {
                     <form onSubmit={handleSubmit} className="space-y-3">
                         {/* Name */}
                         <div>
-                            <label htmlFor="mobile-name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <label htmlFor="mobile-name" className="block text-sm font-medium text-gray-700 mb-1">
+                                Name
+                            </label>
                             <input
                                 id="mobile-name"
                                 type="text"
@@ -864,7 +921,9 @@ export default function PaymentPageClient() {
 
                         {/* Phone */}
                         <div>
-                            <label htmlFor="mobile-phone" className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                            <label htmlFor="mobile-phone" className="block text-sm font-medium text-gray-700 mb-1">
+                                Phone Number
+                            </label>
                             <input
                                 id="mobile-phone"
                                 type="tel"
@@ -1043,7 +1102,7 @@ export default function PaymentPageClient() {
                                     "Please click 'Place Order' to continue with payment"
                                 )}
                             </div>
-                            
+
                             {/* Place Order Button - Only show if not processing card payment */}
                             {!isProcessingCardPayment && (
                                 <button

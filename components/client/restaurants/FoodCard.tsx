@@ -15,9 +15,15 @@ import { formatCurrency } from "@/lib/utils/dashboardFormat";
 type FoodCardProps = {
     product: Product;
     layout?: "grid" | "flex"; // Option 1: grid (ShopeeFood), Option 2: flex (horizontal)
+    restaurant?: {
+        id: string;
+        resName?: string;
+        slug?: string;
+        duration?: number;
+    };
 };
 
-export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
+export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurantOverride }: FoodCardProps) => {
     const router = useRouter();
     const addItem = useCartStore((state) => state.addItem);
     const setUserId = useCartStore((state) => state.setUserId);
@@ -59,6 +65,10 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
         setImageError(false);
     }, [cardImageUrl]);
 
+    const restaurant = useMemo(() => {
+        return restaurantOverride || product.restaurant;
+    }, [restaurantOverride, product.restaurant]);
+
     // Determine if product is best seller or popular (you can adjust logic based on your data)
     const isBestSeller = useMemo(() => {
         return product.totalReview > 50 || product.rating >= 4.5;
@@ -70,7 +80,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
 
     // Validate and format delivery time
     const deliveryTime = useMemo(() => {
-        const duration = product.restaurant?.duration;
+        const duration = restaurant?.duration;
         if (!duration || typeof duration !== "number") {
             return null;
         }
@@ -79,7 +89,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
             return "20-30"; // Default reasonable range
         }
         return Math.round(duration).toString();
-    }, [product.restaurant?.duration]);
+    }, [restaurant?.duration]);
 
     const handleAddToCart = useCallback(
         async (e: React.MouseEvent) => {
@@ -106,7 +116,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                 return;
             }
 
-            if (!product.restaurant?.id) {
+            if (!restaurant?.id) {
                 toast.error("Restaurant information not found");
                 return;
             }
@@ -124,8 +134,8 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         name: product.productName,
                         price: defaultSize.price,
                         image: cardImageUrl,
-                        restaurantId: product.restaurant.id,
-                        restaurantName: product.restaurant.resName || "Unknown Restaurant",
+                        restaurantId: restaurant.id,
+                        restaurantName: restaurant.resName || "Unknown Restaurant",
                         categoryId: product.categoryId,
                         categoryName: product.categoryName,
                         sizeId: defaultSize.id,
@@ -143,7 +153,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                 }, 300);
             }
         },
-        [isAdding, isMounted, user, product, defaultSize, cardImageUrl, addItem, router],
+        [isAdding, isMounted, user, product, restaurant, defaultSize, cardImageUrl, addItem, router],
     );
 
     // Option 1: Grid Layout (ShopeeFood style) - RECOMMENDED
@@ -153,8 +163,8 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                 {/* Image Section - Rounded top corners */}
                 <Link
                     href={
-                        product.restaurant?.slug
-                            ? `/restaurants/${product.restaurant.slug}?productId=${product.id}`
+                        restaurant?.slug
+                            ? `/restaurants/${restaurant.slug}?productId=${product.id}`
                             : `/food/${product.slug}`
                     }
                     className="block relative"
@@ -220,8 +230,8 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                 <div className="p-5 flex-grow flex flex-col">
                     <Link
                         href={
-                            product.restaurant?.slug
-                                ? `/restaurants/${product.restaurant.slug}?productId=${product.id}`
+                            restaurant?.slug
+                                ? `/restaurants/${restaurant.slug}?productId=${product.id}`
                                 : `/food/${product.slug}`
                         }
                         className="flex-grow flex flex-col"
@@ -252,7 +262,7 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                         {/* Restaurant Name with Verified Icon */}
                         <div className="flex items-center gap-1.5 mb-3">
                             <p className="text-sm text-gray-500 line-clamp-1 flex-1">
-                                {product.restaurant?.resName || "Restaurant"}
+                                {restaurant?.resName || "Restaurant"}
                             </p>
                             <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                         </div>
@@ -294,8 +304,8 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
             {/* Image Section - Left - Much larger (60-65% width) */}
             <Link
                 href={
-                    product.restaurant?.slug
-                        ? `/restaurants/${product.restaurant.slug}?productId=${product.id}`
+                    restaurant?.slug
+                        ? `/restaurants/${restaurant.slug}?productId=${product.id}`
                         : `/food/${product.slug}`
                 }
                 className="block relative flex-shrink-0 w-[60%] md:w-[65%] min-w-[200px]"
@@ -359,16 +369,16 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
             <div className="flex-1 flex flex-col p-5 md:p-6 min-w-0 justify-between">
                 <Link
                     href={
-                        product.restaurant?.slug
-                            ? `/restaurants/${product.restaurant.slug}?productId=${product.id}`
+                        restaurant?.slug
+                            ? `/restaurants/${restaurant.slug}?productId=${product.id}`
                             : `/food/${product.slug}`
                     }
                     className="flex-grow flex flex-col min-w-0"
                 >
                     {/* Restaurant Name - Small, light gray at top */}
-                    {product.restaurant?.resName && (
+                    {restaurant?.resName && (
                         <p className="text-[10px] md:text-xs text-gray-400 uppercase tracking-wide mb-1.5 font-semibold">
-                            {product.restaurant.resName}
+                            {restaurant.resName}
                         </p>
                     )}
 
@@ -381,9 +391,9 @@ export const FoodCard = memo(({ product, layout = "grid" }: FoodCardProps) => {
                     </h3>
 
                     {/* Restaurant Name with Rating */}
-                    {product.restaurant?.resName && (
+                    {restaurant?.resName && (
                         <div className="flex items-center gap-2 mb-2">
-                            <p className="text-xs text-gray-500 flex-1">{product.restaurant.resName}</p>
+                            <p className="text-xs text-gray-500 flex-1">{restaurant.resName}</p>
                             {product.rating > 0 && (
                                 <div className="flex items-center gap-1 flex-shrink-0">
                                     <span className="text-yellow-500 text-xs">⭐</span>

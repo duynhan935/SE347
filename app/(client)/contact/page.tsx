@@ -4,6 +4,7 @@ import Button from "@/components/client/Button";
 import { FoodEat } from "@/constants";
 import Image from "next/image";
 import { useState } from "react";
+import toast from "react-hot-toast";
 export default function ContactPage() {
     const [formData, setFormData] = useState({
         name: "",
@@ -21,7 +22,7 @@ export default function ContactPage() {
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         // This is where you would handle the form submission logic (e.g., call API)
-        alert("Thank you for your message! We will get back to you shortly.");
+        toast.success("Thank you for your message! We will get back to you shortly.");
         // Reset form after submission (optional)
         setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
     };

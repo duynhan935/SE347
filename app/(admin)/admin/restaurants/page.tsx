@@ -43,10 +43,13 @@ export default function RestaurantsPage() {
     };
 
     useEffect(() => {
+        const looksLikeUserId = (id: string) =>
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
         const merchantIds = Array.from(
             new Set(restaurants.map((r) => r.merchantId).filter((id): id is string => Boolean(id))),
         );
-        const missing = merchantIds.filter((id) => !ownersByMerchantId[id]);
+        const missing = merchantIds.filter((id) => looksLikeUserId(id) && !ownersByMerchantId[id]);
         if (missing.length === 0) return;
 
         let cancelled = false;
@@ -57,7 +60,7 @@ export default function RestaurantsPage() {
 
             const next: Record<string, User> = {};
             for (const r of results) {
-                if (r.status === "fulfilled" && r.value?.id) {
+                if (r.status === "fulfilled" && r.value && r.value.id) {
                     next[r.value.id] = r.value;
                 }
             }

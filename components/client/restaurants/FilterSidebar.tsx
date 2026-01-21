@@ -4,380 +4,357 @@ import { useGeolocation } from "@/lib/userLocation";
 import { MapPin, Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import FilterSection from "./FilterSection";
 const foodEatsOptions = [
-        { value: "special-deals", label: "Special Deals" },
-        { value: "top-eats", label: "Top Eats" },
+    { value: "special-deals", label: "Special Deals" },
+    { value: "top-eats", label: "Top Eats" },
 ];
 
 const deliveryFeeOptions = [
-        { value: "0-2", label: "$0-$2" },
-        { value: "3-6", label: "$3-$6" },
-        { value: "6-9", label: "$6-$9+" },
+    { value: "0-2", label: "$0-$2" },
+    { value: "3-6", label: "$3-$6" },
+    { value: "6-9", label: "$6-$9+" },
 ];
 const sortOptions = [
-        { value: "desc", label: "Rating: High to Low" },
-        { value: "asc", label: "Rating: Low to High" },
+    { value: "desc", label: "Rating: High to Low" },
+    { value: "asc", label: "Rating: Low to High" },
 ];
 const deliveryTimeOptions = [
-        { value: "any", label: "Anytime" },
-        { value: "15", label: "15 min" },
-        { value: "30", label: "30 min" },
-        { value: "45", label: "45 min" },
-        { value: "60", label: "60 min" },
+    { value: "any", label: "Anytime" },
+    { value: "15", label: "15 min" },
+    { value: "30", label: "30 min" },
+    { value: "45", label: "45 min" },
+    { value: "60", label: "60 min" },
 ];
 
 // --- Component con ---
 
 export default function FilterSidebar() {
-        const router = useRouter();
-        const pathname = usePathname();
-        const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
-        const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
-        const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
-        const [search, setSearch] = useState(searchParams.get("search") || "");
+    const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
+    const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
+    const [search, setSearch] = useState(searchParams.get("search") || "");
 
-        const { coords, error, loading } = useGeolocation();
+    const { coords, error, loading } = useGeolocation();
 
-        useEffect(() => {
-                setSearch(searchParams.get("search") || "");
-                setMinPrice(searchParams.get("minPrice") || "");
-                setMaxPrice(searchParams.get("maxPrice") || "");
-        }, [searchParams]);
+    useEffect(() => {
+        setSearch(searchParams.get("search") || "");
+        setMinPrice(searchParams.get("minPrice") || "");
+        setMaxPrice(searchParams.get("maxPrice") || "");
+    }, [searchParams]);
 
-        const handleClearAll = () => {
-                router.push(pathname, { scroll: false });
-        };
+    const handleClearAll = () => {
+        router.push(pathname, { scroll: false });
+    };
 
-        const handleCheckboxChange = (name: string, value: string) => {
-                const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
-                const allValues = currentParams.getAll(name);
-                if (allValues.includes(value)) {
-                        const newValues = allValues.filter((v) => v !== value);
-                        currentParams.delete(name);
-                        newValues.forEach((v) => currentParams.append(name, v));
-                } else {
-                        currentParams.append(name, value);
-                }
-                router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
-        };
+    const handleCheckboxChange = (name: string, value: string) => {
+        const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+        const allValues = currentParams.getAll(name);
+        if (allValues.includes(value)) {
+            const newValues = allValues.filter((v) => v !== value);
+            currentParams.delete(name);
+            newValues.forEach((v) => currentParams.append(name, v));
+        } else {
+            currentParams.append(name, value);
+        }
+        router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
+    };
 
-        const handleToggleChange = (name: string, value: string) => {
-                const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+    const handleToggleChange = (name: string, value: string) => {
+        const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
 
-                if (currentParams.get(name) === value) {
-                        currentParams.delete(name);
-                } else {
-                        currentParams.set(name, value);
-                }
-                router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
-        };
+        if (currentParams.get(name) === value) {
+            currentParams.delete(name);
+        } else {
+            currentParams.set(name, value);
+        }
+        router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
+    };
 
-        const handlePriceApply = () => {
-                const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
-                if (minPrice) {
-                        currentParams.set("minPrice", minPrice);
-                } else {
-                        currentParams.delete("minPrice");
-                }
-                if (maxPrice) {
-                        currentParams.set("maxPrice", maxPrice);
-                } else {
-                        currentParams.delete("maxPrice");
-                }
-                router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
-        };
-        const handleSearchApply = () => {
-                const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
-                if (search) {
-                        currentParams.set("search", search);
-                } else {
-                        currentParams.delete("search");
-                }
-                router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
-        };
+    const handlePriceApply = () => {
+        const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+        if (minPrice) {
+            currentParams.set("minPrice", minPrice);
+        } else {
+            currentParams.delete("minPrice");
+        }
+        if (maxPrice) {
+            currentParams.set("maxPrice", maxPrice);
+        } else {
+            currentParams.delete("maxPrice");
+        }
+        router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
+    };
+    const handleSearchApply = () => {
+        const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+        if (search) {
+            currentParams.set("search", search);
+        } else {
+            currentParams.delete("search");
+        }
+        router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
+    };
 
-        const handleNearbyClick = () => {
-                const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+    const handleNearbyClick = () => {
+        const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
 
-                // If "nearby" is active, turn it off
-                if (currentParams.has("nearby")) {
-                        currentParams.delete("nearby");
-                        currentParams.delete("lat");
-                        currentParams.delete("lon");
-                        router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
-                        return;
-                }
+        // If "nearby" is active, turn it off
+        if (currentParams.has("nearby")) {
+            currentParams.delete("nearby");
+            currentParams.delete("lat");
+            currentParams.delete("lon");
+            router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
+            return;
+        }
 
-                // When enabling "Nearby", prefer real geolocation if available,
-                // otherwise fall back to the default coordinates from useGeolocation hook.
-                if (loading) {
-                        // Still resolving location – avoid toggling to a broken state
-                        return;
-                }
+        // When enabling "Nearby", prefer real geolocation if available,
+        // otherwise fall back to the default coordinates from useGeolocation hook.
+        if (loading) {
+            // Still resolving location – avoid toggling to a broken state
+            return;
+        }
 
-                const latitude = coords?.latitude;
-                const longitude = coords?.longitude;
+        const latitude = coords?.latitude;
+        const longitude = coords?.longitude;
 
-                if (!latitude || !longitude) {
-                        if (error) {
-                                alert(error);
-                        }
-                        return;
-                }
+        if (!latitude || !longitude) {
+            if (error) {
+                toast.error(error);
+            }
+            return;
+        }
 
-                // Backend expects distance in meters; use a reasonable radius (e.g. 5km)
-                currentParams.set("nearby", "5000");
-                currentParams.set("lat", latitude.toString());
-                currentParams.set("lon", longitude.toString());
+        // Backend expects distance in meters; use a reasonable radius (e.g. 5km)
+        currentParams.set("nearby", "5000");
+        currentParams.set("lat", latitude.toString());
+        currentParams.set("lon", longitude.toString());
 
-                router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
-        };
+        router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
+    };
 
-        const searchType = searchParams.get("type") || "restaurants";
-        const isNearbyActive = searchParams.has("nearby");
-        return (
-                <aside className="w-full py-2 px-4">
-                        <div className="flex justify-between items-center ">
-                                <h2 className="text-[20px] font-bold font-manrope leading-[30px]text-brand-black">
-                                        Filters
-                                </h2>
-                                <button
-                                        onClick={handleClearAll}
-                                        className="text-sm font-bold text-brand-purple hover:underline font-manrope leading-[30px] cursor-pointer underline hover:text-brand-purple/80"
-                                >
-                                        Clear All
-                                </button>
+    const searchType = searchParams.get("type") || "restaurants";
+    const isNearbyActive = searchParams.has("nearby");
+    return (
+        <aside className="w-full py-2 px-4">
+            <div className="flex justify-between items-center ">
+                <h2 className="text-[20px] font-bold font-manrope leading-[30px]text-brand-black">Filters</h2>
+                <button
+                    onClick={handleClearAll}
+                    className="text-sm font-bold text-brand-purple hover:underline font-manrope leading-[30px] cursor-pointer underline hover:text-brand-purple/80"
+                >
+                    Clear All
+                </button>
+            </div>
+
+            {/* Delivery Type */}
+            <div className="mt-[30px] grid grid-cols-2 gap-2 p-1 bg-brand-white rounded-md ">
+                <button
+                    onClick={() => handleToggleChange("type", "restaurants")}
+                    className={`border border-brand-black px-4 py-3 rounded text-sm font-semibold transition-colors uppercase cursor-pointer ${
+                        searchType === "restaurants" ? "bg-brand-purple text-white" : "bg-transparent text-gray-700"
+                    }`}
+                >
+                    Restaurants
+                </button>
+                <button
+                    onClick={() => handleToggleChange("type", "foods")}
+                    className={`border border-brand-black px-4 py-3 rounded text-sm font-semibold transition-colors uppercase cursor-pointer ${
+                        searchType === "foods" ? "bg-brand-purple text-white" : "bg-transparent text-gray-700"
+                    }`}
+                >
+                    Foods
+                </button>
+            </div>
+
+            {/* Search */}
+            <FilterSection title="Search by Name">
+                <div className="flex items-center gap-2">
+                    <input
+                        type="text"
+                        placeholder={searchType === "restaurants" ? "e.g., Pizza Palace" : "e.g., Pepperoni Pizza"}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSearchApply()}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                    <button
+                        onClick={handleSearchApply}
+                        className="p-2 bg-brand-purple text-white rounded-md hover:bg-brand-purple/80"
+                        title="Search"
+                    >
+                        <Search className="w-5 h-5" />
+                    </button>
+                </div>
+            </FilterSection>
+
+            {/* Location */}
+            <FilterSection title="Location">
+                <button
+                    onClick={handleNearbyClick}
+                    disabled={loading}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded text-sm font-semibold transition-colors border cursor-pointer ${
+                        isNearbyActive
+                            ? "bg-brand-purple text-white border-brand-purple"
+                            : "bg-transparent text-gray-700 border-brand-black"
+                    } ${loading ? "opacity-50 cursor-wait" : ""}`}
+                >
+                    <MapPin className="w-4 h-4" />
+                    <span>{isNearbyActive ? "Show All" : "Nearby Me"}</span>
+                </button>
+                {loading && <p className="text-xs text-center mt-1">Getting location...</p>}
+                {error && <p className="text-xs text-center mt-1 text-red-500">{error}</p>}
+            </FilterSection>
+
+            {/* Sort by */}
+            {searchType === "restaurants" && (
+                <FilterSection title="Sort by">
+                    {sortOptions.map(({ value, label }) => (
+                        <div key={value} className="flex items-center ">
+                            <input
+                                id={value}
+                                name="rating"
+                                type="radio"
+                                value={value}
+                                checked={searchParams.get("rating") === value}
+                                onChange={() => handleToggleChange("rating", value)}
+                                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <label
+                                htmlFor={value}
+                                className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
+                            >
+                                {label}
+                            </label>
                         </div>
+                    ))}
+                </FilterSection>
+            )}
 
-                        {/* Delivery Type */}
-                        <div className="mt-[30px] grid grid-cols-2 gap-2 p-1 bg-brand-white rounded-md ">
-                                <button
-                                        onClick={() => handleToggleChange("type", "restaurants")}
-                                        className={`border border-brand-black px-4 py-3 rounded text-sm font-semibold transition-colors uppercase cursor-pointer ${
-                                                searchType === "restaurants"
-                                                        ? "bg-brand-purple text-white"
-                                                        : "bg-transparent text-gray-700"
-                                        }`}
+            {searchType === "foods" && (
+                <>
+                    {/* FoodEats */}
+                    <FilterSection title="FoodEats">
+                        {foodEatsOptions.map(({ value, label }) => (
+                            <div key={value} className="flex items-center">
+                                <input
+                                    id={value}
+                                    name="foodeats"
+                                    type="checkbox"
+                                    value={value}
+                                    checked={searchParams.getAll("foodeats").includes(value)}
+                                    onChange={() => handleCheckboxChange("foodeats", value)}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label
+                                    htmlFor={value}
+                                    className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
                                 >
-                                        Restaurants
-                                </button>
-                                <button
-                                        onClick={() => handleToggleChange("type", "foods")}
-                                        className={`border border-brand-black px-4 py-3 rounded text-sm font-semibold transition-colors uppercase cursor-pointer ${
-                                                searchType === "foods"
-                                                        ? "bg-brand-purple text-white"
-                                                        : "bg-transparent text-gray-700"
-                                        }`}
-                                >
-                                        Foods
-                                </button>
+                                    {label}
+                                </label>
+                            </div>
+                        ))}
+                    </FilterSection>
+
+                    {/* Price  */}
+                    <FilterSection title="Price">
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                placeholder="Min"
+                                value={minPrice}
+                                onChange={(e) => setMinPrice(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                            />
+                            <span>-</span>
+                            <input
+                                type="number"
+                                placeholder="Max"
+                                value={maxPrice}
+                                onChange={(e) => setMaxPrice(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                            />
                         </div>
+                        <button
+                            onClick={handlePriceApply}
+                            className="cursor-pointer w-full mt-3 px-4 py-2 bg-brand-purple text-white rounded-md text-sm font-semibold hover:bg-brand-purple/80"
+                        >
+                            Apply Price
+                        </button>
+                    </FilterSection>
 
-                        {/* Search */}
-                        <FilterSection title="Search by Name">
-                                <div className="flex items-center gap-2">
-                                        <input
-                                                type="text"
-                                                placeholder={
-                                                        searchType === "restaurants"
-                                                                ? "e.g., Pizza Palace"
-                                                                : "e.g., Pepperoni Pizza"
-                                                }
-                                                value={search}
-                                                onChange={(e) => setSearch(e.target.value)}
-                                                onKeyDown={(e) => e.key === "Enter" && handleSearchApply()}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                        />
-                                        <button
-                                                onClick={handleSearchApply}
-                                                className="p-2 bg-brand-purple text-white rounded-md hover:bg-brand-purple/80"
-                                                title="Search"
-                                        >
-                                                <Search className="w-5 h-5" />
-                                        </button>
-                                </div>
-                        </FilterSection>
-
-                        {/* Location */}
-                        <FilterSection title="Location">
-                                <button
-                                        onClick={handleNearbyClick}
-                                        disabled={loading}
-                                        className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded text-sm font-semibold transition-colors border cursor-pointer ${
-                                                isNearbyActive
-                                                        ? "bg-brand-purple text-white border-brand-purple"
-                                                        : "bg-transparent text-gray-700 border-brand-black"
-                                        } ${loading ? "opacity-50 cursor-wait" : ""}`}
+                    {/* Max Delivery Fee */}
+                    <FilterSection title="Max Delivery Fee">
+                        {deliveryFeeOptions.map(({ value, label }) => (
+                            <div key={value} className="flex items-center">
+                                <input
+                                    id={value}
+                                    name="fee"
+                                    type="checkbox"
+                                    value={value}
+                                    checked={searchParams.getAll("fee").includes(value)}
+                                    onChange={() => handleCheckboxChange("fee", value)}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label
+                                    htmlFor={value}
+                                    className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
                                 >
-                                        <MapPin className="w-4 h-4" />
-                                        <span>{isNearbyActive ? "Show All" : "Nearby Me"}</span>
-                                </button>
-                                {loading && <p className="text-xs text-center mt-1">Getting location...</p>}
-                                {error && <p className="text-xs text-center mt-1 text-red-500">{error}</p>}
-                        </FilterSection>
+                                    {label}
+                                </label>
+                            </div>
+                        ))}
+                    </FilterSection>
 
-                        {/* Sort by */}
-                        {searchType === "restaurants" && (
-                                <FilterSection title="Sort by">
-                                        {sortOptions.map(({ value, label }) => (
-                                                <div key={value} className="flex items-center ">
-                                                        <input
-                                                                id={value}
-                                                                name="rating"
-                                                                type="radio"
-                                                                value={value}
-                                                                checked={searchParams.get("rating") === value}
-                                                                onChange={() => handleToggleChange("rating", value)}
-                                                                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                        />
-                                                        <label
-                                                                htmlFor={value}
-                                                                className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
-                                                        >
-                                                                {label}
-                                                        </label>
-                                                </div>
-                                        ))}
-                                </FilterSection>
-                        )}
+                    <FilterSection title="Sort by">
+                        {sortOptions.map(({ value, label }) => (
+                            <div key={value} className="flex items-center ">
+                                <input
+                                    id={value}
+                                    name="order"
+                                    type="radio"
+                                    value={value}
+                                    checked={searchParams.get("order") === value}
+                                    onChange={() => handleToggleChange("order", value)}
+                                    className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label
+                                    htmlFor={value}
+                                    className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
+                                >
+                                    {label}
+                                </label>
+                            </div>
+                        ))}
+                    </FilterSection>
 
-                        {searchType === "foods" && (
-                                <>
-                                        {/* FoodEats */}
-                                        <FilterSection title="FoodEats">
-                                                {foodEatsOptions.map(({ value, label }) => (
-                                                        <div key={value} className="flex items-center">
-                                                                <input
-                                                                        id={value}
-                                                                        name="foodeats"
-                                                                        type="checkbox"
-                                                                        value={value}
-                                                                        checked={searchParams
-                                                                                .getAll("foodeats")
-                                                                                .includes(value)}
-                                                                        onChange={() =>
-                                                                                handleCheckboxChange("foodeats", value)
-                                                                        }
-                                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                                />
-                                                                <label
-                                                                        htmlFor={value}
-                                                                        className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
-                                                                >
-                                                                        {label}
-                                                                </label>
-                                                        </div>
-                                                ))}
-                                        </FilterSection>
-
-                                        {/* Price  */}
-                                        <FilterSection title="Price">
-                                                <div className="flex items-center gap-2">
-                                                        <input
-                                                                type="number"
-                                                                placeholder="Min"
-                                                                value={minPrice}
-                                                                onChange={(e) => setMinPrice(e.target.value)}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                                        />
-                                                        <span>-</span>
-                                                        <input
-                                                                type="number"
-                                                                placeholder="Max"
-                                                                value={maxPrice}
-                                                                onChange={(e) => setMaxPrice(e.target.value)}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                                        />
-                                                </div>
-                                                <button
-                                                        onClick={handlePriceApply}
-                                                        className="cursor-pointer w-full mt-3 px-4 py-2 bg-brand-purple text-white rounded-md text-sm font-semibold hover:bg-brand-purple/80"
-                                                >
-                                                        Apply Price
-                                                </button>
-                                        </FilterSection>
-
-                                        {/* Max Delivery Fee */}
-                                        <FilterSection title="Max Delivery Fee">
-                                                {deliveryFeeOptions.map(({ value, label }) => (
-                                                        <div key={value} className="flex items-center">
-                                                                <input
-                                                                        id={value}
-                                                                        name="fee"
-                                                                        type="checkbox"
-                                                                        value={value}
-                                                                        checked={searchParams
-                                                                                .getAll("fee")
-                                                                                .includes(value)}
-                                                                        onChange={() =>
-                                                                                handleCheckboxChange("fee", value)
-                                                                        }
-                                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                                />
-                                                                <label
-                                                                        htmlFor={value}
-                                                                        className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
-                                                                >
-                                                                        {label}
-                                                                </label>
-                                                        </div>
-                                                ))}
-                                        </FilterSection>
-
-                                        <FilterSection title="Sort by">
-                                                {sortOptions.map(({ value, label }) => (
-                                                        <div key={value} className="flex items-center ">
-                                                                <input
-                                                                        id={value}
-                                                                        name="order"
-                                                                        type="radio"
-                                                                        value={value}
-                                                                        checked={searchParams.get("order") === value}
-                                                                        onChange={() =>
-                                                                                handleToggleChange("order", value)
-                                                                        }
-                                                                        className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                                />
-                                                                <label
-                                                                        htmlFor={value}
-                                                                        className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
-                                                                >
-                                                                        {label}
-                                                                </label>
-                                                        </div>
-                                                ))}
-                                        </FilterSection>
-
-                                        {/* Delivery Time */}
-                                        <FilterSection title="Delivery Time">
-                                                {deliveryTimeOptions.map(({ value, label }) => (
-                                                        <div key={value} className="flex items-center">
-                                                                <input
-                                                                        id={value}
-                                                                        name="time"
-                                                                        type="checkbox"
-                                                                        value={value}
-                                                                        checked={searchParams
-                                                                                .getAll("time")
-                                                                                .includes(value)}
-                                                                        onChange={() =>
-                                                                                handleCheckboxChange("time", value)
-                                                                        }
-                                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                                />
-                                                                <label
-                                                                        htmlFor={value}
-                                                                        className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
-                                                                >
-                                                                        {label}
-                                                                </label>
-                                                        </div>
-                                                ))}
-                                        </FilterSection>
-                                </>
-                        )}
-                </aside>
-        );
+                    {/* Delivery Time */}
+                    <FilterSection title="Delivery Time">
+                        {deliveryTimeOptions.map(({ value, label }) => (
+                            <div key={value} className="flex items-center">
+                                <input
+                                    id={value}
+                                    name="time"
+                                    type="checkbox"
+                                    value={value}
+                                    checked={searchParams.getAll("time").includes(value)}
+                                    onChange={() => handleCheckboxChange("time", value)}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label
+                                    htmlFor={value}
+                                    className="ml-3 text-[16px] font-manrope text-brand-grey leading-[28px]"
+                                >
+                                    {label}
+                                </label>
+                            </div>
+                        ))}
+                    </FilterSection>
+                </>
+            )}
+        </aside>
+    );
 }

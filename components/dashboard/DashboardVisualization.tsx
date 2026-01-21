@@ -84,27 +84,7 @@ export default function DashboardVisualization({ data }: { data: DashboardApiBun
 
     return (
         <div className="space-y-6">
-            {/* Overview cards */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-xl border border-stroke bg-white p-5 shadow-sm">
-                    <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                    <p className="mt-2 text-2xl font-bold text-gray-900">{formatCurrency(overview?.totalRevenue)}</p>
-                </div>
-                <div className="rounded-xl border border-stroke bg-white p-5 shadow-sm">
-                    <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                    <p className="mt-2 text-2xl font-bold text-gray-900">{formatNumber(overview?.totalOrders)}</p>
-                </div>
-                <div className="rounded-xl border border-stroke bg-white p-5 shadow-sm">
-                    <p className="text-sm font-medium text-gray-600">Avg Order Value</p>
-                    <p className="mt-2 text-2xl font-bold text-gray-900">
-                        {formatCurrency(overview?.averageOrderValue)}
-                    </p>
-                </div>
-                <div className="rounded-xl border border-stroke bg-white p-5 shadow-sm">
-                    <p className="text-sm font-medium text-gray-600">Total Restaurants</p>
-                    <p className="mt-2 text-2xl font-bold text-gray-900">{formatNumber(overview?.totalRestaurants)}</p>
-                </div>
-            </div>
+            {/* Overview cards - REMOVED */}
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                 {/* Horizontal bar chart */}

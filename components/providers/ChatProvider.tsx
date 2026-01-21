@@ -150,7 +150,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
                         const getSenderName = async () => {
                             try {
                                 const sender = await authApi.getUserById(message.senderId);
-                                return sender.username || message.senderId;
+                                return sender?.username || message.senderId;
                             } catch {
                                 return message.senderId;
                             }

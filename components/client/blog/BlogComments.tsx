@@ -1,6 +1,7 @@
 "use client";
 
 import Pagination from "@/components/client/Pagination";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { blogApi } from "@/lib/api/blogApi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Comment, CommentListResponse } from "@/types/blog.type";
@@ -16,6 +17,7 @@ interface BlogCommentsProps {
 
 export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsProps) {
     const { user, isAuthenticated } = useAuthStore();
+    const confirmAction = useConfirm();
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -191,7 +193,14 @@ export default function BlogComments({ blogId, onCommentAdded }: BlogCommentsPro
     };
 
     const handleDeleteComment = async (commentId: string) => {
-        if (!confirm("Are you sure you want to delete this comment?")) return;
+        const ok = await confirmAction({
+            title: "Delete comment?",
+            description: "This action cannot be undone.",
+            confirmText: "Delete",
+            cancelText: "Cancel",
+            variant: "danger",
+        });
+        if (!ok) return;
 
         try {
             await blogApi.deleteComment(blogId, commentId);

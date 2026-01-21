@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthStore } from "@/stores/useAuthStore";
-import { Home, Menu, Moon, Search, Sun } from "lucide-react";
+import { Home, Menu, Moon, Search, Sun, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { MerchantNotificationBell } from "../merchant/MerchantNotificationBell";
@@ -18,6 +18,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
     const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const settingsHref = user?.role === "MERCHANT" ? "/merchant/manage/settings" : "/admin/settings";
@@ -35,12 +36,14 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
 
     return (
         <header className="sticky top-0 z-40 flex w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-            <div className="flex flex-grow items-center justify-between px-4 py-4 shadow-sm md:px-6 2xl:px-11">
+            <div className="flex flex-grow items-center justify-between px-4 py-3 shadow-sm md:px-6 2xl:px-11">
                 {/* Left side */}
                 <div className="flex items-center gap-2 sm:gap-4 lg:hidden">
                     <button
                         onClick={() => setSidebarOpen?.(!sidebarOpen)}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300"
+                        className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                        aria-label="Toggle sidebar"
+                        aria-expanded={!!sidebarOpen}
                     >
                         <Menu size={24} />
                     </button>
@@ -59,11 +62,21 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                 </div>
 
                 {/* Right side */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-3">
+                    {/* Mobile search toggle */}
+                    <button
+                        onClick={() => setMobileSearchOpen((v) => !v)}
+                        className="sm:hidden h-11 w-11 inline-flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                        aria-label={mobileSearchOpen ? "Close search" : "Open search"}
+                    >
+                        {mobileSearchOpen ? <X size={20} /> : <Search size={20} />}
+                    </button>
+
                     {/* Dark mode toggle */}
                     <button
                         onClick={toggleTheme}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300"
+                        className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                        aria-label="Toggle theme"
                     >
                         {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
                     </button>
@@ -79,7 +92,8 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                     <div className="relative" ref={dropdownRef}>
                         <button
                             onClick={() => setDropdownOpen(!dropdownOpen)}
-                            className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                            className="h-11 inline-flex items-center gap-3 rounded-lg px-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                            aria-label="Open user menu"
                         >
                             <div className="w-9 h-9 rounded-full bg-brand-orange flex items-center justify-center text-white font-semibold">
                                 {user?.username?.charAt(0).toUpperCase() || "A"}
@@ -122,6 +136,20 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                     </div>
                 </div>
             </div>
+
+            {/* Mobile search input row */}
+            {mobileSearchOpen && (
+                <div className="sm:hidden w-full border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3">
+                    <div className="relative">
+                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
+                        />
+                    </div>
+                </div>
+            )}
         </header>
     );
 }

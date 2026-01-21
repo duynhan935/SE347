@@ -2,16 +2,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
+import toast from "react-hot-toast";
 
 export default function Setup2FAPage() {
     const [verificationCode, setVerificationCode] = useState("");
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         // Send verificationCode and secretKey to server for verification
         // If server confirms code is correct, activate 2FA for user in database
-        alert(`Submitting code: ${verificationCode}. If correct, 2FA will be enabled.`);
+        toast("2FA setup is not available yet.");
     };
 
     return (

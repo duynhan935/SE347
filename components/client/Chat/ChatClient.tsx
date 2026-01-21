@@ -11,573 +11,577 @@ import ChatList from "./ChatList";
 import ChatWindow from "./ChatWindow";
 
 interface ChatClientProps {
-        initialRooms: ChatRoom[];
-        currentUserId: string;
+    initialRooms: ChatRoom[];
+    currentUserId: string;
     initialRoomId?: string | null;
 }
 
 export default function ChatClient({ initialRooms, currentUserId, initialRoomId }: ChatClientProps) {
-        const rooms = useChatStore((state) => state.rooms);
+    const rooms = useChatStore((state) => state.rooms);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(initialRoomId || null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [partnerId, setPartnerId] = useState<string | null>(null);
     const [partnerName, setPartnerName] = useState<string>("User");
     const [showChatWindow, setShowChatWindow] = useState(false); // For mobile: show chat window or list
-        
-        // Initialize store with initialRooms if store is empty
-        useEffect(() => {
-                const storeRooms = useChatStore.getState().rooms;
-                if (storeRooms.length === 0 && initialRooms.length > 0) {
-                        useChatStore.getState().setRooms(initialRooms);
-                }
-        }, [initialRooms]);
+
+    // Initialize store with initialRooms if store is empty
+    useEffect(() => {
+        const storeRooms = useChatStore.getState().rooms;
+        if (storeRooms.length === 0 && initialRooms.length > 0) {
+            useChatStore.getState().setRooms(initialRooms);
+        }
+    }, [initialRooms]);
 
     // Cache partner info
-        const partnerInfoCacheRef = useRef<Record<string, { name: string; fetched: boolean }>>({});
+    const partnerInfoCacheRef = useRef<Record<string, { name: string; fetched: boolean }>>({});
     const fetchingPartnerRef = useRef<Set<string>>(new Set());
 
-        const getPartnerInfo = useCallback(async (partnerId: string) => {
-                if (partnerInfoCacheRef.current[partnerId]?.fetched) {
-                        return partnerInfoCacheRef.current[partnerId];
-                }
+    const getPartnerInfo = useCallback(async (partnerId: string) => {
+        if (partnerInfoCacheRef.current[partnerId]?.fetched) {
+            return partnerInfoCacheRef.current[partnerId];
+        }
 
-                if (fetchingPartnerRef.current.has(partnerId)) {
-                        await new Promise((resolve) => setTimeout(resolve, 100));
-                        if (partnerInfoCacheRef.current[partnerId]?.fetched) {
-                                return partnerInfoCacheRef.current[partnerId];
-                        }
-                }
+        if (fetchingPartnerRef.current.has(partnerId)) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            if (partnerInfoCacheRef.current[partnerId]?.fetched) {
+                return partnerInfoCacheRef.current[partnerId];
+            }
+        }
 
-                fetchingPartnerRef.current.add(partnerId);
+        fetchingPartnerRef.current.add(partnerId);
 
-                try {
-                        const user = await authApi.getUserById(partnerId);
-                        const info = { name: user.username || `User ${partnerId.slice(0, 8)}`, fetched: true };
-                        partnerInfoCacheRef.current[partnerId] = info;
-                        return info;
-                } catch {
-                        const info = { name: `User ${partnerId.slice(0, 8)}`, fetched: true };
-                        partnerInfoCacheRef.current[partnerId] = info;
-                        return info;
-                } finally {
-                        fetchingPartnerRef.current.delete(partnerId);
-                }
-        }, []);
+        try {
+            const user = await authApi.getUserById(partnerId);
+            const info = { name: user?.username || `User ${partnerId.slice(0, 8)}`, fetched: true };
+            partnerInfoCacheRef.current[partnerId] = info;
+            return info;
+        } catch {
+            const info = { name: `User ${partnerId.slice(0, 8)}`, fetched: true };
+            partnerInfoCacheRef.current[partnerId] = info;
+            return info;
+        } finally {
+            fetchingPartnerRef.current.delete(partnerId);
+        }
+    }, []);
 
-        const partnerInitializedRef = useRef(false);
+    const partnerInitializedRef = useRef(false);
 
-        useEffect(() => {
-                if (initialRoomId && !partnerId && !partnerInitializedRef.current) {
-                        const roomIdParts = initialRoomId.split("_");
-                        if (roomIdParts.length === 2) {
+    useEffect(() => {
+        if (initialRoomId && !partnerId && !partnerInitializedRef.current) {
+            const roomIdParts = initialRoomId.split("_");
+            if (roomIdParts.length === 2) {
                 const partner = roomIdParts[0] === currentUserId ? roomIdParts[1] : roomIdParts[0];
-                                setPartnerId(partner);
-                                partnerInitializedRef.current = true;
-                                getPartnerInfo(partner).then((info) => setPartnerName(info.name));
-                        }
-                }
-        }, [initialRoomId, currentUserId, partnerId, getPartnerInfo]);
+                setPartnerId(partner);
+                partnerInitializedRef.current = true;
+                getPartnerInfo(partner).then((info) => setPartnerName(info.name));
+            }
+        }
+    }, [initialRoomId, currentUserId, partnerId, getPartnerInfo]);
 
-        const roomsReloadedRef = useRef(false);
+    const roomsReloadedRef = useRef(false);
 
-        useEffect(() => {
-                const reloadRoomsIfNeeded = async () => {
+    useEffect(() => {
+        const reloadRoomsIfNeeded = async () => {
             if (initialRoomId && !roomsReloadedRef.current && !rooms.find((r) => r.id === initialRoomId)) {
-                                roomsReloadedRef.current = true;
-                                try {
-                                        const response = await chatApi.getAllRoomsByUserId(currentUserId);
-                                        const updatedRooms = response.data?.content || [];
+                roomsReloadedRef.current = true;
+                try {
+                    const response = await chatApi.getAllRoomsByUserId(currentUserId);
+                    const updatedRooms = response.data?.content || [];
                     useChatStore.getState().setRooms(updatedRooms);
 
-                                        if (!updatedRooms.find((r) => r.id === initialRoomId)) {
-                                                const roomIdParts = initialRoomId.split("_");
-                                                if (roomIdParts.length === 2) {
+                    if (!updatedRooms.find((r) => r.id === initialRoomId)) {
+                        const roomIdParts = initialRoomId.split("_");
+                        if (roomIdParts.length === 2) {
                             const partner = roomIdParts[0] === currentUserId ? roomIdParts[1] : roomIdParts[0];
-                                                        if (partner !== partnerId) {
-                                                        setPartnerId(partner);
-                                                        const info = await getPartnerInfo(partner);
-                                                        setPartnerName(info.name);
-                                                        }
-                                                }
-                                        }
-                                } catch {
-                                        if (initialRoomId && !partnerId) {
-                                                const roomIdParts = initialRoomId.split("_");
-                                                if (roomIdParts.length === 2) {
+                            if (partner !== partnerId) {
+                                setPartnerId(partner);
+                                const info = await getPartnerInfo(partner);
+                                setPartnerName(info.name);
+                            }
+                        }
+                    }
+                } catch {
+                    if (initialRoomId && !partnerId) {
+                        const roomIdParts = initialRoomId.split("_");
+                        if (roomIdParts.length === 2) {
                             const partner = roomIdParts[0] === currentUserId ? roomIdParts[1] : roomIdParts[0];
-                                                        setPartnerId(partner);
+                            setPartnerId(partner);
                             getPartnerInfo(partner).then((info) => setPartnerName(info.name));
-                                                }
-                                        }
-                                }
                         }
-                };
+                    }
+                }
+            }
+        };
 
-                reloadRoomsIfNeeded();
-                // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [initialRoomId, currentUserId]);
+        reloadRoomsIfNeeded();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialRoomId, currentUserId]);
 
-        const { isConnected, sendMessage: sendMessageToSocket } = useChatSocketContext();
+    const { isConnected, sendMessage: sendMessageToSocket } = useChatSocketContext();
 
-        const selectedRoomIdRef = useRef<string | null>(selectedRoomId);
-        const partnerIdRef = useRef<string | null>(partnerId);
-        useEffect(() => {
-                selectedRoomIdRef.current = selectedRoomId;
-        }, [selectedRoomId]);
-        useEffect(() => {
-                partnerIdRef.current = partnerId;
-        }, [partnerId]);
+    const selectedRoomIdRef = useRef<string | null>(selectedRoomId);
+    const partnerIdRef = useRef<string | null>(partnerId);
+    useEffect(() => {
+        selectedRoomIdRef.current = selectedRoomId;
+    }, [selectedRoomId]);
+    useEffect(() => {
+        partnerIdRef.current = partnerId;
+    }, [partnerId]);
 
-        const processedMessagesRef = useRef<Set<string>>(new Set());
-        const processedMessagesPerRoomRef = useRef<Map<string, Set<string>>>(new Map());
+    const processedMessagesRef = useRef<Set<string>>(new Set());
+    const processedMessagesPerRoomRef = useRef<Map<string, Set<string>>>(new Map());
 
-        const handleMessageReceived = useCallback(
-                (message: MessageDTO) => {
-                        if (message.roomId !== selectedRoomIdRef.current) {
-                                return;
-                        }
+    const handleMessageReceived = useCallback(
+        (message: MessageDTO) => {
+            if (message.roomId !== selectedRoomIdRef.current) {
+                return;
+            }
 
-                        // Get current partnerId from state or ref
-                        const currentPartnerId = partnerId;
-                        if (!currentPartnerId) {
-                                return;
-                        }
+            // Get current partnerId from state or ref
+            const currentPartnerId = partnerId;
+            if (!currentPartnerId) {
+                return;
+            }
 
-                        // Filter: Only process messages between currentUserId and partnerId
-                        const isFromCurrentUser = message.senderId === currentUserId;
-                        const isToCurrentUser = message.receiverId === currentUserId;
-                        const isFromPartner = message.senderId === currentPartnerId;
-                        const isToPartner = message.receiverId === currentPartnerId;
-                        
-                        // Only process if it's a message between current user and partner
-                        if (!((isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser))) {
-                                return;
-                        }
+            // Filter: Only process messages between currentUserId and partnerId
+            const isFromCurrentUser = message.senderId === currentUserId;
+            const isToCurrentUser = message.receiverId === currentUserId;
+            const isFromPartner = message.senderId === currentPartnerId;
+            const isToPartner = message.receiverId === currentPartnerId;
+
+            // Only process if it's a message between current user and partner
+            if (!((isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser))) {
+                return;
+            }
 
             const messageKey = `${message.roomId}-${message.content}-${message.senderId}-${message.receiverId}-${
-                message.timestamp ? Math.floor(new Date(message.timestamp).getTime() / 1000) : Math.floor(Date.now() / 1000)
+                message.timestamp
+                    ? Math.floor(new Date(message.timestamp).getTime() / 1000)
+                    : Math.floor(Date.now() / 1000)
             }`;
-                        
-                        if (processedMessagesRef.current.has(messageKey)) {
-                                return;
-                        }
 
-                        processedMessagesRef.current.add(messageKey);
-                        
-                        if (processedMessagesRef.current.size > 200) {
-                                const keysArray = Array.from(processedMessagesRef.current);
+            if (processedMessagesRef.current.has(messageKey)) {
+                return;
+            }
+
+            processedMessagesRef.current.add(messageKey);
+
+            if (processedMessagesRef.current.size > 200) {
+                const keysArray = Array.from(processedMessagesRef.current);
                 const recentKeys = keysArray.slice(-100);
-                                processedMessagesRef.current = new Set(recentKeys);
-                        }
+                processedMessagesRef.current = new Set(recentKeys);
+            }
 
-                        setMessages((prev) => {
-                                // Filter existing messages to only include messages between currentUserId and partnerId
-                                const filteredPrev = prev.filter((m) => {
-                                        const mIsFromCurrentUser = m.senderId === currentUserId;
-                                        const mIsToCurrentUser = m.receiverId === currentUserId;
-                                        const mIsFromPartner = m.senderId === currentPartnerId;
-                                        const mIsToPartner = m.receiverId === currentPartnerId;
-                                        return (mIsFromCurrentUser && mIsToPartner) || (mIsFromPartner && mIsToCurrentUser);
-                                });
+            setMessages((prev) => {
+                // Filter existing messages to only include messages between currentUserId and partnerId
+                const filteredPrev = prev.filter((m) => {
+                    const mIsFromCurrentUser = m.senderId === currentUserId;
+                    const mIsToCurrentUser = m.receiverId === currentUserId;
+                    const mIsFromPartner = m.senderId === currentPartnerId;
+                    const mIsToPartner = m.receiverId === currentPartnerId;
+                    return (mIsFromCurrentUser && mIsToPartner) || (mIsFromPartner && mIsToCurrentUser);
+                });
 
-                                const messageTimestamp = message.timestamp || new Date().toISOString();
-                                const messageTime = new Date(messageTimestamp).getTime();
+                const messageTimestamp = message.timestamp || new Date().toISOString();
+                const messageTime = new Date(messageTimestamp).getTime();
 
-                                const existingMessage = filteredPrev.find((m) => {
-                                        const mTime = new Date(m.timestamp).getTime();
-                                        const timeDiff = Math.abs(mTime - messageTime);
-                                        return (
-                                                m.senderId === message.senderId &&
-                                                m.receiverId === message.receiverId &&
-                                                m.content === message.content &&
+                const existingMessage = filteredPrev.find((m) => {
+                    const mTime = new Date(m.timestamp).getTime();
+                    const timeDiff = Math.abs(mTime - messageTime);
+                    return (
+                        m.senderId === message.senderId &&
+                        m.receiverId === message.receiverId &&
+                        m.content === message.content &&
                         timeDiff < 1000
-                                        );
-                                });
+                    );
+                });
 
-                                if (existingMessage) {
-                                        return filteredPrev;
-                                }
-
-                                if (message.senderId === currentUserId) {
-                                        const optimisticIndex = filteredPrev.findIndex(
-                                                (m) =>
-                                                        m.id.startsWith("temp-") &&
-                                                        m.senderId === message.senderId &&
-                                                        m.receiverId === message.receiverId &&
-                                                        m.content === message.content
-                                        );
-
-                                        if (optimisticIndex >= 0) {
-                                                const updated = [...filteredPrev];
-                                                updated[optimisticIndex] = {
-                                                        ...updated[optimisticIndex],
-                                                        timestamp: messageTimestamp,
-                                                };
-                                                return updated.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-                                        }
-                                }
-
-                                const newMessage: Message = {
-                                        id: `temp-${Date.now()}`,
-                                        roomId: message.roomId,
-                                        senderId: message.senderId,
-                                        receiverId: message.receiverId,
-                                        content: message.content,
-                                        timestamp: messageTimestamp,
-                                        read: false,
-                                };
-
-                                const updated = [...filteredPrev, newMessage];
-                                return updated.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-                        });
-                },
-        [currentUserId, partnerId]
-        );
-
-        useEffect(() => {
-                if (!selectedRoomId) {
-                        return;
+                if (existingMessage) {
+                    return filteredPrev;
                 }
 
-                const handleGlobalMessage = (event: CustomEvent<MessageDTO>) => {
-                        const message = event.detail;
-                        
-                        if (message.roomId !== selectedRoomIdRef.current) {
-                                return;
-                        }
+                if (message.senderId === currentUserId) {
+                    const optimisticIndex = filteredPrev.findIndex(
+                        (m) =>
+                            m.id.startsWith("temp-") &&
+                            m.senderId === message.senderId &&
+                            m.receiverId === message.receiverId &&
+                            m.content === message.content,
+                    );
 
-                        // Get current partnerId from ref
-                        const currentPartnerId = partnerIdRef.current;
-                        if (!currentPartnerId) {
-                                return;
-                        }
+                    if (optimisticIndex >= 0) {
+                        const updated = [...filteredPrev];
+                        updated[optimisticIndex] = {
+                            ...updated[optimisticIndex],
+                            timestamp: messageTimestamp,
+                        };
+                        return updated.sort(
+                            (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+                        );
+                    }
+                }
 
-                        // Filter: Only process messages between currentUserId and partnerId
-                        const isFromCurrentUser = message.senderId === currentUserId;
-                        const isToCurrentUser = message.receiverId === currentUserId;
-                        const isFromPartner = message.senderId === currentPartnerId;
-                        const isToPartner = message.receiverId === currentPartnerId;
-                        
-                        if (!((isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser))) {
-                                return;
-                        }
+                const newMessage: Message = {
+                    id: `temp-${Date.now()}`,
+                    roomId: message.roomId,
+                    senderId: message.senderId,
+                    receiverId: message.receiverId,
+                    content: message.content,
+                    timestamp: messageTimestamp,
+                    read: false,
+                };
+
+                const updated = [...filteredPrev, newMessage];
+                return updated.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            });
+        },
+        [currentUserId, partnerId],
+    );
+
+    useEffect(() => {
+        if (!selectedRoomId) {
+            return;
+        }
+
+        const handleGlobalMessage = (event: CustomEvent<MessageDTO>) => {
+            const message = event.detail;
+
+            if (message.roomId !== selectedRoomIdRef.current) {
+                return;
+            }
+
+            // Get current partnerId from ref
+            const currentPartnerId = partnerIdRef.current;
+            if (!currentPartnerId) {
+                return;
+            }
+
+            // Filter: Only process messages between currentUserId and partnerId
+            const isFromCurrentUser = message.senderId === currentUserId;
+            const isToCurrentUser = message.receiverId === currentUserId;
+            const isFromPartner = message.senderId === currentPartnerId;
+            const isToPartner = message.receiverId === currentPartnerId;
+
+            if (!((isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser))) {
+                return;
+            }
 
             const messageKey = `${message.content}-${message.senderId}-${message.receiverId}-${
-                message.timestamp ? Math.floor(new Date(message.timestamp).getTime() / 1000) : Math.floor(Date.now() / 1000)
+                message.timestamp
+                    ? Math.floor(new Date(message.timestamp).getTime() / 1000)
+                    : Math.floor(Date.now() / 1000)
             }`;
-                        
-                        if (!processedMessagesPerRoomRef.current.has(message.roomId)) {
-                                processedMessagesPerRoomRef.current.set(message.roomId, new Set());
-                        }
-                        const processedSet = processedMessagesPerRoomRef.current.get(message.roomId)!;
-                        
-                        if (processedSet.has(messageKey)) {
-                                return;
-                        }
 
-                        processedSet.add(messageKey);
-                        
-                        if (processedSet.size > 50) {
-                                const keysArray = Array.from(processedSet);
+            if (!processedMessagesPerRoomRef.current.has(message.roomId)) {
+                processedMessagesPerRoomRef.current.set(message.roomId, new Set());
+            }
+            const processedSet = processedMessagesPerRoomRef.current.get(message.roomId)!;
+
+            if (processedSet.has(messageKey)) {
+                return;
+            }
+
+            processedSet.add(messageKey);
+
+            if (processedSet.size > 50) {
+                const keysArray = Array.from(processedSet);
                 const recentKeys = keysArray.slice(-25);
-                                processedMessagesPerRoomRef.current.set(message.roomId, new Set(recentKeys));
-                        }
+                processedMessagesPerRoomRef.current.set(message.roomId, new Set(recentKeys));
+            }
 
-                        handleMessageReceived(message);
-                        
-                        if (message.roomId === selectedRoomIdRef.current && message.receiverId === currentUserId) {
-                                (async () => {
-                                        try {
-                                                await chatApi.markMessagesAsRead(message.roomId, currentUserId);
+            handleMessageReceived(message);
+
+            if (message.roomId === selectedRoomIdRef.current && message.receiverId === currentUserId) {
+                (async () => {
+                    try {
+                        await chatApi.markMessagesAsRead(message.roomId, currentUserId);
                         useChatStore.getState().resetUnreadCount(message.roomId);
-                                        } catch {
+                    } catch {
                         // Silent error handling
-                                        }
-                                })();
-                        }
-                };
+                    }
+                })();
+            }
+        };
 
-                window.addEventListener("chat-message-received", handleGlobalMessage as EventListener);
+        window.addEventListener("chat-message-received", handleGlobalMessage as EventListener);
 
-                return () => {
-                        window.removeEventListener("chat-message-received", handleGlobalMessage as EventListener);
-                };
-        }, [selectedRoomId, handleMessageReceived, currentUserId]);
+        return () => {
+            window.removeEventListener("chat-message-received", handleGlobalMessage as EventListener);
+        };
+    }, [selectedRoomId, handleMessageReceived, currentUserId]);
 
-        const lastLoadedRoomIdRef = useRef<string | null>(null);
+    const lastLoadedRoomIdRef = useRef<string | null>(null);
 
-        useEffect(() => {
-                const loadMessages = async () => {
-                        if (!selectedRoomId) {
-                                setMessages([]);
-                                lastLoadedRoomIdRef.current = null;
+    useEffect(() => {
+        const loadMessages = async () => {
+            if (!selectedRoomId) {
+                setMessages([]);
+                lastLoadedRoomIdRef.current = null;
                 processedMessagesRef.current.clear();
-                                return;
-                        }
+                return;
+            }
 
-                        if (lastLoadedRoomIdRef.current === selectedRoomId) {
-                                return;
-                        }
+            if (lastLoadedRoomIdRef.current === selectedRoomId) {
+                return;
+            }
 
-                        lastLoadedRoomIdRef.current = selectedRoomId;
+            lastLoadedRoomIdRef.current = selectedRoomId;
             processedMessagesRef.current.clear();
-                        processedMessagesPerRoomRef.current.delete(selectedRoomId);
-                        setIsLoadingMessages(true);
-                        try {
-                                const response = await chatApi.getMessagesByRoomId(selectedRoomId, 0);
-                                const loadedMessages = response.data?.content || [];
-                                
-                                const mappedMessages: Message[] = loadedMessages.map((msg) => ({
-                                        id: msg.id,
-                                        roomId: msg.roomId || msg.room?.id || selectedRoomId,
-                                        senderId: msg.senderId,
-                                        receiverId: msg.receiverId,
-                                        content: msg.content,
-                                        timestamp: msg.timestamp,
-                                        read: msg.read,
-                                }));
+            processedMessagesPerRoomRef.current.delete(selectedRoomId);
+            setIsLoadingMessages(true);
+            try {
+                const response = await chatApi.getMessagesByRoomId(selectedRoomId, 0);
+                const loadedMessages = response.data?.content || [];
 
-                                // Get partnerId for filtering
-                                const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
-                                const currentPartner = selectedRoom 
-                                        ? (selectedRoom.user1Id === currentUserId ? selectedRoom.user2Id : selectedRoom.user1Id)
-                                        : null;
+                const mappedMessages: Message[] = loadedMessages.map((msg) => ({
+                    id: msg.id,
+                    roomId: msg.roomId || msg.room?.id || selectedRoomId,
+                    senderId: msg.senderId,
+                    receiverId: msg.receiverId,
+                    content: msg.content,
+                    timestamp: msg.timestamp,
+                    read: msg.read,
+                }));
 
-                                // Filter messages to only include messages between currentUserId and partnerId
-                                const filteredMessages = currentPartner 
-                                        ? mappedMessages.filter((msg) => {
-                                                const isFromCurrentUser = msg.senderId === currentUserId;
-                                                const isToCurrentUser = msg.receiverId === currentUserId;
-                                                const isFromPartner = msg.senderId === currentPartner;
-                                                const isToPartner = msg.receiverId === currentPartner;
-                                                return (isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser);
-                                        })
-                                        : mappedMessages;
+                // Get partnerId for filtering
+                const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
+                const currentPartner = selectedRoom
+                    ? selectedRoom.user1Id === currentUserId
+                        ? selectedRoom.user2Id
+                        : selectedRoom.user1Id
+                    : null;
 
-                                // Remove duplicates
-                                const uniqueMessages = filteredMessages.reduce((acc, msg) => {
-                                        const existingIndex = acc.findIndex((m) => {
-                                                const sameId = m.id === msg.id;
-                                                const sameContent = m.content === msg.content;
-                                                const sameSender = m.senderId === msg.senderId;
-                                                const sameReceiver = m.receiverId === msg.receiverId;
-                                                const timeDiff = Math.abs(
-                                                        new Date(m.timestamp).getTime() - new Date(msg.timestamp).getTime()
-                                                );
-                                                const sameTime = timeDiff < 1000;
-                                                return sameId || (sameContent && sameSender && sameReceiver && sameTime);
-                                        });
-                                        
-                                        if (existingIndex === -1) {
-                                                acc.push(msg);
-                                        }
-                                        
-                                        return acc;
-                                }, [] as Message[]);
+                // Filter messages to only include messages between currentUserId and partnerId
+                const filteredMessages = currentPartner
+                    ? mappedMessages.filter((msg) => {
+                          const isFromCurrentUser = msg.senderId === currentUserId;
+                          const isToCurrentUser = msg.receiverId === currentUserId;
+                          const isFromPartner = msg.senderId === currentPartner;
+                          const isToPartner = msg.receiverId === currentPartner;
+                          return (isFromCurrentUser && isToPartner) || (isFromPartner && isToCurrentUser);
+                      })
+                    : mappedMessages;
 
-                                const sortedMessages = uniqueMessages.reverse();
-                                
-                                sortedMessages.forEach((msg) => {
+                // Remove duplicates
+                const uniqueMessages = filteredMessages.reduce((acc, msg) => {
+                    const existingIndex = acc.findIndex((m) => {
+                        const sameId = m.id === msg.id;
+                        const sameContent = m.content === msg.content;
+                        const sameSender = m.senderId === msg.senderId;
+                        const sameReceiver = m.receiverId === msg.receiverId;
+                        const timeDiff = Math.abs(new Date(m.timestamp).getTime() - new Date(msg.timestamp).getTime());
+                        const sameTime = timeDiff < 1000;
+                        return sameId || (sameContent && sameSender && sameReceiver && sameTime);
+                    });
+
+                    if (existingIndex === -1) {
+                        acc.push(msg);
+                    }
+
+                    return acc;
+                }, [] as Message[]);
+
+                const sortedMessages = uniqueMessages.reverse();
+
+                sortedMessages.forEach((msg) => {
                     const messageKey = `${msg.roomId}-${msg.content}-${msg.senderId}-${msg.receiverId}-${Math.floor(
-                        new Date(msg.timestamp).getTime() / 1000
+                        new Date(msg.timestamp).getTime() / 1000,
                     )}`;
-                                        processedMessagesRef.current.add(messageKey);
-                                });
-                                
-                                setMessages(sortedMessages);
+                    processedMessagesRef.current.add(messageKey);
+                });
 
-                                // Use selectedRoom and currentPartner already defined above
-                                if (selectedRoom && currentPartner) {
-                                        if (currentPartner !== partnerId) {
-                                                setPartnerId(currentPartner);
-                                        }
+                setMessages(sortedMessages);
 
-                                        const cachedInfo = partnerInfoCacheRef.current[currentPartner];
-                                        if (cachedInfo?.fetched) {
-                                                setPartnerName(cachedInfo.name);
-                                        } else {
-                                                const info = await getPartnerInfo(currentPartner);
-                                                setPartnerName(info.name);
-                                        }
-                                } else if (selectedRoomId) {
-                                        const roomIdParts = selectedRoomId.split("_");
-                                        if (roomIdParts.length === 2) {
+                // Use selectedRoom and currentPartner already defined above
+                if (selectedRoom && currentPartner) {
+                    if (currentPartner !== partnerId) {
+                        setPartnerId(currentPartner);
+                    }
+
+                    const cachedInfo = partnerInfoCacheRef.current[currentPartner];
+                    if (cachedInfo?.fetched) {
+                        setPartnerName(cachedInfo.name);
+                    } else {
+                        const info = await getPartnerInfo(currentPartner);
+                        setPartnerName(info.name);
+                    }
+                } else if (selectedRoomId) {
+                    const roomIdParts = selectedRoomId.split("_");
+                    if (roomIdParts.length === 2) {
                         const partner = roomIdParts[0] === currentUserId ? roomIdParts[1] : roomIdParts[0];
-                                                setPartnerId(partner);
-                                                const info = await getPartnerInfo(partner);
-                                                setPartnerName(info.name);
-                                        }
-                                }
-
-                                try {
-                                        await chatApi.markMessagesAsRead(selectedRoomId, currentUserId);
-                    useChatStore.getState().resetUnreadCount(selectedRoomId);
-                                } catch {
-                    // Silent error handling
-                                }
-                        } catch {
-                                toast.error("Failed to load messages");
-                                lastLoadedRoomIdRef.current = null;
-                        } finally {
-                                setIsLoadingMessages(false);
-                        }
-                };
-
-                loadMessages();
-                // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [selectedRoomId, currentUserId]);
-
-        const lastUpdatedPartnerRef = useRef<string | null>(null);
-        const lastSelectedRoomIdRef = useRef<string | null>(null);
-
-        useEffect(() => {
-                if (selectedRoomId !== lastSelectedRoomIdRef.current) {
-                        lastSelectedRoomIdRef.current = selectedRoomId;
-                        lastUpdatedPartnerRef.current = null;
+                        setPartnerId(partner);
+                        const info = await getPartnerInfo(partner);
+                        setPartnerName(info.name);
+                    }
                 }
-
-                if (selectedRoomId) {
-                        const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
-                        if (selectedRoom) {
-                const partner = selectedRoom.user1Id === currentUserId ? selectedRoom.user2Id : selectedRoom.user1Id;
-                                if (partner !== partnerId && partner !== lastUpdatedPartnerRef.current) {
-                                        lastUpdatedPartnerRef.current = partner;
-                                        setPartnerId(partner);
-                                        
-                                        const cachedInfo = partnerInfoCacheRef.current[partner];
-                                        if (cachedInfo?.fetched) {
-                                                setPartnerName(cachedInfo.name);
-                                        } else {
-                                                getPartnerInfo(partner).then((info) => setPartnerName(info.name));
-                                        }
-                                }
-                        }
-                }
-                // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [selectedRoomId, currentUserId, getPartnerInfo]);
-
-        const handleMarkAsRead = useCallback(async () => {
-                if (!selectedRoomId) return;
 
                 try {
-                        await chatApi.markMessagesAsRead(selectedRoomId, currentUserId);
-            useChatStore.getState().resetUnreadCount(selectedRoomId);
+                    await chatApi.markMessagesAsRead(selectedRoomId, currentUserId);
+                    useChatStore.getState().resetUnreadCount(selectedRoomId);
                 } catch {
-            // Silent error handling
+                    // Silent error handling
                 }
-        }, [selectedRoomId, currentUserId]);
+            } catch {
+                toast.error("Failed to load messages");
+                lastLoadedRoomIdRef.current = null;
+            } finally {
+                setIsLoadingMessages(false);
+            }
+        };
 
-        const handleSendMessage = useCallback(
-                async (content: string, receiverId: string) => {
-                        if (!selectedRoomId || !isConnected) {
-                                toast.error("Not connected to chat");
-                                return;
-                        }
+        loadMessages();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedRoomId, currentUserId]);
 
-                        let actualRoomId = selectedRoomId;
-                        try {
-                                const response = await chatApi.getRoomId(currentUserId, receiverId);
-                                actualRoomId = response.data.roomId;
-                                
-                                if (actualRoomId !== selectedRoomId) {
-                                        setSelectedRoomId(actualRoomId);
-                                }
-                        } catch {
-                                toast.error("Failed to create chat room. Please try again.");
+    const lastUpdatedPartnerRef = useRef<string | null>(null);
+    const lastSelectedRoomIdRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (selectedRoomId !== lastSelectedRoomIdRef.current) {
+            lastSelectedRoomIdRef.current = selectedRoomId;
+            lastUpdatedPartnerRef.current = null;
+        }
+
+        if (selectedRoomId) {
+            const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
+            if (selectedRoom) {
+                const partner = selectedRoom.user1Id === currentUserId ? selectedRoom.user2Id : selectedRoom.user1Id;
+                if (partner !== partnerId && partner !== lastUpdatedPartnerRef.current) {
+                    lastUpdatedPartnerRef.current = partner;
+                    setPartnerId(partner);
+
+                    const cachedInfo = partnerInfoCacheRef.current[partner];
+                    if (cachedInfo?.fetched) {
+                        setPartnerName(cachedInfo.name);
+                    } else {
+                        getPartnerInfo(partner).then((info) => setPartnerName(info.name));
+                    }
+                }
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedRoomId, currentUserId, getPartnerInfo]);
+
+    const handleMarkAsRead = useCallback(async () => {
+        if (!selectedRoomId) return;
+
+        try {
+            await chatApi.markMessagesAsRead(selectedRoomId, currentUserId);
+            useChatStore.getState().resetUnreadCount(selectedRoomId);
+        } catch {
+            // Silent error handling
+        }
+    }, [selectedRoomId, currentUserId]);
+
+    const handleSendMessage = useCallback(
+        async (content: string, receiverId: string) => {
+            if (!selectedRoomId || !isConnected) {
+                toast.error("Not connected to chat");
                 return;
-                        }
+            }
 
-                        const optimisticMessage: Message = {
+            let actualRoomId = selectedRoomId;
+            try {
+                const response = await chatApi.getRoomId(currentUserId, receiverId);
+                actualRoomId = response.data.roomId;
+
+                if (actualRoomId !== selectedRoomId) {
+                    setSelectedRoomId(actualRoomId);
+                }
+            } catch {
+                toast.error("Failed to create chat room. Please try again.");
+                return;
+            }
+
+            const optimisticMessage: Message = {
                 id: `temp-${Date.now()}-${currentUserId}`,
-                                roomId: actualRoomId,
-                                senderId: currentUserId,
-                                receiverId,
-                                content,
-                                timestamp: new Date().toISOString(),
-                                read: false,
-                        };
-                        setMessages((prev) => {
-                                const exists = prev.some(
-                                        (m) =>
-                                                m.content === optimisticMessage.content &&
-                                                m.senderId === optimisticMessage.senderId &&
-                                                m.receiverId === optimisticMessage.receiverId &&
-                                                m.id.startsWith("temp-") &&
-                                                Math.abs(new Date(m.timestamp).getTime() - new Date(optimisticMessage.timestamp).getTime()) < 1000
-                                );
-                                if (exists) {
-                                        return prev;
-                                }
-                                const updated = [...prev, optimisticMessage];
-                                return updated.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-                        });
+                roomId: actualRoomId,
+                senderId: currentUserId,
+                receiverId,
+                content,
+                timestamp: new Date().toISOString(),
+                read: false,
+            };
+            setMessages((prev) => {
+                const exists = prev.some(
+                    (m) =>
+                        m.content === optimisticMessage.content &&
+                        m.senderId === optimisticMessage.senderId &&
+                        m.receiverId === optimisticMessage.receiverId &&
+                        m.id.startsWith("temp-") &&
+                        Math.abs(new Date(m.timestamp).getTime() - new Date(optimisticMessage.timestamp).getTime()) <
+                            1000,
+                );
+                if (exists) {
+                    return prev;
+                }
+                const updated = [...prev, optimisticMessage];
+                return updated.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            });
 
             useChatStore.getState().updateRoomLastMessage(actualRoomId, content, new Date().toISOString());
 
-                        if (actualRoomId !== selectedRoomId) {
-                                setSelectedRoomId(actualRoomId);
-                        }
-
-                        sendMessageToSocket(actualRoomId, content, receiverId);
-                },
-                [selectedRoomId, isConnected, sendMessageToSocket, currentUserId]
-        );
-
-    const handleSelectRoom = useCallback(
-        (roomId: string) => {
-                setSelectedRoomId(roomId);
-            // On mobile, show chat window when room is selected
-            if (window.innerWidth < 1024) {
-                setShowChatWindow(true);
+            if (actualRoomId !== selectedRoomId) {
+                setSelectedRoomId(actualRoomId);
             }
+
+            sendMessageToSocket(actualRoomId, content, receiverId);
         },
-        []
+        [selectedRoomId, isConnected, sendMessageToSocket, currentUserId],
     );
+
+    const handleSelectRoom = useCallback((roomId: string) => {
+        setSelectedRoomId(roomId);
+        // On mobile, show chat window when room is selected
+        if (window.innerWidth < 1024) {
+            setShowChatWindow(true);
+        }
+    }, []);
 
     const handleBack = useCallback(() => {
         setShowChatWindow(false);
-        }, []);
+    }, []);
 
-        if (!currentUserId) {
-                return (
-                        <div className="flex items-center justify-center h-screen">
-                                <p className="text-gray-500">Please log in to use chat</p>
-                        </div>
-                );
-        }
-
+    if (!currentUserId) {
         return (
+            <div className="flex items-center justify-center h-screen">
+                <p className="text-gray-500">Please log in to use chat</p>
+            </div>
+        );
+    }
+
+    return (
         <div className="h-[calc(100vh-200px)] max-h-[800px] border border-gray-200 rounded-lg overflow-hidden bg-white shadow-lg">
             {/* Desktop Layout: 2 Columns */}
             <div className="hidden lg:flex h-full">
                 {/* Sidebar - 30% */}
                 <div className="w-[30%] border-r border-gray-200 flex-shrink-0">
-                                <ChatList
-                                        rooms={rooms}
-                                        currentUserId={currentUserId}
-                                        selectedRoomId={selectedRoomId}
-                                        onSelectRoom={handleSelectRoom}
-                                        onGetPartnerInfo={getPartnerInfo}
-                                />
-                        </div>
+                    <ChatList
+                        rooms={rooms}
+                        currentUserId={currentUserId}
+                        selectedRoomId={selectedRoomId}
+                        onSelectRoom={handleSelectRoom}
+                        onGetPartnerInfo={getPartnerInfo}
+                    />
+                </div>
 
                 {/* Chat Window - 70% */}
-                        <div className="flex-1">
-                                {selectedRoomId && partnerId ? (
-                                        <ChatWindow
-                                                messages={messages}
-                                                currentUserId={currentUserId}
-                                                partnerId={partnerId}
-                                                partnerName={partnerName}
-                                                onSendMessage={handleSendMessage}
-                                                isConnected={isConnected}
-                                                isLoading={isLoadingMessages}
-                                                onMarkAsRead={handleMarkAsRead}
-                                        />
-                                ) : (
+                <div className="flex-1">
+                    {selectedRoomId && partnerId ? (
+                        <ChatWindow
+                            messages={messages}
+                            currentUserId={currentUserId}
+                            partnerId={partnerId}
+                            partnerName={partnerName}
+                            onSendMessage={handleSendMessage}
+                            isConnected={isConnected}
+                            isLoading={isLoadingMessages}
+                            onMarkAsRead={handleMarkAsRead}
+                        />
+                    ) : (
                         <div className="flex items-center justify-center h-full bg-gray-50">
-                                                <div className="text-center">
+                            <div className="text-center">
                                 {/* Empty State Illustration */}
                                 <div className="mb-6">
                                     <svg
@@ -664,10 +668,10 @@ export default function ChatClient({ initialRooms, currentUserId, initialRoomId 
                             </div>
                             <h3 className="text-lg font-semibold text-gray-800 mb-2">Select a conversation</h3>
                             <p className="text-sm text-gray-500">Choose a chat from the list to start messaging</p>
-                                                </div>
-                                        </div>
-                                )}
                         </div>
-                </div>
-        );
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 }

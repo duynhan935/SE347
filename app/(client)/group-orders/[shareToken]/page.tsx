@@ -1,6 +1,7 @@
 "use client";
 
 import { groupOrderApi } from "@/lib/api/groupOrderApi";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { GroupOrder, GroupOrderStatus } from "@/types/groupOrder.type";
 import { Check, Copy, DollarSign, Edit, Lock, Trash2, Users, X } from "lucide-react";
@@ -14,6 +15,8 @@ export default function GroupOrderPage() {
     const shareToken = params?.shareToken as string;
     const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
+
+    const confirmAction = useConfirm();
 
     const [groupOrder, setGroupOrder] = useState<GroupOrder | null>(null);
     const [loading, setLoading] = useState(true);
@@ -143,7 +146,14 @@ export default function GroupOrderPage() {
             router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
             return;
         }
-        if (!confirm("Are you sure you want to cancel this group order?")) {
+        const ok = await confirmAction({
+            title: "Cancel group order?",
+            description: "This will cancel the group order and cannot be undone.",
+            confirmText: "Cancel group order",
+            cancelText: "Keep",
+            variant: "danger",
+        });
+        if (!ok) {
             return;
         }
         setIsProcessing(true);
@@ -173,11 +183,15 @@ export default function GroupOrderPage() {
             return;
         }
 
-        if (
-            !confirm(
-                `Are you sure you want to remove ${userId === user.id ? "yourself" : userName} from this group order?`,
-            )
-        ) {
+        const targetLabel = userId === user.id ? "yourself" : userName;
+        const ok = await confirmAction({
+            title: "Remove participant?",
+            description: `Are you sure you want to remove ${targetLabel} from this group order?`,
+            confirmText: "Remove",
+            cancelText: "Cancel",
+            variant: "danger",
+        });
+        if (!ok) {
             return;
         }
 

@@ -220,7 +220,7 @@ export default function MerchantReportsPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reports Summary</h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">
@@ -229,12 +229,12 @@ export default function MerchantReportsPage() {
                             : "Merchant analytics"}
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <label className="text-sm text-gray-600 dark:text-gray-400">Range</label>
                     <select
                         value={rangePreset}
                         onChange={(e) => setRangePreset(e.target.value as DashboardDateRangePreset)}
-                        className="h-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-gray-100"
+                        className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                     >
                         <option value="7d">Last 7 days</option>
                         <option value="30d">Last 30 days</option>
@@ -246,7 +246,7 @@ export default function MerchantReportsPage() {
                     <button
                         onClick={handleExport}
                         disabled={loading || !dateQuery.startDate || !dateQuery.endDate}
-                        className="flex items-center gap-2 px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                        className="flex items-center justify-center gap-2 rounded-lg bg-brand-orange px-4 py-2 text-white transition-colors hover:bg-brand-orange/90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Download className="h-5 w-5" />
                         Export Report
@@ -277,65 +277,78 @@ export default function MerchantReportsPage() {
             )}
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                {/* Total Revenue */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-start gap-3">
+                        <div className="bg-green-100 dark:bg-green-900/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                            <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
+                            <p
+                                className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mt-1 break-words"
+                                title={formatCurrency(revenueAnalytics?.totalRevenue || 0)}
+                            >
                                 {formatCurrency(revenueAnalytics?.totalRevenue || 0)}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
                                 Avg order: {formatCurrency(Math.round(revenueAnalytics?.averageOrderValue || 0))}
                             </p>
                         </div>
-                        <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-lg">
-                            <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
-                        </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                {/* Total Orders */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-start gap-3">
+                        <div className="bg-blue-100 dark:bg-blue-900/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                            <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
+                            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
                                 {formatNumber(revenueAnalytics?.totalOrders || 0)}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">From selected range</p>
-                        </div>
-                        <div className="bg-blue-100 dark:bg-blue-900/20 p-3 rounded-lg">
-                            <ShoppingBag className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Number of Restaurants</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{restaurantsCount}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">With orders in range</p>
-                        </div>
-                        <div className="bg-purple-100 dark:bg-purple-900/20 p-3 rounded-lg">
-                            <Store className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
+                                From selected range
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Ratings</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                {/* Number of Restaurants */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-start gap-3">
+                        <div className="bg-purple-100 dark:bg-purple-900/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                            <Store className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Number of Restaurants</p>
+                            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                                {restaurantsCount}
+                            </p>
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
+                                With orders in range
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Ratings */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-start gap-3">
+                        <div className="bg-orange-100 dark:bg-orange-900/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                            <Star className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600 dark:text-orange-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Ratings</p>
+                            <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
                                 {(ratingStats?.averageRating || 0).toFixed(1)}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
                                 {formatNumber(ratingStats?.totalRatings || 0)} ratings
                             </p>
-                        </div>
-                        <div className="bg-orange-100 dark:bg-orange-900/20 p-3 rounded-lg">
-                            <Star className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                         </div>
                     </div>
                 </div>
@@ -418,7 +431,17 @@ export default function MerchantReportsPage() {
                         <BarChart data={revenueAnalytics?.revenueByRestaurant || []} layout="vertical">
                             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                             <XAxis type="number" stroke="#9CA3AF" />
-                            <YAxis dataKey="restaurantName" type="category" stroke="#9CA3AF" width={120} />
+                            <YAxis
+                                dataKey="restaurantName"
+                                type="category"
+                                stroke="#9CA3AF"
+                                width={96}
+                                tick={{ fontSize: 12 }}
+                                tickFormatter={(v: string) => {
+                                    const s = String(v ?? "");
+                                    return s.length > 12 ? `${s.slice(0, 12)}…` : s;
+                                }}
+                            />
                             <Tooltip
                                 formatter={(value: unknown, name: string) => {
                                     if (name === "totalRevenue") return [formatCurrency(Number(value || 0)), "Revenue"];

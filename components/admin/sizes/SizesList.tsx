@@ -2,6 +2,7 @@
 
 import { sizeApi } from "@/lib/api/sizeApi";
 import type { Size, SizeData } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { Edit, Loader2, Plus, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -12,6 +13,7 @@ export default function SizesList() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentSize, setCurrentSize] = useState<Size | null>(null);
+    const confirmAction = useConfirm();
 
     useEffect(() => {
         fetchSizes();
@@ -59,9 +61,14 @@ export default function SizesList() {
     };
 
     const handleDelete = async (sizeId: string) => {
-        if (!window.confirm("Are you sure you want to delete this size?")) {
-            return;
-        }
+        const ok = await confirmAction({
+            title: "Delete size?",
+            description: "This action cannot be undone.",
+            confirmText: "Delete",
+            cancelText: "Cancel",
+            variant: "danger",
+        });
+        if (!ok) return;
         try {
             await sizeApi.deleteSize(sizeId);
             toast.success("Size deleted successfully!");

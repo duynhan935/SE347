@@ -17,14 +17,14 @@ export const merchantApi = {
                     status: u.enabled ? "APPROVED" : "PENDING",
                     totalRestaurants: 0,
                     totalRevenue: 0,
-                })
+                }),
             );
     },
 
     // Get merchant by ID
     getMerchantById: async (merchantId: string) => {
         const user = await authApi.getUserById(merchantId);
-        if (user.role !== "MERCHANT") return undefined;
+        if (!user || user.role !== "MERCHANT") return undefined;
         return {
             ...user,
             role: "MERCHANT",

@@ -528,9 +528,9 @@ export default function MerchantOrdersPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Order Management</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Order Management</h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and track your restaurant orders</p>
                 </div>
                 <button
@@ -540,7 +540,7 @@ export default function MerchantOrdersPage() {
                         });
                     }}
                     disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg transition-colors disabled:opacity-50"
+                    className="h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-brand-orange px-4 text-white transition-colors hover:bg-brand-orange/90 disabled:opacity-50 sm:w-auto w-full"
                 >
                     <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
                     Refresh
@@ -548,7 +548,7 @@ export default function MerchantOrdersPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div
                     key="total-orders"
                     className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
@@ -587,21 +587,25 @@ export default function MerchantOrdersPage() {
 
             {/* Filters */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-4 flex-wrap">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filter by:</span>
-                    {(["ALL", ...Object.values(OrderStatus)] as const).map((status) => (
-                        <button
-                            key={status}
-                            onClick={() => setFilterStatus(status)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                filterStatus === status
-                                    ? "bg-brand-orange text-white"
-                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                            }`}
-                        >
-                            {status === "ALL" ? "All" : getStatusLabel(status)}
-                        </button>
-                    ))}
+                <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">Filter by:</span>
+                    <div className="flex-1 overflow-x-auto">
+                        <div className="flex items-center gap-2 min-w-max pb-1">
+                            {(["ALL", ...Object.values(OrderStatus)] as const).map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setFilterStatus(status)}
+                                    className={`h-11 px-4 rounded-lg text-sm font-medium transition-colors ${
+                                        filterStatus === status
+                                            ? "bg-brand-orange text-white"
+                                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                                    }`}
+                                >
+                                    {status === "ALL" ? "All" : getStatusLabel(status)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -618,79 +622,54 @@ export default function MerchantOrdersPage() {
                         <p className="text-gray-600 dark:text-gray-400 mt-2">No orders yet</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Order ID
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Customer
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Items
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Total
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Payment
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Time
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                {filteredOrders.map((order) => {
-                                    const normalizedStatus = normalizeStatus(order.status);
-                                    const nextStatus = getNextStatus(order.status);
-                                    return (
-                                        <tr key={order.orderId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    <>
+                        {/* Mobile: Card view (preferred) */}
+                        <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                            {filteredOrders.map((order) => {
+                                const normalizedStatus = normalizeStatus(order.status);
+                                const nextStatus = getNextStatus(order.status);
+
+                                return (
+                                    <div key={order.orderId} className="p-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                    Order
+                                                </p>
+                                                <p className="text-sm font-semibold text-gray-900 dark:text-white break-all">
                                                     {order.orderId}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm text-gray-900 dark:text-white">
+                                                </p>
+                                            </div>
+                                            <span
+                                                className={`shrink-0 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                                                    normalizedStatus,
+                                                )}`}
+                                            >
+                                                {getStatusLabel(normalizedStatus)}
+                                            </span>
+                                        </div>
+
+                                        <div className="mt-3 grid grid-cols-1 gap-2 text-sm">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="text-gray-500 dark:text-gray-400">Customer</span>
+                                                <span className="font-medium text-gray-900 dark:text-white break-all">
                                                     {order.userId}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm text-gray-900 dark:text-white">
-                                                    {order.items.length} item(s)
-                                                </div>
-                                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                    {order.items
-                                                        .slice(0, 2)
-                                                        .map((item) => item.productName)
-                                                        .join(", ")}
-                                                    {order.items.length > 2 && "..."}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                    ${Number(order.finalAmount).toFixed(2)}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span
-                                                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                                                        normalizedStatus,
-                                                    )}`}
-                                                >
-                                                    {getStatusLabel(normalizedStatus)}
                                                 </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
+                                            </div>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="text-gray-500 dark:text-gray-400">Items</span>
+                                                <span className="font-medium text-gray-900 dark:text-white">
+                                                    {order.items.length} item(s)
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="text-gray-500 dark:text-gray-400">Total</span>
+                                                <span className="font-semibold text-gray-900 dark:text-white">
+                                                    ${Number(order.finalAmount).toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="text-gray-500 dark:text-gray-400">Payment</span>
                                                 <span
                                                     className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                                         order.paymentStatus === "paid" ||
@@ -708,53 +687,198 @@ export default function MerchantOrdersPage() {
                                                           ? "Failed"
                                                           : "Pending"}
                                                 </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                {new Date(order.createdAt).toLocaleString("en-US")}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                {normalizeStatus(order.status) === OrderStatus.PENDING ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => handleAcceptOrder(order)}
-                                                            className="flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-xs font-medium"
-                                                        >
-                                                            <CheckCircle className="h-4 w-4" />
-                                                            Accept
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                const orderId =
-                                                                    (
-                                                                        order as Order & {
-                                                                            orderId?: string;
-                                                                        }
-                                                                    ).orderId || order.orderId;
-                                                                setShowRejectDialog(orderId);
-                                                            }}
-                                                            className="flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-xs font-medium"
-                                                        >
-                                                            <XCircle className="h-4 w-4" />
-                                                            Reject
-                                                        </button>
-                                                    </div>
-                                                ) : nextStatus ? (
+                                            </div>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="text-gray-500 dark:text-gray-400">Time</span>
+                                                <span className="font-medium text-gray-900 dark:text-white">
+                                                    {new Date(order.createdAt).toLocaleString("en-US")}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 flex items-center justify-end gap-2">
+                                            {normalizeStatus(order.status) === OrderStatus.PENDING ? (
+                                                <>
                                                     <button
-                                                        onClick={() => handleUpdateStatus(order.orderId, nextStatus)}
-                                                        className="text-brand-orange hover:text-brand-orange/80 font-medium"
+                                                        onClick={() => handleAcceptOrder(order)}
+                                                        className="h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-green-500 px-4 text-sm font-semibold text-white hover:bg-green-600"
                                                     >
-                                                        Update to {getStatusLabel(nextStatus)}
+                                                        <CheckCircle className="h-5 w-5" />
+                                                        Accept
                                                     </button>
-                                                ) : (
-                                                    <span className="text-gray-400">—</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            const orderId =
+                                                                (
+                                                                    order as Order & {
+                                                                        orderId?: string;
+                                                                    }
+                                                                ).orderId || order.orderId;
+                                                            setShowRejectDialog(orderId);
+                                                        }}
+                                                        className="h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-red-500 px-4 text-sm font-semibold text-white hover:bg-red-600"
+                                                    >
+                                                        <XCircle className="h-5 w-5" />
+                                                        Reject
+                                                    </button>
+                                                </>
+                                            ) : nextStatus ? (
+                                                <button
+                                                    onClick={() => handleUpdateStatus(order.orderId, nextStatus)}
+                                                    className="h-11 inline-flex items-center justify-center rounded-lg border border-brand-orange/30 bg-brand-orange/10 px-4 text-sm font-semibold text-brand-orange hover:bg-brand-orange/15"
+                                                >
+                                                    Update to {getStatusLabel(nextStatus)}
+                                                </button>
+                                            ) : (
+                                                <span className="text-gray-400">—</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop: table with controlled horizontal scroll */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Order ID
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Customer
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Items
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Total
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Status
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Payment
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Time
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    {filteredOrders.map((order) => {
+                                        const normalizedStatus = normalizeStatus(order.status);
+                                        const nextStatus = getNextStatus(order.status);
+                                        return (
+                                            <tr key={order.orderId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        {order.orderId}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm text-gray-900 dark:text-white">
+                                                        {order.userId}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm text-gray-900 dark:text-white">
+                                                        {order.items.length} item(s)
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        {order.items
+                                                            .slice(0, 2)
+                                                            .map((item) => item.productName)
+                                                            .join(", ")}
+                                                        {order.items.length > 2 && "..."}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        ${Number(order.finalAmount).toFixed(2)}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span
+                                                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                                                            normalizedStatus,
+                                                        )}`}
+                                                    >
+                                                        {getStatusLabel(normalizedStatus)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span
+                                                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                            order.paymentStatus === "paid" ||
+                                                            order.paymentStatus === "completed"
+                                                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                                                : order.paymentStatus === "failed"
+                                                                  ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                                        }`}
+                                                    >
+                                                        {order.paymentStatus === "paid" ||
+                                                        order.paymentStatus === "completed"
+                                                            ? "Paid"
+                                                            : order.paymentStatus === "failed"
+                                                              ? "Failed"
+                                                              : "Pending"}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                    {new Date(order.createdAt).toLocaleString("en-US")}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                    {normalizeStatus(order.status) === OrderStatus.PENDING ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => handleAcceptOrder(order)}
+                                                                className="flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-xs font-medium"
+                                                            >
+                                                                <CheckCircle className="h-4 w-4" />
+                                                                Accept
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const orderId =
+                                                                        (
+                                                                            order as Order & {
+                                                                                orderId?: string;
+                                                                            }
+                                                                        ).orderId || order.orderId;
+                                                                    setShowRejectDialog(orderId);
+                                                                }}
+                                                                className="flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-xs font-medium"
+                                                            >
+                                                                <XCircle className="h-4 w-4" />
+                                                                Reject
+                                                            </button>
+                                                        </div>
+                                                    ) : nextStatus ? (
+                                                        <button
+                                                            onClick={() =>
+                                                                handleUpdateStatus(order.orderId, nextStatus)
+                                                            }
+                                                            className="text-brand-orange hover:text-brand-orange/80 font-medium"
+                                                        >
+                                                            Update to {getStatusLabel(nextStatus)}
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-gray-400">—</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
 

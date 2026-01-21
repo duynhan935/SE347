@@ -13,9 +13,15 @@ import toast from "react-hot-toast";
 
 type CompactFoodCardProps = {
     product: Product;
+    restaurant?: {
+        id: string;
+        resName?: string;
+        slug?: string;
+        duration?: number;
+    };
 };
 
-export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
+export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }: CompactFoodCardProps) => {
     const router = useRouter();
     const addItem = useCartStore((state) => state.addItem);
     const setUserId = useCartStore((state) => state.setUserId);
@@ -42,6 +48,10 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
         setImageError(false);
     }, [cardImageUrl]);
 
+    const restaurant = useMemo(() => {
+        return restaurantOverride || product.restaurant;
+    }, [restaurantOverride, product.restaurant]);
+
     // Check if favorite (high rating or many reviews)
     const isFavorite = useMemo(() => {
         return product.rating >= 4.5 || product.totalReview > 50;
@@ -49,7 +59,7 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
 
     // Delivery time
     const deliveryTime = useMemo(() => {
-        const duration = product.restaurant?.duration;
+        const duration = restaurant?.duration;
         if (!duration || typeof duration !== "number") {
             return "20-30";
         }
@@ -57,7 +67,7 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
             return "20-30";
         }
         return Math.round(duration).toString();
-    }, [product.restaurant?.duration]);
+    }, [restaurant?.duration]);
 
     // Format price to USD
     const formatPrice = useMemo(() => {
@@ -103,7 +113,7 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                 return;
             }
 
-            if (!product.restaurant?.id) {
+            if (!restaurant?.id) {
                 toast.error("Restaurant information not found");
                 return;
             }
@@ -121,8 +131,8 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                         name: product.productName,
                         price: defaultSize.price,
                         image: cardImageUrl,
-                        restaurantId: product.restaurant.id,
-                        restaurantName: product.restaurant.resName || "Unknown Restaurant",
+                        restaurantId: restaurant.id,
+                        restaurantName: restaurant.resName || "Unknown Restaurant",
                         categoryId: product.categoryId,
                         categoryName: product.categoryName,
                         sizeId: defaultSize.id,
@@ -140,7 +150,7 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                 }, 300);
             }
         },
-        [isAdding, isMounted, user, product, defaultSize, cardImageUrl, addItem, router]
+        [isAdding, isMounted, user, product, restaurant, defaultSize, cardImageUrl, addItem, router]
     );
 
     return (
@@ -148,8 +158,8 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
             {/* Image Section */}
             <Link
                 href={
-                    product.restaurant?.slug
-                        ? `/restaurants/${product.restaurant.slug}?productId=${product.id}`
+                    restaurant?.slug
+                        ? `/restaurants/${restaurant.slug}?productId=${product.id}`
                         : `/food/${product.slug}`
                 }
                 className="block relative w-full aspect-square overflow-hidden"
@@ -216,8 +226,8 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                 {/* Product Name - Truncate 1 line */}
                 <Link
                     href={
-                        product.restaurant?.slug
-                            ? `/restaurants/${product.restaurant.slug}?productId=${product.id}`
+                        restaurant?.slug
+                            ? `/restaurants/${restaurant.slug}?productId=${product.id}`
                             : `/food/${product.slug}`
                     }
                 >
@@ -234,7 +244,7 @@ export const CompactFoodCard = memo(({ product }: CompactFoodCardProps) => {
                 {/* Restaurant Name with Verified Icon */}
                 <div className="flex items-center gap-1.5">
                     <p className="text-xs text-gray-500 line-clamp-1 flex-1">
-                        {product.restaurant?.resName || "Restaurant"}
+                        {restaurant?.resName || "Restaurant"}
                     </p>
                     <CheckCircle2 className="w-3 h-3 text-green-500 flex-shrink-0" />
                 </div>

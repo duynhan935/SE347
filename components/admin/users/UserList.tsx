@@ -2,6 +2,7 @@
 
 import { authApi } from "@/lib/api/authApi";
 import { User } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { Edit, Loader2, Search, Trash } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -11,6 +12,7 @@ export default function UserList() {
     const [users, setUsers] = useState<User[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
+    const confirmAction = useConfirm();
 
     // 3. Modal state management
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,7 +45,7 @@ export default function UserList() {
         return users.filter(
             (user) =>
                 user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchTerm.toLowerCase())
+                user.email.toLowerCase().includes(searchTerm.toLowerCase()),
         );
     }, [users, searchTerm]);
 
@@ -95,9 +97,14 @@ export default function UserList() {
 
     // Delete logic (unchanged)
     const handleDelete = async (userId: string) => {
-        if (!window.confirm("Are you sure you want to delete this user?")) {
-            return;
-        }
+        const ok = await confirmAction({
+            title: "Delete user?",
+            description: "This action cannot be undone.",
+            confirmText: "Delete",
+            cancelText: "Cancel",
+            variant: "danger",
+        });
+        if (!ok) return;
         try {
             await authApi.deleteUser(userId);
             setUsers((prev) => prev.filter((user) => user.id !== userId));
@@ -187,8 +194,8 @@ export default function UserList() {
                                                 user.role === "ADMIN"
                                                     ? "bg-red-100 text-red-800"
                                                     : user.role === "MERCHANT"
-                                                    ? "bg-blue-100 text-blue-800"
-                                                    : "bg-gray-100 text-gray-800"
+                                                      ? "bg-blue-100 text-blue-800"
+                                                      : "bg-gray-100 text-gray-800"
                                             }`}
                                         >
                                             {user.role}
@@ -201,7 +208,7 @@ export default function UserList() {
                                         <button
                                             title="Edit User"
                                             onClick={() => handleOpenModal(user)}
-                                            className="text-indigo-600 hover:text-indigo-900 mr-4 cursor-pointer    "
+                                            className="text-indigo-600 hover:text-indigo-900 mr-4 cursor-pointer"
                                         >
                                             <Edit className="w-5 h-5 inline-block" />
                                         </button>

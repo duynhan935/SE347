@@ -12,7 +12,8 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
 import { Bell } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 export function AdminNotificationBell() {
     const { user, isAuthenticated } = useAuthStore();
@@ -22,52 +23,65 @@ export function AdminNotificationBell() {
     const initializedRef = useRef(false);
 
     // Check for new merchant requests
-    const checkMerchantRequests = async () => {
-        if (!isAuthenticated || user?.role !== "ADMIN") return;
+    const checkMerchantRequests = useCallback(
+        async (silent = false) => {
+            if (!isAuthenticated || user?.role !== "ADMIN") return;
 
-        try {
-            const response = await authApi.getAllUsers();
-            const users = response?.content || [];
-            const pendingMerchants = users.filter((u) => u.role === "MERCHANT" && u.enabled === false);
+            try {
+                const response = await authApi.getAllUsers();
+                const users = response?.content || [];
+                const pendingMerchants = users.filter((u) => u.role === "MERCHANT" && u.enabled === false);
 
-            // Create notifications for new merchant requests
-            const existingNotifications = notifications.filter((n) => n.type === "ADMIN_MERCHANT_REQUEST");
-            const existingMerchantIds = new Set(existingNotifications.map((n) => n.merchantId));
+                // Create notifications for new merchant requests
+                const existingNotifications = useNotificationStore
+                    .getState()
+                    .notifications.filter((n) => n.type === "ADMIN_MERCHANT_REQUEST");
+                const existingMerchantIds = new Set(existingNotifications.map((n) => n.merchantId));
 
-            pendingMerchants.forEach((merchant) => {
-                if (!existingMerchantIds.has(merchant.id)) {
-                    useNotificationStore.getState().addNotification({
-                        type: "ADMIN_MERCHANT_REQUEST",
-                        title: "New Merchant Registration Request",
-                        message: `${merchant.username} (${merchant.email}) has registered to become a merchant`,
-                        merchantId: merchant.id,
-                        merchantName: merchant.username,
-                    });
-                }
-            });
-        } catch (error) {
-            console.error("Failed to check merchant requests:", error);
-        }
-    };
+                pendingMerchants.forEach((merchant) => {
+                    if (!existingMerchantIds.has(merchant.id)) {
+                        useNotificationStore.getState().addNotification({
+                            type: "ADMIN_MERCHANT_REQUEST",
+                            title: "New Merchant Registration Request",
+                            message: `${merchant.username} (${merchant.email}) has registered to become a merchant`,
+                            merchantId: merchant.id,
+                            merchantName: merchant.username,
+                        });
+
+                        if (!silent) {
+                            toast.success(`New merchant request: ${merchant.username}`, {
+                                duration: 4000,
+                            });
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Failed to check merchant requests:", error);
+            }
+        },
+        [isAuthenticated, user?.role],
+    );
 
     useEffect(() => {
         if (!isAuthenticated || user?.role !== "ADMIN") return;
 
         // Initial check
         if (!initializedRef.current) {
-            checkMerchantRequests();
+            checkMerchantRequests(true);
             initializedRef.current = true;
         }
 
         // Poll every 30 seconds
-        checkIntervalRef.current = setInterval(checkMerchantRequests, 30000);
+        checkIntervalRef.current = setInterval(() => {
+            void checkMerchantRequests(false);
+        }, 30000);
 
         return () => {
             if (checkIntervalRef.current) {
                 clearInterval(checkIntervalRef.current);
             }
         };
-    }, [isAuthenticated, user?.role]);
+    }, [isAuthenticated, user?.role, checkMerchantRequests]);
 
     if (!isAuthenticated || user?.role !== "ADMIN") return null;
 
@@ -98,9 +112,7 @@ export function AdminNotificationBell() {
                 </div>
 
                 {adminNotifications.length === 0 ? (
-                    <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                        No notifications
-                    </div>
+                    <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">No notifications</div>
                 ) : (
                     <>
                         {adminNotifications.map((notif) => (
@@ -160,4 +172,3 @@ export function AdminNotificationBell() {
         </DropdownMenu>
     );
 }
-

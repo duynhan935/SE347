@@ -161,7 +161,7 @@ export default function SearchPage() {
                         <div className="mb-4">
                             {query ? (
                                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                                    Search results for "{query}"
+                                    Search results for &quot;{query}&quot;
                                 </h1>
                             ) : (
                                 <h1 className="text-2xl font-bold text-gray-900 mb-2">All Food Items</h1>

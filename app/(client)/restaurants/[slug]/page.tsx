@@ -36,6 +36,8 @@ export default async function RestaurantDetailPage({ params }: { params: Promise
                                 <RestaurantMenuWrapper
                                     restaurantId={restaurant.id}
                                     restaurantName={restaurant.resName}
+                                    restaurantSlug={restaurant.slug}
+                                    restaurantDuration={restaurant.duration}
                                     products={restaurant.products}
                                     categories={restaurant.cate}
                                 />

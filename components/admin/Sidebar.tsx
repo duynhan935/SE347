@@ -111,7 +111,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                     </Link>
                     <button
                         onClick={() => setSidebarOpen(false)}
-                        className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300"
+                        className="lg:hidden h-11 w-11 inline-flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                         aria-label="Close sidebar"
                         title="Close sidebar"
                     >
@@ -152,6 +152,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                                                             <li key={child.href}>
                                                                 <Link
                                                                     href={child.href}
+                                                                    onClick={() => setSidebarOpen(false)}
                                                                     className={`block rounded-md px-4 py-2 text-sm ${
                                                                         pathname === child.href
                                                                             ? "bg-brand-orange text-white"
@@ -174,6 +175,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                                         <li key={item.label}>
                                             <Link
                                                 href={item.href!}
+                                                onClick={() => setSidebarOpen(false)}
                                                 className={`group relative flex items-center gap-2.5 rounded-lg px-4 py-2 font-medium duration-300 ease-in-out ${
                                                     isActive
                                                         ? "bg-brand-orange text-white"

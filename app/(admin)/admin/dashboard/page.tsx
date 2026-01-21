@@ -260,7 +260,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Stats Cards - TailAdmin Style */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3 2xl:gap-7.5">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
                 {cards.map((stat, index) => (
                     <StatsCard key={index} {...stat} />
                 ))}
@@ -528,57 +528,6 @@ export default function AdminDashboard() {
                                 })}
                             </div>
                         )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Quick Stats</h3>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                    <div className="flex items-center gap-4 rounded-lg border border-stroke p-4 dark:border-strokedark">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-meta-3/10">
-                            <Store className="text-meta-3" size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm text-bodydark">Pending merchants</p>
-                            <p className="text-xl font-bold text-black dark:text-white">
-                                {stats?.pendingMerchants ?? 0}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-4 rounded-lg border border-stroke p-4 dark:border-strokedark">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                            <Users className="text-primary" size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm text-bodydark">Active merchants</p>
-                            <p className="text-xl font-bold text-black dark:text-white">
-                                {stats?.activeMerchants ?? 0}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-4 rounded-lg border border-stroke p-4 dark:border-strokedark">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning/10">
-                            <CheckCircle2 className="text-warning" size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm text-bodydark">Completion rate</p>
-                            <p className="text-xl font-bold text-black dark:text-white">
-                                {stats ? `${safeToFixed(stats.completionRate)}%` : "0%"}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-4 rounded-lg border border-stroke p-4 dark:border-strokedark">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-meta-6/10">
-                            <BarChart3 className="text-meta-6" size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm text-bodydark">AOV</p>
-                            <p className="text-xl font-bold text-black dark:text-white">
-                                {formatCurrency(stats?.averageOrderValue ?? 0)}
-                            </p>
-                        </div>
                     </div>
                 </div>
             </div>

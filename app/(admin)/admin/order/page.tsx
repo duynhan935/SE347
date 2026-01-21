@@ -15,8 +15,8 @@ export default async function AdminOrdersPage() {
     const orders = await getOrders();
 
     return (
-        <div className="p-6">
-            <h1 className="text-3xl font-bold mb-6">Order Management</h1>
+        <div className="space-y-4">
+            <h1 className="text-2xl md:text-3xl font-bold">Order Management</h1>
             <Suspense fallback={<Loader2 className="animate-spin" />}>
                 <OrderList initialOrders={orders} />
             </Suspense>

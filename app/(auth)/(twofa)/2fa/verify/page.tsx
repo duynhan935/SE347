@@ -1,16 +1,17 @@
 // File: app/(twofa)/2fa/verify/page.tsx
 "use client";
 
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
+import toast from "react-hot-toast";
 
 export default function Verify2FAPage() {
     const [verificationCode, setVerificationCode] = useState("");
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         // Send this code to server for verification
         // If correct, server will grant login session and redirect to dashboard
-        alert(`Submitting code: ${verificationCode}. If correct, you will be logged in.`);
+        toast("2FA verification is not wired to backend yet.");
     };
 
     return (

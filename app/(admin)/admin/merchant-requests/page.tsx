@@ -145,9 +145,11 @@ export default function MerchantRequestsPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Manage Merchant Requests</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                        Manage Merchant Requests
+                    </h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">
                         View and approve merchant registration requests from users
                     </p>
@@ -155,7 +157,7 @@ export default function MerchantRequestsPage() {
                 <button
                     onClick={fetchMerchantRequests}
                     disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-brand-yellow text-white rounded-lg hover:bg-brand-yellow/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-brand-yellow px-4 text-white transition-colors hover:bg-brand-yellow/90 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                 >
                     <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
                     <span>Refresh</span>
@@ -211,7 +213,7 @@ export default function MerchantRequestsPage() {
                                 key={request.id}
                                 className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                             >
-                                <div className="flex items-start justify-between">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                     <div className="flex items-start gap-4 flex-1">
                                         {/* Avatar */}
                                         <div className="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-white font-semibold text-lg">
@@ -258,11 +260,11 @@ export default function MerchantRequestsPage() {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex items-center gap-2 ml-4">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:ml-4">
                                         <button
                                             onClick={() => handleApprove(request)}
                                             disabled={processingId === request.id}
-                                            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <CheckCircle size={18} />
                                             <span>Approve</span>
@@ -270,7 +272,7 @@ export default function MerchantRequestsPage() {
                                         <button
                                             onClick={() => openReject(request)}
                                             disabled={processingId === request.id}
-                                            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <XCircle size={18} />
                                             <span>Reject</span>

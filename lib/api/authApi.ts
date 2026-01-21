@@ -1,6 +1,9 @@
 import { Address, AddressRequest, PageableResponse, User, UserUpdateAfterLogin } from "@/types";
 import api from "../axios";
 
+const looksLikeUuid = (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
 interface LoginResponse {
     accessToken: string;
 }
@@ -96,6 +99,10 @@ export const authApi = {
         return response.data;
     },
     getUserById: async (id: string) => {
+        // Prevent spamming the backend with invalid IDs (e.g. merchant_123, empty, etc.)
+        if (!id || !looksLikeUuid(id)) {
+            return null;
+        }
         const response = await api.get<User>(`/users/admin/${id}`);
         return response.data;
     },

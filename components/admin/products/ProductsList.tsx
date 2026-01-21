@@ -1,6 +1,7 @@
 "use client";
 
 import Pagination from "@/components/client/Pagination";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { categoryApi } from "@/lib/api/categoryApi";
 import { productApi } from "@/lib/api/productApi";
 import { restaurantApi } from "@/lib/api/restaurantApi";
@@ -22,6 +23,7 @@ export default function ProductsList() {
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
+    const confirmAction = useConfirm();
 
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -118,9 +120,14 @@ export default function ProductsList() {
     };
 
     const handleDelete = async (productId: string) => {
-        if (!window.confirm("Are you sure you want to delete this product?")) {
-            return;
-        }
+        const ok = await confirmAction({
+            title: "Delete product?",
+            description: "This action cannot be undone.",
+            confirmText: "Delete",
+            cancelText: "Cancel",
+            variant: "danger",
+        });
+        if (!ok) return;
         try {
             await productApi.deleteProduct(productId);
             toast.success("Product deleted successfully!");
@@ -133,9 +140,9 @@ export default function ProductsList() {
     };
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-                <div className="relative w-full max-w-sm">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                <div className="relative w-full sm:max-w-sm">
                     <input
                         type="text"
                         placeholder="Search by name or category..."
@@ -147,7 +154,7 @@ export default function ProductsList() {
                 </div>
                 <button
                     onClick={() => handleOpenModal(null)}
-                    className="flex items-center gap-2 bg-brand-purple text-white px-4 py-2 rounded-lg font-semibold hover:bg-brand-purple/90 transition-colors"
+                    className="h-11 inline-flex items-center justify-center gap-2 bg-brand-purple text-white px-4 rounded-lg font-semibold hover:bg-brand-purple/90 transition-colors w-full sm:w-auto"
                 >
                     <Plus className="w-5 h-5" />
                     Add Product
@@ -163,7 +170,92 @@ export default function ProductsList() {
 
             {!loading && (
                 <>
-                    <div className="overflow-x-auto">
+                    {/* Mobile: Card view (preferred) */}
+                    <div className="md:hidden space-y-3">
+                        {paginatedProducts.length === 0 ? (
+                            <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-600">
+                                No products found.
+                            </div>
+                        ) : (
+                            paginatedProducts.map((product) => (
+                                <div key={product.id} className="rounded-lg border border-gray-200 p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-16 h-16 relative rounded-lg overflow-hidden shrink-0">
+                                            {product.imageURL &&
+                                            typeof product.imageURL === "string" &&
+                                            product.imageURL.trim() !== "" ? (
+                                                <Image
+                                                    src={product.imageURL}
+                                                    alt={product.productName}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                                    <span className="text-gray-400 text-xs">No image</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-semibold text-gray-900 truncate">
+                                                {product.productName}
+                                            </p>
+                                            <p className="mt-1 text-xs text-gray-500 truncate">
+                                                {product.categoryName}
+                                            </p>
+                                            <p className="mt-1 text-xs text-gray-500 truncate">
+                                                {product.restaurant?.resName || "N/A"}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 flex items-center justify-between gap-3">
+                                        <button
+                                            onClick={() => handleToggleStatus(product)}
+                                            className={`h-11 px-4 text-sm font-semibold rounded-lg inline-flex items-center justify-center gap-2 ${
+                                                product.available
+                                                    ? "bg-green-100 text-green-800 hover:bg-green-200"
+                                                    : "bg-red-100 text-red-800 hover:bg-red-200"
+                                            } transition-colors`}
+                                        >
+                                            {product.available ? (
+                                                <>
+                                                    <CheckCircle className="w-4 h-4" />
+                                                    Available
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <XCircle className="w-4 h-4" />
+                                                    Unavailable
+                                                </>
+                                            )}
+                                        </button>
+
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleOpenModal(product)}
+                                                className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50"
+                                                title="Edit"
+                                            >
+                                                <Edit className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(product.id)}
+                                                className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50"
+                                                title="Delete"
+                                            >
+                                                <Trash className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Desktop/tablet: table with controlled horizontal scroll */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>

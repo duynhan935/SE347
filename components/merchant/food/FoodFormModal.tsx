@@ -16,7 +16,7 @@ interface FoodFormModalProps {
 
 export default function FoodFormModal({ food, categories, sizes, restaurant, onSave, onClose }: FoodFormModalProps) {
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px] overflow-y-auto">
             <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="sticky top-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-6 py-4 flex justify-between items-center">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
