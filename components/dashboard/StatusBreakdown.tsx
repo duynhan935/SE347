@@ -8,7 +8,9 @@ export type StatusBreakdownRow = { status: string; count: number; totalAmount: n
 type BucketKey = "pending" | "completed" | "cancelled";
 
 function bucketForStatus(raw: string): BucketKey {
-    const s = String(raw ?? "").trim().toLowerCase();
+    const s = String(raw ?? "")
+        .trim()
+        .toLowerCase();
 
     if (s === "cancelled" || s === "canceled") return "cancelled";
     if (s === "completed" || s === "delivered") return "completed";
@@ -38,13 +40,7 @@ const COLORS: Record<BucketKey, string> = {
     cancelled: "#f05e36",
 };
 
-export default function StatusBreakdown({
-    rows,
-    height = 320,
-}: {
-    rows: StatusBreakdownRow[];
-    height?: number;
-}) {
+export default function StatusBreakdown({ rows, height = 320 }: { rows: StatusBreakdownRow[]; height?: number }) {
     const data = buildFiltered(Array.isArray(rows) ? rows : []);
 
     return (
@@ -95,10 +91,7 @@ export default function StatusBreakdown({
             {data.length > 0 ? (
                 <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
                     {data.map((row) => (
-                        <div
-                            key={row.status}
-                            className="rounded-lg border border-stroke p-3 dark:border-strokedark"
-                        >
+                        <div key={row.status} className="rounded-lg border border-stroke p-3 dark:border-strokedark">
                             <div className="text-sm font-semibold text-black dark:text-white">{row.label}</div>
                             <div className="mt-1 flex items-center justify-between text-sm">
                                 <span className="text-bodydark">Orders</span>

@@ -451,12 +451,8 @@ export default function MerchantDashboard() {
                     <div className="rounded-lg border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                             <div>
-                                <p className="text-sm font-semibold text-black dark:text-white">
-                                    Revenue trend range
-                                </p>
-                                <p className="text-xs text-bodydark mt-0.5">
-                                    Controls the revenue chart only.
-                                </p>
+                                <p className="text-sm font-semibold text-black dark:text-white">Revenue trend range</p>
+                                <p className="text-xs text-bodydark mt-0.5">Controls the revenue chart only.</p>
                             </div>
 
                             <SectionDateFilter

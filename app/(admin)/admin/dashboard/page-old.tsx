@@ -541,8 +541,7 @@ export default function AdminDashboard() {
                                         Order {o.orderId} • {o.status}
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {formatDateTime(o.createdAt)} •{" "}
-                                        {formatCurrency(o.finalAmount || 0)}
+                                        {formatDateTime(o.createdAt)} • {formatCurrency(o.finalAmount || 0)}
                                     </p>
                                 </div>
                             </div>

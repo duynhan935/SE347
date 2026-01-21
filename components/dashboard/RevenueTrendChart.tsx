@@ -1,14 +1,6 @@
 "use client";
 
-import {
-    Area,
-    AreaChart,
-    CartesianGrid,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from "recharts";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { MerchantRevenueTrendPoint } from "@/types/dashboard.type";
 import { formatCurrency, formatNumber, toNumber } from "@/lib/utils/dashboardFormat";
 
@@ -59,7 +51,10 @@ export default function RevenueTrendChart({
                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                             <XAxis dataKey="date" tick={{ fill: "#6b7280", fontSize: 12 }} />
                             <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} tickFormatter={(v) => formatNumber(v)} />
-                            <Tooltip formatter={(v) => formatCurrency(v)} labelFormatter={(label) => `Date: ${label}`} />
+                            <Tooltip
+                                formatter={(v) => formatCurrency(v)}
+                                labelFormatter={(label) => `Date: ${label}`}
+                            />
                             <Area
                                 type="monotone"
                                 dataKey="revenue"

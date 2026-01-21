@@ -9,12 +9,14 @@ export default function CustomToaster() {
             position="top-right"
             toastOptions={{
                 duration: 3000,
-                className:
-                    "rounded-xl border bg-white text-gray-900 shadow-xl dark:bg-gray-900 dark:text-gray-100",
+                className: "rounded-xl border bg-white text-gray-900 shadow-xl dark:bg-gray-900 dark:text-gray-100",
                 style: {
                     padding: "12px 14px",
                 },
-                success: { className: "toast-success border-green-200 bg-green-50 dark:border-green-500/30 dark:bg-green-950/40" },
+                success: {
+                    className:
+                        "toast-success border-green-200 bg-green-50 dark:border-green-500/30 dark:bg-green-950/40",
+                },
                 error: { className: "toast-error border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-950/40" },
             }}
         >

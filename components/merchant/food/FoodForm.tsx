@@ -66,8 +66,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
             setSelectedSizes(
                 food.productSizes?.map((ps) => ({
                     sizeId: ps.sizeId,
-                    price:
-                        typeof ps.price === "number" && Number.isFinite(ps.price) ? ps.price.toFixed(2) : "",
+                    price: typeof ps.price === "number" && Number.isFinite(ps.price) ? ps.price.toFixed(2) : "",
                 })) ?? [],
             );
 
@@ -99,9 +98,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
     const filteredCategories = useMemo(() => {
         const q = categoryQuery.trim().toLowerCase();
         if (!q) return [];
-        return localCategories
-            .filter((c) => c.cateName.toLowerCase().includes(q))
-            .slice(0, 12);
+        return localCategories.filter((c) => c.cateName.toLowerCase().includes(q)).slice(0, 12);
     }, [categoryQuery, localCategories]);
 
     const filteredSizes = useMemo(() => {
@@ -279,9 +276,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
             </div>
 
             <div>
-                <label
-                    className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white"
-                >
+                <label className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white">
                     Category <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -387,9 +382,7 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                                             key={size.id}
                                             className="flex items-center justify-between gap-2 rounded-md px-2 py-2 hover:bg-gray-50 dark:hover:bg-white/5"
                                         >
-                                            <span className="text-sm text-gray-900 dark:text-white">
-                                                {size.name}
-                                            </span>
+                                            <span className="text-sm text-gray-900 dark:text-white">{size.name}</span>
                                             <button
                                                 type="button"
                                                 onMouseDown={(e) => e.preventDefault()}
@@ -410,7 +403,11 @@ export default function FoodForm({ food = null, categories, sizes, restaurant, o
                                     disabled={creatingSize}
                                     className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-60 dark:border-white/10 dark:bg-gray-900 dark:text-white"
                                 >
-                                    {creatingSize ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                                    {creatingSize ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Plus className="h-4 w-4" />
+                                    )}
                                     Create new &quot;{sizeQuery.trim()}&quot;
                                 </button>
                             )}
