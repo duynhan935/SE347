@@ -1,9 +1,11 @@
 "use client";
 
 import GlobalLoader from "@/components/ui/GlobalLoader";
+import { saveCheckoutSelection } from "@/lib/checkoutSelection";
 import { CartItem, useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CartItemRow } from "./CartItemRow";
 import { OrderSummary } from "./OrderSummary";
@@ -17,6 +19,7 @@ const formatPriceUSD = (priceUSD: number): string => {
 };
 
 export default function CartPageContainer() {
+    const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
     const { items, fetchCart, userId, isLoading: cartLoading, setUserId } = useCartStore();
     const [cartFetched, setCartFetched] = useState(false);
@@ -43,7 +46,7 @@ export default function CartPageContainer() {
                     // Mark as fetched after successful fetch
                     setCartFetched(true);
                     // Select all items by default
-                    const allItemKeys = items.map((item) => `${item.id}-${item.sizeId || ""}`);
+                    const allItemKeys = items.map((item) => `${item.restaurantId}::${item.id}::${item.sizeId || ""}`);
                     setSelectedItems(new Set(allItemKeys));
                 })
                 .catch((error) => {
@@ -67,7 +70,7 @@ export default function CartPageContainer() {
     // Select all items when items change
     useEffect(() => {
         if (items.length > 0) {
-            const allItemKeys = items.map((item) => `${item.id}-${item.sizeId || ""}`);
+            const allItemKeys = items.map((item) => `${item.restaurantId}::${item.id}::${item.sizeId || ""}`);
             setSelectedItems(new Set(allItemKeys));
         }
     }, [items]); // When items change
@@ -126,10 +129,19 @@ export default function CartPageContainer() {
     // Get selected items for checkout
     const selectedItemsList = useMemo(() => {
         return items.filter((item) => {
-            const itemKey = `${item.id}-${item.sizeId || ""}`;
+            const itemKey = `${item.restaurantId}::${item.id}::${item.sizeId || ""}`;
             return selectedItems.has(itemKey);
         });
     }, [items, selectedItems]);
+
+    const selectedRestaurantIds = useMemo(() => {
+        return new Set(selectedItemsList.map((it) => it.restaurantId));
+    }, [selectedItemsList]);
+
+    const selectedRestaurantId = useMemo(() => {
+        if (selectedRestaurantIds.size !== 1) return null;
+        return Array.from(selectedRestaurantIds)[0];
+    }, [selectedRestaurantIds]);
 
     // Calculate totals for selected items
     const selectedSubtotal = useMemo(() => {
@@ -147,7 +159,7 @@ export default function CartPageContainer() {
 
     // Toggle item selection
     const toggleItemSelection = (item: CartItem) => {
-        const itemKey = `${item.id}-${item.sizeId || ""}`;
+        const itemKey = `${item.restaurantId}::${item.id}::${item.sizeId || ""}`;
         const newSelected = new Set(selectedItems);
         if (newSelected.has(itemKey)) {
             newSelected.delete(itemKey);
@@ -162,7 +174,7 @@ export default function CartPageContainer() {
         if (selectedItems.size === items.length) {
             setSelectedItems(new Set());
         } else {
-            const allItemKeys = items.map((item) => `${item.id}-${item.sizeId || ""}`);
+            const allItemKeys = items.map((item) => `${item.restaurantId}::${item.id}::${item.sizeId || ""}`);
             setSelectedItems(new Set(allItemKeys));
         }
     };
@@ -216,6 +228,20 @@ export default function CartPageContainer() {
     const restaurantIds = Object.keys(groupedItems);
     const firstRestaurantId = restaurantIds[0];
 
+    const handleCheckout = () => {
+        if (selectedItemsList.length === 0) {
+            return;
+        }
+        if (selectedRestaurantIds.size !== 1 || !selectedRestaurantId) {
+            return;
+        }
+        saveCheckoutSelection({
+            restaurantId: selectedRestaurantId,
+            itemIds: selectedItemsList.map((it) => it.id),
+        });
+        router.push(`/payment?restaurantId=${selectedRestaurantId}`);
+    };
+
     return (
         <div className="custom-container p-4 sm:p-6 md:p-12">
             {/* Header */}
@@ -251,7 +277,7 @@ export default function CartPageContainer() {
 
                                 {/* Items */}
                                 {group.items.map((item) => {
-                                    const itemKey = `${item.id}-${item.sizeId || ""}`;
+                                    const itemKey = `${item.restaurantId}::${item.id}::${item.sizeId || ""}`;
                                     const isSelected = selectedItems.has(itemKey);
 
                                     return (
@@ -274,7 +300,7 @@ export default function CartPageContainer() {
                     <OrderSummary
                         subtotal={selectedSubtotal}
                         selectedItems={selectedItemsList}
-                        restaurantId={restaurantIds.length === 1 ? firstRestaurantId : undefined}
+                        restaurantId={selectedRestaurantId || undefined}
                         totalItems={selectedTotalItems}
                     />
                 </div>
@@ -306,7 +332,7 @@ export default function CartPageContainer() {
 
                                 {/* Items */}
                                 {group.items.map((item) => {
-                                    const itemKey = `${item.id}-${item.sizeId || ""}`;
+                                    const itemKey = `${item.restaurantId}::${item.id}::${item.sizeId || ""}`;
                                     const isSelected = selectedItems.has(itemKey);
 
                                     return (
@@ -334,17 +360,20 @@ export default function CartPageContainer() {
                                     ${formatPriceUSD(selectedSubtotal)}
                                 </span>
                             </div>
-                            <Link
-                                href={
-                                    restaurantIds.length === 1
-                                        ? `/payment?restaurantId=${firstRestaurantId}`
-                                        : "/payment"
-                                }
-                                className="bg-[#EE4D2D] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#EE4D2D]/90 transition-colors shadow-md"
+                            <button
+                                type="button"
+                                onClick={handleCheckout}
+                                disabled={selectedItemsList.length === 0 || selectedRestaurantIds.size !== 1}
+                                className="bg-[#EE4D2D] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#EE4D2D]/90 transition-colors shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed"
                             >
                                 Checkout ({selectedTotalItems})
-                            </Link>
+                            </button>
                         </div>
+                        {selectedItemsList.length > 0 && selectedRestaurantIds.size > 1 && (
+                            <p className="mt-2 text-xs text-red-500">
+                                Please select items from only one restaurant to checkout.
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>

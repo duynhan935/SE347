@@ -4,6 +4,7 @@ import GlobalLoader from "@/components/ui/GlobalLoader";
 import { authApi } from "@/lib/api/authApi";
 import { orderApi, type CreateOrderRequest } from "@/lib/api/orderApi";
 import { paymentApi } from "@/lib/api/paymentApi";
+import { clearCheckoutSelection, loadCheckoutSelection, type CheckoutSelection } from "@/lib/checkoutSelection";
 import { useGeolocation } from "@/lib/userLocation";
 import { getImageUrl } from "@/lib/utils";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
@@ -32,12 +33,14 @@ export default function PaymentPageClient() {
     const searchParams = useSearchParams();
     const restaurantId = searchParams.get("restaurantId");
 
-    const { items, clearRestaurant, setUserId, userId: cartUserId, isLoading: cartLoading, fetchCart } = useCartStore();
+    const { items, clearRestaurant, removeItem, setUserId, userId: cartUserId, isLoading: cartLoading, fetchCart } =
+        useCartStore();
     const { user, loading: authLoading, isAuthenticated } = useAuthStore();
     const { coords, error: locationError } = useGeolocation();
     const [cartFetched, setCartFetched] = useState(false);
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [loadingAddresses, setLoadingAddresses] = useState(false);
+    const [checkoutSelection, setCheckoutSelection] = useState<CheckoutSelection | null>(null);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [deliverStyle, setDeliverStyle] = useState<"delivery" | "pickup">("delivery");
@@ -48,8 +51,6 @@ export default function PaymentPageClient() {
     const [createdOrderIds, setCreatedOrderIds] = useState<string[]>([]);
     const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
     const [isProcessingCardPayment, setIsProcessingCardPayment] = useState(false);
-    // paymentId is stored but not used for API calls - Stripe webhook handles payment completion
-    const [paymentId, setPaymentId] = useState<string | null>(null);
     const [isPaymentSuccess, setIsPaymentSuccess] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -59,11 +60,24 @@ export default function PaymentPageClient() {
         note: "",
     });
 
-    // Filter items by restaurant if restaurantId provided
-    const orderItems = useMemo(
-        () => (restaurantId ? items.filter((item) => item.restaurantId === restaurantId) : items),
-        [restaurantId, items],
-    );
+    useEffect(() => {
+        setCheckoutSelection(loadCheckoutSelection());
+    }, []);
+
+    // Filter items by restaurant + checkout selection (if present)
+    const orderItems = useMemo(() => {
+        const byRestaurant = restaurantId ? items.filter((item) => item.restaurantId === restaurantId) : items;
+        if (
+            restaurantId &&
+            checkoutSelection &&
+            checkoutSelection.restaurantId === restaurantId &&
+            checkoutSelection.itemIds.length > 0
+        ) {
+            const idSet = new Set(checkoutSelection.itemIds);
+            return byRestaurant.filter((it) => idSet.has(it.id));
+        }
+        return byRestaurant;
+    }, [restaurantId, items, checkoutSelection]);
     const subtotal = useMemo(
         () => orderItems.reduce((total, item) => total + item.price * item.quantity, 0),
         [orderItems],
@@ -106,7 +120,7 @@ export default function PaymentPageClient() {
                     setLoadingAddresses(false);
                 });
         }
-    }, [user?.id, isAuthenticated]);
+    }, [user, isAuthenticated]);
 
     // Auto-fill form from user profile
     useEffect(() => {
@@ -144,6 +158,11 @@ export default function PaymentPageClient() {
             if (uniqueRestaurantIds.size === 1) {
                 const firstRestaurantId = Array.from(uniqueRestaurantIds)[0];
                 router.replace(`/payment?restaurantId=${firstRestaurantId}`);
+                return;
+            }
+            if (uniqueRestaurantIds.size > 1) {
+                toast.error("Please checkout items from only one restaurant at a time");
+                router.push("/cart");
                 return;
             }
         }
@@ -206,6 +225,15 @@ export default function PaymentPageClient() {
             toast.error(locationError);
         }
     }, [locationError]);
+
+    // If a checkout selection exists but doesn't match current restaurantId, clear it
+    useEffect(() => {
+        if (!restaurantId) return;
+        if (checkoutSelection && checkoutSelection.restaurantId !== restaurantId) {
+            clearCheckoutSelection();
+            setCheckoutSelection(null);
+        }
+    }, [restaurantId, checkoutSelection]);
 
     // Handle address selection
     const handleAddressSelect = (addressId: string) => {
@@ -352,8 +380,6 @@ export default function PaymentPageClient() {
             // For Stripe payment, DON'T clear cart yet - wait for payment success
             // Save order ID and slug for payment step
             setCreatedOrderIds([order.orderId]);
-            // Store slug for redirect (use slug if available, fallback to orderId)
-            const orderSlug = order.slug || order.orderId;
 
             // Set isProcessingCardPayment to show loading state
             setIsProcessingCardPayment(true);
@@ -431,7 +457,6 @@ export default function PaymentPageClient() {
 
             // Set states to show Stripe form
             setStripeClientSecret(clientSecret);
-            setPaymentId(paymentIdFromResponse);
 
             // Dismiss loading toast
             toast.dismiss(loadingToast);
@@ -473,7 +498,6 @@ export default function PaymentPageClient() {
             toast.error(errorMessage, { duration: 5000 });
             setIsProcessingCardPayment(false);
             setStripeClientSecret(null);
-            setPaymentId(null);
         }
     };
 
@@ -488,7 +512,6 @@ export default function PaymentPageClient() {
         // Reset payment states
         setIsProcessingCardPayment(false);
         setStripeClientSecret(null);
-        setPaymentId(null);
 
         // Show success message
         toast.success("Payment successful! Your order has been placed.", {
@@ -516,7 +539,23 @@ export default function PaymentPageClient() {
         // This happens after redirect so it won't trigger the cart empty check
         setTimeout(() => {
             if (restaurantId) {
-                clearRestaurant(restaurantId, { silent: true });
+                const selection = loadCheckoutSelection();
+                clearCheckoutSelection();
+                setCheckoutSelection(null);
+
+                if (selection && selection.restaurantId === restaurantId && selection.itemIds.length > 0) {
+                    (async () => {
+                        for (const itemId of selection.itemIds) {
+                            try {
+                                await removeItem(itemId, restaurantId, { silent: true });
+                            } catch {
+                                // ignore
+                            }
+                        }
+                    })();
+                } else {
+                    clearRestaurant(restaurantId, { silent: true });
+                }
             }
         }, 100);
     };
@@ -528,7 +567,6 @@ export default function PaymentPageClient() {
             toast.error("Payment Intent has been used or expired. Please place the order again.", { duration: 5000 });
             setIsProcessingCardPayment(false);
             setStripeClientSecret(null);
-            setPaymentId(null);
         } else {
             toast.error(error, { duration: 5000 });
             // Keep the form visible so user can retry for other errors

@@ -1,11 +1,13 @@
 "use client";
 
 import { authApi } from "@/lib/api/authApi";
+import { saveCheckoutSelection } from "@/lib/checkoutSelection";
 import { CartItem } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Address } from "@/types";
 import { Edit2, MapPin } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -24,7 +26,8 @@ interface OrderSummaryProps {
     totalItems: number;
 }
 
-export const OrderSummary = ({ subtotal, restaurantId, totalItems }: OrderSummaryProps) => {
+export const OrderSummary = ({ subtotal, restaurantId, totalItems, selectedItems }: OrderSummaryProps) => {
+    const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
     const [voucherCode, setVoucherCode] = useState("");
     const [addresses, setAddresses] = useState<Address[]>([]);
@@ -59,6 +62,24 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems }: OrderSummar
     const shippingFee = 0; // Free shipping for now
     const tax = subtotal * 0.05; // 5% tax
     const total = subtotal + shippingFee + tax;
+
+    const handleCheckout = () => {
+        if (totalItems <= 0 || selectedItems.length === 0) {
+            toast.error("Please select items to checkout");
+            return;
+        }
+
+        if (!restaurantId) {
+            toast.error("Please select items from only one restaurant to checkout");
+            return;
+        }
+
+        saveCheckoutSelection({
+            restaurantId,
+            itemIds: selectedItems.map((it) => it.id),
+        });
+        router.push(`/payment?restaurantId=${restaurantId}`);
+    };
 
     return (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
@@ -164,12 +185,17 @@ export const OrderSummary = ({ subtotal, restaurantId, totalItems }: OrderSummar
             </div>
 
             {/* Checkout Button */}
-            <Link
-                href={restaurantId ? `/payment?restaurantId=${restaurantId}` : "/payment"}
-                className="block w-full bg-[#EE4D2D] text-white font-semibold py-4 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors text-center shadow-md hover:shadow-lg"
+            <button
+                type="button"
+                onClick={handleCheckout}
+                disabled={totalItems <= 0 || !restaurantId}
+                className="block w-full bg-[#EE4D2D] text-white font-semibold py-4 rounded-lg hover:bg-[#EE4D2D]/90 transition-colors text-center shadow-md hover:shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
                 Checkout ({totalItems})
-            </Link>
+            </button>
+            {totalItems > 0 && !restaurantId && (
+                <p className="mt-2 text-xs text-red-500">Please select items from only one restaurant to checkout.</p>
+            )}
         </div>
     );
 };
