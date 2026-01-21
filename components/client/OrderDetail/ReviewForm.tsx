@@ -4,7 +4,7 @@ import { reviewApi } from "@/lib/api/reviewApi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Order } from "@/types/order.type";
 import { Star } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 interface ReviewFormProps {
@@ -28,13 +28,32 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
     const [restaurantContent, setRestaurantContent] = useState("");
     const [productReviews, setProductReviews] = useState<Record<string, ProductReview>>({});
 
+    // In cart/order, productId can be a composite id: `${baseProductId}--${base64UrlEncode(JSON options)}`
+    // Reviews should target the base product id (the restaurant-service expects real product ids).
+    const getBaseProductId = (productId: string) => {
+        const separatorIndex = productId.indexOf("--");
+        return separatorIndex === -1 ? productId : productId.slice(0, separatorIndex);
+    };
+
+    const uniqueOrderItems = useMemo(() => {
+        const seen = new Set<string>();
+        const unique: Order["items"] = [];
+        for (const item of order.items) {
+            const baseProductId = getBaseProductId(item.productId);
+            if (seen.has(baseProductId)) continue;
+            seen.add(baseProductId);
+            unique.push({ ...item, productId: baseProductId });
+        }
+        return unique;
+    }, [order.items]);
+
     // Initialize product reviews
     useEffect(() => {
         const initial: Record<string, ProductReview> = {};
-        order.items.forEach((item) => {
+        uniqueOrderItems.forEach((item) => {
             if (!initial[item.productId]) {
                 initial[item.productId] = {
-                    productId: item.productId,
+                    productId: item.productId, // base product id
                     productName: item.productName,
                     rating: 0,
                     title: "",
@@ -43,7 +62,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
             }
         });
         setProductReviews(initial);
-    }, [order.items]);
+    }, [uniqueOrderItems]);
 
     const updateProductReview = (productId: string, field: keyof ProductReview, value: string | number) => {
         setProductReviews((prev) => ({
@@ -129,10 +148,10 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
             setRestaurantTitle("");
             setRestaurantContent("");
             const resetInitial: Record<string, ProductReview> = {};
-            order.items.forEach((item) => {
+            uniqueOrderItems.forEach((item) => {
                 if (!resetInitial[item.productId]) {
                     resetInitial[item.productId] = {
-                        productId: item.productId,
+                        productId: item.productId, // base product id
                         productName: item.productName,
                         rating: 0,
                         title: "",
@@ -242,7 +261,7 @@ export default function ReviewForm({ order, onReviewSubmitted }: ReviewFormProps
                 </p>
 
                 <div className="space-y-6">
-                    {order.items.map((item) => {
+                    {uniqueOrderItems.map((item) => {
                         const review = productReviews[item.productId] || {
                             productId: item.productId,
                             productName: item.productName,

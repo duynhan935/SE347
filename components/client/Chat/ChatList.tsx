@@ -71,7 +71,17 @@ export default function ChatList({
     const formatTime = (timestamp: string | null) => {
         if (!timestamp) return "";
         try {
-            const distance = formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+            // Normalize timestamp to match ChatWindow parsing (avoid timezone offset issues)
+            let timestampToParse = timestamp.trim();
+            if (
+                !timestampToParse.endsWith("Z") &&
+                !timestampToParse.match(/[+-]\d{2}:\d{2}$/) &&
+                !timestampToParse.match(/[+-]\d{4}$/)
+            ) {
+                timestampToParse = timestampToParse + "Z";
+            }
+
+            const distance = formatDistanceToNow(new Date(timestampToParse), { addSuffix: true });
             // Convert "about X minutes ago" to "X min ago"
             return distance.replace("about ", "").replace(" minutes", " min").replace(" minute", " min");
         } catch {
@@ -86,14 +96,6 @@ export default function ChatList({
         const searchLower = searchQuery.toLowerCase();
         return partnerName.toLowerCase().includes(searchLower) || room.lastMessage?.toLowerCase().includes(searchLower);
     });
-
-    // Generate avatar URL
-    const getAvatarUrl = (partnerId: string, partnerName: string) => {
-        const avatar = partnerInfoMap[partnerId]?.avatar;
-        if (avatar) return avatar;
-        const initial = partnerName.charAt(0).toUpperCase();
-        return `https://placehold.co/48x48/${initial.charCodeAt(0) % 2 === 0 ? "EE4D2D" : "FF6B35"}/FFFFFF?text=${initial}`;
-    };
 
     return (
         <div className="flex flex-col h-full bg-white">
@@ -129,7 +131,6 @@ export default function ChatList({
                             const partnerId = getPartnerId(room);
                             const isSelected = selectedRoomId === room.id;
                             const unreadCount = getUnreadCountByRoom(room.id);
-                            const avatarUrl = getAvatarUrl(partnerId, partnerName);
 
                             return (
                                 <button
