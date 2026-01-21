@@ -186,9 +186,16 @@ export const orderApi = {
         return response.data;
     },
 
-    // Cancel order (wrapper around updateOrderStatus)
+    // Cancel order - uses dedicated /cancel endpoint
     cancelOrder: async (orderId: string, reason: string) => {
-        return orderApi.updateOrderStatus(orderId, OrderStatus.CANCELLED, { cancellationReason: reason });
+        if (!reason?.trim()) {
+            throw new Error("Cancellation reason is required");
+        }
+        const response = await api.patch<{ success: boolean; message: string; data: Order }>(
+            `/orders/${orderId}/cancel`,
+            { reason: reason.trim() }
+        );
+        return response.data.data;
     },
 
     // Merchant: Accept order

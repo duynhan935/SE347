@@ -490,6 +490,20 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                         orderId={order.orderId} 
                         canCancel={canCancel}
                         orderStatus={order.status}
+                        order={order}
+                        onOrderUpdate={async () => {
+                            // Refresh order data after payment
+                            try {
+                                const updatedOrder = await orderApi.getOrderById(order.orderId, { cacheBust: true });
+                                const normalizedOrder = {
+                                    ...updatedOrder,
+                                    status: (updatedOrder.status || "").toLowerCase() as OrderStatus,
+                                };
+                                setOrder(normalizedOrder);
+                            } catch (error) {
+                                console.error("[DeliveryStatusPage] Failed to refresh order after payment:", error);
+                            }
+                        }}
                     />
                 </div>
             </div>
