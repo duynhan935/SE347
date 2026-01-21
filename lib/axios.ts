@@ -13,12 +13,16 @@ const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 const getRuntimeApiUrl = () => {
     // SSR / server-side
     if (typeof window === "undefined") {
+        console.log('1=========================')
         const internal = process.env.API_INTERNAL_URL;
+        console.log("Internal: ======================", internal)
         if (typeof internal === "string" && internal.trim()) {
+            console.log("Internal TRIMMMM: ======================", internal)
             return trimTrailingSlash(internal.trim());
         }
     }
     // Browser (or fallback)
+    
     return API_URL;
 };
 
