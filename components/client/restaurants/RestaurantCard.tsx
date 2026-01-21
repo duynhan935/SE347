@@ -1,3 +1,4 @@
+import { getImageUrl } from "@/lib/utils";
 import { Restaurant } from "@/types";
 import { Star } from "lucide-react";
 import Image from "next/image";
@@ -7,18 +8,22 @@ type RestaurantCardProps = {
     restaurant: Restaurant;
 };
 
-export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => (
+export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
+    const imageUrl = getImageUrl(restaurant.imageURL);
+    const isPlaceholder = imageUrl === "/placeholder.png" || !restaurant.imageURL;
+    
+    return (
     <Link
         href={`/restaurants/${restaurant.slug}`}
         className="group block rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-white h-full flex flex-col"
     >
         <div className="relative w-full h-48">
             <Image
-                src={restaurant.imageURL || "/placeholder.png"}
+                src={imageUrl}
                 alt={restaurant.resName}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
-                unoptimized={!restaurant.imageURL || restaurant.imageURL === "/placeholder.png"}
+                unoptimized={isPlaceholder}
             />
 
             <div className="absolute bottom-2 right-2 bg-white/80 text-gray-800 text-xs px-2 py-1 rounded-full backdrop-blur-sm font-semibold">
@@ -47,4 +52,5 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => (
             </div>
         </div>
     </Link>
-);
+    );
+};
