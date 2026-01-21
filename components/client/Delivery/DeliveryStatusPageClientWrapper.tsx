@@ -3,6 +3,7 @@
 import { orderApi } from "@/lib/api/orderApi";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { getImageUrl } from "@/lib/utils";
+import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Order, OrderStatus } from "@/types/order.type";
 import Image from "next/image";
@@ -38,6 +39,7 @@ interface DeliveryStatusPageClientWrapperProps {
 
 export default function DeliveryStatusPageClientWrapper({ initialOrder }: DeliveryStatusPageClientWrapperProps) {
     const { user } = useAuthStore();
+    const { items: cartItems } = useCartStore();
     // Normalize initialOrder status right away to ensure consistency
     const normalizedInitialOrder: Order = {
         ...initialOrder,
@@ -255,16 +257,63 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
         return () => clearInterval(intervalId);
     }, [order.orderId, order.estimatedDeliveryTime, order.status]);
 
-    const displayItems: DisplayOrderItem[] = order.items.map((item, index) => ({
-        id: `${order.orderId}-${item.productId}-${index}`,
-        name: item.productName,
-        shopName: order.restaurant?.name || "Restaurant",
-        price: item.price,
-        quantity: item.quantity,
-        note: item.customizations,
-        // Prefer explicit imageURL from order; fall back to cartItemImage if present.
-        imageURL: item.imageURL || item.cartItemImage || null,
-    }));
+    const displayItems: DisplayOrderItem[] = order.items.map((item, index) => {
+        // Priority: cartItemImage > imageURL > cart store > null
+        let imageURL: string | null = null;
+        
+        // Debug: Log để kiểm tra dữ liệu
+        console.log(`[Delivery] Item ${index}:`, {
+            productId: item.productId,
+            productName: item.productName,
+            cartItemImage: item.cartItemImage,
+            imageURL: item.imageURL,
+        });
+        
+        // Helper function to check if image URL is valid
+        const isValidImageUrl = (url: string | null | undefined): boolean => {
+            if (!url || typeof url !== "string") return false;
+            const trimmed = url.trim();
+            return trimmed !== "" && trimmed !== "/placeholder.png";
+        };
+        
+        // 1. Check cartItemImage first (vì cart chỉ có cartItemImage)
+        if (isValidImageUrl(item.cartItemImage)) {
+            imageURL = item.cartItemImage!.trim();
+            console.log(`[Delivery] Using cartItemImage: ${imageURL}`);
+        }
+        // 2. Fallback to imageURL if cartItemImage is not available
+        else if (isValidImageUrl(item.imageURL)) {
+            imageURL = item.imageURL!.trim();
+            console.log(`[Delivery] Using imageURL: ${imageURL}`);
+        }
+        // 3. If no valid image in order, try to find it from cart store by productId
+        else {
+            const cartItem = cartItems.find(
+                (cartItem) => cartItem.baseProductId === item.productId || cartItem.id === item.productId
+            );
+            if (cartItem) {
+                const cartImageUrl = getImageUrl(cartItem.image);
+                if (isValidImageUrl(cartImageUrl)) {
+                    imageURL = cartImageUrl;
+                    console.log(`[Delivery] Using cart store image: ${imageURL}`);
+                }
+            }
+        }
+        
+        if (!imageURL) {
+            console.warn(`[Delivery] No image found for item: ${item.productName} (${item.productId})`);
+        }
+        
+        return {
+            id: `${order.orderId}-${item.productId}-${index}`,
+            name: item.productName,
+            shopName: order.restaurant?.name || "Restaurant",
+            price: item.price,
+            quantity: item.quantity,
+            note: item.customizations,
+            imageURL: imageURL,
+        };
+    });
 
     const totalItems = displayItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -368,21 +417,26 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                             <div key={shopName}>
                                 <h2 className="text-lg font-semibold mb-2">{shopName}</h2>
                                 <div className="space-y-4 border-t">
-                                    {items.map((item) => (
+                                    {items.map((item) => {
+                                        const imageUrl = getImageUrl(item.imageURL || null);
+                                        const finalImageUrl = imageUrl || "/placeholder.png";
+                                        const hasImage = finalImageUrl && finalImageUrl !== "/placeholder.png";
+                                        
+                                        return (
                                         <div
                                             key={item.id}
                                             className="flex items-start gap-4 pt-4 border-b pb-2 last:border-b-0"
                                         >
                                             {/* Product image */}
-                                            {item.imageURL ? (
+                                            {hasImage ? (
                                                 <div className="relative w-[64px] h-[64px] rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
                                                     <Image
-                                                        src={getImageUrl(item.imageURL)}
+                                                        src={finalImageUrl}
                                                         alt={item.name}
                                                         fill
                                                         className="object-cover"
                                                         sizes="64px"
-                                                        unoptimized={getImageUrl(item.imageURL).startsWith("http")}
+                                                        unoptimized={finalImageUrl.startsWith("http")}
                                                     />
                                                 </div>
                                             ) : (
@@ -399,7 +453,8 @@ export default function DeliveryStatusPageClientWrapper({ initialOrder }: Delive
                                                 <p className="font-bold">${(item.price * item.quantity).toFixed(2)}</p>
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ))}

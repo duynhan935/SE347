@@ -1,5 +1,6 @@
 "use client";
 
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 import Button from "@/components/Button";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import { authApi } from "@/lib/api/authApi";
@@ -17,7 +18,6 @@ export default function AddressesPage() {
     const [isAdding, setIsAdding] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
-    const [showAdvanced, setShowAdvanced] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [newAddress, setNewAddress] = useState<AddressRequest>({
         location: "",
@@ -81,14 +81,16 @@ export default function AddressesPage() {
             return;
         }
 
+        // Validate that coordinates are set
+        if (!newAddress.latitude || !newAddress.longitude || newAddress.latitude === 0 || newAddress.longitude === 0) {
+            toast.error("Please select an address from the suggestions to automatically get coordinates");
+            return;
+        }
+
         setSubmitting(true);
         try {
-            // For now, we'll use default coordinates. In a real app, you'd use a map API or geocoding
-            // You might want to integrate with Google Maps API or similar for lat/lng
             await authApi.addAddress(user.id, {
                 ...newAddress,
-                longitude: newAddress.longitude || 106.6297, // Default Ho Chi Minh City coordinates
-                latitude: newAddress.latitude || 10.8231,
             });
             toast.success("Address added successfully!");
             setNewAddress({ location: "", longitude: 0, latitude: 0 });
@@ -136,13 +138,57 @@ export default function AddressesPage() {
                 );
             });
 
-            setNewAddress((prev) => ({
-                ...prev,
-                latitude: coords.latitude,
-                longitude: coords.longitude,
-            }));
-            setShowAdvanced(true);
-            toast.success("Location detected. Coordinates filled.");
+            // Reverse geocode to get address string
+            try {
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}&zoom=18&addressdetails=1&accept-language=en`,
+                    {
+                        headers: {
+                            "User-Agent": "FoodEats/1.0",
+                        },
+                    },
+                );
+                const data = await response.json();
+
+                let addressText = "";
+                if (data.address) {
+                    const address = data.address;
+                    const parts: string[] = [];
+                    if (address.house_number) parts.push(address.house_number);
+                    if (address.road) parts.push(address.road);
+                    if (address.suburb || address.neighbourhood) parts.push(address.suburb || address.neighbourhood);
+                    if (address.city || address.town || address.village)
+                        parts.push(address.city || address.town || address.village);
+                    if (address.state) parts.push(address.state);
+                    addressText = parts.length > 0 ? parts.join(", ") : data.display_name || "";
+                } else if (data.display_name) {
+                    addressText = data.display_name;
+                }
+
+                if (addressText) {
+                    setNewAddress({
+                        location: addressText,
+                        latitude: coords.latitude,
+                        longitude: coords.longitude,
+                    });
+                    toast.success("Current location retrieved successfully!");
+                } else {
+                    setNewAddress({
+                        location: "",
+                        latitude: coords.latitude,
+                        longitude: coords.longitude,
+                    });
+                    toast.success("Coordinates retrieved. Please enter an address.");
+                }
+            } catch (geocodeError) {
+                console.error("Reverse geocoding failed:", geocodeError);
+                setNewAddress({
+                    location: "",
+                    latitude: coords.latitude,
+                    longitude: coords.longitude,
+                });
+                toast.success("Coordinates retrieved. Please enter an address.");
+            }
         } catch (error) {
             const geoError = error as { code?: number; message?: string };
             if (geoError?.code === 1) {
@@ -157,6 +203,14 @@ export default function AddressesPage() {
         } finally {
             setIsLocating(false);
         }
+    };
+
+    const handleAddressChange = (address: string, latitude: number, longitude: number) => {
+        setNewAddress({
+            location: address,
+            latitude,
+            longitude,
+        });
     };
 
     const handleDeleteAddress = async (addressId: string) => {
@@ -223,22 +277,26 @@ export default function AddressesPage() {
                             <label className="block text-sm font-medium mb-1">
                                 Address <span className="text-red-500">*</span>
                             </label>
-                            <textarea
+                            <AddressAutocomplete
                                 value={newAddress.location}
-                                onChange={(e) =>
-                                    setNewAddress({
-                                        ...newAddress,
-                                        location: e.target.value,
-                                    })
-                                }
-                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] disabled:opacity-50"
-                                placeholder="Enter full address (street, ward, district, city)"
-                                rows={3}
-                                required
+                                onChange={handleAddressChange}
+                                placeholder="Enter address (e.g., 123 Main Street, Ho Chi Minh City)..."
                                 disabled={submitting}
                             />
+                            <p className="mt-2 text-xs text-gray-500">
+                                Enter an address and select from suggestions. Coordinates will be automatically retrieved.
+                            </p>
 
-                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                            {(newAddress.latitude !== 0 || newAddress.longitude !== 0) && (
+                                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                                    <p className="text-xs text-green-700">
+                                        <span className="font-semibold">Coordinates retrieved:</span> Lat:{" "}
+                                        {newAddress.latitude.toFixed(6)}, Lng: {newAddress.longitude.toFixed(6)}
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="mt-3">
                                 <button
                                     type="button"
                                     onClick={handleUseCurrentLocation}
@@ -252,67 +310,7 @@ export default function AddressesPage() {
                                     )}
                                     Use Current Location
                                 </button>
-                                <p className="text-xs text-gray-500">
-                                    Optional: helps delivery accuracy. You can still type the full address.
-                                </p>
                             </div>
-                        </div>
-
-                        <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
-                            <button
-                                type="button"
-                                onClick={() => setShowAdvanced((prev) => !prev)}
-                                className="flex w-full items-center justify-between text-sm font-semibold text-gray-800"
-                            >
-                                <span>Advanced (coordinates)</span>
-                                <span className="text-xs text-gray-500">{showAdvanced ? "Hide" : "Show"}</span>
-                            </button>
-
-                            {showAdvanced && (
-                                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Longitude (optional)</label>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={newAddress.longitude || ""}
-                                            onChange={(e) =>
-                                                setNewAddress({
-                                                    ...newAddress,
-                                                    longitude: parseFloat(e.target.value) || 0,
-                                                })
-                                            }
-                                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] disabled:opacity-50"
-                                            placeholder="106.6297"
-                                            disabled={submitting}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Latitude (optional)</label>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={newAddress.latitude || ""}
-                                            onChange={(e) =>
-                                                setNewAddress({
-                                                    ...newAddress,
-                                                    latitude: parseFloat(e.target.value) || 0,
-                                                })
-                                            }
-                                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] disabled:opacity-50"
-                                            placeholder="10.8231"
-                                            disabled={submitting}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            {!showAdvanced && (newAddress.latitude || newAddress.longitude) ? (
-                                <p className="mt-2 text-xs text-gray-500">
-                                    Coordinates set: {newAddress.latitude ? newAddress.latitude.toFixed(4) : "—"},{" "}
-                                    {newAddress.longitude ? newAddress.longitude.toFixed(4) : "—"}
-                                </p>
-                            ) : null}
                         </div>
                         <div className="flex gap-4">
                             <Button
@@ -338,7 +336,6 @@ export default function AddressesPage() {
                                         longitude: 0,
                                         latitude: 0,
                                     });
-                                    setShowAdvanced(false);
                                 }}
                                 className="bg-gray-100 text-gray-800 hover:bg-gray-200 cursor-pointer"
                             >
