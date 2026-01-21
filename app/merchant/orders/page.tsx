@@ -3,9 +3,11 @@
 import { orderApi } from "@/lib/api/orderApi";
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useMerchantOrderStore } from "@/stores/useMerchantOrderStore";
 import { Order, OrderStatus } from "@/types/order.type";
+import { formatDateTime } from "@/lib/formatters";
 import { CheckCircle, Package, RefreshCw, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,6 +16,7 @@ import toast from "react-hot-toast";
 export default function MerchantOrdersPage() {
     const { user } = useAuthStore();
     const { setPendingOrdersCount } = useMerchantOrderStore();
+    const confirmAction = useConfirm();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<OrderStatus | "ALL">("ALL");
@@ -433,6 +436,18 @@ export default function MerchantOrdersPage() {
     };
 
     const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
+        const target = orders.find((o) => o.orderId === orderId);
+        const ok = await confirmAction({
+            title: "Update order status?",
+            description: `Change order ${String(orderId).slice(0, 10)}… to “${newStatus}”?`,
+            confirmText: "Update",
+            cancelText: "Cancel",
+        });
+        if (!ok) return;
+
+        const previousStatus = target?.status;
+        setOrders((prev) => prev.map((o) => (o.orderId === orderId ? { ...o, status: newStatus } : o)));
+
         try {
             await orderApi.updateOrderStatus(orderId, newStatus);
             toast.success("Order status updated.");
@@ -441,6 +456,9 @@ export default function MerchantOrdersPage() {
             });
         } catch (error) {
             console.error("Failed to update order status:", error);
+            if (previousStatus) {
+                setOrders((prev) => prev.map((o) => (o.orderId === orderId ? { ...o, status: previousStatus } : o)));
+            }
             toast.error("Unable to update order status.");
         }
     };
@@ -691,7 +709,7 @@ export default function MerchantOrdersPage() {
                                             <div className="flex items-center justify-between gap-3">
                                                 <span className="text-gray-500 dark:text-gray-400">Time</span>
                                                 <span className="font-medium text-gray-900 dark:text-white">
-                                                    {new Date(order.createdAt).toLocaleString("en-US")}
+                                                    {formatDateTime(order.createdAt)}
                                                 </span>
                                             </div>
                                         </div>
@@ -831,7 +849,7 @@ export default function MerchantOrdersPage() {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                    {new Date(order.createdAt).toLocaleString("en-US")}
+                                                    {formatDateTime(order.createdAt)}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                     {normalizeStatus(order.status) === OrderStatus.PENDING ? (

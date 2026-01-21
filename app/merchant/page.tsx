@@ -5,6 +5,9 @@ import { dashboardApi, buildDateRangeQuery, type DashboardDateRangePreset } from
 import { orderApi } from "@/lib/api/orderApi";
 import type { Order } from "@/types/order.type";
 import { useOrderWebSocket } from "@/lib/hooks/useOrderWebSocket";
+import SectionDateFilter from "@/components/dashboard/SectionDateFilter";
+import RevenueTrendChart from "@/components/dashboard/RevenueTrendChart";
+import StatusBreakdown, { type StatusBreakdownRow } from "@/components/dashboard/StatusBreakdown";
 import {
     AlertCircle,
     BarChart3,
@@ -24,8 +27,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
-import MerchantCharts from "@/components/dashboard/MerchantCharts";
 import { formatCurrency, formatNumber } from "@/lib/utils/dashboardFormat";
+import { formatDateTime } from "@/lib/formatters";
 
 // Stats Card Component - TailAdmin Style
 interface StatsCardProps {
@@ -73,13 +76,57 @@ function StatsCard({ title, value, icon: Icon, trend, trendLabel, bgColor, iconC
     );
 }
 
+function useDashboardDateRange(initialPreset: DashboardDateRangePreset = "30d") {
+    const [preset, setPreset] = useState<DashboardDateRangePreset>(initialPreset);
+    const presetQuery = useMemo(() => buildDateRangeQuery(preset), [preset]);
+    const [startDate, setStartDate] = useState<string>(presetQuery.startDate ?? "");
+    const [endDate, setEndDate] = useState<string>(presetQuery.endDate ?? "");
+
+    useEffect(() => {
+        setStartDate(presetQuery.startDate ?? "");
+        setEndDate(presetQuery.endDate ?? "");
+    }, [presetQuery.startDate, presetQuery.endDate]);
+
+    const error = useMemo(() => {
+        if (startDate && endDate && startDate > endDate) return "Start date must be before end date";
+        return null;
+    }, [endDate, startDate]);
+
+    const query = useMemo(() => {
+        if (startDate && endDate && !error) return { startDate, endDate };
+        return presetQuery;
+    }, [endDate, error, presetQuery, startDate]);
+
+    const reset = useCallback(() => {
+        setStartDate(presetQuery.startDate ?? "");
+        setEndDate(presetQuery.endDate ?? "");
+    }, [presetQuery.endDate, presetQuery.startDate]);
+
+    return {
+        preset,
+        startDate,
+        endDate,
+        error,
+        query,
+        setPreset,
+        setStartDate,
+        setEndDate,
+        reset,
+    };
+}
+
 export default function MerchantDashboard() {
     const { user } = useAuthStore();
 
-    const [rangePreset, setRangePreset] = useState<DashboardDateRangePreset>("30d");
-    const dateQuery = useMemo(() => buildDateRangeQuery(rangePreset), [rangePreset]);
+    const orderSummaryRange = useDashboardDateRange("30d");
+    const revenueRange = useDashboardDateRange("30d");
+    const topProductsRange = useDashboardDateRange("30d");
 
-    const [loading, setLoading] = useState(true);
+    const [loadingRestaurant, setLoadingRestaurant] = useState(true);
+    const [loadingOverview, setLoadingOverview] = useState(true);
+    const [loadingRevenueTrend, setLoadingRevenueTrend] = useState(true);
+    const [loadingTopProducts, setLoadingTopProducts] = useState(true);
+    const [loadingRecentOrders, setLoadingRecentOrders] = useState(true);
     const [restaurantOverview, setRestaurantOverview] = useState<{
         restaurantId: string;
         restaurantName: string;
@@ -112,11 +159,16 @@ export default function MerchantDashboard() {
         totalRatings: number;
         ratingDistribution: Record<"1" | "2" | "3" | "4" | "5", number> | Record<number, number>;
     } | null>(null);
+    const [statusBreakdown, setStatusBreakdown] = useState<StatusBreakdownRow[]>([]);
+    const [revenueTrend, setRevenueTrend] = useState<Awaited<ReturnType<typeof dashboardApi.getMerchantRevenueTrend>>>(
+        [],
+    );
     const [recentOrders, setRecentOrders] = useState<Order[]>([]);
 
     const fetchOrders = useCallback(async () => {
         if (!user?.id || !restaurantOverview?.restaurantId) return;
         try {
+            setLoadingRecentOrders(true);
             const recent = await orderApi.getOrdersByRestaurant(restaurantOverview.restaurantId, user.id, {
                 page: 1,
                 limit: 5,
@@ -124,6 +176,8 @@ export default function MerchantDashboard() {
             setRecentOrders(Array.isArray(recent.orders) ? recent.orders : []);
         } catch (error) {
             console.error("Failed to fetch orders:", error);
+        } finally {
+            setLoadingRecentOrders(false);
         }
     }, [user?.id, restaurantOverview?.restaurantId]);
 
@@ -144,49 +198,54 @@ export default function MerchantDashboard() {
         if (!user?.id) return;
 
         const run = async () => {
-            setLoading(true);
+            setLoadingRestaurant(true);
             try {
                 const merchantId = user.id;
+                const restaurant = await dashboardApi.getMerchantRestaurantOverview(merchantId);
+                setRestaurantOverview(restaurant);
+            } catch (error: unknown) {
+                const status =
+                    error && typeof error === "object" && "response" in error
+                        ? (error as { response?: { status?: number } }).response?.status
+                        : undefined;
 
-                let restaurant: Awaited<ReturnType<typeof dashboardApi.getMerchantRestaurantOverview>> | null = null;
-                try {
-                    restaurant = await dashboardApi.getMerchantRestaurantOverview(merchantId);
-                    setRestaurantOverview(restaurant);
-                } catch (error: unknown) {
-                    const status =
-                        error && typeof error === "object" && "response" in error
-                            ? (error as { response?: { status?: number } }).response?.status
-                            : undefined;
-
-                    // Normal: merchant has no restaurant yet
-                    if (status === 404) {
-                        setRestaurantOverview(null);
-                        setOverview(null);
-                        setTopProducts([]);
-                        setRatingStats(null);
-                        setRecentOrders([]);
-                        return;
-                    }
-                    throw error;
+                // Normal: merchant has no restaurant yet
+                if (status === 404) {
+                    setRestaurantOverview(null);
+                    setOverview(null);
+                    setTopProducts([]);
+                    setRatingStats(null);
+                    setStatusBreakdown([]);
+                    setRevenueTrend([]);
+                    setRecentOrders([]);
+                    return;
                 }
 
-                const [ov, top, ratings] = await Promise.all([
-                    dashboardApi.getMerchantOverview(merchantId, dateQuery),
-                    dashboardApi.getMerchantTopProducts(merchantId, { limit: 10, ...dateQuery }),
-                    dashboardApi.getMerchantRatingStats(merchantId, dateQuery),
+                console.error("Failed to load merchant restaurant overview:", error);
+                toast.error("Unable to load restaurant overview.");
+            } finally {
+                setLoadingRestaurant(false);
+            }
+        };
+
+        run();
+    }, [user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        if (!restaurantOverview?.restaurantId) return;
+
+        const run = async () => {
+            setLoadingOverview(true);
+            try {
+                const merchantId = user.id;
+                const [ov, ratings, status] = await Promise.all([
+                    dashboardApi.getMerchantOverview(merchantId, orderSummaryRange.query),
+                    dashboardApi.getMerchantRatingStats(merchantId, orderSummaryRange.query),
+                    dashboardApi.getMerchantOrderStatusBreakdown(merchantId, orderSummaryRange.query),
                 ]);
 
                 setOverview(ov);
-
-                setTopProducts(
-                    (Array.isArray(top) ? top : []).map((p) => ({
-                        productId: String(p.productId),
-                        productName: String(p.productName),
-                        totalQuantity: typeof p.totalQuantity === "number" ? p.totalQuantity : 0,
-                        totalRevenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
-                    })),
-                );
-
                 setRatingStats({
                     averageRating: typeof ratings?.averageRating === "number" ? ratings.averageRating : 0,
                     totalRatings: typeof ratings?.totalRatings === "number" ? ratings.totalRatings : 0,
@@ -195,25 +254,81 @@ export default function MerchantDashboard() {
                             ? ratings.ratingDistribution
                             : { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
                 });
-
-                // Recent orders
-                if (restaurant?.restaurantId) {
-                    const recent = await orderApi.getOrdersByRestaurant(restaurant.restaurantId, merchantId, {
-                        page: 1,
-                        limit: 5,
-                    });
-                    setRecentOrders(Array.isArray(recent.orders) ? recent.orders : []);
-                }
+                setStatusBreakdown(
+                    (Array.isArray(status) ? status : []).map((row) => ({
+                        status: String(row.status ?? ""),
+                        count: typeof row.count === "number" ? row.count : 0,
+                        totalAmount: typeof row.totalAmount === "number" ? row.totalAmount : 0,
+                    })),
+                );
             } catch (error) {
-                console.error("Failed to load merchant dashboard:", error);
-                toast.error("Unable to load dashboard data.");
+                console.error("Failed to load merchant overview:", error);
+                toast.error("Unable to load order summary.");
             } finally {
-                setLoading(false);
+                setLoadingOverview(false);
             }
         };
 
         run();
-    }, [user?.id, dateQuery]);
+    }, [orderSummaryRange.query, restaurantOverview?.restaurantId, user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        if (!restaurantOverview?.restaurantId) return;
+
+        const run = async () => {
+            setLoadingTopProducts(true);
+            try {
+                const merchantId = user.id;
+                const top = await dashboardApi.getMerchantTopProducts(merchantId, {
+                    limit: 10,
+                    ...topProductsRange.query,
+                });
+                setTopProducts(
+                    (Array.isArray(top) ? top : []).map((p) => ({
+                        productId: String(p.productId),
+                        productName: String(p.productName),
+                        totalQuantity: typeof p.totalQuantity === "number" ? p.totalQuantity : 0,
+                        totalRevenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
+                    })),
+                );
+            } catch (error) {
+                console.error("Failed to load merchant top products:", error);
+                toast.error("Unable to load top products.");
+            } finally {
+                setLoadingTopProducts(false);
+            }
+        };
+
+        run();
+    }, [restaurantOverview?.restaurantId, topProductsRange.query, user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        if (!restaurantOverview?.restaurantId) return;
+
+        const run = async () => {
+            setLoadingRevenueTrend(true);
+            try {
+                const merchantId = user.id;
+                const points = await dashboardApi.getMerchantRevenueTrend(merchantId, revenueRange.query);
+                setRevenueTrend(Array.isArray(points) ? points : []);
+            } catch (error) {
+                console.error("Failed to load merchant revenue trend:", error);
+                toast.error("Unable to load revenue trend.");
+            } finally {
+                setLoadingRevenueTrend(false);
+            }
+        };
+
+        run();
+    }, [restaurantOverview?.restaurantId, revenueRange.query, user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        if (!restaurantOverview?.restaurantId) return;
+        fetchOrders();
+    }, [fetchOrders, restaurantOverview?.restaurantId, user?.id]);
 
     const cards = useMemo(() => {
         const ov = overview;
@@ -270,17 +385,6 @@ export default function MerchantDashboard() {
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                    <select
-                        value={rangePreset}
-                        onChange={(e) => setRangePreset(e.target.value as DashboardDateRangePreset)}
-                        className="relative z-20 inline-flex appearance-none bg-transparent py-2 pl-3 pr-8 text-sm font-medium outline-none border border-stroke dark:border-strokedark rounded-lg dark:bg-meta-4"
-                    >
-                        <option value="7d">Last 7 days</option>
-                        <option value="30d">Last 30 days</option>
-                        <option value="90d">Last 90 days</option>
-                        <option value="ytd">Year to date</option>
-                        <option value="all">All time</option>
-                    </select>
                     <Link
                         href="/merchant/food/new"
                         className="inline-flex items-center gap-2 rounded-lg bg-primary py-2 px-4 text-sm font-medium text-white transition hover:bg-opacity-90"
@@ -291,7 +395,7 @@ export default function MerchantDashboard() {
                 </div>
             </div>
 
-            {!loading && !restaurantOverview && (
+            {!loadingRestaurant && !restaurantOverview && (
                 <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 text-yellow-900 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-200">
                     <div className="flex items-start gap-3">
                         <AlertCircle className="mt-0.5" size={18} />
@@ -316,33 +420,82 @@ export default function MerchantDashboard() {
             )}
 
             {/* Stats Cards - TailAdmin Style */}
+            <div className="rounded-lg border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p className="text-sm font-semibold text-black dark:text-white">Order summary range</p>
+                        <p className="text-xs text-bodydark mt-0.5">Controls the stats cards and order status.</p>
+                    </div>
+
+                    <SectionDateFilter
+                        preset={orderSummaryRange.preset}
+                        startDate={orderSummaryRange.startDate}
+                        endDate={orderSummaryRange.endDate}
+                        error={orderSummaryRange.error}
+                        onPresetChange={orderSummaryRange.setPreset}
+                        onStartDateChange={orderSummaryRange.setStartDate}
+                        onEndDateChange={orderSummaryRange.setEndDate}
+                        onReset={orderSummaryRange.reset}
+                    />
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
                 {cards.map((stat, index) => (
                     <StatsCard key={index} {...stat} />
                 ))}
             </div>
 
-            <MerchantCharts
-                orders={recentOrders.map((o) => ({
-                    orderId: String(o.orderId ?? ""),
-                    finalAmount: typeof o.finalAmount === "number" ? o.finalAmount : 0,
-                    createdAt: String(o.createdAt ?? ""),
-                    status: String(o.status ?? ""),
-                }))}
-                topProducts={topProducts.map((p) => ({
-                    productName: String(p.productName ?? ""),
-                    totalRevenue: typeof p.totalRevenue === "number" ? p.totalRevenue : 0,
-                    totalQuantity: typeof p.totalQuantity === "number" ? p.totalQuantity : 0,
-                }))}
-                ratingDistribution={ratingStats?.ratingDistribution ?? { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }}
-            />
+            <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2 2xl:gap-7.5">
+                <div className="space-y-3">
+                    <div className="rounded-lg border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                            <div>
+                                <p className="text-sm font-semibold text-black dark:text-white">
+                                    Revenue trend range
+                                </p>
+                                <p className="text-xs text-bodydark mt-0.5">
+                                    Controls the revenue chart only.
+                                </p>
+                            </div>
+
+                            <SectionDateFilter
+                                preset={revenueRange.preset}
+                                startDate={revenueRange.startDate}
+                                endDate={revenueRange.endDate}
+                                error={revenueRange.error}
+                                onPresetChange={revenueRange.setPreset}
+                                onStartDateChange={revenueRange.setStartDate}
+                                onEndDateChange={revenueRange.setEndDate}
+                                onReset={revenueRange.reset}
+                            />
+                        </div>
+                    </div>
+
+                    {loadingRevenueTrend ? (
+                        <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
+                            <p className="text-sm text-bodydark">Loading...</p>
+                        </div>
+                    ) : (
+                        <RevenueTrendChart points={revenueTrend} />
+                    )}
+                </div>
+
+                {loadingOverview ? (
+                    <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
+                        <p className="text-sm text-bodydark">Loading...</p>
+                    </div>
+                ) : (
+                    <StatusBreakdown rows={statusBreakdown} />
+                )}
+            </div>
 
             {/* Restaurant Info & Order Status */}
             <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2 2xl:gap-7.5">
                 {/* Restaurant Overview */}
                 <div className="rounded-lg border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
                     <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Restaurant Info</h3>
-                    {loading && !restaurantOverview ? (
+                    {loadingRestaurant && !restaurantOverview ? (
                         <div className="text-sm text-bodydark">Loading...</div>
                     ) : restaurantOverview ? (
                         <div className="flex flex-col gap-4">
@@ -460,10 +613,28 @@ export default function MerchantDashboard() {
                 {/* Top Products */}
                 <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
-                        <h3 className="font-semibold text-black dark:text-white">Top Products</h3>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                            <div>
+                                <h3 className="font-semibold text-black dark:text-white">Top Products</h3>
+                                <p className="text-xs text-bodydark mt-0.5">Driven by its own date range.</p>
+                            </div>
+
+                            <SectionDateFilter
+                                preset={topProductsRange.preset}
+                                startDate={topProductsRange.startDate}
+                                endDate={topProductsRange.endDate}
+                                error={topProductsRange.error}
+                                onPresetChange={topProductsRange.setPreset}
+                                onStartDateChange={topProductsRange.setStartDate}
+                                onEndDateChange={topProductsRange.setEndDate}
+                                onReset={topProductsRange.reset}
+                            />
+                        </div>
                     </div>
                     <div className="p-6">
-                        {topProducts.length === 0 ? (
+                        {loadingTopProducts ? (
+                            <p className="text-sm text-bodydark">Loading...</p>
+                        ) : topProducts.length === 0 ? (
                             <p className="text-sm text-bodydark">No data yet.</p>
                         ) : (
                             <div className="space-y-3">
@@ -504,7 +675,7 @@ export default function MerchantDashboard() {
                         </Link>
                     </div>
                     <div className="p-6">
-                        {loading ? (
+                        {loadingRecentOrders ? (
                             <p className="text-sm text-bodydark">Loading...</p>
                         ) : recentOrders.length === 0 ? (
                             <p className="text-sm text-bodydark">No orders yet.</p>
@@ -532,7 +703,7 @@ export default function MerchantDashboard() {
                                                         #{order.orderId}
                                                     </p>
                                                     <p className="text-xs text-bodydark">
-                                                        {new Date(order.createdAt).toLocaleString("en-US")}
+                                                        {formatDateTime(order.createdAt)}
                                                     </p>
                                                 </div>
                                             </div>

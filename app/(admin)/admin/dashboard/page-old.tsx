@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/utils/dashboardFormat";
 import { User } from "@/types";
 import { restaurantApi } from "@/lib/api/restaurantApi";
 import { orderApi } from "@/lib/api/orderApi";
+import { formatDateTime } from "@/lib/formatters";
 import { Order } from "@/types/order.type";
 import {
     AlertCircle,
@@ -540,7 +541,7 @@ export default function AdminDashboard() {
                                         Order {o.orderId} • {o.status}
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {new Date(o.createdAt).toLocaleString("en-US")} •{" "}
+                                        {formatDateTime(o.createdAt)} •{" "}
                                         {formatCurrency(o.finalAmount || 0)}
                                     </p>
                                 </div>

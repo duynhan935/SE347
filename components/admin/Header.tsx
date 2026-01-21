@@ -49,17 +49,7 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                     </button>
                 </div>
 
-                {/* Search bar */}
-                <div className="hidden sm:block flex-1 max-w-md">
-                    <div className="relative">
-                        <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
-                        />
-                    </div>
-                </div>
+                <div></div>
 
                 {/* Right side */}
                 <div className="flex items-center gap-1.5 sm:gap-3">
@@ -70,15 +60,6 @@ export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
                         aria-label={mobileSearchOpen ? "Close search" : "Open search"}
                     >
                         {mobileSearchOpen ? <X size={20} /> : <Search size={20} />}
-                    </button>
-
-                    {/* Dark mode toggle */}
-                    <button
-                        onClick={toggleTheme}
-                        className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                        aria-label="Toggle theme"
-                    >
-                        {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
                     </button>
 
                     {/* Notifications */}

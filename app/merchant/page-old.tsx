@@ -3,6 +3,7 @@
 import { useAuthStore } from "@/stores/useAuthStore";
 import { dashboardApi, buildDateRangeQuery, type DashboardDateRangePreset } from "@/lib/api/dashboardApi";
 import { orderApi } from "@/lib/api/orderApi";
+import { formatDateTime } from "@/lib/formatters";
 import { formatCurrency } from "@/lib/utils/dashboardFormat";
 import type { Order } from "@/types/order.type";
 import {
@@ -437,7 +438,7 @@ export default function MerchantDashboard() {
                                         Order {o.orderId} • {o.status}
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {new Date(o.createdAt).toLocaleString("en-US")} •{" "}
+                                        {formatDateTime(o.createdAt)} •{" "}
                                         {formatCurrency(o.finalAmount || 0)}
                                     </p>
                                 </div>

@@ -127,7 +127,7 @@ export const dashboardApi = {
             "/admin/dashboard/revenue/by-merchant",
             {
                 params,
-            }
+            },
         );
         return Array.isArray(response.data.data) ? response.data.data : [];
     },
@@ -135,51 +135,51 @@ export const dashboardApi = {
     // ===================== MERCHANT =====================
     getMerchantOverview: async (
         merchantId: string,
-        params?: { startDate?: string; endDate?: string }
+        params?: { startDate?: string; endDate?: string },
     ): Promise<MerchantOrderOverview> => {
         const response = await api.get<ApiSuccessResponse<MerchantOrderOverview>>(
             `/merchant/${merchantId}/dashboard/overview`,
-            { params }
+            { params },
         );
         return response.data.data;
     },
 
     getMerchantRevenueTrend: async (
         merchantId: string,
-        params?: { startDate?: string; endDate?: string }
+        params?: { startDate?: string; endDate?: string },
     ): Promise<MerchantRevenueTrendPoint[]> => {
         const response = await api.get<ApiSuccessResponse<MerchantRevenueTrendPoint[]>>(
             `/merchant/${merchantId}/dashboard/revenue/trend`,
-            { params }
+            { params },
         );
         return Array.isArray(response.data.data) ? response.data.data : [];
     },
 
     getMerchantRevenue: async (
         merchantId: string,
-        params?: { startDate?: string; endDate?: string }
+        params?: { startDate?: string; endDate?: string },
     ): Promise<MerchantRevenueAnalytics> => {
         const response = await api.get<ApiSuccessResponse<MerchantRevenueAnalytics>>(
             `/merchant/${merchantId}/dashboard/revenue`,
-            { params }
+            { params },
         );
         return response.data.data;
     },
 
     getMerchantTopProducts: async (
         merchantId: string,
-        params?: { limit?: number; startDate?: string; endDate?: string }
+        params?: { limit?: number; startDate?: string; endDate?: string },
     ): Promise<MerchantTopProduct[]> => {
         const response = await api.get<ApiSuccessResponse<MerchantTopProduct[]>>(
             `/merchant/${merchantId}/dashboard/products/top`,
-            { params }
+            { params },
         );
         return Array.isArray(response.data.data) ? response.data.data : [];
     },
 
     getMerchantOrderStatusBreakdown: async (
         merchantId: string,
-        params?: { startDate?: string; endDate?: string }
+        params?: { startDate?: string; endDate?: string },
     ): Promise<Array<{ status: string; count: number; totalAmount: number }>> => {
         const response = await api.get<
             ApiSuccessResponse<Array<{ status: string; count: number; totalAmount: number }>>
@@ -189,40 +189,40 @@ export const dashboardApi = {
 
     getMerchantRatingStats: async (
         merchantId: string,
-        params?: { startDate?: string; endDate?: string }
+        params?: { startDate?: string; endDate?: string },
     ): Promise<MerchantRatingStats> => {
         const response = await api.get<ApiSuccessResponse<MerchantRatingStats>>(
             `/merchant/${merchantId}/dashboard/ratings`,
-            { params }
+            { params },
         );
         return response.data.data;
     },
 
     getMerchantHourlyStatistics: async (
         merchantId: string,
-        params?: { startDate?: string; endDate?: string }
+        params?: { startDate?: string; endDate?: string },
     ): Promise<MerchantHourlyStatistic[]> => {
         const response = await api.get<ApiSuccessResponse<MerchantHourlyStatistic[]>>(
             `/merchant/${merchantId}/dashboard/hourly`,
-            { params }
+            { params },
         );
         return Array.isArray(response.data.data) ? response.data.data : [];
     },
 
     getMerchantTimeAnalytics: async (
         merchantId: string,
-        params?: { startDate?: string; endDate?: string }
+        params?: { startDate?: string; endDate?: string },
     ): Promise<MerchantTimeBasedAnalytics> => {
         const response = await api.get<ApiSuccessResponse<MerchantTimeBasedAnalytics>>(
             `/merchant/${merchantId}/dashboard/time-analytics`,
-            { params }
+            { params },
         );
         return response.data.data;
     },
 
     downloadMerchantPdfReport: async (
         merchantId: string,
-        params: { startDate: string; endDate: string }
+        params: { startDate: string; endDate: string },
     ): Promise<{ blob: Blob; filename: string }> => {
         const response = await api.get(`/merchant/${merchantId}/reports/pdf`, {
             params,

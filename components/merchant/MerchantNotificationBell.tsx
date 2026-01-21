@@ -14,6 +14,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useMerchantOrderStore } from "@/stores/useMerchantOrderStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
 import { OrderStatus } from "@/types/order.type";
+import { formatDateTime } from "@/lib/formatters";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -160,7 +161,7 @@ export function MerchantNotificationBell() {
                                         </p>
                                         <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{notif.message}</p>
                                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                            {new Date(notif.createdAt).toLocaleString("en-US")}
+                                            {formatDateTime(notif.createdAt)}
                                         </p>
                                     </div>
                                     {!notif.read && (

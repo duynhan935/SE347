@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
+import { formatTime } from "@/lib/formatters";
 
 interface CreateGroupOrderModalProps {
     restaurant: Restaurant;
@@ -158,7 +159,7 @@ export default function CreateGroupOrderModal({ restaurant, isOpen, onClose }: C
         const now = new Date();
         const hours = deadlineOption === "custom" ? customHours : deadlineOption === "15" ? 0.25 : deadlineOption === "30" ? 0.5 : 1;
         const endTime = new Date(now.getTime() + hours * 60 * 60 * 1000);
-        return endTime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+        return formatTime(endTime);
     };
 
     const restaurantImageUrl = restaurant.imageURL ? getImageUrl(restaurant.imageURL) : null;

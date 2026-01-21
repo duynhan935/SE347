@@ -12,7 +12,7 @@ interface FoodCardProps {
 
 export default function FoodCard({ food, onDelete }: FoodCardProps) {
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
+        <div className="h-full flex flex-col bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
             {/* Food Image */}
             <div className="relative h-48 w-full bg-gray-200 dark:bg-gray-700">
                 {food.imageURL && typeof food.imageURL === "string" && food.imageURL.trim() !== "" ? (
@@ -34,8 +34,8 @@ export default function FoodCard({ food, onDelete }: FoodCardProps) {
             </div>
 
             {/* Food Info */}
-            <div className="p-4 space-y-3">
-                <div>
+            <div className="p-4 space-y-3 flex flex-col flex-1">
+                <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-1">
                         {food.productName}
                     </h3>

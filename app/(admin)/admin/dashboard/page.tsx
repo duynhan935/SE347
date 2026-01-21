@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import DashboardVisualization, { type DashboardApiBundle } from "@/components/dashboard/DashboardVisualization";
+import { formatDateTime } from "@/lib/formatters";
 import {
     adaptAdminMerchantsPerformanceToViewModel,
     adaptAdminOrderStatisticsToViewModel,
@@ -509,7 +510,7 @@ export default function AdminDashboard() {
                                                         #{order.orderId}
                                                     </p>
                                                     <p className="text-xs text-bodydark">
-                                                        {new Date(order.createdAt).toLocaleString("en-US")}
+                                                        {formatDateTime(order.createdAt)}
                                                     </p>
                                                 </div>
                                             </div>

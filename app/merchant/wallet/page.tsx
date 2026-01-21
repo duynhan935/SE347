@@ -1,6 +1,7 @@
 "use client";
 
 import { walletApi } from "@/lib/api/walletApi";
+import { formatDateTime } from "@/lib/formatters";
 import type { BankInfo, WalletSummary, WalletTransaction } from "@/types/wallet.type";
 import { Loader2, Wallet as WalletIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -275,7 +276,7 @@ export default function MerchantWalletPage() {
                                     transactions.map((tx) => (
                                         <tr key={tx.id}>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">
-                                                {tx.createdAt ? new Date(tx.createdAt).toLocaleString("en-US") : ""}
+                                                {tx.createdAt ? formatDateTime(tx.createdAt) : ""}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">
                                                 {tx.type === "EARN" ? "Revenue" : "Withdrawal"}

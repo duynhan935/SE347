@@ -36,11 +36,6 @@ const menuItems: MenuItem[] = [
         href: "/admin/dashboard",
     },
     {
-        label: "Messages",
-        icon: MessageCircle,
-        href: "/admin/messages",
-    },
-    {
         label: "Manage Users",
         icon: Users,
         href: "/admin/users",
