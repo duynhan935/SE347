@@ -69,12 +69,12 @@ export default function RestaurantMenu({
                       const categoryId = String(
                           (category as unknown as { id?: unknown; _id?: unknown }).id ??
                               (category as unknown as { _id?: unknown })._id ??
-                              ""
+                              "",
                       );
                       const categoryName = String(
                           (category as unknown as { cateName?: unknown; name?: unknown }).cateName ??
                               (category as unknown as { name?: unknown }).name ??
-                              "Category"
+                              "Category",
                       );
                       const value = categoryId ? `cat-${categoryId}` : `cat-${slugify(categoryName)}`;
                       return { categoryId, categoryName, value };
@@ -90,8 +90,8 @@ export default function RestaurantMenu({
                           const key = categoryId
                               ? `id:${categoryId}`
                               : normalizedName
-                              ? `name:${normalizedName}`
-                              : "uncategorized";
+                                ? `name:${normalizedName}`
+                                : "uncategorized";
 
                           if (seen.has(key)) continue;
 
@@ -129,9 +129,7 @@ export default function RestaurantMenu({
     useEffect(() => {
         if (!productIdFromUrl || groups.length === 0) return;
 
-        const categoryWithProduct = groups.find((group) => 
-            group.items.some((item) => item.id === productIdFromUrl)
-        );
+        const categoryWithProduct = groups.find((group) => group.items.some((item) => item.id === productIdFromUrl));
 
         if (categoryWithProduct) {
             const categoryElement = categoryRefs.current.get(categoryWithProduct.value);
@@ -208,9 +206,7 @@ export default function RestaurantMenu({
                     >
                         {/* Sticky Category Header */}
                         <div className="sticky top-20 z-10 bg-white/95 backdrop-blur-sm py-4 mb-6 border-b-2 border-[#EE4D2D] -mx-5 px-5 sm:-mx-8 sm:px-8">
-                            <h3 className="text-xl md:text-2xl font-bold text-gray-900">
-                                {group.categoryName}
-                            </h3>
+                            <h3 className="text-xl md:text-2xl font-bold text-gray-900">{group.categoryName}</h3>
                             <p className="text-sm text-gray-500 mt-1">
                                 {group.items.length} {group.items.length === 1 ? "item" : "items"}
                             </p>
@@ -230,9 +226,7 @@ export default function RestaurantMenu({
                                             key={item.id}
                                             id={`product-${item.id}`}
                                             className={`transition-all duration-500 ${
-                                                isHighlighted 
-                                                    ? "ring-4 ring-[#EE4D2D] ring-offset-2 rounded-2xl" 
-                                                    : ""
+                                                isHighlighted ? "ring-4 ring-[#EE4D2D] ring-offset-2 rounded-2xl" : ""
                                             }`}
                                             ref={(el) => {
                                                 if (isHighlighted && el) {

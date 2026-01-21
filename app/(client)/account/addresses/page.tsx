@@ -309,7 +309,8 @@ export default function AddressesPage() {
 
                             {!showAdvanced && (newAddress.latitude || newAddress.longitude) ? (
                                 <p className="mt-2 text-xs text-gray-500">
-                                    Coordinates set: {newAddress.latitude ? newAddress.latitude.toFixed(4) : "—"}, {newAddress.longitude ? newAddress.longitude.toFixed(4) : "—"}
+                                    Coordinates set: {newAddress.latitude ? newAddress.latitude.toFixed(4) : "—"},{" "}
+                                    {newAddress.longitude ? newAddress.longitude.toFixed(4) : "—"}
                                 </p>
                             ) : null}
                         </div>

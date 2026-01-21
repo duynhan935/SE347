@@ -138,7 +138,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
                         sizeId: defaultSize.id,
                         sizeName: defaultSize.sizeName,
                     },
-                    1
+                    1,
                 );
                 // Toast is handled by cartStore.addItem
             } catch (error) {
@@ -150,7 +150,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
                 }, 300);
             }
         },
-        [isAdding, isMounted, user, product, restaurant, defaultSize, cardImageUrl, addItem, router]
+        [isAdding, isMounted, user, product, restaurant, defaultSize, cardImageUrl, addItem, router],
     );
 
     return (
@@ -243,9 +243,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
 
                 {/* Restaurant Name with Verified Icon */}
                 <div className="flex items-center gap-1.5">
-                    <p className="text-xs text-gray-500 line-clamp-1 flex-1">
-                        {restaurant?.resName || "Restaurant"}
-                    </p>
+                    <p className="text-xs text-gray-500 line-clamp-1 flex-1">{restaurant?.resName || "Restaurant"}</p>
                     <CheckCircle2 className="w-3 h-3 text-green-500 flex-shrink-0" />
                 </div>
 
