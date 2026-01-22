@@ -3,6 +3,7 @@
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import { groupOrderApi } from "@/lib/api/groupOrderApi";
 import { orderApi } from "@/lib/api/orderApi";
+import { productApi } from "@/lib/api/productApi";
 import { getImageUrl } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { GroupOrder, GroupOrderStatus } from "@/types/groupOrder.type";
@@ -13,6 +14,15 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
+// Helper function to extract base productId (before -- separator)
+const extractBaseProductId = (productId: string): string => {
+    const separatorIndex = productId.indexOf("--");
+    if (separatorIndex === -1) {
+        return productId;
+    }
+    return productId.substring(0, separatorIndex);
+};
+
 // Helper function to parse productId and extract imageURL from encoded options
 const parseProductIdForImage = (productId: string): string | null => {
     try {
@@ -22,10 +32,17 @@ const parseProductIdForImage = (productId: string): string | null => {
         }
         
         const encoded = productId.slice(separatorIndex + 2);
+        if (!encoded || encoded.trim() === "") {
+            return null;
+        }
+        
         // Base64 URL decode
-        const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
-        const padded = base64 + "===".slice((base64.length + 3) % 4);
-        const binary = atob(padded);
+        let base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+        // Add padding if needed
+        const padding = (4 - (base64.length % 4)) % 4;
+        base64 = base64 + "=".repeat(padding);
+        
+        const binary = atob(base64);
         const bytes = new Uint8Array(binary.length);
         for (let i = 0; i < binary.length; i++) {
             bytes[i] = binary.charCodeAt(i);
@@ -33,11 +50,24 @@ const parseProductIdForImage = (productId: string): string | null => {
         const json = new TextDecoder().decode(bytes);
         const parsed = JSON.parse(json);
         
-        if (parsed && typeof parsed === "object" && parsed.imageURL) {
-            return parsed.imageURL;
+        // Check for imageURL in various possible fields
+        if (parsed && typeof parsed === "object") {
+            // Try imageURL first
+            if (parsed.imageURL && typeof parsed.imageURL === "string" && parsed.imageURL.trim() !== "") {
+                return parsed.imageURL.trim();
+            }
+            // Try imageUrl (camelCase variant)
+            if (parsed.imageUrl && typeof parsed.imageUrl === "string" && parsed.imageUrl.trim() !== "") {
+                return parsed.imageUrl.trim();
+            }
+            // Try image (short variant)
+            if (parsed.image && typeof parsed.image === "string" && parsed.image.trim() !== "") {
+                return parsed.image.trim();
+            }
         }
     } catch (error) {
-        console.debug("[GroupOrder] Failed to parse productId for image:", error);
+        // Silently fail - productId might not contain image data
+        console.debug("[GroupOrder] Failed to parse productId for image:", productId.substring(0, 50) + "...", error);
     }
     return null;
 };
@@ -55,6 +85,8 @@ export default function GroupOrderPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const groupOrderStatusRef = useRef<string | null>(null);
+    // Cache for product images to avoid repeated API calls
+    const [productImageCache, setProductImageCache] = useState<Map<string, string>>(new Map());
 
     const fetchGroupOrder = useCallback(async () => {
         if (!shareToken) return;
@@ -105,7 +137,7 @@ export default function GroupOrderPage() {
         // Set up new interval
         intervalRef.current = setInterval(() => {
             fetchGroupOrder();
-        }, 30000);
+        }, 10000);
 
         return () => {
             if (intervalRef.current) {
@@ -518,24 +550,63 @@ export default function GroupOrderPage() {
                                                     const itemWithImage = item as typeof item & { 
                                                         imageURL?: string | null; 
                                                         cartItemImage?: string | null;
+                                                        image?: string | null;
+                                                        imageUrl?: string | null;
                                                     };
                                                     
                                                     // Try to get image from either field
                                                     let imageSource: string | null = null;
                                                     
-                                                    // 1. Check imageURL first
+                                                    // 1. Check imageURL first (most common)
                                                     if (itemWithImage.imageURL && typeof itemWithImage.imageURL === "string" && itemWithImage.imageURL.trim() !== "") {
                                                         imageSource = itemWithImage.imageURL.trim();
                                                     } 
-                                                    // 2. Check cartItemImage
+                                                    // 2. Check imageUrl (camelCase variant)
+                                                    else if (itemWithImage.imageUrl && typeof itemWithImage.imageUrl === "string" && itemWithImage.imageUrl.trim() !== "") {
+                                                        imageSource = itemWithImage.imageUrl.trim();
+                                                    }
+                                                    // 3. Check image (short variant)
+                                                    else if (itemWithImage.image && typeof itemWithImage.image === "string" && itemWithImage.image.trim() !== "") {
+                                                        imageSource = itemWithImage.image.trim();
+                                                    }
+                                                    // 4. Check cartItemImage
                                                     else if (itemWithImage.cartItemImage && typeof itemWithImage.cartItemImage === "string" && itemWithImage.cartItemImage.trim() !== "") {
                                                         imageSource = itemWithImage.cartItemImage.trim();
                                                     }
-                                                    // 3. Try to extract imageURL from productId encoded options
-                                                    else if (item.productId) {
+                                                    // 5. Try to extract imageURL from productId encoded options (fallback)
+                                                    else if (item.productId && typeof item.productId === "string") {
                                                         const imageFromProductId = parseProductIdForImage(item.productId);
                                                         if (imageFromProductId && imageFromProductId.trim() !== "") {
                                                             imageSource = imageFromProductId.trim();
+                                                        } else {
+                                                            // 6. Try to fetch from product API using cached image or fetch new
+                                                            const baseProductId = extractBaseProductId(item.productId);
+                                                            const cachedImage = productImageCache.get(baseProductId);
+                                                            if (cachedImage) {
+                                                                imageSource = cachedImage;
+                                                            } else if (baseProductId && baseProductId.startsWith("PROD")) {
+                                                                // Fetch product image asynchronously (don't block render)
+                                                                productApi.getProductById(baseProductId)
+                                                                    .then((response) => {
+                                                                        const product = response.data;
+                                                                        if (product?.imageURL) {
+                                                                            const productImageUrl = typeof product.imageURL === "string" 
+                                                                                ? product.imageURL 
+                                                                                : null;
+                                                                            if (productImageUrl) {
+                                                                                setProductImageCache((prev) => {
+                                                                                    const newMap = new Map(prev);
+                                                                                    newMap.set(baseProductId, productImageUrl);
+                                                                                    return newMap;
+                                                                                });
+                                                                            }
+                                                                        }
+                                                                    })
+                                                                    .catch((error: unknown) => {
+                                                                        // Silently fail - product might not exist or API error
+                                                                        console.debug("[GroupOrder] Failed to fetch product image:", baseProductId, error);
+                                                                    });
+                                                            }
                                                         }
                                                     }
                                                     
@@ -543,9 +614,22 @@ export default function GroupOrderPage() {
                                                     const imageUrl = imageSource ? getImageUrl(imageSource) : null;
                                                     const hasImage = imageUrl && imageUrl !== "/placeholder.png";
                                                     
+                                                    // Debug log (only in development)
+                                                    if (process.env.NODE_ENV === "development" && !hasImage && item.productId) {
+                                                        console.debug("[GroupOrder] Item without image:", {
+                                                            productName: item.productName,
+                                                            productId: item.productId?.substring(0, 50),
+                                                            hasImageURL: !!itemWithImage.imageURL,
+                                                            hasCartItemImage: !!itemWithImage.cartItemImage,
+                                                            hasImage: !!itemWithImage.image,
+                                                            imageSource,
+                                                            baseProductId: extractBaseProductId(item.productId || ""),
+                                                        });
+                                                    }
+                                                    
                                                     return (
-                                                        <div
-                                                            key={idx}
+                                                    <div
+                                                        key={idx}
                                                             className="flex items-center gap-3 text-sm"
                                                         >
                                                             {/* Product Image */}
@@ -566,14 +650,14 @@ export default function GroupOrderPage() {
                                                                 </div>
                                                             )}
                                                             <div className="flex-1 min-w-0">
-                                                                <span className="text-gray-700">
-                                                                    {item.productName} x{item.quantity}
-                                                                </span>
+                                                        <span className="text-gray-700">
+                                                            {item.productName} x{item.quantity}
+                                                        </span>
                                                             </div>
                                                             <span className="text-gray-900 font-medium">
-                                                                ${formatPrice(item.price * item.quantity)}
-                                                            </span>
-                                                        </div>
+                                                            ${formatPrice(item.price * item.quantity)}
+                                                        </span>
+                                                    </div>
                                                     );
                                                 })}
                                             </div>
