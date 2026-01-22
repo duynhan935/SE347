@@ -330,8 +330,17 @@ export default function PaymentPageClient() {
         setIsSubmitting(true);
 
         try {
+            // Filter out items with invalid restaurantId
+            const validOrderItems = orderItems.filter(
+                (item) => item.restaurantId && item.restaurantId.trim() !== "" && item.restaurantId !== "null" && item.restaurantId !== "undefined"
+            );
+
+            if (validOrderItems.length === 0) {
+                throw new Error("No valid items with restaurant information found");
+            }
+
             // Group items by restaurant (should only be one)
-            const restaurantGroups = orderItems.reduce(
+            const restaurantGroups = validOrderItems.reduce(
                 (acc, item) => {
                     if (!acc[item.restaurantId]) {
                         acc[item.restaurantId] = {
@@ -353,13 +362,22 @@ export default function PaymentPageClient() {
 
             const [restId, group] = restaurantEntries[0];
 
+            // Validate restId - use restaurantId from URL as fallback if restId is invalid
+            const finalRestaurantId = (restId && restId !== "null" && restId !== "undefined" && restId.trim() !== "")
+                ? restId
+                : restaurantId;
+
+            if (!finalRestaurantId || finalRestaurantId.trim() === "") {
+                throw new Error("Restaurant ID is missing. Please try again or refresh the page.");
+            }
+
             // Get final delivery coordinates (saved address if selected, otherwise device geolocation)
             const finalLatitude = resolvedLatitude;
             const finalLongitude = resolvedLongitude;
 
             const payload: CreateOrderRequest = {
                 userId: user.id,
-                restaurantId: restId,
+                restaurantId: finalRestaurantId,
                 restaurantName: group.restaurantName || "Unknown Restaurant",
                 deliveryAddress: {
                     street: formData.street,

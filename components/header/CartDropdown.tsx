@@ -92,58 +92,83 @@ export default function CartDropdown() {
                         <>
                             {/* Items List - Scrollable */}
                             <div className="overflow-y-auto flex-1 max-h-96">
-                                {cartItems.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        className="flex gap-3 p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                                    >
-                                        {(() => {
-                                            const imageUrl = getImageUrl(item.image);
-                                            const finalImageUrl = imageUrl || "/placeholder.png";
-
-                                            if (finalImageUrl && finalImageUrl !== "/placeholder.png") {
-                                                return (
-                                                    <Image
-                                                        src={finalImageUrl}
-                                                        alt={item.name}
-                                                        width={60}
-                                                        height={60}
-                                                        className="rounded-md object-cover"
-                                                        unoptimized={finalImageUrl.startsWith("http")}
-                                                    />
-                                                );
-                                            } else {
-                                                return (
-                                                    <div className="w-[60px] h-[60px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
-                                                        No Image
-                                                    </div>
-                                                );
+                                {(() => {
+                                    // Group items by restaurant
+                                    const restaurantGroups = cartItems.reduce(
+                                        (acc, item) => {
+                                            if (!acc[item.restaurantId]) {
+                                                acc[item.restaurantId] = {
+                                                    restaurantName: item.restaurantName,
+                                                    items: [],
+                                                };
                                             }
-                                        })()}
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="font-semibold text-sm truncate">{item.name}</h4>
-                                            <p className="text-xs text-gray-500">{item.restaurantName}</p>
-                                            {item.sizeName && (
-                                                <p className="text-xs text-gray-400">Size: {item.sizeName}</p>
-                                            )}
-                                            <div className="flex items-center justify-between mt-1">
-                                                <span className="text-sm font-semibold">
-                                                    ${item.price.toFixed(2)} x {item.quantity}
-                                                </span>
-                                                <span className="text-sm font-bold text-[#EE4D2D]">
-                                                    ${(item.price * item.quantity).toFixed(2)}
-                                                </span>
+                                            acc[item.restaurantId].items.push(item);
+                                            return acc;
+                                        },
+                                        {} as Record<string, { restaurantName: string; items: typeof cartItems }>,
+                                    );
+
+                                    return Object.entries(restaurantGroups).map(([restaurantId, group]) => (
+                                        <div key={restaurantId} className="border-b border-gray-200 last:border-b-0">
+                                            {/* Restaurant Header */}
+                                            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                                                <h4 className="text-sm font-semibold text-gray-900">{group.restaurantName}</h4>
                                             </div>
+                                            {/* Restaurant Items */}
+                                            {group.items.map((item) => (
+                                                <div
+                                                    key={item.id}
+                                                    className="flex gap-3 p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors last:border-b-0"
+                                                >
+                                                    {(() => {
+                                                        const imageUrl = getImageUrl(item.image);
+                                                        const finalImageUrl = imageUrl || "/placeholder.png";
+
+                                                        if (finalImageUrl && finalImageUrl !== "/placeholder.png") {
+                                                            return (
+                                                                <Image
+                                                                    src={finalImageUrl}
+                                                                    alt={item.name}
+                                                                    width={60}
+                                                                    height={60}
+                                                                    className="rounded-md object-cover"
+                                                                    unoptimized={finalImageUrl.startsWith("http")}
+                                                                />
+                                                            );
+                                                        } else {
+                                                            return (
+                                                                <div className="w-[60px] h-[60px] rounded-md bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+                                                                    No Image
+                                                                </div>
+                                                            );
+                                                        }
+                                                    })()}
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-semibold text-sm truncate">{item.name}</h4>
+                                                        {item.sizeName && (
+                                                            <p className="text-xs text-gray-400">Size: {item.sizeName}</p>
+                                                        )}
+                                                        <div className="flex items-center justify-between mt-1">
+                                                            <span className="text-sm font-semibold">
+                                                                ${item.price.toFixed(2)} x {item.quantity}
+                                                            </span>
+                                                            <span className="text-sm font-bold text-[#EE4D2D]">
+                                                                ${(item.price * item.quantity).toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => removeItem(item.id, item.restaurantId)}
+                                                        className="text-gray-400 hover:text-red-500 transition-colors self-start"
+                                                        title="Remove item"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
                                         </div>
-                                        <button
-                                            onClick={() => removeItem(item.id, item.restaurantId)}
-                                            className="text-gray-400 hover:text-red-500 transition-colors self-start"
-                                            title="Remove item"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ))}
+                                    ));
+                                })()}
                             </div>
 
                             {/* Footer */}
