@@ -1,13 +1,13 @@
 "use client";
 
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { orderApi } from "@/lib/api/orderApi";
 import { restaurantApi } from "@/lib/api/restaurantApi";
+import { formatDateTime } from "@/lib/formatters";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
-import { useConfirm } from "@/components/ui/ConfirmModal";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useMerchantOrderStore } from "@/stores/useMerchantOrderStore";
 import { Order, OrderStatus } from "@/types/order.type";
-import { formatDateTime } from "@/lib/formatters";
 import { CheckCircle, Package, RefreshCw, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -703,7 +703,7 @@ export default function MerchantOrdersPage() {
                                                         ? "Paid"
                                                         : order.paymentStatus === "failed"
                                                           ? "Failed"
-                                                          : "Pending"}
+                                                          : "Unpaid"}
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between gap-3">
@@ -845,7 +845,7 @@ export default function MerchantOrdersPage() {
                                                             ? "Paid"
                                                             : order.paymentStatus === "failed"
                                                               ? "Failed"
-                                                              : "Pending"}
+                                                              : "Unpaid"}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">

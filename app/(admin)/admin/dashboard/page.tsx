@@ -1,35 +1,35 @@
 "use client";
 
-import { dashboardApi, buildDateRangeQuery, type DashboardDateRangePreset } from "@/lib/api/dashboardApi";
-import { orderApi } from "@/lib/api/orderApi";
-import type { Order } from "@/types/order.type";
-import {
-    DollarSign,
-    ShoppingCart,
-    Store,
-    Users,
-    TrendingUp,
-    TrendingDown,
-    Clock,
-    CheckCircle2,
-    AlertCircle,
-    XCircle,
-    CreditCard,
-    Percent,
-    BarChart3,
-} from "lucide-react";
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import toast from "react-hot-toast";
 import DashboardVisualization, { type DashboardApiBundle } from "@/components/dashboard/DashboardVisualization";
-import { formatDateTime } from "@/lib/formatters";
 import {
     adaptAdminMerchantsPerformanceToViewModel,
     adaptAdminOrderStatisticsToViewModel,
     adaptAdminRevenueByMerchantToViewModel,
     adaptAdminSystemOverviewToViewModel,
 } from "@/lib/adapters/dashboardAdapters";
+import { buildDateRangeQuery, dashboardApi, type DashboardDateRangePreset } from "@/lib/api/dashboardApi";
+import { orderApi } from "@/lib/api/orderApi";
+import { formatDateTime } from "@/lib/formatters";
 import { formatCurrency, formatNumber } from "@/lib/utils/dashboardFormat";
+import type { Order } from "@/types/order.type";
+import {
+    AlertCircle,
+    BarChart3,
+    CheckCircle2,
+    Clock,
+    CreditCard,
+    DollarSign,
+    Percent,
+    ShoppingCart,
+    Store,
+    TrendingDown,
+    TrendingUp,
+    Users,
+    XCircle,
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 
 function safeToFixed(value: number | string | undefined, decimals: number = 1): string {
     if (value === undefined || value === null) return "0";
@@ -415,7 +415,7 @@ export default function AdminDashboard() {
                                                 </div>
                                                 <div>
                                                     <p className="font-medium text-black dark:text-white capitalize">
-                                                        {item.name || "Unknown"}
+                                                        {item.name?.toLowerCase() === "pending" ? "Unpaid" : (item.name || "Unknown")}
                                                     </p>
                                                     <p className="text-xs text-bodydark">
                                                         {formatNumber(item.count)} transactions

@@ -45,7 +45,12 @@ export const OrderStatusSidebar = ({
     
     // Check if payment is needed
     const paymentStatus = order?.paymentStatus?.toLowerCase() as PaymentStatus | undefined;
-    const needsPayment = paymentStatus && paymentStatus !== "paid" && paymentStatus !== "completed" && paymentStatus !== "refunded";
+    // Only show payment section if paymentStatus exists and is explicitly "pending" or "unpaid"
+    // If paymentStatus is "paid", "completed", or "refunded", don't show payment form
+    // If paymentStatus is undefined/null, don't show payment form (order might already be paid)
+    const isPaid = paymentStatus === "paid" || paymentStatus === "completed" || paymentStatus === "refunded";
+    const isUnpaid = paymentStatus === "pending" || paymentStatus === "unpaid";
+    const needsPayment = isUnpaid && !isPaid; // Only show if explicitly unpaid and not paid
     const finalAmount = order?.finalAmount || 0;
     const handleCancel = async () => {
         if (!canCancel || isCancelled) return;

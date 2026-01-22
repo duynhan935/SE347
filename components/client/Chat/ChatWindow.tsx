@@ -1,7 +1,6 @@
 "use client";
 
 import { Message } from "@/types";
-import { format } from "date-fns";
 import { ArrowLeft, Loader2, Paperclip, Send } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -30,7 +29,6 @@ export default function ChatWindow({
     onBack,
 }: ChatWindowProps) {
     const [inputValue, setInputValue] = useState("");
-    const [showTimestamp, setShowTimestamp] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -147,43 +145,6 @@ export default function ChatWindow({
         }
     };
 
-    const formatMessageTime = (timestamp: string) => {
-        if (!timestamp) return "";
-        try {
-            const timestampToParse = timestamp.trim();
-            
-            // Backend sends LocalDateTime (no timezone), so we should parse it as local time
-            // Don't add "Z" which would treat it as UTC and cause timezone offset issues
-            let date: Date;
-            
-            if (
-                timestampToParse.endsWith("Z") ||
-                timestampToParse.match(/[+-]\d{2}:\d{2}$/) ||
-                timestampToParse.match(/[+-]\d{4}$/)
-            ) {
-                // Has timezone info, parse directly
-                date = new Date(timestampToParse);
-            } else {
-                // No timezone info - parse as local time
-                // Replace space with T for ISO format if needed
-                const isoFormat = timestampToParse.includes('T') 
-                    ? timestampToParse 
-                    : timestampToParse.replace(' ', 'T');
-                date = new Date(isoFormat);
-            }
-            
-            // Check if date is valid
-            if (isNaN(date.getTime())) {
-                return "";
-            }
-            
-            // Format in local time (HH:mm format)
-            return format(date, "HH:mm");
-        } catch {
-            return "";
-        }
-    };
-
     // Filter messages to only show messages between currentUserId and partnerId
     // This prevents showing messages from other conversations
     const filteredMessages = messages.filter((message) => {
@@ -279,15 +240,11 @@ export default function ChatWindow({
                     <>
                         {sortedMessages.map((message) => {
                             const isOwnMessage = message.senderId === currentUserId;
-                            const messageTime = formatMessageTime(message.timestamp);
-                            const showTime = showTimestamp === message.id;
 
                             return (
                                 <div
                                     key={message.id}
                                     className={`flex gap-2 ${isOwnMessage ? "justify-end items-end" : "justify-start items-start"}`}
-                                    onMouseEnter={() => setShowTimestamp(message.id)}
-                                    onMouseLeave={() => setShowTimestamp(null)}
                                 >
                                     {/* Avatar for received messages */}
                                     {!isOwnMessage && (
@@ -307,12 +264,6 @@ export default function ChatWindow({
                                         >
                                             {message.content}
                                         </div>
-                                        {/* Timestamp - Always render to prevent layout shift */}
-                                        <p className={`text-xs mt-1 px-1 h-5 transition-opacity duration-150 ${
-                                            isOwnMessage ? "text-gray-500" : "text-gray-400"
-                                        } ${showTime ? "opacity-100" : "opacity-0"}`}>
-                                            {messageTime}
-                                        </p>
                                     </div>
                                 </div>
                             );
