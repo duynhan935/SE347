@@ -5,6 +5,7 @@ import { useNotificationStore } from "@/stores/useNotificationStore";
 import {
     ChevronDown,
     Clock,
+    DollarSign,
     Grid3x3,
     Home,
     LayoutDashboard,
@@ -12,7 +13,7 @@ import {
     Settings,
     Users,
     Utensils,
-    X
+    X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -41,6 +42,11 @@ const menuItems: MenuItem[] = [
         label: "Merchant Requests",
         icon: Clock,
         href: "/admin/merchant-requests",
+    },
+    {
+        label: "Payout Requests",
+        icon: DollarSign,
+        href: "/admin/payouts",
     },
     {
         label: "Manage Restaurants",
@@ -76,6 +82,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
 
     // Calculate pending merchant requests count from notifications
     const pendingMerchantCount = notifications.filter((n) => n.type === "ADMIN_MERCHANT_REQUEST" && !n.read).length;
+
+    // Calculate pending payout requests count from notifications
+    const pendingPayoutCount = notifications.filter((n) => n.type === "PAYOUT_REQUEST" && !n.read).length;
 
     return (
         <>
@@ -157,6 +166,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                                     }
 
                                     const isMerchantRequests = item.href === "/admin/merchant-requests";
+                                    const isPayoutRequests = item.href === "/admin/payouts";
 
                                     return (
                                         <li key={item.label}>
@@ -180,6 +190,17 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                                                         }`}
                                                     >
                                                         {pendingMerchantCount > 99 ? "99+" : pendingMerchantCount}
+                                                    </span>
+                                                )}
+                                                {isPayoutRequests && pendingPayoutCount > 0 && (
+                                                    <span
+                                                        className={`h-5 min-w-5 px-1.5 text-xs rounded-full flex items-center justify-center font-bold ${
+                                                            isActive
+                                                                ? "bg-white text-brand-orange"
+                                                                : "bg-green-600 text-white"
+                                                        }`}
+                                                    >
+                                                        {pendingPayoutCount > 99 ? "99+" : pendingPayoutCount}
                                                     </span>
                                                 )}
                                             </Link>

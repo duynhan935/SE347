@@ -6,6 +6,9 @@ import type { BankInfo, WalletSummary, WalletTransaction } from "@/types/wallet.
 import { Loader2, Wallet as WalletIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { useWalletNotifications } from "@/lib/hooks/useWalletNotifications";
+import { useNotificationStore } from "@/stores/useNotificationStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 const formatUSD = (value: number) =>
     new Intl.NumberFormat("en-US", {
@@ -13,9 +16,10 @@ const formatUSD = (value: number) =>
         currency: "USD",
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format((value || 0) / 25000);
+    }).format(value || 0);
 
 export default function MerchantWalletPage() {
+    const { user, isAuthenticated } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [wallet, setWallet] = useState<WalletSummary | null>(null);
@@ -24,13 +28,32 @@ export default function MerchantWalletPage() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
-    const [amount, setAmount] = useState<number>(50000);
+    const [amount, setAmount] = useState<number>(0);
     const [bankInfo, setBankInfo] = useState<BankInfo>({
         bankName: "",
         accountNumber: "",
         accountHolderName: "",
     });
     const [note, setNote] = useState("");
+
+    // Enable wallet notifications
+    useWalletNotifications({
+        userId: user?.id || null,
+        userRole: user?.role,
+        isAuthenticated,
+    });
+
+    // Listen for payout approval/rejection notifications and refresh
+    const notifications = useNotificationStore((state) => state.notifications);
+    useEffect(() => {
+        const latestPayoutNotif = notifications.find(
+            (n) => (n.type === "PAYOUT_APPROVED" || n.type === "PAYOUT_REJECTED") && !n.read,
+        );
+        if (latestPayoutNotif) {
+            // Refresh wallet data when payout is processed
+            fetchAll(page);
+        }
+    }, [notifications]);
 
     const canSubmitWithdraw = useMemo(() => {
         if (submitting) return false;
@@ -70,6 +93,7 @@ export default function MerchantWalletPage() {
 
         try {
             setSubmitting(true);
+
             await walletApi.requestWithdraw({
                 amount,
                 bankInfo: {
@@ -79,10 +103,15 @@ export default function MerchantWalletPage() {
                 },
                 note: note.trim() || undefined,
             });
-            toast.success("Withdrawal request submitted successfully");
+
+            toast.success("Withdrawal request submitted successfully! Admin will review it soon.");
+
+            // Reset form state
             setNote("");
-            setAmount(2);
+            setAmount(50);
             setBankInfo({ bankName: "", accountNumber: "", accountHolderName: "" });
+
+            // Refresh data
             await fetchAll(1);
             setPage(1);
         } catch (error: unknown) {
@@ -143,14 +172,44 @@ export default function MerchantWalletPage() {
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Amount (minimum $2.00)
                             </label>
-                            <input
-                                type="number"
-                                min={2}
-                                step={1}
-                                value={amount}
-                                onChange={(e) => setAmount(Number(e.target.value))}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
-                            />
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                                    $
+                                </span>
+                                <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={amount === 0 ? "" : amount}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        const cleaned = val.replace(/[^\d.]/g, "");
+
+                                        const parts = cleaned.split(".");
+                                        const formatted =
+                                            parts.length > 2 ? parts[0] + "." + parts.slice(1).join("") : cleaned;
+
+                                        if (formatted === "") {
+                                            setAmount(0);
+                                        } else {
+                                            const num = parseFloat(formatted);
+                                            setAmount(isNaN(num) ? 0 : num);
+                                        }
+                                    }}
+                                    onBlur={(e) => {
+                                        if (amount > 0) {
+                                            setAmount(parseFloat(amount.toFixed(2)));
+                                        }
+                                    }}
+                                    onFocus={(e) => e.target.select()}
+                                    className="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-orange"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            {amount > 0 && amount < 2 && (
+                                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                                    Minimum withdrawal amount is $2.00
+                                </p>
+                            )}
                         </div>
 
                         <div>

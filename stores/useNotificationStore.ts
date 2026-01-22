@@ -13,7 +13,10 @@ export interface Notification {
         | "NEW_ORDER"
         | "MERCHANT_NEW_ORDER"
         | "ADMIN_MERCHANT_REQUEST"
-        | "MESSAGE_RECEIVED";
+        | "MESSAGE_RECEIVED"
+        | "PAYOUT_REQUEST"
+        | "PAYOUT_APPROVED"
+        | "PAYOUT_REJECTED";
     title: string;
     message: string;
     orderId?: string;
@@ -23,6 +26,8 @@ export interface Notification {
     roomId?: string;
     senderId?: string;
     senderName?: string;
+    payoutId?: string;
+    amount?: number;
     read: boolean;
     createdAt: Date;
 }
@@ -56,7 +61,7 @@ export const useNotificationStore = create<NotificationStore>()(
                 set((state) => {
                     // Check if notification already exists (prevent duplicates)
                     const exists = state.notifications.some(
-                        (n) => n.orderId === newNotification.orderId && n.type === newNotification.type
+                        (n) => n.orderId === newNotification.orderId && n.type === newNotification.type,
                     );
                     if (exists) {
                         return state;
@@ -70,7 +75,9 @@ export const useNotificationStore = create<NotificationStore>()(
                 // Play notification sound using Web Audio API (no file needed)
                 if (typeof window !== "undefined" && "AudioContext" in window) {
                     try {
-                        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+                        const AudioCtx =
+                            window.AudioContext ||
+                            (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
                         if (!AudioCtx) return;
 
                         const audioContext = new AudioCtx();
@@ -102,7 +109,7 @@ export const useNotificationStore = create<NotificationStore>()(
             markAsRead: (id) => {
                 set((state) => ({
                     notifications: state.notifications.map((notif) =>
-                        notif.id === id ? { ...notif, read: true } : notif
+                        notif.id === id ? { ...notif, read: true } : notif,
                     ),
                 }));
             },
@@ -118,7 +125,7 @@ export const useNotificationStore = create<NotificationStore>()(
                     notifications: state.notifications.map((notif) =>
                         !notif.read && (notif.type === "ORDER_ACCEPTED" || notif.type === "ORDER_REJECTED")
                             ? { ...notif, read: true }
-                            : notif
+                            : notif,
                     ),
                 }));
             },
@@ -139,16 +146,14 @@ export const useNotificationStore = create<NotificationStore>()(
 
             orderUnreadCount: () => {
                 return get().notifications.filter(
-                    (notif) => !notif.read && (notif.type === "ORDER_ACCEPTED" || notif.type === "ORDER_REJECTED")
+                    (notif) => !notif.read && (notif.type === "ORDER_ACCEPTED" || notif.type === "ORDER_REJECTED"),
                 ).length;
             },
 
             // Initialize notifications from order history
             initializeFromOrders: (orders) => {
                 const existingNotifications = get().notifications;
-                const existingOrderIds = new Set(
-                    existingNotifications.map((n) => `${n.orderId}-${n.type}`)
-                );
+                const existingOrderIds = new Set(existingNotifications.map((n) => `${n.orderId}-${n.type}`));
 
                 const newNotifications: Notification[] = [];
 
@@ -194,8 +199,8 @@ export const useNotificationStore = create<NotificationStore>()(
                             newNotifications.push({
                                 id: `notif-init-${order.orderId}-completed`,
                                 type: "ORDER_COMPLETED",
-                            title: "Order Completed",
-                            message: `Order ${order.orderId} has been delivered successfully.`,
+                                title: "Order Completed",
+                                message: `Order ${order.orderId} has been delivered successfully.`,
                                 orderId: order.orderId,
                                 restaurantName: order.restaurant?.name,
                                 read: false,
@@ -229,6 +234,6 @@ export const useNotificationStore = create<NotificationStore>()(
                     }));
                 }
             },
-        }
-    )
+        },
+    ),
 );

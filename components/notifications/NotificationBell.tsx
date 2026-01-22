@@ -9,11 +9,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { orderApi } from "@/lib/api/orderApi";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
+import { useWalletNotifications } from "@/lib/hooks/useWalletNotifications";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
 import { OrderStatus } from "@/types/order.type";
 import { formatDateTime } from "@/lib/formatters";
-import { Bell } from "lucide-react";
+import { Bell, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -22,6 +23,15 @@ export function NotificationBell() {
     const { notifications, markAsRead, markAllAsRead, unreadCount, initializeFromOrders } = useNotificationStore();
     const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const initializedRef = useRef(false);
+
+    // Enable wallet notifications for all users (admin gets payout requests, merchants get approvals/rejections)
+    useWalletNotifications({
+        userId: user?.id || null,
+        userRole: user?.role,
+        isAuthenticated,
+    });
+        isAuthenticated,
+    });
 
     // Listen for order status updates via socket
     useOrderSocket({
@@ -183,11 +193,34 @@ export function NotificationBell() {
 
     if (!isAuthenticated) return null;
 
-    // Only count order-related notifications (exclude messages, merchant orders, admin requests)
-    const orderNotifications = notifications.filter(
+    // Include payout notifications for display
+    const displayNotifications = notifications.filter(
         (n) => n.type !== "MERCHANT_NEW_ORDER" && n.type !== "ADMIN_MERCHANT_REQUEST" && n.type !== "MESSAGE_RECEIVED",
     );
-    const unread = orderNotifications.filter((n) => !n.read).length;
+    const unread = displayNotifications.filter((n) => !n.read).length;
+
+    const formatCurrency = (amount: number | undefined) => {
+        if (!amount) return "";
+        return new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "USD",
+        }).format(amount);
+    };
+
+    const getNotificationLink = (notif: (typeof notifications)[0]) => {
+        if (notif.orderId) return `/orders/${notif.orderId}`;
+        if (notif.type === "PAYOUT_REQUEST" && user?.role === "ADMIN") return "/admin/payouts";
+        if (notif.type === "PAYOUT_APPROVED" || notif.type === "PAYOUT_REJECTED") return "/merchant/wallet";
+        if (notif.roomId) return "/messages";
+        return null;
+    };
+
+    const getNotificationIcon = (type: string) => {
+        if (type === "PAYOUT_REQUEST" || type === "PAYOUT_APPROVED" || type === "PAYOUT_REJECTED") {
+            return <DollarSign className="h-4 w-4 text-green-600" />;
+        }
+        return null;
+    };
 
     return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -216,87 +249,78 @@ export function NotificationBell() {
                     <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">No notifications</div>
                 ) : (
                     <>
-                        {orderNotifications.map((notif) => (
-                            <DropdownMenuItem
-                                key={notif.id}
-                                className={`flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                                    !notif.read ? "bg-orange-50 dark:bg-orange-900/20" : ""
-                                }`}
-                                onClick={() => {
-                                    markAsRead(notif.id);
-                                    setIsOpen(false);
-                                    if (notif.orderId) {
-                                        window.location.href = `/orders/${notif.orderId}`;
-                                    }
-                                }}
-                            >
-                                <div className="flex items-start justify-between w-full">
-                                    <div className="flex-1">
-                                        <p className={`text-sm font-medium ${!notif.read ? "font-bold" : ""}`}>
-                                            {notif.title}
-                                        </p>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{notif.message}</p>
-                                        {notif.restaurantName && (
-                                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                                Restaurant: {notif.restaurantName}
-                                            </p>
+                        {displayNotifications.map((notif) => {
+                            const link = getNotificationLink(notif);
+                            const icon = getNotificationIcon(notif.type);
+
+                            return (
+                                <DropdownMenuItem
+                                    key={notif.id}
+                                    className={`flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                                        !notif.read ? "bg-orange-50 dark:bg-orange-900/20" : ""
+                                    }`}
+                                    onClick={() => {
+                                        markAsRead(notif.id);
+                                        setIsOpen(false);
+                                        if (link) {
+                                            window.location.href = link;
+                                        }
+                                    }}
+                                >
+                                    <div className="flex items-start justify-between w-full">
+                                        <div className="flex gap-2 flex-1">
+                                            {icon}
+                                            <div className="flex-1">
+                                                <p className={`text-sm font-medium ${!notif.read ? "font-bold" : ""}`}>
+                                                    {notif.title}
+                                                </p>
+                                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                                    {notif.message}
+                                                </p>
+                                                {notif.restaurantName && (
+                                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                                        Restaurant: {notif.restaurantName}
+                                                    </p>
+                                                )}
+                                                {notif.amount && (
+                                                    <p className="text-xs text-green-600 font-semibold mt-1">
+                                                        {formatCurrency(notif.amount)}
+                                                    </p>
+                                                )}
+                                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                    {formatDateTime(notif.createdAt)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {!notif.read && (
+                                            <div className="h-2 w-2 bg-[#EE4D2D] rounded-full ml-2 mt-1 flex-shrink-0" />
                                         )}
-                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                            {formatDateTime(notif.createdAt)}
-                                        </p>
                                     </div>
-                                    {!notif.read && (
-                                        <div className="h-2 w-2 bg-[#EE4D2D] rounded-full ml-2 mt-1 flex-shrink-0" />
+                                    {link && (
+                                        <Link
+                                            href={link}
+                                            className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-2 font-medium"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                markAsRead(notif.id);
+                                                setIsOpen(false);
+                                            }}
+                                        >
+                                            {notif.type.startsWith("PAYOUT")
+                                                ? "View details →"
+                                                : "View order details →"}
+                                        </Link>
                                     )}
-                                </div>
-                                {notif.orderId && (
-                                    <Link
-                                        href={`/orders/${notif.orderId}`}
-                                        className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-2 font-medium"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            markAsRead(notif.id);
-                                            setIsOpen(false);
-                                        }}
-                                    >
-                                        View order details →
-                                    </Link>
-                                )}
-                                {notif.roomId && (
-                                    <Link
-                                        href="/messages"
-                                        className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-2 font-medium"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            markAsRead(notif.id);
-                                            setIsOpen(false);
-                                        }}
-                                    >
-                                        View message →
-                                    </Link>
-                                )}
-                                {notif.roomId && (
-                                    <Link
-                                        href="/messages"
-                                        className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-2 font-medium"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            markAsRead(notif.id);
-                                            setIsOpen(false);
-                                        }}
-                                    >
-                                        View message →
-                                    </Link>
-                                )}
-                            </DropdownMenuItem>
-                        ))}
+                                </DropdownMenuItem>
+                            );
+                        })}
                         <DropdownMenuSeparator />
                         <Link
-                            href="/account/orders"
-                            className="p-3 text-center text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium"
+                            href={user?.role === "ADMIN" ? "/admin/dashboard" : "/account/orders"}
+                            className="block p-3 text-center text-sm text-[#EE4D2D] hover:text-[#EE4D2D]/80 font-medium"
                             onClick={() => setIsOpen(false)}
                         >
-                            View all orders
+                            {user?.role === "ADMIN" ? "View dashboard" : "View all orders"}
                         </Link>
                     </>
                 )}

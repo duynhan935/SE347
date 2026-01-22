@@ -1,7 +1,7 @@
-export type PayoutRequestStatus = "pending" | "completed" | "rejected";
+export type PayoutRequestStatus = "pending" | "completed" | "rejected" | "failed";
 
 export type WalletTransactionType = "EARN" | "WITHDRAW";
-export type WalletTransactionStatus = "PENDING" | "COMPLETED" | "REJECTED";
+export type WalletTransactionStatus = "PENDING" | "COMPLETED" | "REJECTED" | "FAILED";
 
 export interface WalletSummary {
     balance: number;
