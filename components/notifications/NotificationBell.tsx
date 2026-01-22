@@ -8,11 +8,11 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { orderApi } from "@/lib/api/orderApi";
+import { formatDateTime } from "@/lib/formatters";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
 import { OrderStatus } from "@/types/order.type";
-import { formatDateTime } from "@/lib/formatters";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -216,19 +216,31 @@ export function NotificationBell() {
                     <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">No notifications</div>
                 ) : (
                     <>
-                        {orderNotifications.map((notif) => (
+                        {orderNotifications.map((notif) => {
+                            const handleNotificationClick = async () => {
+                                markAsRead(notif.id);
+                                setIsOpen(false);
+                                if (notif.orderId) {
+                                    try {
+                                        // Fetch order to get slug for redirect
+                                        const order = await orderApi.getOrderById(notif.orderId, { cacheBust: true });
+                                        const redirectSlug = order.slug || notif.orderId;
+                                        window.location.href = `/orders/${redirectSlug}`;
+                                    } catch (error) {
+                                        // Fallback to orderId if fetch fails
+                                        console.error("Failed to fetch order slug, using orderId:", error);
+                                        window.location.href = `/orders/${notif.orderId}`;
+                                    }
+                                }
+                            };
+
+                            return (
                             <DropdownMenuItem
                                 key={notif.id}
                                 className={`flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${
                                     !notif.read ? "bg-orange-50 dark:bg-orange-900/20" : ""
                                 }`}
-                                onClick={() => {
-                                    markAsRead(notif.id);
-                                    setIsOpen(false);
-                                    if (notif.orderId) {
-                                        window.location.href = `/orders/${notif.orderId}`;
-                                    }
-                                }}
+                                onClick={handleNotificationClick}
                             >
                                 <div className="flex items-start justify-between w-full">
                                     <div className="flex-1">
@@ -253,10 +265,20 @@ export function NotificationBell() {
                                     <Link
                                         href={`/orders/${notif.orderId}`}
                                         className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-2 font-medium"
-                                        onClick={(e) => {
+                                        onClick={async (e) => {
                                             e.stopPropagation();
                                             markAsRead(notif.id);
                                             setIsOpen(false);
+                                            // Fetch order to get slug for redirect
+                                            try {
+                                                const order = await orderApi.getOrderById(notif.orderId!, { cacheBust: true });
+                                                const redirectSlug = order.slug || notif.orderId;
+                                                window.location.href = `/orders/${redirectSlug}`;
+                                            } catch (error) {
+                                                // Fallback to orderId if fetch fails
+                                                console.error("Failed to fetch order slug, using orderId:", error);
+                                                window.location.href = `/orders/${notif.orderId}`;
+                                            }
                                         }}
                                     >
                                         View order details →
@@ -289,7 +311,8 @@ export function NotificationBell() {
                                     </Link>
                                 )}
                             </DropdownMenuItem>
-                        ))}
+                            );
+                        })}
                         <DropdownMenuSeparator />
                         <Link
                             href="/account/orders"

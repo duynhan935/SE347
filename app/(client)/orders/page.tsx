@@ -79,7 +79,10 @@ const OrdersPage = () => {
             const items = Array.isArray(typedOrder.items)
                 ? typedOrder.items.map((item, itemIndex) => {
                       const fallbackId = `${orderId}-item-${itemIndex + 1}`;
-                      const imageURL = item.imageURL || item.cartItemImage || null;
+                      // Preserve both imageURL and cartItemImage from order item
+                      // Priority: imageURL > cartItemImage, but preserve both if available
+                      const imageURL = (item.imageURL && item.imageURL.trim() !== "") ? item.imageURL.trim() : null;
+                      const cartItemImage = (item.cartItemImage && item.cartItemImage.trim() !== "") ? item.cartItemImage.trim() : null;
                       return {
                           id: fallbackId,
                           productId: (item.productId ?? fallbackId).toString(),
@@ -89,8 +92,9 @@ const OrdersPage = () => {
                           price: typeof item.price === "number" ? item.price : 0,
                           quantity: typeof item.quantity === "number" ? item.quantity : 0,
                           customizations: item.customizations || undefined,
-                          // Preserve image URL from order item so order list + reorder can show the same image
+                          // Preserve both image fields so reorder can use them
                           imageURL: imageURL || undefined,
+                          cartItemImage: cartItemImage || undefined,
                       };
                   })
                 : [];
