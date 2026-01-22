@@ -72,8 +72,10 @@ export const MenuItemCard = memo(
                     return;
                 }
 
-                // Use first size as default
-                const defaultSize = sizes[0];
+                // Use size with minimum price as default
+                const defaultSize = sizes.reduce((min, size) => 
+                    size.price < min.price ? size : min
+                );
 
                 if (!defaultSize) {
                     toast.error("No default size found");

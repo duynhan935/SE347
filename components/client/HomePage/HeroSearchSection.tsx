@@ -42,17 +42,13 @@ export default function HeroSearchSection() {
     }, [fetchAllCategories]);
 
     const handleCategoryClick = (categoryName: string) => {
-        const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
-        currentParams.set("type", "foods");
-        currentParams.delete("page");
-
-        if (activeCategory === categoryName) {
-            currentParams.delete("category");
-        } else {
-            currentParams.set("category", categoryName);
-        }
-
-        router.push(`/?${currentParams.toString()}`, { scroll: false });
+        const params = new URLSearchParams();
+        
+        // Set category filter for search page
+        params.set("category", categoryName);
+        
+        // Redirect to search page with category filter
+        router.push(`/search?${params.toString()}`);
     };
 
     const handleSearch = (e: React.FormEvent) => {
@@ -146,11 +142,8 @@ export default function HeroSearchSection() {
                         {/* All Category */}
                         <button
                             onClick={() => {
-                                const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
-                                currentParams.set("type", "foods");
-                                currentParams.delete("category");
-                                currentParams.delete("page");
-                                router.push(`/?${currentParams.toString()}`, { scroll: false });
+                                // Redirect to search page without category filter
+                                router.push(`/search`);
                             }}
                             className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
                                 !activeCategory

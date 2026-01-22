@@ -77,22 +77,36 @@ export default function SearchPage() {
         }
         // "relevance" or default: no sort parameter, backend will use default sorting
 
-        // Map price range filter (backend expects BigDecimal values)
+        // Map price range filter (backend expects BigDecimal values in USD)
+        // Note: Database stores prices in USD in product_sizes table
+        // Price range in URL is already in USD, no conversion needed
         const priceRange = searchParams.get("priceRange");
         if (priceRange) {
-            const [min, max] = priceRange.split("-");
-            if (min) {
-                // Price is in USD (from SearchFilters), convert to number
-                const minPrice = parseFloat(min);
-                if (!isNaN(minPrice)) {
-                    params.set("minPrice", minPrice.toString());
+            // Decode URL encoding (e.g., %2B becomes +)
+            const decodedPriceRange = decodeURIComponent(priceRange);
+            
+            // Handle "4.00+" case (no dash, has plus sign)
+            if (decodedPriceRange.endsWith("+")) {
+                // Price range is already in USD
+                const minPriceUSD = parseFloat(decodedPriceRange.replace("+", ""));
+                if (!isNaN(minPriceUSD) && minPriceUSD > 0) {
+                    params.set("minPrice", minPriceUSD.toString());
+                    // No maxPrice for "Over $X" ranges
                 }
-            }
-            if (max && max !== "+") {
-                // Price is in USD, convert to number
-                const maxPrice = parseFloat(max);
-                if (!isNaN(maxPrice)) {
-                    params.set("maxPrice", maxPrice.toString());
+            } else {
+                // Handle "min-max" format (both in USD)
+                const [min, max] = decodedPriceRange.split("-");
+                const minPriceUSD = min ? parseFloat(min) : null;
+                const maxPriceUSD = max ? parseFloat(max) : null;
+                
+                // Only set minPrice if it's greater than 0 (avoid setting 0 which matches all products)
+                if (minPriceUSD !== null && !isNaN(minPriceUSD) && minPriceUSD > 0) {
+                    params.set("minPrice", minPriceUSD.toString());
+                }
+                
+                // Always set maxPrice if it exists and is valid
+                if (maxPriceUSD !== null && !isNaN(maxPriceUSD) && maxPriceUSD > 0) {
+                    params.set("maxPrice", maxPriceUSD.toString());
                 }
             }
         }
@@ -159,20 +173,36 @@ export default function SearchPage() {
                     <div className="flex-1 min-w-0">
                         {/* Search Results Header */}
                         <div className="mb-4">
-                            {query ? (
-                                <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                                    Search results for &quot;{query}&quot;
-                                </h1>
-                            ) : (
-                                <h1 className="text-2xl font-bold text-gray-900 mb-2">All Food Items</h1>
-                            )}
-                            <p className="text-sm text-gray-500">
-                                {productsLoading
-                                    ? "Loading..."
-                                    : totalElements > 0
-                                      ? `Showing ${(currentPageNumber - 1) * PAGE_SIZE + 1}-${Math.min(currentPageNumber * PAGE_SIZE, totalElements)} of ${totalElements} ${totalElements === 1 ? "result" : "results"}`
-                                      : "No results found"}
-                            </p>
+                            <div className="flex items-start justify-between gap-4 mb-2">
+                                <div className="flex-1">
+                                    {query ? (
+                                        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                                            Search results for &quot;{query}&quot;
+                                        </h1>
+                                    ) : (
+                                        <h1 className="text-2xl font-bold text-gray-900 mb-2">All Food Items</h1>
+                                    )}
+                                    <p className="text-sm text-gray-500">
+                                        {productsLoading
+                                            ? "Loading..."
+                                            : totalElements > 0
+                                              ? `Showing ${(currentPageNumber - 1) * PAGE_SIZE + 1}-${Math.min(currentPageNumber * PAGE_SIZE, totalElements)} of ${totalElements} ${totalElements === 1 ? "result" : "results"}`
+                                              : "No results found"}
+                                    </p>
+                                </div>
+                                {/* Reset Button - Show when there are active filters or search query */}
+                                {(query || searchParams.toString().length > 0) && (
+                                    <button
+                                        onClick={() => {
+                                            router.push("/search", { scroll: false });
+                                            window.scrollTo({ top: 0, behavior: "smooth" });
+                                        }}
+                                        className="px-4 py-2 text-sm font-medium text-[#EE4D2D] hover:text-[#EE4D2D]/80 hover:bg-[#EE4D2D]/10 rounded-lg border border-[#EE4D2D]/30 hover:border-[#EE4D2D] transition-colors whitespace-nowrap"
+                                    >
+                                        Reset All
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Sort Bar */}
@@ -230,13 +260,12 @@ export default function SearchPage() {
                                     </p>
                                     <button
                                         onClick={() => {
-                                            const currentParams = new URLSearchParams();
-                                            if (query) currentParams.set("q", query);
-                                            window.location.href = `/search?${currentParams.toString()}`;
+                                            router.push("/search", { scroll: false });
+                                            window.scrollTo({ top: 0, behavior: "smooth" });
                                         }}
                                         className="px-6 py-3 bg-[#EE4D2D] text-white rounded-lg font-semibold hover:bg-[#EE4D2D]/90 transition-colors"
                                     >
-                                        Clear Filters
+                                        Reset All
                                     </button>
                                 </div>
                             </div>

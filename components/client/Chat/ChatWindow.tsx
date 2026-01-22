@@ -148,16 +148,36 @@ export default function ChatWindow({
     };
 
     const formatMessageTime = (timestamp: string) => {
+        if (!timestamp) return "";
         try {
-            let timestampToParse = timestamp.trim();
+            const timestampToParse = timestamp.trim();
+            
+            // Backend sends LocalDateTime (no timezone), so we should parse it as local time
+            // Don't add "Z" which would treat it as UTC and cause timezone offset issues
+            let date: Date;
+            
             if (
-                !timestampToParse.endsWith("Z") &&
-                !timestampToParse.match(/[+-]\d{2}:\d{2}$/) &&
-                !timestampToParse.match(/[+-]\d{4}$/)
+                timestampToParse.endsWith("Z") ||
+                timestampToParse.match(/[+-]\d{2}:\d{2}$/) ||
+                timestampToParse.match(/[+-]\d{4}$/)
             ) {
-                timestampToParse = timestampToParse + "Z";
+                // Has timezone info, parse directly
+                date = new Date(timestampToParse);
+            } else {
+                // No timezone info - parse as local time
+                // Replace space with T for ISO format if needed
+                const isoFormat = timestampToParse.includes('T') 
+                    ? timestampToParse 
+                    : timestampToParse.replace(' ', 'T');
+                date = new Date(isoFormat);
             }
-            const date = new Date(timestampToParse);
+            
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                return "";
+            }
+            
+            // Format in local time (HH:mm format)
             return format(date, "HH:mm");
         } catch {
             return "";
@@ -227,19 +247,9 @@ export default function ChatWindow({
                         <span>{partnerName.charAt(0).toUpperCase()}</span>
                     </div>
 
-                    {/* Name & Status */}
+                    {/* Name */}
                     <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-gray-900 text-base truncate">{partnerName}</h3>
-                        <div className="flex items-center gap-1.5">
-                            {isConnected ? (
-                                <>
-                                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                                    <p className="text-xs text-gray-500">Active now</p>
-                                </>
-                            ) : (
-                                <p className="text-xs text-gray-500">Last seen recently</p>
-                            )}
-                        </div>
                     </div>
 
                     {/* Visit Shop Button */}
@@ -275,7 +285,7 @@ export default function ChatWindow({
                             return (
                                 <div
                                     key={message.id}
-                                    className={`flex items-end gap-2 items-start ${isOwnMessage ? "justify-end" : "justify-start"}`}
+                                    className={`flex gap-2 ${isOwnMessage ? "justify-end items-end" : "justify-start items-start"}`}
                                     onMouseEnter={() => setShowTimestamp(message.id)}
                                     onMouseLeave={() => setShowTimestamp(null)}
                                 >

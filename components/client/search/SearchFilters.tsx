@@ -4,15 +4,10 @@ import { useCategoryStore } from "@/stores/categoryStore";
 import { Category } from "@/types";
 import { X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FilterSection from "./FilterSection";
 
-const priceRanges = [
-    { value: "0-30000", label: "Under $1.20", min: 0, max: 30000 },
-    { value: "30000-50000", label: "$1.20 - $2.00", min: 30000, max: 50000 },
-    { value: "50000-100000", label: "$2.00 - $4.00", min: 50000, max: 100000 },
-    { value: "100000+", label: "Over $4.00", min: 100000, max: null },
-];
+// Prices are stored and searched in USD directly
 
 const ratingOptions = [
     { value: "5", label: "5 stars" },
@@ -49,7 +44,8 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
     const { categories, fetchAllCategories } = useCategoryStore();
 
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-    const [selectedPriceRange, setSelectedPriceRange] = useState<string>("");
+    const [minPriceUSD, setMinPriceUSD] = useState<string>("");
+    const [maxPriceUSD, setMaxPriceUSD] = useState<string>("");
     const [selectedRating, setSelectedRating] = useState<string>("");
     const [selectedDistrict, setSelectedDistrict] = useState<string>("");
     const [selectedSpecialFilters, setSelectedSpecialFilters] = useState<string[]>([]);
@@ -61,7 +57,36 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
     useEffect(() => {
         // Sync with URL params
         setSelectedCategories(searchParams.getAll("category") || []);
-        setSelectedPriceRange(searchParams.get("priceRange") || "");
+        
+        // Parse price range from URL (USD) - direct, no conversion needed
+        const priceRange = searchParams.get("priceRange");
+        if (priceRange) {
+            if (priceRange.endsWith("+")) {
+                const minUSD = parseFloat(priceRange.replace("+", ""));
+                if (!isNaN(minUSD) && minUSD > 0) {
+                    setMinPriceUSD(minUSD.toFixed(2));
+                    setMaxPriceUSD("");
+                }
+            } else {
+                const [min, max] = priceRange.split("-");
+                const minUSD = min ? parseFloat(min) : null;
+                const maxUSD = max ? parseFloat(max) : null;
+                if (minUSD !== null && !isNaN(minUSD) && minUSD > 0) {
+                    setMinPriceUSD(minUSD.toFixed(2));
+                } else {
+                    setMinPriceUSD("");
+                }
+                if (maxUSD !== null && !isNaN(maxUSD) && maxUSD > 0) {
+                    setMaxPriceUSD(maxUSD.toFixed(2));
+                } else {
+                    setMaxPriceUSD("");
+                }
+            }
+        } else {
+            setMinPriceUSD("");
+            setMaxPriceUSD("");
+        }
+        
         setSelectedRating(searchParams.get("rating") || "");
         setSelectedDistrict(searchParams.get("district") || "");
         setSelectedSpecialFilters(searchParams.getAll("special") || []);
@@ -93,11 +118,52 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
         updateURL({ category: newCategories.length > 0 ? newCategories : null });
     };
 
-    const handlePriceRangeChange = (value: string) => {
-        const newValue = selectedPriceRange === value ? "" : value;
-        setSelectedPriceRange(newValue);
-        updateURL({ priceRange: newValue || null });
+    const priceUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const handlePriceRangeChange = () => {
+        // Clear existing timeout
+        if (priceUpdateTimeoutRef.current) {
+            clearTimeout(priceUpdateTimeoutRef.current);
+        }
+
+        // Debounce the update to avoid too many URL changes
+        priceUpdateTimeoutRef.current = setTimeout(() => {
+            // Use USD directly - no conversion needed
+            const minUSD = parseFloat(minPriceUSD);
+            const maxUSD = parseFloat(maxPriceUSD);
+            
+            let priceRangeValue: string | null = null;
+            
+            // Check if both are valid numbers
+            const hasMin = !isNaN(minUSD) && minUSD > 0;
+            const hasMax = !isNaN(maxUSD) && maxUSD > 0;
+            
+            if (hasMin && hasMax) {
+                // Both min and max provided
+                if (minUSD <= maxUSD) {
+                    priceRangeValue = `${minUSD}-${maxUSD}`;
+                }
+            } else if (hasMin) {
+                // Only min provided (over $X)
+                priceRangeValue = `${minUSD}+`;
+            } else if (hasMax) {
+                // Only max provided (under $X)
+                priceRangeValue = `0-${maxUSD}`;
+            }
+            // If neither is provided, priceRangeValue stays null (clears filter)
+            
+            updateURL({ priceRange: priceRangeValue });
+        }, 500); // 500ms debounce
     };
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (priceUpdateTimeoutRef.current) {
+                clearTimeout(priceUpdateTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleRatingChange = (value: string) => {
         const newValue = selectedRating === value ? "" : value;
@@ -121,20 +187,20 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
 
     const handleClearAll = () => {
         setSelectedCategories([]);
-        setSelectedPriceRange("");
+        setMinPriceUSD("");
+        setMaxPriceUSD("");
         setSelectedRating("");
         setSelectedDistrict("");
         setSelectedSpecialFilters([]);
-        const currentParams = new URLSearchParams();
-        const query = searchParams.get("q");
-        if (query) currentParams.set("q", query);
-        router.push(`/search?${currentParams.toString()}`, { scroll: false });
+        // Clear all filters including search query
+        router.push(`/search`, { scroll: false });
         if (onClose) onClose();
     };
 
     const hasActiveFilters =
         selectedCategories.length > 0 ||
-        selectedPriceRange ||
+        minPriceUSD ||
+        maxPriceUSD ||
         selectedRating ||
         selectedDistrict ||
         selectedSpecialFilters.length > 0;
@@ -183,24 +249,41 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
             {/* Price Range Filter */}
             <FilterSection title="Price Range">
                 <div className="space-y-3">
-                    {priceRanges.map((range) => (
-                        <label
-                            key={range.value}
-                            className={`flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded ${
-                                selectedPriceRange === range.value ? "bg-[#EE4D2D]/10" : ""
-                            }`}
-                        >
-                            <input
-                                type="radio"
-                                name="priceRange"
-                                value={range.value}
-                                checked={selectedPriceRange === range.value}
-                                onChange={() => handlePriceRangeChange(range.value)}
-                                className="w-4 h-4 text-[#EE4D2D] focus:ring-[#EE4D2D]"
-                            />
-                            <span className="text-sm text-gray-700">{range.label}</span>
-                        </label>
-                    ))}
+                    <div className="space-y-2">
+                        <label className="block text-xs font-medium text-gray-600">Min Price (USD)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={minPriceUSD}
+                            onChange={(e) => {
+                                setMinPriceUSD(e.target.value);
+                                handlePriceRangeChange();
+                            }}
+                            onBlur={handlePriceRangeChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/50 focus:border-[#EE4D2D]"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="block text-xs font-medium text-gray-600">Max Price (USD)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={maxPriceUSD}
+                            onChange={(e) => {
+                                setMaxPriceUSD(e.target.value);
+                                handlePriceRangeChange();
+                            }}
+                            onBlur={handlePriceRangeChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/50 focus:border-[#EE4D2D]"
+                        />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                        Leave empty for no limit. Prices are in USD.
+                    </p>
                 </div>
             </FilterSection>
 

@@ -1,16 +1,16 @@
 "use client";
 
 import { getImageUrl } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/dashboardFormat";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Product } from "@/types";
 import { CheckCircle2, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { formatCurrency } from "@/lib/utils/dashboardFormat";
 
 type FoodCardProps = {
     product: Product;
@@ -25,6 +25,7 @@ type FoodCardProps = {
 
 export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurantOverride }: FoodCardProps) => {
     const router = useRouter();
+    const pathname = usePathname();
     const addItem = useCartStore((state) => state.addItem);
     const setUserId = useCartStore((state) => state.setUserId);
     const { user } = useAuthStore();
@@ -44,8 +45,19 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
         }
     }, [isMounted, user?.id, setUserId]);
 
-    const displayPrice = useMemo(() => product.productSizes?.[0]?.price, [product.productSizes]);
-    const defaultSize = useMemo(() => product.productSizes?.[0], [product.productSizes]);
+    // Get minimum price from all sizes (instead of first size)
+    const displayPrice = useMemo(() => {
+        if (!product.productSizes || product.productSizes.length === 0) return undefined;
+        return Math.min(...product.productSizes.map(size => size.price));
+    }, [product.productSizes]);
+    
+    // Get the size with minimum price as default
+    const defaultSize = useMemo(() => {
+        if (!product.productSizes || product.productSizes.length === 0) return undefined;
+        return product.productSizes.reduce((min, size) => 
+            size.price < min.price ? size : min
+        );
+    }, [product.productSizes]);
     const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
 
     const formattedPrice = useMemo(() => {
@@ -68,6 +80,20 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
     const restaurant = useMemo(() => {
         return restaurantOverride || product.restaurant;
     }, [restaurantOverride, product.restaurant]);
+
+    // Determine link based on current location
+    // If already on restaurant page, link to food detail page
+    // Otherwise, link to restaurant page
+    const productLink = useMemo(() => {
+        const isOnRestaurantPage = pathname?.startsWith("/restaurants/");
+        if (isOnRestaurantPage) {
+            // On restaurant page, go to food detail
+            return `/food/${product.slug}`;
+        } else {
+            // Outside restaurant page, go to restaurant page
+            return restaurant?.slug ? `/restaurants/${restaurant.slug}` : `/food/${product.slug}`;
+        }
+    }, [pathname, product.slug, restaurant?.slug]);
 
     // Determine if product is best seller or popular (you can adjust logic based on your data)
     const isBestSeller = useMemo(() => {
@@ -162,11 +188,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
             <div className="group relative bg-white rounded-lg overflow-visible shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow,border] duration-300 h-full flex flex-col hover:-translate-y-1 hover:border-2 hover:border-[#EE4D2D]/30 max-w-[280px] mx-auto">
                 {/* Image Section - Rounded top corners */}
                 <Link
-                    href={
-                        restaurant?.slug
-                            ? `/restaurants/${restaurant.slug}?productId=${product.id}`
-                            : `/food/${product.slug}`
-                    }
+                    href={productLink}
                     className="block relative"
                 >
                     <div className="relative w-full aspect-square overflow-hidden bg-gray-100 rounded-t-lg">
@@ -229,11 +251,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
                 {/* Content Section - More padding for breathing room */}
                 <div className="p-5 flex-grow flex flex-col">
                     <Link
-                        href={
-                            restaurant?.slug
-                                ? `/restaurants/${restaurant.slug}?productId=${product.id}`
-                                : `/food/${product.slug}`
-                        }
+                        href={productLink}
                         className="flex-grow flex flex-col"
                     >
                         {/* Product Name - Bold and Larger */}
@@ -303,11 +321,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
         <div className="group relative bg-white rounded-2xl overflow-visible shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-[transform,shadow,border] duration-300 flex flex-row h-full hover:-translate-y-1 hover:border-2 hover:border-[#EE4D2D]/30">
             {/* Image Section - Left - Much larger (60-65% width) */}
             <Link
-                href={
-                    restaurant?.slug
-                        ? `/restaurants/${restaurant.slug}?productId=${product.id}`
-                        : `/food/${product.slug}`
-                }
+                href={productLink}
                 className="block relative flex-shrink-0 w-[60%] md:w-[65%] min-w-[200px]"
             >
                 <div className="relative w-full h-full min-h-[180px] md:min-h-[220px] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-l-2xl">
@@ -368,11 +382,7 @@ export const FoodCard = memo(({ product, layout = "grid", restaurant: restaurant
             {/* Content Section - Right - More spacious and better layout */}
             <div className="flex-1 flex flex-col p-5 md:p-6 min-w-0 justify-between">
                 <Link
-                    href={
-                        restaurant?.slug
-                            ? `/restaurants/${restaurant.slug}?productId=${product.id}`
-                            : `/food/${product.slug}`
-                    }
+                    href={productLink}
                     className="flex-grow flex flex-col min-w-0"
                 >
                     {/* Restaurant Name - Small, light gray at top */}

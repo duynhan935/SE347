@@ -1,21 +1,18 @@
 "use client";
 
-import { useNotificationStore } from "@/stores/useNotificationStore";
 import { Logo } from "@/constants";
+import { useNotificationStore } from "@/stores/useNotificationStore";
 import {
     ChevronDown,
     Clock,
     Grid3x3,
     Home,
     LayoutDashboard,
-    MessageCircle,
-    Percent,
     Ruler,
     Settings,
-    Store,
     Users,
     Utensils,
-    X,
+    X
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -39,11 +36,6 @@ const menuItems: MenuItem[] = [
         label: "Manage Users",
         icon: Users,
         href: "/admin/users",
-    },
-    {
-        label: "Manage Merchants",
-        icon: Store,
-        href: "/admin/merchants",
     },
     {
         label: "Merchant Requests",
