@@ -27,12 +27,6 @@ const districts = [
     "Phu Nhuan District",
 ];
 
-const specialFilters = [
-    { value: "freeship", label: "Free Shipping" },
-    { value: "deal", label: "Great Deals" },
-    { value: "favorite", label: "Favorites" },
-];
-
 interface SearchFiltersProps {
     isMobile?: boolean;
     onClose?: () => void;
@@ -48,7 +42,6 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
     const [maxPriceUSD, setMaxPriceUSD] = useState<string>("");
     const [selectedRating, setSelectedRating] = useState<string>("");
     const [selectedDistrict, setSelectedDistrict] = useState<string>("");
-    const [selectedSpecialFilters, setSelectedSpecialFilters] = useState<string[]>([]);
 
     useEffect(() => {
         fetchAllCategories();
@@ -89,7 +82,6 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
         
         setSelectedRating(searchParams.get("rating") || "");
         setSelectedDistrict(searchParams.get("district") || "");
-        setSelectedSpecialFilters(searchParams.getAll("special") || []);
     }, [searchParams]);
 
     const updateURL = (updates: Record<string, string | string[] | null>) => {
@@ -177,21 +169,12 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
         updateURL({ district: newValue || null });
     };
 
-    const handleSpecialFilterToggle = (value: string) => {
-        const newFilters = selectedSpecialFilters.includes(value)
-            ? selectedSpecialFilters.filter((f) => f !== value)
-            : [...selectedSpecialFilters, value];
-        setSelectedSpecialFilters(newFilters);
-        updateURL({ special: newFilters.length > 0 ? newFilters : null });
-    };
-
     const handleClearAll = () => {
         setSelectedCategories([]);
         setMinPriceUSD("");
         setMaxPriceUSD("");
         setSelectedRating("");
         setSelectedDistrict("");
-        setSelectedSpecialFilters([]);
         // Clear all filters including search query
         router.push(`/search`, { scroll: false });
         if (onClose) onClose();
@@ -202,8 +185,7 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
         minPriceUSD ||
         maxPriceUSD ||
         selectedRating ||
-        selectedDistrict ||
-        selectedSpecialFilters.length > 0;
+        selectedDistrict;
 
     const content = (
         <div className={`${isMobile ? "p-4" : "p-4"} bg-white ${isMobile ? "" : "sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-hide"}`}>
@@ -331,26 +313,6 @@ export default function SearchFilters({ isMobile = false, onClose }: SearchFilte
                         </option>
                     ))}
                 </select>
-            </FilterSection>
-
-            {/* Special Filters */}
-            <FilterSection title="Special">
-                <div className="space-y-3">
-                    {specialFilters.map((filter) => (
-                        <label
-                            key={filter.value}
-                            className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
-                        >
-                            <input
-                                type="checkbox"
-                                checked={selectedSpecialFilters.includes(filter.value)}
-                                onChange={() => handleSpecialFilterToggle(filter.value)}
-                                className="w-4 h-4 text-[#EE4D2D] focus:ring-[#EE4D2D] rounded"
-                            />
-                            <span className="text-sm text-gray-700">{filter.label}</span>
-                        </label>
-                    ))}
-                </div>
             </FilterSection>
         </div>
     );

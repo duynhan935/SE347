@@ -8,13 +8,14 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { orderApi } from "@/lib/api/orderApi";
+import { formatDateTime } from "@/lib/formatters";
 import { useOrderSocket } from "@/lib/hooks/useOrderSocket";
 import { useWalletNotifications } from "@/lib/hooks/useWalletNotifications";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotificationStore } from "@/stores/useNotificationStore";
 import { OrderStatus } from "@/types/order.type";
 import { formatDateTime } from "@/lib/formatters";
-import { Bell, DollarSign } from "lucide-react";
+import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -249,71 +250,80 @@ export function NotificationBell() {
                     <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">No notifications</div>
                 ) : (
                     <>
-                        {displayNotifications.map((notif) => {
-                            const link = getNotificationLink(notif);
-                            const icon = getNotificationIcon(notif.type);
-
-                            return (
-                                <DropdownMenuItem
-                                    key={notif.id}
-                                    className={`flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                                        !notif.read ? "bg-orange-50 dark:bg-orange-900/20" : ""
-                                    }`}
-                                    onClick={() => {
-                                        markAsRead(notif.id);
-                                        setIsOpen(false);
-                                        if (link) {
-                                            window.location.href = link;
-                                        }
-                                    }}
-                                >
-                                    <div className="flex items-start justify-between w-full">
-                                        <div className="flex gap-2 flex-1">
-                                            {icon}
-                                            <div className="flex-1">
-                                                <p className={`text-sm font-medium ${!notif.read ? "font-bold" : ""}`}>
-                                                    {notif.title}
-                                                </p>
-                                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                                    {notif.message}
-                                                </p>
-                                                {notif.restaurantName && (
-                                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                                        Restaurant: {notif.restaurantName}
-                                                    </p>
-                                                )}
-                                                {notif.amount && (
-                                                    <p className="text-xs text-green-600 font-semibold mt-1">
-                                                        {formatCurrency(notif.amount)}
-                                                    </p>
-                                                )}
-                                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                    {formatDateTime(notif.createdAt)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {!notif.read && (
-                                            <div className="h-2 w-2 bg-[#EE4D2D] rounded-full ml-2 mt-1 flex-shrink-0" />
+                        {orderNotifications.map((notif) => (
+                            <DropdownMenuItem
+                                key={notif.id}
+                                className={`flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                                    !notif.read ? "bg-orange-50 dark:bg-orange-900/20" : ""
+                                }`}
+                                onClick={() => {
+                                    markAsRead(notif.id);
+                                    setIsOpen(false);
+                                    if (notif.orderId) {
+                                        window.location.href = `/orders/${notif.orderId}`;
+                                    }
+                                }}
+                            >
+                                <div className="flex items-start justify-between w-full">
+                                    <div className="flex-1">
+                                        <p className={`text-sm font-medium ${!notif.read ? "font-bold" : ""}`}>
+                                            {notif.title}
+                                        </p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{notif.message}</p>
+                                        {notif.restaurantName && (
+                                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                                Restaurant: {notif.restaurantName}
+                                            </p>
                                         )}
+                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                            {formatDateTime(notif.createdAt)}
+                                        </p>
                                     </div>
-                                    {link && (
-                                        <Link
-                                            href={link}
-                                            className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-2 font-medium"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                markAsRead(notif.id);
-                                                setIsOpen(false);
-                                            }}
-                                        >
-                                            {notif.type.startsWith("PAYOUT")
-                                                ? "View details →"
-                                                : "View order details →"}
-                                        </Link>
+                                    {!notif.read && (
+                                        <div className="h-2 w-2 bg-[#EE4D2D] rounded-full ml-2 mt-1 flex-shrink-0" />
                                     )}
-                                </DropdownMenuItem>
-                            );
-                        })}
+                                </div>
+                                {notif.orderId && (
+                                    <Link
+                                        href={`/orders/${notif.orderId}`}
+                                        className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-2 font-medium"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            markAsRead(notif.id);
+                                            setIsOpen(false);
+                                        }}
+                                    >
+                                        View order details →
+                                    </Link>
+                                )}
+                                {notif.roomId && (
+                                    <Link
+                                        href="/messages"
+                                        className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-2 font-medium"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            markAsRead(notif.id);
+                                            setIsOpen(false);
+                                        }}
+                                    >
+                                        View message →
+                                    </Link>
+                                )}
+                                {notif.roomId && (
+                                    <Link
+                                        href="/messages"
+                                        className="text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 mt-2 font-medium"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            markAsRead(notif.id);
+                                            setIsOpen(false);
+                                        }}
+                                    >
+                                        View message →
+                                    </Link>
+                                )}
+                            </DropdownMenuItem>
+                        ))}
                         <DropdownMenuSeparator />
                         <Link
                             href={user?.role === "ADMIN" ? "/admin/dashboard" : "/account/orders"}

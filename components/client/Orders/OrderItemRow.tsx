@@ -1,14 +1,8 @@
 "use client";
 
 import { getImageUrl } from "@/lib/utils";
-import { useCartStore } from "@/stores/cartStore";
-import { useAuthStore } from "@/stores/useAuthStore";
 import { ShoppingBag } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
-import toast from "react-hot-toast";
 
 export type OrderListItem = {
     id: string;
@@ -20,72 +14,17 @@ export type OrderListItem = {
     quantity: number;
     customizations?: string;
     imageURL?: string | null;
+    cartItemImage?: string | null; // Alternative image field from backend
 };
 
 export const OrderItemRow = ({ item, orderId }: { item: OrderListItem; orderId: string }) => {
-    const router = useRouter();
-    const { addItem } = useCartStore();
-    const { user, isAuthenticated } = useAuthStore();
-    const [isAdding, setIsAdding] = useState(false);
-    const isProcessingRef = useRef(false);
-
-    const handleBuyAgain = useCallback(async () => {
-        // Prevent double clicks using both state and ref
-        if (isAdding || isProcessingRef.current) return;
-
-        // Set both state and ref immediately to prevent race conditions
-        setIsAdding(true);
-        isProcessingRef.current = true;
-
-        // Check authentication
-        const hasToken =
-            typeof window !== "undefined" &&
-            (localStorage.getItem("accessToken") || localStorage.getItem("refreshToken"));
-
-        if (!user && !isAuthenticated && !hasToken) {
-            toast.error("Please sign in to buy again.");
-            setIsAdding(false);
-            isProcessingRef.current = false;
-            router.push("/login");
-            return;
-        }
-
-        if (!item.restaurantId) {
-            toast.error("Restaurant information not found.");
-            setIsAdding(false);
-            isProcessingRef.current = false;
-            return;
-        }
-
-        try {
-            // Add item to cart
-            await addItem(
-                {
-                    id: item.productId,
-                    name: item.productName,
-                    price: item.price,
-                    image: item.imageURL ? getImageUrl(item.imageURL) : "/placeholder.png",
-                    restaurantId: item.restaurantId,
-                    restaurantName: item.restaurantName,
-                    customizations: item.customizations,
-                },
-                item.quantity
-            );
-
-            // Wait a bit for cart to sync
-            await new Promise((resolve) => setTimeout(resolve, 300));
-
-            // Navigate to checkout page
-            router.push(`/payment?restaurantId=${item.restaurantId}`);
-        } catch (error) {
-            console.error("Failed to add item to cart:", error);
-            toast.error("Failed to add to cart.");
-        } finally {
-            setIsAdding(false);
-            isProcessingRef.current = false;
-        }
-    }, [isAdding, item, addItem, user, isAuthenticated, router]);
-    const imageUrl = item.imageURL ? getImageUrl(item.imageURL) : null;
+    // Get image for display - check both imageURL and cartItemImage
+    const displayImageSource = (item.imageURL && item.imageURL.trim() !== "") 
+        ? item.imageURL 
+        : (item.cartItemImage && item.cartItemImage.trim() !== "")
+        ? item.cartItemImage
+        : null;
+    const imageUrl = displayImageSource ? getImageUrl(displayImageSource) : null;
     const hasImage = imageUrl && imageUrl !== "/placeholder.png";
 
     return (
