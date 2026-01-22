@@ -65,10 +65,62 @@ export default function AddressSelector() {
         };
     }, [isOpen]);
 
-    const handleAddressSelect = (address: LocationAddress) => {
+    const handleAddressSelect = async (address: LocationAddress) => {
+        // Set current address immediately for better UX
         setCurrentAddress(address);
         setIsOpen(false);
-        toast.success(`Delivery location set to: ${address.address}`);
+        
+        // If user is authenticated, save address to database if it doesn't exist
+        if (isAuthenticated && user?.id) {
+            try {
+                // Check if address already exists in user addresses
+                const addressExists = userAddresses.some(
+                    (userAddr) =>
+                        userAddr.location === address.address &&
+                        Math.abs(userAddr.latitude - address.lat) < 0.0001 &&
+                        Math.abs(userAddr.longitude - address.lng) < 0.0001
+                );
+
+                // If address doesn't exist, save it
+                if (!addressExists) {
+                    try {
+                        const savedAddress = await authApi.addAddress(user.id, {
+                            location: address.address,
+                            latitude: address.lat,
+                            longitude: address.lng,
+                        });
+
+                        // Update user addresses list
+                        const updatedAddresses = await authApi.getUserAddresses(user.id);
+                        setUserAddresses(updatedAddresses);
+
+                        // Update current address with saved ID
+                        setCurrentAddress({
+                            ...address,
+                            id: savedAddress.id,
+                        });
+
+                        toast.success(`Address saved: ${address.address}`);
+                    } catch (saveError) {
+                        console.error("Failed to save address:", saveError);
+                        // Still show success for setting location, but warn about save failure
+                        toast.success(`Delivery location set to: ${address.address}`, {
+                            icon: "⚠️",
+                        });
+                    }
+                } else {
+                    // Address already exists, just show success
+                    toast.success(`Delivery location set to: ${address.address}`);
+                }
+            } catch (error) {
+                console.error("Error checking/saving address:", error);
+                // Still show success for setting location
+                toast.success(`Delivery location set to: ${address.address}`);
+            }
+        } else {
+            // User not authenticated, just set location
+            toast.success(`Delivery location set to: ${address.address}`);
+        }
     };
 
     // Reverse geocoding: Convert lat/lng to address string

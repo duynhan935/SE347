@@ -7,7 +7,7 @@ import { Product } from "@/types";
 import { CheckCircle2, Clock, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -23,6 +23,8 @@ type CompactFoodCardProps = {
 
 export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }: CompactFoodCardProps) => {
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const addItem = useCartStore((state) => state.addItem);
     const setUserId = useCartStore((state) => state.setUserId);
     const { user } = useAuthStore();
@@ -40,8 +42,55 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
         }
     }, [isMounted, user?.id, setUserId]);
 
-    const displayPrice = useMemo(() => product.productSizes?.[0]?.price, [product.productSizes]);
-    const defaultSize = useMemo(() => product.productSizes?.[0], [product.productSizes]);
+    // Get minPrice filter from URL if exists
+    const minPriceFilter = useMemo(() => {
+        const priceRange = searchParams?.get("priceRange");
+        if (!priceRange) return null;
+        
+        const decodedPriceRange = decodeURIComponent(priceRange);
+        if (decodedPriceRange.endsWith("+")) {
+            const minPrice = parseFloat(decodedPriceRange.replace("+", ""));
+            return !isNaN(minPrice) && minPrice > 0 ? minPrice : null;
+        } else {
+            const [min] = decodedPriceRange.split("-");
+            const minPrice = min ? parseFloat(min) : null;
+            return minPrice !== null && !isNaN(minPrice) && minPrice > 0 ? minPrice : null;
+        }
+    }, [searchParams]);
+
+    // Get price to display: if there's a minPrice filter, show first price >= minPrice, otherwise show minimum price
+    const displayPrice = useMemo(() => {
+        if (!product.productSizes || product.productSizes.length === 0) return undefined;
+        
+        // If there's a minPrice filter, find first size with price >= minPrice
+        if (minPriceFilter !== null) {
+            const matchingSize = product.productSizes
+                .sort((a, b) => a.price - b.price) // Sort by price ascending
+                .find(size => size.price >= minPriceFilter);
+            return matchingSize?.price;
+        }
+        
+        // Otherwise, show minimum price
+        return Math.min(...product.productSizes.map(size => size.price));
+    }, [product.productSizes, minPriceFilter]);
+    
+    // Get the size to use as default: if there's a minPrice filter, use first size >= minPrice, otherwise use minimum price size
+    const defaultSize = useMemo(() => {
+        if (!product.productSizes || product.productSizes.length === 0) return undefined;
+        
+        // If there's a minPrice filter, find first size with price >= minPrice
+        if (minPriceFilter !== null) {
+            const matchingSize = product.productSizes
+                .sort((a, b) => a.price - b.price) // Sort by price ascending
+                .find(size => size.price >= minPriceFilter);
+            return matchingSize || product.productSizes[0]; // Fallback to first size if no match
+        }
+        
+        // Otherwise, use size with minimum price
+        return product.productSizes.reduce((min, size) => 
+            size.price < min.price ? size : min
+        );
+    }, [product.productSizes, minPriceFilter]);
     const cardImageUrl = useMemo(() => getImageUrl(product.imageURL), [product.imageURL]);
 
     useEffect(() => {
@@ -51,6 +100,20 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
     const restaurant = useMemo(() => {
         return restaurantOverride || product.restaurant;
     }, [restaurantOverride, product.restaurant]);
+
+    // Determine link based on current location
+    // If already on restaurant page, link to food detail page
+    // Otherwise, link to restaurant page
+    const productLink = useMemo(() => {
+        const isOnRestaurantPage = pathname?.startsWith("/restaurants/");
+        if (isOnRestaurantPage) {
+            // On restaurant page, go to food detail
+            return `/food/${product.slug}`;
+        } else {
+            // Outside restaurant page, go to restaurant page
+            return restaurant?.slug ? `/restaurants/${restaurant.slug}` : `/food/${product.slug}`;
+        }
+    }, [pathname, product.slug, restaurant?.slug]);
 
     // Check if favorite (high rating or many reviews)
     const isFavorite = useMemo(() => {
@@ -157,11 +220,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
         <div className="group relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1">
             {/* Image Section */}
             <Link
-                href={
-                    restaurant?.slug
-                        ? `/restaurants/${restaurant.slug}?productId=${product.id}`
-                        : `/food/${product.slug}`
-                }
+                href={productLink}
                 className="block relative w-full aspect-square overflow-hidden"
             >
                 <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-lg">
@@ -225,11 +284,7 @@ export const CompactFoodCard = memo(({ product, restaurant: restaurantOverride }
             <div className="p-3 space-y-1.5">
                 {/* Product Name - Truncate 1 line */}
                 <Link
-                    href={
-                        restaurant?.slug
-                            ? `/restaurants/${restaurant.slug}?productId=${product.id}`
-                            : `/food/${product.slug}`
-                    }
+                    href={productLink}
                 >
                     <h3
                         className="text-sm font-bold text-gray-900 line-clamp-1 truncate mt-1 hover:text-[#EE4D2D] transition-colors"

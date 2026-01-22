@@ -1,5 +1,6 @@
 "use client";
 
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 import GlobalLoader from "@/components/ui/GlobalLoader";
 import { authApi } from "@/lib/api/authApi";
 import { orderApi, type CreateOrderRequest } from "@/lib/api/orderApi";
@@ -10,7 +11,7 @@ import { getImageUrl } from "@/lib/utils";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Address } from "@/types";
-import { ArrowLeft, Edit2, Truck } from "lucide-react";
+import { ArrowLeft, Edit2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -43,9 +44,10 @@ export default function PaymentPageClient() {
     const [checkoutSelection, setCheckoutSelection] = useState<CheckoutSelection | null>(null);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [deliverStyle, setDeliverStyle] = useState<"delivery" | "pickup">("delivery");
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const [useNewAddress, setUseNewAddress] = useState(false);
+    const [newAddressLat, setNewAddressLat] = useState<number | null>(null);
+    const [newAddressLon, setNewAddressLon] = useState<number | null>(null);
 
     // Stripe payment states
     const [createdOrderIds, setCreatedOrderIds] = useState<string[]>([]);
@@ -82,7 +84,7 @@ export default function PaymentPageClient() {
         () => orderItems.reduce((total, item) => total + item.price * item.quantity, 0),
         [orderItems],
     );
-    const shipping = deliverStyle === "pickup" ? 0 : SHIPPING_FEE;
+    const shipping = SHIPPING_FEE; // Always delivery, no pickup
     const tax = subtotal * 0.05;
     const total = subtotal + shipping + tax;
 
@@ -239,6 +241,8 @@ export default function PaymentPageClient() {
     const handleAddressSelect = (addressId: string) => {
         setSelectedAddressId(addressId);
         setUseNewAddress(false);
+        setNewAddressLat(null);
+        setNewAddressLon(null);
         const selectedAddress = addresses.find((addr) => addr.id === addressId);
         if (selectedAddress) {
             setFormData((prev) => ({
@@ -251,6 +255,18 @@ export default function PaymentPageClient() {
     const handleUseNewAddress = () => {
         setUseNewAddress(true);
         setSelectedAddressId(null);
+        setNewAddressLat(null);
+        setNewAddressLon(null);
+    };
+
+    // Handle address autocomplete selection
+    const handleAddressAutocompleteChange = (address: string, latitude: number, longitude: number) => {
+        setFormData((prev) => ({
+            ...prev,
+            street: address,
+        }));
+        setNewAddressLat(latitude);
+        setNewAddressLon(longitude);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -288,25 +304,25 @@ export default function PaymentPageClient() {
             return;
         }
 
-        if (deliverStyle === "delivery") {
-            if (!formData.street) {
-                toast.error("Please enter delivery address");
-                return;
-            }
+        if (!formData.street) {
+            toast.error("Please enter delivery address");
+            return;
         }
 
         const selectedSavedAddress =
             !useNewAddress && selectedAddressId ? addresses.find((addr) => addr.id === selectedAddressId) : undefined;
 
-        const resolvedLatitude = selectedSavedAddress?.latitude ?? coords?.latitude;
-        const resolvedLongitude = selectedSavedAddress?.longitude ?? coords?.longitude;
+        // Use new address lat/lon if available, otherwise use saved address, otherwise use geolocation
+        const resolvedLatitude = useNewAddress && newAddressLat !== null
+            ? newAddressLat
+            : selectedSavedAddress?.latitude ?? coords?.latitude;
+        const resolvedLongitude = useNewAddress && newAddressLon !== null
+            ? newAddressLon
+            : selectedSavedAddress?.longitude ?? coords?.longitude;
 
-        if (
-            deliverStyle === "delivery" &&
-            (typeof resolvedLatitude !== "number" || typeof resolvedLongitude !== "number")
-        ) {
+        if (typeof resolvedLatitude !== "number" || typeof resolvedLongitude !== "number") {
             toast.error(
-                "Unable to determine delivery coordinates. Please select a saved address or enable location services and try again.",
+                "Unable to determine delivery coordinates. Please select an address from the suggestions or enable location services and try again.",
             );
             return;
         }
@@ -371,8 +387,8 @@ export default function PaymentPageClient() {
                 }),
                 paymentMethod: "card", // Always use "card" for backend (Stripe)
                 orderNote: formData.note.trim() ? formData.note.trim() : undefined,
-                userLat: deliverStyle === "delivery" && typeof finalLatitude === "number" ? finalLatitude : 0,
-                userLon: deliverStyle === "delivery" && typeof finalLongitude === "number" ? finalLongitude : 0,
+                userLat: typeof finalLatitude === "number" ? finalLatitude : 0,
+                userLon: typeof finalLongitude === "number" ? finalLongitude : 0,
             };
 
             const order = await orderApi.createOrder(payload);
@@ -621,33 +637,6 @@ export default function PaymentPageClient() {
                     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                         <h2 className="text-xl font-bold mb-4">Delivery Details</h2>
 
-                        {/* Delivery/Pickup Toggle */}
-                        <div className="flex gap-2 mb-6 p-1 bg-gray-100 rounded-lg">
-                            <button
-                                type="button"
-                                onClick={() => setDeliverStyle("delivery")}
-                                className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-                                    deliverStyle === "delivery"
-                                        ? "bg-[#EE4D2D] text-white"
-                                        : "text-gray-600 hover:bg-gray-200"
-                                }`}
-                            >
-                                <Truck className="w-4 h-4 inline mr-2" />
-                                Delivery
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setDeliverStyle("pickup")}
-                                className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-                                    deliverStyle === "pickup"
-                                        ? "bg-[#EE4D2D] text-white"
-                                        : "text-gray-600 hover:bg-gray-200"
-                                }`}
-                            >
-                                Pickup
-                            </button>
-                        </div>
-
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {/* Name */}
                             <div>
@@ -682,119 +671,112 @@ export default function PaymentPageClient() {
                             </div>
 
                             {/* Address Selection */}
-                            {deliverStyle === "delivery" && (
-                                <>
-                                    <fieldset className="space-y-3">
-                                        <legend className="block text-sm font-medium text-gray-700">
-                                            Delivery address
-                                        </legend>
+                            <fieldset className="space-y-3">
+                                <legend className="block text-sm font-medium text-gray-700">
+                                    Delivery address
+                                </legend>
 
-                                        {addresses.length > 0 && (
-                                            <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3">
-                                                <input
-                                                    type="radio"
-                                                    name="addressMode"
-                                                    checked={!useNewAddress}
-                                                    onChange={() => {
-                                                        setUseNewAddress(false);
-                                                        if (!selectedAddressId && addresses[0]?.id) {
-                                                            handleAddressSelect(addresses[0].id);
-                                                        }
-                                                    }}
-                                                    className="mt-1 h-4 w-4 accent-[#EE4D2D]"
-                                                />
-                                                <div className="flex-1">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        Use a saved address
-                                                    </div>
-                                                    {!useNewAddress && (
-                                                        <div className="mt-2 space-y-2">
-                                                            {addresses.map((addr) => {
-                                                                const selected = addr.id === selectedAddressId;
-                                                                return (
-                                                                    <button
-                                                                        key={addr.id}
-                                                                        type="button"
-                                                                        onClick={() => handleAddressSelect(addr.id)}
-                                                                        className={
-                                                                            "w-full rounded-lg border p-3 text-left transition-colors " +
-                                                                            (selected
-                                                                                ? "border-[#EE4D2D] bg-[#EE4D2D]/5"
-                                                                                : "border-gray-200 hover:bg-gray-50")
-                                                                        }
-                                                                    >
-                                                                        <div className="flex items-center justify-between gap-3">
-                                                                            <div className="min-w-0 flex-1">
-                                                                                <div className="truncate text-sm text-gray-900">
-                                                                                    {addr.location}
-                                                                                </div>
-                                                                            </div>
-                                                                            {selected && (
-                                                                                <span className="text-xs font-semibold text-[#EE4D2D]">
-                                                                                    Selected
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </label>
-                                        )}
-
-                                        <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3">
-                                            <input
-                                                type="radio"
-                                                name="addressMode"
-                                                checked={useNewAddress || addresses.length === 0}
-                                                onChange={handleUseNewAddress}
-                                                className="mt-1 h-4 w-4 accent-[#EE4D2D]"
-                                            />
-                                            <div className="flex-1">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        Use a new address
-                                                    </div>
-                                                    <span className="text-xs text-gray-500">One-time</span>
-                                                </div>
-                                                {(useNewAddress || addresses.length === 0) && (
-                                                    <div className="mt-2">
-                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                            Street Address
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            name="street"
-                                                            value={formData.street}
-                                                            onChange={handleChange}
-                                                            required
-                                                            placeholder="Enter your address"
-                                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </label>
-                                    </fieldset>
-
-                                    {/* Note for Driver */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Note for Driver (Optional)
-                                        </label>
-                                        <textarea
-                                            name="note"
-                                            value={formData.note}
-                                            onChange={handleChange}
-                                            rows={3}
-                                            placeholder="Any special instructions..."
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                                {addresses.length > 0 && (
+                                    <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3">
+                                        <input
+                                            type="radio"
+                                            name="addressMode"
+                                            checked={!useNewAddress}
+                                            onChange={() => {
+                                                setUseNewAddress(false);
+                                                if (!selectedAddressId && addresses[0]?.id) {
+                                                    handleAddressSelect(addresses[0].id);
+                                                }
+                                            }}
+                                            className="mt-1 h-4 w-4 accent-[#EE4D2D]"
                                         />
+                                        <div className="flex-1">
+                                            <div className="text-sm font-medium text-gray-900">
+                                                Use a saved address
+                                            </div>
+                                            {!useNewAddress && (
+                                                <div className="mt-2 space-y-2">
+                                                    {addresses.map((addr) => {
+                                                        const selected = addr.id === selectedAddressId;
+                                                        return (
+                                                            <button
+                                                                key={addr.id}
+                                                                type="button"
+                                                                onClick={() => handleAddressSelect(addr.id)}
+                                                                className={
+                                                                    "w-full rounded-lg border p-3 text-left transition-colors " +
+                                                                    (selected
+                                                                        ? "border-[#EE4D2D] bg-[#EE4D2D]/5"
+                                                                        : "border-gray-200 hover:bg-gray-50")
+                                                                }
+                                                            >
+                                                                <div className="flex items-center justify-between gap-3">
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <div className="truncate text-sm text-gray-900">
+                                                                            {addr.location}
+                                                                        </div>
+                                                                    </div>
+                                                                    {selected && (
+                                                                        <span className="text-xs font-semibold text-[#EE4D2D]">
+                                                                            Selected
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </label>
+                                )}
+
+                                <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3">
+                                    <input
+                                        type="radio"
+                                        name="addressMode"
+                                        checked={useNewAddress || addresses.length === 0}
+                                        onChange={handleUseNewAddress}
+                                        className="mt-1 h-4 w-4 accent-[#EE4D2D]"
+                                    />
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="text-sm font-medium text-gray-900">
+                                                Use a new address
+                                            </div>
+                                            <span className="text-xs text-gray-500">One-time</span>
+                                        </div>
+                                        {(useNewAddress || addresses.length === 0) && (
+                                            <div className="mt-2">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Street Address
+                                                </label>
+                                                <AddressAutocomplete
+                                                    value={formData.street}
+                                                    onChange={handleAddressAutocompleteChange}
+                                                    placeholder="Enter address (e.g., 123 Main Street, Ho Chi Minh City)..."
+                                                    className="w-full"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
-                                </>
-                            )}
+                                </label>
+                            </fieldset>
+
+                            {/* Note for Driver */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Note for Driver (Optional)
+                                </label>
+                                <textarea
+                                    name="note"
+                                    value={formData.note}
+                                    onChange={handleChange}
+                                    rows={3}
+                                    placeholder="Any special instructions..."
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D]"
+                                />
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -913,33 +895,6 @@ export default function PaymentPageClient() {
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
                     <h2 className="text-lg font-bold mb-4">Delivery Details</h2>
 
-                    {/* Delivery/Pickup Toggle */}
-                    <div className="flex gap-2 mb-4 p-1 bg-gray-100 rounded-lg">
-                        <button
-                            type="button"
-                            onClick={() => setDeliverStyle("delivery")}
-                            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                                deliverStyle === "delivery"
-                                    ? "bg-[#EE4D2D] text-white"
-                                    : "text-gray-600 hover:bg-gray-200"
-                            }`}
-                        >
-                            <Truck className="w-3 h-3 inline mr-1" />
-                            Delivery
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setDeliverStyle("pickup")}
-                            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                                deliverStyle === "pickup"
-                                    ? "bg-[#EE4D2D] text-white"
-                                    : "text-gray-600 hover:bg-gray-200"
-                            }`}
-                        >
-                            Pickup
-                        </button>
-                    </div>
-
                     <form onSubmit={handleSubmit} className="space-y-3">
                         {/* Name */}
                         <div>
@@ -974,81 +929,74 @@ export default function PaymentPageClient() {
                         </div>
 
                         {/* Address Selection */}
-                        {deliverStyle === "delivery" && (
-                            <>
-                                {addresses.length > 0 && !useNewAddress ? (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Select Address
-                                        </label>
-                                        <select
-                                            value={selectedAddressId || ""}
-                                            onChange={(e) => handleAddressSelect(e.target.value)}
-                                            aria-label="Select Address"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] text-sm"
-                                        >
-                                            {addresses.map((addr) => (
-                                                <option key={addr.id} value={addr.id}>
-                                                    {addr.location}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <button
-                                            type="button"
-                                            onClick={() => setUseNewAddress(true)}
-                                            className="mt-2 text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 flex items-center gap-1"
-                                        >
-                                            <Edit2 className="w-3 h-3" />
-                                            Use new address
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Street Address
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="street"
-                                            value={formData.street}
-                                            onChange={handleChange}
-                                            required
-                                            placeholder="Enter your address"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] text-sm"
-                                        />
-                                        {addresses.length > 0 && (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setUseNewAddress(false);
-                                                    if (addresses.length > 0) {
-                                                        handleAddressSelect(addresses[0].id);
-                                                    }
-                                                }}
-                                                className="mt-2 text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80"
-                                            >
-                                                Use saved address
-                                            </button>
-                                        )}
-                                    </div>
+                        {addresses.length > 0 && !useNewAddress ? (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Select Address
+                                </label>
+                                <select
+                                    value={selectedAddressId || ""}
+                                    onChange={(e) => handleAddressSelect(e.target.value)}
+                                    aria-label="Select Address"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] text-sm"
+                                >
+                                    {addresses.map((addr) => (
+                                        <option key={addr.id} value={addr.id}>
+                                            {addr.location}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={() => setUseNewAddress(true)}
+                                    className="mt-2 text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80 flex items-center gap-1"
+                                >
+                                    <Edit2 className="w-3 h-3" />
+                                    Use new address
+                                </button>
+                            </div>
+                        ) : (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Street Address
+                                </label>
+                                <AddressAutocomplete
+                                    value={formData.street}
+                                    onChange={handleAddressAutocompleteChange}
+                                    placeholder="Enter address (e.g., 123 Main Street, Ho Chi Minh City)..."
+                                    className="w-full"
+                                />
+                                {addresses.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setUseNewAddress(false);
+                                            if (addresses.length > 0) {
+                                                handleAddressSelect(addresses[0].id);
+                                            }
+                                        }}
+                                        className="mt-2 text-xs text-[#EE4D2D] hover:text-[#EE4D2D]/80"
+                                    >
+                                        Use saved address
+                                    </button>
                                 )}
-
-                                {/* Note for Driver */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Note for Driver (Optional)
-                                    </label>
-                                    <textarea
-                                        name="note"
-                                        value={formData.note}
-                                        onChange={handleChange}
-                                        rows={2}
-                                        placeholder="Any special instructions..."
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] text-sm"
-                                    />
-                                </div>
-                            </>
+                            </div>
                         )}
+
+                        {/* Note for Driver */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Note for Driver (Optional)
+                            </label>
+                            <textarea
+                                name="note"
+                                value={formData.note}
+                                onChange={handleChange}
+                                rows={2}
+                                placeholder="Any special instructions..."
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4D2D] focus:border-[#EE4D2D] text-sm"
+                            />
+                        </div>
                     </form>
                 </div>
 
