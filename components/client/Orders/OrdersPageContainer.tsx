@@ -15,6 +15,35 @@ import OrderHistorySidebar from "./OrderHistorySidebar";
 import { type OrderListItem } from "./OrderItemRow";
 import { OrderSkeleton } from "./OrderSkeleton";
 
+// Helper function to parse productId and extract imageURL from encoded options
+const parseProductIdForImage = (productId: string): string | null => {
+    try {
+        const separatorIndex = productId.indexOf("--");
+        if (separatorIndex === -1) {
+            return null;
+        }
+        
+        const encoded = productId.slice(separatorIndex + 2);
+        // Base64 URL decode
+        const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64 + "===".slice((base64.length + 3) % 4);
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        const json = new TextDecoder().decode(bytes);
+        const parsed = JSON.parse(json);
+        
+        if (parsed && typeof parsed === "object" && parsed.imageURL) {
+            return parsed.imageURL;
+        }
+    } catch (error) {
+        console.debug("[Reorder] Failed to parse productId for image:", error);
+    }
+    return null;
+};
+
 export interface OrdersPageOrder {
     id: string;
     slug?: string; // Order slug for URL routing
@@ -79,12 +108,48 @@ export default function OrdersPageContainer({ orders, isLoading, onRetry, onSort
                 // Add all items from order to cart
                 for (const item of order.items) {
                     try {
+                        // Get image from item - check imageURL, cartItemImage, and productId encoded options
+                        // Priority: imageURL > cartItemImage > productId encoded options > placeholder
+                        const itemWithImage = item as OrderListItem & { cartItemImage?: string | null };
+                        
+                        // Try to get image from either field
+                        let imageSource: string | null = null;
+                        
+                        // 1. Check imageURL first
+                        if (itemWithImage.imageURL && typeof itemWithImage.imageURL === "string" && itemWithImage.imageURL.trim() !== "") {
+                            imageSource = itemWithImage.imageURL.trim();
+                        } 
+                        // 2. Check cartItemImage
+                        else if (itemWithImage.cartItemImage && typeof itemWithImage.cartItemImage === "string" && itemWithImage.cartItemImage.trim() !== "") {
+                            imageSource = itemWithImage.cartItemImage.trim();
+                        }
+                        // 3. Try to extract imageURL from productId encoded options
+                        else {
+                            const imageFromProductId = parseProductIdForImage(item.productId);
+                            if (imageFromProductId && imageFromProductId.trim() !== "") {
+                                imageSource = imageFromProductId.trim();
+                            }
+                        }
+                        
+                        // Process image URL - getImageUrl handles both relative and absolute URLs
+                        // If imageSource is null or empty, use placeholder
+                        const imageUrl = imageSource ? getImageUrl(imageSource) : "/placeholder.png";
+                        
+                        // Debug log to help troubleshoot
+                        console.log(`[Reorder] Adding item ${item.productName}:`, {
+                            productId: item.productId,
+                            imageURL: itemWithImage.imageURL,
+                            cartItemImage: itemWithImage.cartItemImage,
+                            imageSource,
+                            finalImageUrl: imageUrl,
+                        });
+
                         await addItem(
                             {
                                 id: item.productId,
                                 name: item.productName,
                                 price: item.price,
-                                image: item.imageURL ? getImageUrl(item.imageURL) : "/placeholder.png",
+                                image: imageUrl, // Pass the processed image URL
                                 restaurantId: item.restaurantId || firstItem.restaurantId,
                                 restaurantName: item.restaurantName,
                                 customizations: item.customizations,
