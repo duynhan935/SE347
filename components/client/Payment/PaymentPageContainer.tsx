@@ -11,6 +11,7 @@ import { getImageUrl } from "@/lib/utils";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Address } from "@/types";
+import { OrderStatus } from "@/types/order.type";
 import { ArrowLeft, Edit2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -551,6 +552,24 @@ export default function PaymentPageClient() {
         toast.success("Payment successful! Your order has been placed.", {
             duration: 3000,
         });
+
+        // IMPORTANT: Update order status to 'completed' after payment success
+        // This triggers the wallet credit for the merchant
+        // Backend will check paymentStatus = 'paid' before crediting wallet
+        if (createdOrderIds.length > 0) {
+            try {
+                // Wait a bit for webhook to update payment status first
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+                
+                // Update order status to 'completed' to trigger wallet credit
+                await orderApi.updateOrderStatus(createdOrderIds[0], OrderStatus.COMPLETED);
+                console.log("Order status updated to completed, wallet credit should be triggered");
+            } catch (error) {
+                // Log error but don't block the redirect
+                console.error("Failed to update order status to completed:", error);
+                // The order will still be completed later by merchant/admin, wallet will be credited then
+            }
+        }
 
         // Redirect immediately to prevent cart empty check from triggering
         // Use router.replace to prevent back navigation to payment page
