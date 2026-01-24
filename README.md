@@ -38,31 +38,7 @@ The app is designed to work with a backend gateway (REST + SSE + WebSockets) and
     - socket.io-client for order notification channels
 - **Payments**: Stripe Elements (`@stripe/react-stripe-js`, `@stripe/stripe-js`)
 
-### Data Flow (High-Level)
 
-```mermaid
-graph TD
-    U[User Browser] -->|Navigate| NX[Next.js App Router]
-    NX -->|Render UI| UI[React Components]
-    UI -->|Read/Write| Z[Zustand Stores]
-
-    UI -->|REST calls| AX[Axios Client]
-    AX -->|HTTP + Cookies| GW[Backend API Gateway]
-
-    UI -->|SSE subscribe| SSE[EventSource /api/sse/subcribe/{userId}]
-    SSE --> GW
-
-    UI -->|Chat WS| WS1[SockJS/STOMP /ws]
-    WS1 --> GW
-
-    UI -->|Orders Socket| SIO[socket.io]
-    SIO --> GW
-
-    UI -->|Card Payment| ST[Stripe.js]
-    ST -->|Confirm PaymentIntent| STR[Stripe API]
-
-    GW --> SVC[Microservices Layer]
-```
 
 ## 5) Installation
 
