@@ -38,8 +38,6 @@ The app is designed to work with a backend gateway (REST + SSE + WebSockets) and
     - socket.io-client for order notification channels
 - **Payments**: Stripe Elements (`@stripe/react-stripe-js`, `@stripe/stripe-js`)
 
-
-
 ## 5) Installation
 
 ### Prerequisites
